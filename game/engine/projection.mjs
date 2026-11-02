@@ -27,10 +27,11 @@
  * render. It is pinned in §12.1 and reproduced here, not designed.
  */
 
-import {characteristicsOf, deriving, staticAbilities} from "./rules/layers.mjs";
+import {characteristicsOf, deriving, lookOf, staticAbilities} from "./rules/layers.mjs";
 import {conditionHolds} from "./script/condition.mjs";
 import {commanderKeyOf} from "./state/index.mjs";
 import {commanderTax} from "./rules/commander.mjs";
+import {aimsOf} from "./aims.mjs";
 
 export const PROJECTION_SCHEMA = "CommanderProbeProjection@1";
 
@@ -93,6 +94,20 @@ function cardFor(state, id, canSeeFace, viewer = null) {
     tapped: object.tapped,
     damage: object.damage,
     counters: {...object.counters},
+    /* Physical battlefield facts are public even when a face is hidden. Keep current reciprocal attachments only:
+       a zone change makes a new object, and an Aura in a hidden zone must never gain an identity through its old host. */
+    ...(object.zone === "battlefield" ? {
+      ...(object.token === true ? {token: true} : {}),
+      /* WHICH FACE IS UP (ROB-207; the UI's request #5): the back face of a double-faced permanent, said with its name. A name
+         cannot say which side of one picture to draw (a modal double-faced land played as its back face, Mistgate Pathway).
+         The front is the default and says nothing; `face` is only ever "back" here (an adventure's face is not a permanent's). */
+      ...(named && object.face === "back" ? {face: "back"} : {}),
+      /* WHAT IT LOOKS LIKE WHEN IT IS NOT ITS CARD (ROB-329, Oko's Elk): the token it has become, said with its name, so the
+         board draws that token's picture. Present only while the effect holds; the next view without it is the revert. */
+      ...(named ? (() => { const look = lookOf(state, id); return look ? {appearance: look} : {}; })() : {}),
+      attachments: (object.attachments ?? []).filter(id => state.objects[id]?.zone === "battlefield" && state.objects[id].attachedTo === object.id),
+    } : {}),
+
     /* CURRENT characteristics for anything on the battlefield, so the board draws the creature a
        player is actually looking at rather than what was printed on the card. Elsewhere there is
        nothing to derive: a card in a graveyard is its printed self. */
@@ -100,14 +115,28 @@ function cardFor(state, id, canSeeFace, viewer = null) {
     power: shown ? current.power : null,
     toughness: shown ? current.toughness : null,
     keywords: shown ? [...current.keywords] : [],
+    ...(object.zone === "battlefield" && object.merged ? {components: object.merged.map(part => ({
+      name: part.faceDown && viewer !== controller ? null : part.physical.card, faceDown: part.faceDown === true,
+      commander: part.physical.commander === true})), mutations: object.mutations ?? 0,
+      text: (current.abilities ?? object.abilities ?? []).map(a => a.text).filter(Boolean).join("\n")} : {}),
+    ...(object.zone === "battlefield" && state.players.some(p => p.ring?.bearer === id && p.id === controller) ? {ringBearer: true} : {}),
     /* A Class's level (CR 716.2a), a designation anyone can see (716.2b); none is level 1 (716.2d). */
     ...(Number.isInteger(object.level) ? {level: object.level} : {}),
     /* Monstrous (CR 701.37b) and prepared (CR 722.3a): designations, which anyone can see (script/effects/attributes.mjs). */
     ...(object.monstrous === true ? {monstrous: true} : {}),
     ...(object.prepared === true ? {prepared: true} : {}),
+    /* The inset spell is a distinct copy in public exile, not another activation of the creature (CR 722.3c).
+       Its identity lets the board associate that legal cast with the prepared card without inventing an action. */
+    ...(named && object.prepared === true && state.objects[object.preparedCopy]?.zone === "exile" && !state.objects[object.preparedCopy].faceDown
+      ? {preparedSpell: {cardId: object.preparedCopy, name: state.objects[object.preparedCopy].card, manaCost: state.objects[object.preparedCopy].manaCost ?? null}} : {}),
     /* Solved (CR 719.3b): a Case's designation, which anyone can see. */
     ...(object.solved === true ? {solved: true} : {}),
     commander: object.commander === true,
+    /* An emblem (CR 114), public in the command zone: what it does, its abilities' words, for the board to show. */
+    ...(object.emblem === true ? {emblem: true, text: (object.abilities ?? []).map((a) => a.text).filter(Boolean).join("\n")} : {}),
+    /* A candidate (card load step 5, Rob's decision 2): written by the card compiler, not yet reviewed, so the board labels
+       it and offers "report a wrong card". Said only of a card this seat can name, as its name is. */
+    ...(named && object.candidate === true ? {candidate: true} : {}),
     /* Which commander (state/index.mjs, commanderKeyOf): the key its damage is kept under in every player's
        `health.commanderDamage`, the same in every zone, so the board can say whose commander dealt it. */
     ...(object.commander === true ? {commanderKey: commanderKeyOf(object)} : {}),
@@ -230,6 +259,12 @@ function project(state, viewer) {
     schema: PROJECTION_SCHEMA,
     viewerSeatId: viewer,
     turn: state.turn,
+    /* Where the turn is in the game, for the table's labels (Linear ROB-76; rules/turn.mjs, nextRound): `turn` counts
+       every turn taken, an extra one too. `round` and `turnInRound` are null for a game saved before rounds were kept. */
+    round: Number.isInteger(state.round) ? state.round : null,
+    turnInRound: Number.isInteger(state.turnInRound) ? state.turnInRound : null,
+    turnId: state.turn > 0 ? `turn:${state.turn}` : null,
+    extraTurn: state.extraTurn === true,
     turnPlayerId: state.activePlayer,
     priorityPlayerId: state.priorityPlayer,
     phase: state.phase,
@@ -254,6 +289,9 @@ function project(state, viewer) {
       kind: entry.kind,
       stage: entry.stage,
       targets: structuredClone(entry.targets ?? []),
+      /* WHAT IT IS AIMED AT, named and public (aims.mjs; Linear ROB-327): the board draws source -> target from this, and a target
+         that has left is said to have (`gone`), never named. `aimedModes` on a modal entry with a targeted mode. */
+      ...aimsOf(state, entry),
     })),
     stackSize: state.stack.length,
     gameOver: state.outcomeReported ? {reason: "game over"} : null,

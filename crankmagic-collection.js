@@ -16,6 +16,8 @@ const SHOP_DEFAULTS=['name','color','type','status','price','cap','deck','quanti
    D3, D5, and Bought on it buys for all three. The Collection stays one row per copy lot.
    Both are remembered with the column preferences, as is the page size. */
 let pageSize=60;
+/* Scoped to a deck, the Bench joins its rows only when the reader asks (Rob, 2026-10-18). Remembered for the session. */
+let benchToo=false;
 const foldFor=shop=>shop?(C.state.preferences.shopFold??true):(C.state.preferences.foldPrints??false);
 const R=globalThis.CrankRules||{RULES:{capFloor:2,capPct:.1,localOnly:5,perCardMax:30,deckCap:225,pool:100},capFor:()=>null,localOnly:()=>false,BANDS:[],bandOf:()=>'under1'};
 C.RULES=R.RULES;
@@ -42,13 +44,14 @@ const statusOf=M.statusOf;   // the model's status vocabulary (M.STATUS); the wo
 const SB=globalThis.CrankSandbox||{SOURCE_STATUS:{},describe:m=>`${m.cardName} → ${m.to}`};
 const lens=()=>{const sb=C.sandbox;return sb&&sb.open?sb.preview(C.state):C.state;};
 const staged=rowId=>{const sb=C.sandbox;return sb&&sb.open?sb.pendingFor(rowId):null;};
-function rows(params,shop){const st=lens();let all=M.projection(st);for(const d of st.decks.filter(d=>!d.archived&&(C.showLobbyDecks||!M.isLobbyDeck(d))))all.push(...plans(d));const gid=params.get('group')||filter.group;for(const g of st.groups)all.push(...g.entries.map(r=>({...r,recordId:'entry:'+g.id+':'+r.id,kind:'entry',card:C.card(r.cardId),source:'draft',placement:'Draft list',purpose:'',offer:'none',groupIds:[g.id],deckId:'',groupId:g.id})));if(params.get('card'))all=all.filter(r=>r.cardId===params.get('card'));/* THE BENCH IS NOT A DECK'S TO HIDE (Rob, 14 September): scoping the Cards view to a deck used
-   to empty the Bench, and the question a reader is asking while working on one deck is "what do
-   I already own that could go in it". A Bench row names no deck, so it is kept beside the deck's
-   own rows -- in the table and on the Tabletop's ledge alike. The To buy tab drops them again a
-   line below, because money is not the question there. */
-  if(params.get('deck'))all=all.filter(r=>r.deckId===params.get('deck')||r.standInDeckId===params.get('deck')||(r.kind==='lot'&&r.source==='owned'&&r.placement==='Bench'));if(gid)all=all.filter(r=>r.groupIds.includes(gid));/* The To buy tab holds every To buy record (docs/card-states.md) -- a deck's need and the To Buy list alike -- beside what is ordered. A watched copy is Watching, not To buy, so it stays on the Library tab. */
-  if(shop)all=all.filter(r=>r.kind==='need'||r.kind==='lot'&&r.source==='ordered'||r.kind==='entry'&&r.groupId===M.WANT_LIST);const read=M.stateReader(st);for(const r of all){r.status=statusOf(r);r.state=read(r);r.stateLabel=M.stateLabel(r.state);}
+function rows(params,shop,opts={}){const st=lens();let all=M.projection(st);for(const d of st.decks.filter(d=>!d.archived&&(C.showLobbyDecks||!M.isLobbyDeck(d))))all.push(...plans(d));const gid=params.get('group')||filter.group;for(const g of st.groups)all.push(...g.entries.map(r=>({...r,recordId:'entry:'+g.id+':'+r.id,kind:'entry',card:C.card(r.cardId),source:'draft',placement:'Draft list',purpose:'',offer:'none',groupIds:[g.id],deckId:'',groupId:g.id})));if(params.get('card'))all=all.filter(r=>r.cardId===params.get('card'));/* A DECK'S VIEW IS ITS GROUP (Rob, 2026-10-18, replacing his 14 September call). Scoped to a deck, the Library lists
+     exactly what The 100 lists: every record read from that deck's side whose deck is that deck -- its Final cards and
+     Substitutes in the box, what is Loading, its Reserved cards (to buy, ordered, or in another deck's box) and its
+     Upgrades. The Bench joins them only when asked ("Show Bench cards that could go in"), and always on the Table
+     view, whose ledge is where a card is pulled from. */
+  const scope=params.get('deck')||'',readAll=M.stateReader(st,scope);
+  if(scope)all=all.filter(r=>(STATE_KINDS.includes(r.kind)?readAll(r).deckId===scope:r.deckId===scope)||((opts.bench||benchToo)&&r.kind==='lot'&&STATE_KINDS.includes(r.kind)&&readAll(r).use==='bench'));if(gid)all=all.filter(r=>r.groupIds.includes(gid));/* The To buy tab holds every To buy record (docs/card-states.md) -- a deck's need and the To Buy list alike -- beside what is ordered. A watched copy is Watching, not To buy, so it stays on the Library tab. */
+  if(shop)all=all.filter(r=>r.kind==='need'||r.kind==='lot'&&r.source==='ordered'||r.kind==='entry'&&r.groupId===M.WANT_LIST);for(const r of all){r.status=statusOf(r);if(STATE_KINDS.includes(r.kind)){r.state=readAll(r);r.stateLabel=M.stateLabel(r.state);}}
   /* A row already reads as the sitting would leave it -- it came from the pending library. The
      mark is so a reader can tell which of those readings is theirs and not yet saved. */
   const sb=C.sandbox;if(sb&&sb.open){const touched=sb.cards;for(const r of all)if(touched.has(r.cardId))r.pending=true;}
@@ -80,7 +83,9 @@ function printsOf(r){
   return [...out.values()].sort((a,b)=>(b.value??-1)-(a.value??-1));
 }
 const dearestOf=r=>{const ps=printsOf(r),vs=ps.map(p=>p.value).filter(Number.isFinite);return ps.length>1&&vs.length?Math.max(...vs):null;};
-function value(r,key){const c=r.card;return ({name:c.name,type:c.typeLine.split('—')[0].trim(),subtype:c.typeLine.split('—')[1]?.trim()||'',mechanic:(c.mechanics.length?c.mechanics:c.keywords).join(', '),color:c.colorIdentity.join(''),rarity:({common:'Common',uncommon:'Uncommon',rare:'Rare',mythic:'Mythic',special:'Special',bonus:'Bonus',c:'Common',u:'Uncommon',r:'Rare',m:'Mythic',s:'Special',b:'Bonus'})[String(c.rarity||'').toLowerCase()]||'',mana:c.manaValue,price:dearestOf(r)??c.price,cap:R.capFor(c.price),vendor:r.kind==='lot'?(r.order&&r.order.vendor||r.vendor||''):'',paid:r.kind==='lot'&&Number.isFinite(r.paid)?r.paid:null,source:C.source(r.source),placement:r.placement,status:r.stateLabel||r.status||statusOf(r),ownership:(()=>{const o=ownPair(r);return `${o.owned}/${o.wanted}`;})(),deck:r.deckId?M.deck(C.state,r.deckId).name:(r.standIn&&r.standInDeckId?M.deck(C.state,r.standInDeckId).name+' · substitute'+(r.standInForCardId?` for ${(C.card(r.standInForCardId)||{}).name||''}`:''):''),box:r.kind==='lot'?C.readableLocation(r):'',purpose:r.purpose==='main'?'Main deck':r.purpose==='bracket'?'Bracket option':r.purpose==='upgrade'?'Upgrade':'',quantity:r.quantity,groups:r.groupIds.map(id=>C.state.groups.find(g=>g.id===id)?.name||'').join(', '),printing:[r.printing?.set,r.printing?.collector,r.printing?.finish,r.printing?.language,r.printing?.condition].filter(Boolean).join(' · ')||'Unspecified',offer:r.offer==='none'?'':r.offer==='held'?'Pending deal':'Sell / Trade'})[key];}
+/* REC-5 (2026-10-23): the Library scoped to a deck can sort by the deck's recommendations (deck-recommend.js), best first. */
+let recScores=null;
+function value(r,key){const c=r.card;if(key==='recommended')return -(recScores?.get(c.name)||0);return ({name:c.name,type:c.typeLine.split('—')[0].trim(),subtype:c.typeLine.split('—')[1]?.trim()||'',mechanic:(c.mechanics.length?c.mechanics:c.keywords).join(', '),color:c.colorIdentity.join(''),rarity:({common:'Common',uncommon:'Uncommon',rare:'Rare',mythic:'Mythic',special:'Special',bonus:'Bonus',c:'Common',u:'Uncommon',r:'Rare',m:'Mythic',s:'Special',b:'Bonus'})[String(c.rarity||'').toLowerCase()]||'',mana:c.manaValue,price:dearestOf(r)??c.price,cap:R.capFor(c.price),vendor:r.kind==='lot'?(r.order&&r.order.vendor||r.vendor||''):'',paid:r.kind==='lot'&&Number.isFinite(r.paid)?r.paid:null,source:C.source(r.source),placement:r.placement,status:r.stateLabel||r.status||statusOf(r),ownership:(()=>{const o=ownPair(r);return `${o.owned}/${o.wanted}`;})(),deck:(()=>{/* The deck the row's status is for (docs/card-states.md): where a Final card or a Substitute sits, what a Reserved card or an Upgrade is for. */const st=r.state,id=st&&st.use?st.deckId:r.deckId,d=id&&C.state.decks.find(x=>x.id===id);return d?d.name:'';})(),box:r.kind==='lot'?C.readableLocation(r):'',purpose:r.purpose==='main'?'Main deck':r.purpose==='bracket'?'Bracket option':r.purpose==='upgrade'?'Upgrade':'',quantity:r.quantity,groups:r.groupIds.map(id=>C.state.groups.find(g=>g.id===id)?.name||'').join(', '),printing:[r.printing?.set,r.printing?.collector,r.printing?.finish,r.printing?.language,r.printing?.condition].filter(Boolean).join(' · ')||'Unspecified',offer:r.offer==='none'?'':r.offer==='held'?'Pending deal':'Sell / Trade'})[key];}
 /* GROUPING IS NOT THE SAME QUESTION AS SORTING. The Color column prints a card's identity
    letters, which as a grouping would make a heading per color pair and answer nothing:
    a reader grouping by color wants their mono-white cards together and everything gold
@@ -100,35 +105,27 @@ const groupOrder=(r,key)=>G.order(r,key,value,statusRank);
    replace a card in a box, and reserved, which fill an empty seat. What a card counts is what its click shows
    (Rob, 2026-09-25): both ask the model's cardState, so a figure and the rows under it cannot disagree. */
 const STATE_KINDS=['lot','need','draft','option','entry'];
-const stateOfRow=r=>r.state||(STATE_KINDS.includes(r.kind)?M.cardState(r):{stage:'',deckId:'',role:'',inBox:false});
-const owned=(r,f)=>{const st=stateOfRow(r);return st.stage==='owned'&&f(st);};
-/* The Table view's status piles, in the order a deck is finished: what is in a deck, what waits to go in, then the
-   Bench, then what is not held yet. */
-const TABLE_PILES=[['target','Target'],['toadd','To add'],['substitute','Substitute'],['bench','Bench'],['ordered','Ordered'],['buy','To buy'],['watching','Watching']].map(([id,label],order)=>({id,label,tone:M.stateTone(label),order}));
-const tablePile=r=>STATE_KINDS.includes(r.kind)?M.stateLabel(stateOfRow(r)):r.status;
+const stateOfRow=r=>r.state||(STATE_KINDS.includes(r.kind)?M.cardState(r):{use:'',ownership:'',play:'',deckId:'',inBox:false});
+/* The Table view's piles are places (the model's placeLabel), in the order a deck is finished: in a deck's box, on
+   its way in, then the Bench, then what is not held yet. */
+const TABLE_PILES=[['final','Final'],['reserved','Reserved'],['substitute','Substitute'],['bench','Bench'],['ordered','To Buy · Ordered'],['buy','To buy'],['watch','Watch']].map(([id,label],order)=>({id,label,tone:M.stateTone(label),order}));
+const tablePile=r=>STATE_KINDS.includes(r.kind)?M.placeLabel(stateOfRow(r)):r.status;
+/* EIGHT CARDS, EVERY RECORD IN ONE (Rob, 2026-10-18). The top row is the four uses a card has for a deck -- Final and
+   Substitute in its box, Reserved and Upgrade on their way or under consideration -- and the row under it is the rest:
+   Loading (owned, the deck's own card, not put in yet), the Bench, what is offered, and what is for no deck and not
+   owned. So the eight add up to every copy shown, and scoped to a deck that sum is its Group total; the caption says
+   the Deck total, which only Final and Substitute make. */
+const use=r=>stateOfRow(r).use;
 const KPI_TEST={
-  watching:r=>stateOfRow(r).stage==='watching',
-  buy:r=>stateOfRow(r).stage==='buy',
-  ordered:r=>stateOfRow(r).stage==='ordered',
-  owned:r=>owned(r,()=>true),
-  bench:r=>owned(r,st=>!st.deckId),
-  toadd:r=>owned(r,st=>!!st.deckId&&!st.inBox),
-  target:r=>owned(r,st=>st.inBox&&st.role==='target'),
-  substitute:r=>owned(r,st=>st.role==='substitute')};
-const STAT_FIGURES=[['watching','Watching','considering'],['buy','To buy','missing'],['ordered','Ordered','coming'],['owned','Owned','have'],['bench','Bench','bench'],['toadd','To add','plan'],['target','Target','physical'],['substitute','Substitute','subs']];
-function statsHTML(shown,scoped){
-  const t=Object.fromEntries(STAT_FIGURES.map(([k])=>[k,0]));let upgrades=0,reserved=0,offered=0;
-  for(const r of shown){
-    for(const k in KPI_TEST)if(KPI_TEST[k](r))t[k]+=r.quantity;
-    const st=stateOfRow(r);
-    if(st.stage==='buy'&&st.role==='upgrade')upgrades+=r.quantity;
-    if(st.stage==='buy'&&st.role==='reserved')reserved+=r.quantity;
-    if(owned(r,x=>!!x.trade))offered+=r.quantity;
-  }
-  const n=v=>v.toLocaleString('en-US');
-  /* The figures as two rows of chips that filter the page: a click keeps the rows that card counts, a second click lets them all back. */
-  return `<div class="cm-kpis" role="group" aria-label="Counts, click to filter">${STAT_FIGURES.map(([k,l,g])=>{const on=filter.kpi===k;return `<button type="button" class="cm-kpi cm-stat-${g}${on?' is-on':''}" data-action="kpi-status" data-kpi="${k}" aria-pressed="${on}" title="${on?'Show every state':`Show only ${l}`}"><strong>${n(t[k])}</strong><span><i class="cm-kpi-dot" aria-hidden="true"></i>${l}</span></button>`;}).join('')}<p class="cm-kpi-caption">${scoped?'Counting the rows this view shows. ':''}Owned = Bench + To add + Target + Substitute · To buy: ${n(upgrades)} upgrade${upgrades===1?'':'s'}, ${n(reserved)} reserved${offered?` · ${n(offered)} for trade`:''}</p></div>`;
-}
+  final:r=>use(r)==='final'&&stateOfRow(r).inBox,
+  substitute:r=>use(r)==='substitute',
+  reserved:r=>use(r)==='reserved',
+  upgrade:r=>use(r)==='upgrade',
+  loading:r=>use(r)==='final'&&!stateOfRow(r).inBox,
+  bench:r=>use(r)==='bench',
+  offer:r=>use(r)==='sell'||use(r)==='trade',
+  unowned:r=>use(r)==='unowned'};
+const STAT_FIGURES=[['final','Final','physical'],['substitute','Substitute','subs'],['reserved','Reserved','missing'],['upgrade','Upgrade','considering'],['loading','Loading','plan'],['bench','Bench','bench'],['offer','Sell / Trade','have'],['unowned','Unowned','coming']];
 /* TICKING ROWS. Not a mode with a button to enter and leave -- the checkboxes are simply
    in the table, and the bar saying what you can do to them appears once one is ticked.
    A copy record can be ticked, and so can a draft-list row or a To buy requirement -- those
@@ -144,15 +141,10 @@ function pickedSplit(){const lots=[],byDeck=new Map();for(const id of picked){if
 /* THE STATUS LADDER. Watched, Ordered and Owned -- the rungs a card climbs
    before it is in hand, in order, each with the half-line that tells them apart. One list,
    used by the row menu, the ticked-rows bar and the deck page, so the words never drift. */
-const LADDER=[['watching','Watched','considering it'],['ordered','Ordered','bought or trade arranged, not yet in hand'],['owned','Owned','in hand — on the Bench until placed']];
+const LADDER=[['watching','Watch','considering it'],['ordered','To Buy · Ordered','bought or trade arranged, not yet in hand'],['owned','Own','in hand — on the Bench until placed']];
 const rung=(label,why,attrs,current=false)=>`<button type="button" class="cm-rung${current?' is-current':''}" aria-label="${e(label)}" data-label="${e(label)}" ${attrs}><span class="cm-rung-label">${e(label)}</span><small>${e(why)}</small></button>`;
 C.statusLadder=LADDER;
-function batchBar(shop){
-  const n=picked.size;
-  if(!n)return '';
-  return `<div class="cm-batch-bar"><strong>${n} record${n===1?'':'s'} ticked</strong>${b('Set status','batch-status',{},true,{caret:'down'})}${shop?`${b('Ordered…','batch-order')}${b('Bought in store','batch-store')}${b('Arrived','batch-arrived')}`:''}${b('Add / move to group','batch-move')}${b('Release reservation → To buy','batch-release')}${b('Flag ▾','batch-flag')}${b('Offer for Sell / Trade','batch-offer')}<button type="button" class="cm-text-button" data-action="batch-clear">Clear</button></div>`;
-}
-function matches(r,fl=filter){const c=r.card,q=fl.q.toLowerCase();return (!fl.kpi||!!KPI_TEST[fl.kpi]?.(r))&&(!q||[c.name,c.typeLine,c.oracleText,r.notes].join(' ').toLowerCase().includes(q))&&(!fl.type||c.typeLine.split('—')[0].includes(fl.type))&&(!fl.subtype||c.typeLine.toLowerCase().includes(fl.subtype.toLowerCase()))&&(!fl.mechanic||[c.oracleText,...c.mechanics,...c.keywords].join(' ').toLowerCase().includes(fl.mechanic.toLowerCase()))&&(!fl.color||(fl.color==='C'?c.colorIdentity.length===0:c.colorIdentity.includes(fl.color)))&&(!fl.status||(fl.status==='owned'?stateOfRow(r).stage==='owned':fl.status==='upgrade'||fl.status==='reserved'?(st=>!!st.deckId&&!st.inBox&&st.role===fl.status)(stateOfRow(r)):fl.status==='to-add'?owned(r,st=>!!st.deckId&&!st.inBox):r.stateLabel===fl.status||(r.status||statusOf(r))===fl.status))&&(!fl.flag||(fl.flag==='option'?!!r.option:!!r.pinned))&&(!fl.mana||(globalThis.CrankFacets?CrankFacets.manaKinds(r.card):[]).includes(fl.mana))&&(!fl.offer||(fl.offer==='bench'?r.kind==='lot'&&r.source==='owned'&&!r.allocation&&r.location?.kind!=='deck':fl.offer==='held'?r.offer==='held':r.offer==='available'))&&(fl.min===''||c.manaValue!==null&&c.manaValue>=Number(fl.min))&&(fl.max===''||c.manaValue!==null&&c.manaValue<=Number(fl.max))&&(fl.priceMin===''||c.price!==null&&c.price>=Number(fl.priceMin))&&(fl.price===''||c.price!==null&&c.price<=Number(fl.price));}
+function matches(r,fl=filter){const c=r.card,q=fl.q.toLowerCase();return (!fl.kpi||!!KPI_TEST[fl.kpi]?.(r))&&(!q||[c.name,c.typeLine,c.oracleText,r.notes].join(' ').toLowerCase().includes(q))&&(!fl.type||c.typeLine.split('—')[0].includes(fl.type))&&(!fl.subtype||c.typeLine.toLowerCase().includes(fl.subtype.toLowerCase()))&&(!fl.mechanic||[c.oracleText,...c.mechanics,...c.keywords].join(' ').toLowerCase().includes(fl.mechanic.toLowerCase()))&&(!fl.color||(fl.color==='C'?c.colorIdentity.length===0:c.colorIdentity.includes(fl.color)))&&(!fl.status||(fl.status==='owned'?stateOfRow(r).ownership==='own':fl.status==='to-buy'?stateOfRow(r).ownership==='buy':r.stateLabel===fl.status||(r.status||statusOf(r))===fl.status))&&(!fl.flag||(fl.flag==='option'?!!r.option:!!r.pinned))&&(!fl.mana||(globalThis.CrankFacets?CrankFacets.manaKinds(r.card):[]).includes(fl.mana))&&(!fl.offer||(fl.offer==='bench'?r.kind==='lot'&&r.source==='owned'&&!r.allocation&&r.location?.kind!=='deck':fl.offer==='held'?r.offer==='held':r.offer==='available'))&&(fl.min===''||c.manaValue!==null&&c.manaValue>=Number(fl.min))&&(fl.max===''||c.manaValue!==null&&c.manaValue<=Number(fl.max))&&(fl.priceMin===''||c.price!==null&&c.price>=Number(fl.priceMin))&&(fl.price===''||c.price!==null&&c.price<=Number(fl.price));}
 /* SHOPPING A CONVENTION FLOOR. On a phone the Shop page is not a spreadsheet to study; it
    is a list held in one hand at a booth while the seller waits. So under 640px the page
    head, the six-stat ribbon and the Columns control all go, the three page buttons fold
@@ -175,7 +167,7 @@ const RARITY_LETTER={common:'C',uncommon:'U',rare:'R',mythic:'M',special:'S',bon
 const shortType=c=>{const head=(c.typeLine||'').split('—')[0].trim().split(/\s+/).pop()||'';return TYPE_SHORT[head]||head;};
 const shortRarity=c=>{const key=String(c.rarity||'').toLowerCase(),letter=RARITY_LETTER[key]||'';return letter?`<span class="cm-rarity cm-rarity-${letter}" title="${e(key[0].toUpperCase()+key.slice(1))}">${letter}</span>`:'';};
 let searchOpen=false,phoneWatch=false;
-function popAt(el,html){document.querySelectorAll('.cm-row-menu').forEach(m=>m.remove());const menu=document.createElement('div');menu.className='cm-menu cm-row-menu';menu.setAttribute('popover','auto');menu.innerHTML=html;document.body.append(menu);menu.showPopover();const place=()=>{if(!el.isConnected){if(menu.matches(':popover-open'))menu.hidePopover();return;}const rect=el.getBoundingClientRect();if(rect.bottom<0||rect.top>innerHeight){if(menu.matches(':popover-open'))menu.hidePopover();return;}menu.style.left=Math.max(8,Math.min(innerWidth-menu.offsetWidth-8,rect.right-menu.offsetWidth))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-menu.offsetHeight-8,rect.bottom+5))+'px';menu.dispatchEvent(new Event('cm-moved'));};place();C.followAnchor(menu,place);menu.addEventListener('click',ev=>{if(ev.target.closest('[data-action]'))menu.hidePopover();});return menu;}
+function popAt(el,html,{align='right'}={}){document.querySelectorAll('.cm-row-menu').forEach(m=>m.remove());const menu=document.createElement('div');menu.className='cm-menu cm-row-menu';menu.setAttribute('popover','auto');menu.innerHTML=html;document.body.append(menu);menu.showPopover();const place=()=>{if(!el.isConnected){if(menu.matches(':popover-open'))menu.hidePopover();return;}const rect=el.getBoundingClientRect();if(rect.bottom<0||rect.top>innerHeight){if(menu.matches(':popover-open'))menu.hidePopover();return;}menu.style.left=Math.max(8,Math.min(innerWidth-menu.offsetWidth-8,align==='left'?rect.left:rect.right-menu.offsetWidth))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-menu.offsetHeight-8,rect.bottom+5))+'px';menu.dispatchEvent(new Event('cm-moved'));};place();C.followAnchor(menu,place);menu.addEventListener('click',ev=>{if(ev.target.closest('[data-action]'))menu.hidePopover();});return menu;}
 /* THE CARDS PAGE IS ONE PAGE WITH THREE TABS. Collection and Shop were the same table twice,
    with the counts row repeated on the Shop for a subset that read oddly. Library is every
    record; To buy is the same table cut to what money would change, with its strip; Orders is
@@ -202,7 +194,7 @@ function cardsHead(params,tab,view='table',{tight=false}={}){const n=tabCounts()
      tiles cannot disagree. */
   const ownedN=C.state.lots.filter(l=>l.source==='owned').reduce((n,l)=>n+l.quantity,0);
   /* The Bench is the card state's (docs/card-states.md): owned and for no deck, so a substitute standing in a deck's box is not on it. */
-  const benchN=C.state.lots.filter(l=>l.source==='owned'&&!M.cardState({...l,kind:'lot'}).deckId).reduce((n,l)=>n+l.quantity,0);
+  const benchRead=M.stateReader(C.state),benchN=C.state.lots.filter(l=>l.source==='owned'&&benchRead({...l,kind:'lot'}).use==='bench').reduce((n,l)=>n+l.quantity,0);
   const summary='<p class="cm-cards-summary"><b>'+ownedN.toLocaleString('en-US')+' copies</b> you own'+(benchN?', <b>'+benchN.toLocaleString('en-US')+'</b> of them on the Bench, for no deck':'')+'.</p>';
   return (tight?'':C.pageHead('Library',b('Import list','import-list',{},false,{cls:'compact'})+third+b('More','roster-more',{tab,view,group},false,{caret:'down',cls:'compact'})+b('Add cards','add-card',{},true,{cls:'compact'}),'cards',summary))+tabs+sittingBar();}
 /* THE SITTING, IN ONE BAR IN ONE PLACE (plan §2.6). It is rendered from cardsHead, so List, To
@@ -232,9 +224,87 @@ actions['sitting-confirm']=()=>{const sb=C.sandbox;if(!sb||!sb.open)return;
   C.review(`Confirm ${kept.length} move${kept.length===1?'':'s'}`,`<p>Everything you have staged, written as one change. <b>Undo takes all of it back together.</b></p>${list}${stale}`,
     commands.length===1?commands[0]:{type:'batch',commands,summary},{after:async()=>{sb.discard();await C.render();}});
   const dlg=$('#cm-dialog');if(dlg){sb.hold();dlg.addEventListener('close',()=>sb.release(),{once:true});}};
+/* THE BAND (ROB-358; Rob, 2026-11-01: "no more than a total of 10 clickable items above the red line"). Everything that
+   sat above the table -- the title, the buttons, the tabs, the eight count cards, the scope chips, the toolbar and the
+   ticked-rows bar -- is two rows. The tabs are the title. The Group menu carries the counts, and they select. A tick turns
+   the second row into the action row, so the band is ten clickables at rest and ten with cards ticked, and the page
+   budget holds it there. The paging moved to the foot of the list. */
+const BAND_CHIPS=[['all','All'],['boxed','Boxed'],['reservedAll','Reserved'],['upgrade','Upgrade'],['bench','Bench'],['offer','Sell / Trade'],['watch','Watch'],['buy','To buy'],['ordered','Ordered']];
+const ownershipOf=r=>stateOfRow(r).ownership;
+/* The chips are a partition of the rows, so they add up to All. A card assigned to a deck and not yet in its box is
+   Reserved whether or not it is in hand (Rob, 2026-11-01: "Call it Reserved"); the Unowned are split by where they are. */
+Object.assign(KPI_TEST,{
+  boxed:r=>stateOfRow(r).inBox,
+  reservedAll:r=>{const s=stateOfRow(r);return !s.inBox&&(s.use==='final'||s.use==='substitute'||s.use==='reserved');},
+  watch:r=>use(r)==='unowned'&&ownershipOf(r)==='watch',
+  buy:r=>use(r)==='unowned'&&ownershipOf(r)==='buy',
+  ordered:r=>use(r)==='unowned'&&ownershipOf(r)==='ordered'});
+let bandBase=[],lastBands=[];
+const num=v=>Number(v).toLocaleString('en-US');
+function bandCounts(list){const t=Object.fromEntries(BAND_CHIPS.map(([k])=>[k,0]));for(const r of list){t.all+=r.quantity;for(const [k] of BAND_CHIPS)if(k!=='all'&&KPI_TEST[k](r))t[k]+=r.quantity;}return t;}
+/* The group the page is looking at: the address's group, or the group of the deck it is scoped to. */
+function bandGroup(params){const d=params.get('deck')&&C.state.decks.find(x=>x.id===params.get('deck')),id=params.get('group')||(d&&d.groupId)||filter.group||'';return id?C.state.groups.find(g=>g.id===id)||null:null;}
+function bandRow1(params,tab,{search=true}={}){
+  const n=tabCounts();
+  return `<div class="cm-band-row cm-band-top"><h1 class="cm-sr-only">Library</h1><div class="cm-tabs cm-cards-tabs cm-band-tabs" role="tablist" aria-label="Library">${TABS.map(([id,label])=>`<button type="button" role="tab" aria-selected="${id===tab}" data-action="cards-tab" data-tab="${id}">${label} <small>${num(n[id])}</small></button>`).join('')}</div>`
+   +(search?`<label class="cm-search cm-band-search"><span class="cm-sr-only">Search cards</span><input id="cm-roster-query" type="search" value="${e(filter.q)}" placeholder="Search cards" autocomplete="off"></label>`:'<span class="cm-band-gap"></span>')
+   +`${b('Add cards','add-card',{},true,{cls:'compact'})}<button type="button" class="v-button compact cm-band-more" data-action="band-more" data-tab="${tab}" data-group="${e(params.get('group')||'')}" aria-haspopup="menu" aria-label="More" title="More">⋯</button></div>`;
+}
+/* The second row at rest: where you are (with its counts, drawn), the filters, the view, and the way back. */
+function bandRest(params,tab,base){
+  const g=bandGroup(params),t=bandCounts(base),total=Math.max(1,t.all),parts=[['boxed',t.boxed],['reservedAll',t.reservedAll],['upgrade',t.upgrade]].filter(([,v])=>v);
+  const tip=BAND_CHIPS.filter(([k])=>k!=='all'&&t[k]).map(([k,l])=>`${num(t[k])} ${l}`).join(' · ');
+  const fl=activeFilters().length;
+  return `<button type="button" class="v-button compact cm-band-group" data-action="group-menu" aria-haspopup="menu" title="${e(tip||'No records')}"><span class="cm-band-group-name">${e(g?C.groupLabel(g):'All groups')}</span>`
+    +`<span class="cm-band-bar" aria-hidden="true">${parts.map(([k,v])=>`<i class="cm-dot-${k}" style="width:${Math.max(2,Math.round(v/total*1000)/10)}%"></i>`).join('')}</span>`
+    +`<span class="cm-band-nums">${parts.map(([k,v])=>`<i class="cm-dot cm-dot-${k}" aria-hidden="true"></i>${num(v)}`).join(' ')||num(t.all)}</span>${C.caret('down')}<span class="cm-sr-only"> ${e(tip)}</span></button>`
+    +b(fl?`Filters ${fl}`:'Filters','roster-filters',{},false,{cls:'compact'})
+    +b('List','view-menu',{tab,view:'table'},false,{caret:'down',cls:'compact'})
+    +`<span class="cm-band-gap"></span><button type="button" class="v-button compact cm-band-play" data-action="open-tabletop" aria-label="Back to Play Space"><span class="cm-band-lbl">Back to Play Space</span><span class="cm-band-ico" aria-hidden="true">←</span></button>`;
+}
+/* The second row with cards ticked: what you can do to them. Ordered, Bought in store and Arrived are Set status now. */
+function bandTicked(shop){const n=picked.size;
+  return `<button type="button" class="v-button compact cm-band-clear" data-action="batch-clear" aria-label="Clear the ${n} ticked record${n===1?'':'s'}"><span><span aria-hidden="true">✕</span> <b>${num(n)}</b> ticked</span></button>`
+    +b('Set status','batch-status',{},true,{caret:'down',cls:'compact'})+b('Move to group','batch-move',{},false,{cls:'compact'})
+    +`<button type="button" class="v-button compact cm-band-more" data-action="batch-more" data-shop="${shop?1:0}" aria-haspopup="menu" aria-label="More for the ticked records" title="More">⋯</button>`;
+}
+
+actions['band-more']=el=>{const {tab,group}=el.dataset;
+  popAt(el,`${b('Import a list or library','import-list')}${b('New group…','new-group')}<hr>${moreItems({tab,view:'table',group})}<hr>${b('Send this library to email…','share-export')}${b('Load an emailed backup…','restore')}${tab==='buy'?b('Print buy list','print-buy-list'):''}<hr>${b('Clear filters','clear-filters')}${b('How the Library works','page-help',{help:'cards'})}${b('Send feedback','send-feedback')}`);};
+actions['batch-more']=el=>{if(!picked.size)throw Error('Tick at least one row first.');const shop=el.dataset.shop==='1';
+  popAt(el,`${b('Release reservation → To buy','batch-release')}${b('Offer for Sell / Trade','batch-offer')}<hr><p>Flags</p>${b('Flag as option (first to swap out)','batch-flag-set',{flag:'option'})}${b('Clear option flag','batch-flag-set',{flag:'clear'})}${b('Pin (keep)','batch-flag-set',{flag:'pin'})}${b('Unpin','batch-flag-set',{flag:'unpin'})}${shop?`<hr><p>Bought</p>${b('Ordered…','batch-order')}${b('Bought in store','batch-store')}${b('Arrived','batch-arrived')}`:''}`);};
+/* THE GROUP MENU (Rob, 2026-11-01: "wouldn't that give a dropdown to select one of those three"): the groups, then the
+   counts of the picked group as chips that select. A group is a flat list of cards in any state; a deck's reads
+   "86 of 100 boxed", the rest say how many cards they hold. */
+function groupMeta(g){const d=C.state.decks.find(x=>x.groupId===g.id&&!x.archived);if(d){const st=M.deckStatus(C.state,d);return `${num(st.deckTotal)} of ${num(st.size)} boxed`;}
+  const read=M.stateReader(C.state);
+  if(g.template==='bench')return num(C.state.lots.filter(l=>l.source==='owned'&&read({...l,kind:'lot'}).use==='bench').reduce((n2,l)=>n2+l.quantity,0));
+  return num(C.state.lots.filter(l=>(l.groupIds||[]).includes(g.id)).reduce((n2,l)=>n2+l.quantity,0)+(g.entries||[]).reduce((n2,r)=>n2+(r.quantity||1),0));}
+actions['group-menu']=el=>{const params=C.route().params,cur=bandGroup(params),t=bandCounts(bandBase);
+  /* A deck's own arithmetic (Rob, 2026-10-18): the Deck total is Final and Substitute, and the Group total is every record the deck's view lists. */
+  const deckId=params.get('deck'),ds=deckId&&C.state.decks.some(x=>x.id===deckId)?M.deckStatus(C.state,M.deck(C.state,deckId)):null,eq=ds?`<p class="cm-band-eq">Deck total ${num(ds.deckTotal)} = Final ${num(ds.final)} + Substitute ${num(ds.substitute)} · Group total ${num(ds.groupTotal)}</p>`:'';
+  const rowsHTML=moveChoices().filter(([id])=>id!=='__new').map(([id,label])=>{const g=C.state.groups.find(x=>x.id===id);return `<button type="button" class="cm-menu-row${cur&&cur.id===id?' is-current':''}" data-action="band-group" data-group="${e(id)}"${cur&&cur.id===id?' aria-current="true"':''}><span>${e(label)}</span><small>${groupMeta(g)}</small></button>`;}).join('');
+  const chips=BAND_CHIPS.filter(([k])=>k==='all'||t[k]).map(([k,l])=>`<button type="button" class="cm-chip-toggle cm-show-chip" data-action="band-show" data-show="${k}" aria-pressed="${k==='all'?!filter.kpi:filter.kpi===k}">${k==='all'?'':`<i class="cm-dot cm-dot-${k}" aria-hidden="true"></i>`}${l} <b>${num(t[k])}</b></button>`).join('');
+  popAt(el,`<button type="button" class="cm-menu-row${cur?'':' is-current'}" data-action="band-group" data-group=""><span>All groups</span></button><hr>${rowsHTML}<hr>${b('New group…','new-group')}<hr><p>Show, in ${e(cur?cur.name:'every group')}</p><div class="cm-show-chips">${chips}${params.get('deck')?`<button type="button" class="cm-chip-toggle cm-show-chip" data-action="band-bench" aria-pressed="${benchToo}" title="Owned copies on the Bench, for no deck, listed beside this deck's cards">+ Bench cards that could go in</button>`:''}</div>${eq}`,{align:'left'});};
+actions['band-bench']=()=>{benchToo=!benchToo;page=0;C.render();};
+actions['band-group']=el=>{const id=el.dataset.group,r=C.route(),extra=Object.fromEntries(r.params),tab=extra.tab||'library';delete extra.tab;delete extra.deck;delete extra.group;filter.group='';filter.kpi='';
+  if(id){const g=C.state.groups.find(x=>x.id===id),d=g&&C.state.decks.find(x=>x.groupId===g.id&&!x.archived);if(d)extra.deck=d.id;extra.group=id;filter.group=id;}
+  page=0;goCards(tab,extra);};
+actions['band-show']=el=>{const k=el.dataset.show;filter.kpi=k==='all'||filter.kpi===k?'':k;page=0;C.render();};
+/* THE VIEW MENU: what used to be the view switch, Columns, Group rows by and Sort by recommendation. */
+actions['view-menu']=el=>{const {tab}=el.dataset,view=el.dataset.view||'table',params=C.route().params,by=tab==='buy'?shopGroupBy:groupBy,deck=params.get('deck')||'';
+  popAt(el,`<p>View</p>${viewSwitch(view,tab)}${view!=='table'?'':`<hr><p>Arrange rows by</p>${GROUP_CHOICES.map(([v,l])=>`<button type="button" class="cm-menu-row${by===v?' is-current':''}" data-action="band-arrange" data-by="${e(v)}" data-tab="${tab}"><span>${e(l)}</span></button>`).join('')}${lastBands.length?`<hr>${b(lastBands.every(l=>collapsed.has(l))?'Expand all groups':'Collapse all groups','groups-fold')}`:''}<hr>${b('Columns…','roster-columns')}${deck&&globalThis.CrankRecommend?b('Sort by recommendation','roster-recommend',{deck}):''}`}`);};
+actions['band-arrange']=el=>{if(el.dataset.tab==='buy')shopGroupBy=el.dataset.by;else groupBy=el.dataset.by;page=0;C.render();};
+actions['groups-fold']=()=>{if(lastBands.every(l=>collapsed.has(l)))collapsed.clear();else for(const l of lastBands)collapsed.add(l);C.render();};
+/* The roster page, as the band lays it out. A card scope (from a card's "see it in the Library") is the one chip left under the band. */
+const bandPage=(params,tab,shop)=>`<div class="cm-band">${bandRow1(params,tab)}<div class="cm-band-row cm-band-bottom" id="cm-band-row2"></div></div>${sittingBar()}`
+  +(params.get('card')?`<div class="cm-actions"><span class="cm-chip cm-scope-chip">Card: ${e((C.card(params.get('card'))||C.catalog.get(params.get('card')))?.name||'Card')}<button type="button" class="cm-chip-x" data-action="clear-scope" data-key="card" aria-label="Remove the Card filter" title="Remove this filter">×</button></span></div>`:'')
+  +`<div id="cm-filter-chips"></div>${shop?'<div id="cm-shop-strip"></div>':''}<div id="cm-roster-table"></div>`;
 C.cardsHead=cardsHead;
 C.SUBNAV.cards=()=>{const n=tabCounts(),r=C.route(),tab=r.view==='cards'?(r.params.get('tab')||'library'):tabOf(),sheet=r.view==='cards'&&r.params.get('view')==='sheet';
-  return [{label:'Library',hash:'#cards',count:n.library,current:tab==='library'&&!sheet},{label:'To buy',hash:'#cards?tab=buy',count:n.buy,current:tab==='buy'},{label:'Orders',hash:'#cards?tab=orders',count:n.orders,current:tab==='orders'},{label:'Sheet',hash:'#cards?view=sheet',current:sheet},{label:'Upload cards',hash:'#cards',action:'import-list'}];};
+  return [{label:'Library',hash:'#cards',count:n.library,current:tab==='library'&&!sheet},{label:'To buy',hash:'#cards?tab=buy',count:n.buy,current:tab==='buy'},{label:'Orders',hash:'#cards?tab=orders',count:n.orders,current:tab==='orders'},{label:'Sheet',hash:'#cards?view=sheet',current:sheet},{label:'Upload cards',hash:'#cards',action:'import-list'},
+    /* SHARED LIBRARIES live under Library (the Decks requirements' Q9): the Decks nav's Shared is decks only. */
+    ...(C.sharingAvailable?.()?[{label:'Shared Libraries',hash:'#shared?kind=library',current:r.view==='shared'&&r.params.get('kind')==='library'}]:[])];};
 /* UPLOAD CARDS (Rob, 2026-09-28): every card you have, straight into the library, without going through a deck.
    It is the same reviewed import as everywhere else, reached from the Library's own menu. */
 /* Library and To buy each have a List and a Table; the Sheet reads the library only; Orders has its list. */
@@ -254,8 +324,9 @@ actions['kpi-status']=el=>{const k=el.dataset.kpi;if(!KPI_TEST[k])return;filter.
 actions['clear-scope']=el=>{const r=C.route(),extra=Object.fromEntries(r.params),tab=extra.tab||'library';delete extra.tab;delete extra[el.dataset.key];if(el.dataset.key==='group')filter.group='';goCards(tab,extra);};
 /* Publish your To Trade list lives here now, beside the other ways a list leaves the Library, rather
    than in the Menu (r3, INTAKE §4.7). */
-actions['roster-more']=el=>{const {tab,view,group}=el.dataset,finals=C.state.decks.filter(d=>!d.archived&&d.status==='final');
-  popAt(el,`${view==='sheet'?b('Export CSV','sheet-csv'):tab==='orders'?'':b('Export view','export-view')}${b('Publish your To Trade list','share-trade')}${b('Share Library','share-library')}${group?`<hr>${b('Manage group','manage-group',{group})}${b('Add planned card','add-group-entry',{group})}${b('Edit planned list','edit-group-entries',{group})}`:''}${finals.length?`<hr><p>Ready to add for</p>${finals.map(d=>{const r=M.readiness(C.state,d),k=r.pullFromBench+r.pullFromOtherBox+r.remove;return b(`${d.name}${k?` · ${k}`:''}`,'deck-pull',{deck:d.id});}).join('')}<hr><p>Make the change for</p>${finals.map(d=>{const p=C.changePlan?C.changePlan(d):null,k=p?p.rows.filter(r=>r.available).length:0;return `<button type="button" class="v-button" data-action="deck-change" data-deck="${e(d.id)}" aria-label="Make the change for ${e(d.name)}">${e(d.name)}${k?` · ${k}`:''}</button>`;}).join('')}`:''}`);};
+const moreItems=({tab,view,group})=>{const finals=C.state.decks.filter(d=>!d.archived&&d.status==='final');
+  return `${view==='sheet'?b('Export CSV','sheet-csv'):tab==='orders'?'':b('Export view','export-view')}${b('Publish your To Trade list','share-trade')}${b('Share Library','share-library')}${group?`<hr>${b('Manage group','manage-group',{group})}${b('Add planned card','add-group-entry',{group})}${b('Edit planned list','edit-group-entries',{group})}`:''}${finals.length?`<hr><p>Planned Changes for</p>${finals.map(d=>{const r=M.readiness(C.state,d),k=r.pullFromBench+r.pullFromOtherBox+r.remove;return b(`${d.name}${k?` · ${k}`:''}`,'deck-pull',{deck:d.id});}).join('')}<hr><p>Make the change for</p>${finals.map(d=>{const p=C.changePlan?C.changePlan(d):null,k=p?p.rows.filter(r=>r.available).length:0;return `<button type="button" class="v-button" data-action="deck-change" data-deck="${e(d.id)}" aria-label="Make the change for ${e(d.name)}">${e(d.name)}${k?` · ${k}`:''}</button>`;}).join('')}`:''}`;};
+actions['roster-more']=el=>popAt(el,moreItems(el.dataset));
 /* THE PAGE HELP IS A REFERENCE, NOT AN ESSAY (Rob, 14 September). It was five prose paragraphs
    that asked a reader to hold eleven definitions in their head at once. Subheads and bullets
    now, and one drawing of the progression: a plan on the left, the deck's list, the claim that
@@ -284,7 +355,7 @@ const fNode=(x,y,name,gloss,id)=>`<g><rect x="${x}" y="${y}" width="${NW}" heigh
 const fEdge=(d,head=true)=>`<path d="${d}" fill="none" stroke="#7d93b2" stroke-width="1.6" stroke-linejoin="round"${head?' marker-end="url(#cm-flow-head)"':''}></path>`;
 const fLabel=(x,y,text,anchor='middle')=>`<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#9db4d0" font-size="10.5">${e(text)}</text>`;
 const fDot=(x,y)=>`<circle cx="${x}" cy="${y}" r="4.5" fill="#7d93b2"></circle>`;
-const helpFlow=()=>`<figure class="cm-flow"><div class="cm-flow-scroll"><svg viewBox="0 0 1000 386" role="img" aria-label="Watched, Suggestion and Planned join a deck's draft list. Finalizing the deck turns every line of that list into a Reserved seat, and Reserved splits three ways: a copy you own is sleeved into the physical deck, a copy is on order, or the card is still to buy. To buy becomes Ordered once bought, and an order that arrives lands on the Bench. The Bench is where a reserved copy is taken from, and where a card leaving a box returns to; a Substitute sits in the box holding a seat until the real card lands."><defs><marker id="cm-flow-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7d93b2"></path></marker></defs>`
+const helpFlow=()=>`<figure class="cm-flow"><div class="cm-flow-scroll"><svg viewBox="0 0 1000 386" role="img" aria-label="Watched, Suggestion and Planned join a deck's draft list. Locking the deck’s list turns every line of that list into a Reserved seat, and Reserved splits three ways: a copy you own is sleeved into the physical deck, a copy is on order, or the card is still to buy. To buy becomes Ordered once bought, and an order that arrives lands on the Bench. The Bench is where a reserved copy is taken from, and where a card leaving a box returns to; a Substitute sits in the box holding a seat until the real card lands."><defs><marker id="cm-flow-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7d93b2"></path></marker></defs>`
   +`<rect x="798" y="84" width="170" height="182" rx="14" fill="none" stroke="#55677f" stroke-width="1.4" stroke-dasharray="5 5"></rect>${fLabel(810,104,'THE DECK\u2019S BOX','start')}`
   +fNode(16,38,'Watched','considering it for a deck','watched')
   +fNode(16,118,'Suggestion','an option or an upgrade','suggestion')
@@ -292,7 +363,7 @@ const helpFlow=()=>`<figure class="cm-flow"><div class="cm-flow-scroll"><svg vie
   +fNode(220,118,'Draft list','the hundred a deck claims','draft-list')
   +fNode(424,118,'Reserved','a seat with your name on it','reserved')
   +fNode(616,38,'To buy','nothing you hold fills it','to-buy')
-  +fNode(616,190,'Ordered','paid for, not arrived','ordered')
+  +fNode(616,190,'To Buy · Ordered','paid for, not arrived','ordered')
   +fNode(808,118,'Physical deck','sleeved in the box','physical-deck')
   +fNode(808,190,'Substitute','a bench copy holding a seat','substitute')
   +`<rect x="16" y="310" width="952" height="56" rx="12" fill="${tone('bench')}" fill-opacity=".14" stroke="${tone('bench')}" stroke-width="1.5"></rect><text x="38" y="336" fill="#f2f7ff" font-size="13" font-weight="700">Bench</text><text x="38" y="354" fill="#aec3dc" font-size="10">cards you own that no deck has reserved \u2014 every card that leaves an order or a box lands here</text>`
@@ -306,12 +377,12 @@ const helpFlow=()=>`<figure class="cm-flow"><div class="cm-flow-scroll"><svg vie
   +fEdge('M499 308 V168')+fLabel(509,246,'reserve it','start')
   +`<path d="M883 166 V188" fill="none" stroke="#55677f" stroke-width="1.4" stroke-dasharray="4 4"></path>`
   +fEdge('M883 266 V308')+fLabel(875,290,'out of the box','end')
-  +`</svg></div><figcaption>Everything on the left is a plan and reserves nothing. Finalizing a deck turns every line of its list into a Reserved seat, and the split after it is the identity the counts row keeps: <b>Reserved = Owned + Ordered + To buy</b>. Nothing ever leaves the library — a card taken out of a box, an order that arrives, a deck you archive: it all lands on the Bench.</figcaption></figure>`;
+  +`</svg></div><figcaption>Everything on the left is a plan and reserves nothing. Locking a deck’s list turns every line of its list into a Reserved seat, and the split after it is the identity the counts row keeps: <b>Reserved = Owned + Ordered + To buy</b>. Nothing ever leaves the library — a card taken out of a box, an order that arrives, a deck you archive: it all lands on the Bench.</figcaption></figure>`;
 C.HELP.cards={title:'Library',body:()=>`<div class="cm-help cm-help-wide">`
   +`<p class="cm-help-lede">One table of every record you hold: a copy you own, a copy on order, a seat a deck still needs, a card you are only thinking about. The four tabs cut that table four ways, and the <b>Status</b> column says which of those a row is — in the same color wherever it appears.</p>`
   +`<h3>The four tabs</h3><ul>`
   +`<li><b>Library</b> — every record, one row per copy lot or requirement, with its status, deck, print and physical location. Click a row for the card; the verb beside it is the one its status calls for, and <b>⋯</b> is everything else.</li>`
-  +`<li><b>To buy</b> — the same table cut to what your finalized decks still need, priced, with the cap the rules allow. <b>Bought</b> and <b>Arrived</b> are one tap on the row; the strip above says what finishing costs.</li>`
+  +`<li><b>To buy</b> — the same table cut to what your locked decks still need, priced, with the cap the rules allow. <b>Bought</b> and <b>Arrived</b> are one tap on the row; the strip above says what finishing costs.</li>`
   +`<li><b>Orders</b> — one row per order: what was paid and what has landed, with <b>Arrived → bench</b> and <b>Paste receipt</b>.</li>`
   +`<li><b>Sheet</b> — the Master spreadsheet, read from the library rather than kept beside it. <b>T</b> is what a deck’s list claims, <b>A</b> what is physically in its box; click a number and type.</li>`
   +`</ul><p class="cm-help-aside"><b>List</b>, <b>Table</b> and <b>Sheet</b> beside the tabs are three ways of looking at the same records, never a separate copy of them.</p>`
@@ -326,7 +397,7 @@ C.HELP.cards={title:'Library',body:()=>`<div class="cm-help cm-help-wide">`
   +`<h3>Finding and changing rows</h3><ul>`
   +`<li>Five filters are in view, with search and group beside them. <b>More filters</b> holds subtype, mechanic, flags, offers, mana value and price.</li>`
   +`<li><b>Paid</b> and <b>Quantity</b> are cells: click one and type.</li>`
-  +`<li><b>Ready to add</b>, for walking owned copies into a deck, and <b>Make the change</b>, the pull-and-put list for one physical deck, are both under <b>More</b>.</li>`
+  +`<li><b>Planned Changes</b>, for walking owned copies into a deck, and <b>Make the change</b>, the pull-and-put list for one physical deck, are both under <b>More</b>.</li>`
   +`<li>Every change is one entry in the library, so <b>Undo</b> takes it back and every other view agrees.</li>`
   +`</ul><h3>The Table is a table you play on</h3>`
   +`<p><b>Table</b> lays the same rows out as piles on a mat, and it has two jobs depending on one thing: whether a deck is picked.</p><ul>`
@@ -341,7 +412,7 @@ C.HELP.cards={title:'Library',body:()=>`<div class="cm-help cm-help-wide">`
    where more are reserved than sleeved. Click a number, type, Enter. The library works out
    what has to move and asks first whenever a copy is taken from somewhere: a raised T
    reserves free copies and takes reserved ones from other decks (they stay in their boxes
-   until moved, and those decks' Ready to add lists say so); an A typed to 1 releases the copy from
+   until moved, and those decks' Planned Changes lists say so); an A typed to 1 releases the copy from
    wherever it was, reserves it here and puts it in this box, recording a new owned copy when
    the library holds none. A plain raise of Own or Ordered just saves. The copies rule holds
    throughout: one of a card per deck except basics and the cards whose text allows more.
@@ -561,7 +632,7 @@ function scoreboard(model){
 function tabletop(params,shop=false){
   const TT=globalThis.CrankTabletop,tab=shop?'buy':'library';
   C.main.innerHTML=cardsHead(params,tab,'tabletop')
-   +`<div class="cm-toolbar"><label class="cm-search">Search cards<input id="cm-tt-query" value="${e(filter.q)}" placeholder="Card name, type or rules text"></label>${s('Status','ttStatus',[['','Any status'],['owned','Owned (any)'],...TABLE_PILES.map(x=>[x.label==='To add'?'to-add':x.label,x.label])],filter.status)}${s('Card type','ttType',[['','All types'],'Artifact','Creature','Enchantment','Instant','Land','Planeswalker','Sorcery','Battle'],filter.type)}${s('Color','ttColor',[['','Any color'],['W','White'],['U','Blue'],['B','Black'],['R','Red'],['G','Green'],['C','Colorless']],filter.color)}${s('Deck','ttDeck',[['','Any deck'],...C.state.decks.filter(d=>!d.archived).map(d=>[d.id,d.name])],params.get('deck')||'')}${b('Clear filters','clear-filters')}${b('Back to Play Space','tt-rest')}</div>`
+   +`<div class="cm-toolbar"><label class="cm-search">Search cards<input id="cm-tt-query" value="${e(filter.q)}" placeholder="Card name, type or rules text"></label>${s('Status','ttStatus',[['','Any status'],['owned','Own (any)'],...TABLE_PILES.map(x=>[x.label,x.label])],filter.status)}${s('Card type','ttType',[['','All types'],'Artifact','Creature','Enchantment','Instant','Land','Planeswalker','Sorcery','Battle'],filter.type)}${s('Color','ttColor',[['','Any color'],['W','White'],['U','Blue'],['B','Black'],['R','Red'],['G','Green'],['C','Colorless']],filter.color)}${s('Deck','ttDeck',[['','Any deck'],...C.state.decks.filter(d=>!d.archived).map(d=>[d.id,d.name])],params.get('deck')||'')}${b('Clear filters','clear-filters')}${b('Back to Play Space','tt-rest')}</div>`
    +`<p class="cm-status-line" id="cm-tt-status"></p><div id="cm-tt-host" class="cm-tt-host"></div>`;
   const draw=()=>{
     if(!TT){$('#cm-tt-host').innerHTML='<p class="cm-muted">The tabletop module has not loaded yet.</p>';return;}
@@ -569,8 +640,10 @@ function tabletop(params,shop=false){
        already holds a record of, because a card is never both a copy you have and a card you are
        considering; the copy is the truer row and it is already on the table. */
     /* THE TABLE'S PILES ARE THE CARD STATES (docs/card-states.md, step 2c): one pile per state word, and "To add"
-       for an owned target still outside its box -- the pile Ready to add empties. */
-    const base=rows(params,shop).filter(r=>matches(r)).map(r=>({...r,status:tablePile(r)}));
+       for an owned target still outside its box -- the pile Planned Changes empties. */
+    /* The Table's Status filter names places (its piles), so it is matched on the place word, not the pill. */
+    const place=filter.status&&filter.status!=='owned'?filter.status:'';
+    const base=rows(params,shop,{bench:true}).filter(r=>matches(r,place?{...filter,status:''}:filter)).map(r=>({...r,status:tablePile(r)})).filter(r=>!place||r.status===place);
     const have=new Set(base.map(r=>r.cardId));
     const sent=sentRows().filter(r=>!have.has(r.cardId)&&matches(r));
     const all=base.concat(sent);lastRows=all;
@@ -811,7 +884,7 @@ function tabletopDrop(pileId,ids){
   if(action==='place'||action==='standin'){if(!finals.length)throw Error('Create a deck first: there is no deck to put copies in.');
     const standin=action==='standin',preferred=rows.map(r=>r.allocation?.deckId).find(Boolean)||'';
     const chosen=preferred||(finals[0]||{}).id||'';
-    followDeck(form(standin?'Substitute in a physical deck':'Put these copies in a physical deck',s('Deck','deckId',finals.map(d=>[d.id,d.name]),preferred)+f('Box label (optional)','box')+seatField(chosen)+(standin?'':`<label class="cm-checkbox cm-full"><input type="checkbox" name="asStandIn"> Allow substitutes: a copy this deck's list does not call for goes in unreserved, filling a seat until the real card arrives</label>`)+note(standin?`${names} go in without a reservation; the deck counts them as substitutes and Ready to add asks for them back when the real card is ready.`:`${names}. Records where these copies physically are. Ownership does not change. A copy that is not reserved for this deck is refused by name unless substitutes are allowed; one the list calls for is reserved on the way in.`)+note('Naming the seat is optional and it is what the Change List reads: without it the pairing is worked out from the option slot, the type and the mana value.')+note('Staged, not saved: this joins the sitting and is written when you confirm.'),
+    followDeck(form(standin?'Substitute in a physical deck':'Put these copies in a physical deck',s('Deck','deckId',finals.map(d=>[d.id,d.name]),preferred)+f('Box label (optional)','box')+seatField(chosen)+(standin?'':`<label class="cm-checkbox cm-full"><input type="checkbox" name="asStandIn"> Allow substitutes: a copy this deck's list does not call for goes in unreserved, filling a seat until the real card arrives</label>`)+note(standin?`${names} go in without a reservation; the deck counts them as substitutes and Planned Changes asks for them back when the real card is ready.`:`${names}. Records where these copies physically are. Ownership does not change. A copy that is not reserved for this deck is refused by name unless substitutes are allowed; one the list calls for is reserved on the way in.`)+note('Naming the seat is optional and it is what the Change List reads: without it the pairing is worked out from the option slot, the type and the mana value.')+note('Staged, not saved: this joins the sitting and is written when you confirm.'),
       v=>{const d=M.deck(C.state,v.deckId),seat=v.standInFor?d.slots.find(x=>x.id===v.standInFor):null;
         return stageRows(rows,{action:standin||v.asStandIn?'standin':'place',deckId:v.deckId,deckName:d.name,box:v.box,asStandIn:standin||!!v.asStandIn,
           standInFor:v.standInFor||'',standInForName:seat?((C.card(seat.cardId)||{}).name||''):'',
@@ -877,7 +950,7 @@ function sheet(params){
     const ariaSort=key=>sheetSort.key===key?` aria-sort="${sheetSort.dir>0?'ascending':'descending'}"`:'';
     const live=(r,col,deckId,n,{cls='',mark='',label='',title=''})=>`<td class="cm-sheet-num cm-sheet-live${cls}"><button type="button" class="cm-sheet-cell" data-cell="${e(cellKey(r.cardId,col,deckId))}" data-value="${n}" aria-label="${e(label)}" title="${e(title||'Click, or type a digit, to change')}">${n||zero}${mark}</button></td>`;
     const ro=(n,cls='',title='')=>`<td class="cm-sheet-num${cls}"${title?` title="${e(title)}"`:''}>${n||zero}</td>`;
-    const head=`<thead><tr><th rowspan="2" class="cm-sheet-name"${ariaSort('name')}>${sortBtn('name','Card')}</th><th rowspan="2"${ariaSort('own')}>${sortBtn('own','Own','Owned copies, wherever they are')}</th><th rowspan="2"${ariaSort('ordered')}>${sortBtn('ordered','Ordered','Bought, not yet in hand')}</th><th rowspan="2"${ariaSort('bench')}>${sortBtn('bench','Bench','Owned copies in no physical deck')}</th><th rowspan="2"${ariaSort('toBuy')}>${sortBtn('toBuy','To buy','Copies finalized decks list that nothing covers')}</th>`
+    const head=`<thead><tr><th rowspan="2" class="cm-sheet-name"${ariaSort('name')}>${sortBtn('name','Card')}</th><th rowspan="2"${ariaSort('own')}>${sortBtn('own','Own','Owned copies, wherever they are')}</th><th rowspan="2"${ariaSort('ordered')}>${sortBtn('ordered','Ordered','Bought, not yet in hand')}</th><th rowspan="2"${ariaSort('bench')}>${sortBtn('bench','Bench','Owned copies in no physical deck')}</th><th rowspan="2"${ariaSort('toBuy')}>${sortBtn('toBuy','To buy','Copies locked decks list that nothing covers')}</th>`
       +decks.map((d,i)=>`<th colspan="2" class="cm-sheet-deck${alt(i)}"><span class="cm-sheet-deck-name">${e(d.name)}</span><small>${d.status==='final'?(d.target===100?'final · 100':`final · ${d.target} cards`):`draft · ${d.target} cards`}</small></th>`).join('')
       +`</tr><tr>`+decks.map((d,i)=>`<th class="${alt(i).trim()}"${ariaSort('deck|'+d.id+'|t')}>${sortBtn('deck|'+d.id+'|t','T','Reserved: how many copies the list claims')}</th><th class="${alt(i).trim()}"${ariaSort('deck|'+d.id+'|boxed')}>${sortBtn('deck|'+d.id+'|boxed','A','Physical: in the deck, substitutes included')}</th>`).join('')+`</tr></thead>`;
     const body=shown.map(r=>`<tr data-card="${e(r.cardId)}"><th scope="row" class="cm-sheet-name"><button type="button" class="cm-text-button cm-card-name" data-action="card" data-card="${e(r.cardId)}" title="${e(r.card.typeLine||'')}">${e(r.card.name)}</button>${r.extra?' <span class="cm-badge">New row</span>':''}</th>`
@@ -933,7 +1006,8 @@ actions['sheet-csv']=()=>{const m=M.matrix(lens()),rows=sheetRows(m),decks=m.dec
  * Paid is what YOU paid; Price is what the card goes for. They are different questions and
  * they get different columns -- one number doing both jobs is how a table starts lying. */
 const EDITS={paid:'Paid',quantity:'Quantity'};
-const canEdit=(r,k)=>r.kind==='lot'&&Object.hasOwn(EDITS,k);
+/* Quantity and Paid are read here and changed in Edit (Rob, 2026-10-18: not shown as fields until Edit is pressed). */
+const canEdit=()=>false;
 
 /* ONE ROW PER CARD, WHATEVER THE PRINT.
  *
@@ -987,13 +1061,17 @@ if(scope!==pickScope){pickScope=scope;picked.clear();}
    the view is rebuilt rather than restyled. Registered once, and only while a roster
    page is on screen. */
 if(!phoneWatch){phoneWatch=true;PHONE.addEventListener('change',()=>{if(C.route().view==='cards')C.render();});}
-const shopTools=`<div class="cm-shop-bar"><button type="button" class="v-button cm-shop-search-btn" data-action="shop-search" aria-label="Search cards" aria-expanded="${searchOpen}" title="Search cards"><span aria-hidden="true">\u{1F50D}</span></button>${b('Ready to add','pull-picker')}${b(activeFilters().length?`Filters (${activeFilters().length})`:gbGet()?'Filters •':'Filters','roster-filters')}${b('Tools','shop-tools',{},false,{caret:'down'})}</div><label class="cm-search cm-shop-search" id="cm-shop-search"${searchOpen?'':' hidden'}>Search cards<input id="cm-roster-query" value="${e(filter.q)}" placeholder="Name, type or rules text"></label>`;
-C.main.innerHTML=cardsHead(params,tab,'table',{tight})+(shop?'':'<div id="cm-roster-stats"></div>')+`<div class="cm-actions">${[['card','Card',params.get('card')?(C.card(params.get('card'))||C.catalog.get(params.get('card')))?.name||'Card':''],['deck','Deck',params.get('deck')?M.deck(C.state,params.get('deck')).name:''],['group','Group',params.get('group')?C.state.groups.find(g=>g.id===params.get('group'))?.name||'':'']].filter(([,,v])=>v).map(([k,l,v])=>`<span class="cm-chip cm-scope-chip">${l}: ${e(v)}<button type="button" class="cm-chip-x" data-action="clear-scope" data-key="${k}" aria-label="Remove the ${l} filter" title="Remove this filter">×</button></span>`).join('')}</div>`+(tight?shopTools:`<div class="cm-toolbar"><label class="cm-search">Search cards<input id="cm-roster-query" value="${e(filter.q)}" placeholder="Name, type or rules text"></label>${b(activeFilters().length?`Filters (${activeFilters().length})`:'Filters','roster-filters')}${b('Columns','roster-columns')}${b('Clear filters','clear-filters')}${b('Back to Play Space','open-tabletop')}${s('Collection group','groupPick',[['','All groups'],...C.state.groups.map(g=>[g.id,C.groupLabel(g)])],params.get('group')||filter.group)}${s('Group rows by','groupBy',GROUP_CHOICES,gbGet())}</div>`)+`<div id="cm-filter-chips"></div>${shop?'<div id="cm-shop-strip"></div>':''}<div id="cm-roster-table"></div>`;
+const shopTools=`<div class="cm-shop-bar"><button type="button" class="v-button cm-shop-search-btn" data-action="shop-search" aria-label="Search cards" aria-expanded="${searchOpen}" title="Search cards"><span aria-hidden="true">\u{1F50D}</span></button>${b('Planned Changes','pull-picker')}${b(activeFilters().length?`Filters (${activeFilters().length})`:gbGet()?'Filters •':'Filters','roster-filters')}${b('Tools','shop-tools',{},false,{caret:'down'})}</div><label class="cm-search cm-shop-search" id="cm-shop-search"${searchOpen?'':' hidden'}>Search cards<input id="cm-roster-query" value="${e(filter.q)}" placeholder="Name, type or rules text"></label>`;
+C.main.innerHTML=!tight?bandPage(params,tab,shop):cardsHead(params,tab,'table',{tight})+(shop?'':'<div id="cm-roster-stats"></div>')+`<div class="cm-actions">${[['card','Card',params.get('card')?(C.card(params.get('card'))||C.catalog.get(params.get('card')))?.name||'Card':''],['deck','Deck',params.get('deck')?M.deck(C.state,params.get('deck')).name:''],['group','Group',params.get('group')?C.state.groups.find(g=>g.id===params.get('group'))?.name||'':'']].filter(([,,v])=>v).map(([k,l,v])=>`<span class="cm-chip cm-scope-chip">${l}: ${e(v)}<button type="button" class="cm-chip-x" data-action="clear-scope" data-key="${k}" aria-label="Remove the ${l} filter" title="Remove this filter">×</button></span>`).join('')}${params.get('deck')&&!shop?`<label class="cm-checkbox cm-bench-too" title="Owned copies on the Bench, for no deck, listed beside this deck's cards"><input id="cm-bench-too" type="checkbox" ${benchToo?'checked':''}>Show Bench cards that could go in</label>${globalThis.CrankRecommend?`<button type="button" class="v-button compact" data-action="roster-recommend" data-deck="${e(params.get('deck'))}" aria-pressed="${sort.key==='recommended'}">Sort by recommendation</button>`:''}`:''}</div>`+(tight?shopTools:`<div class="cm-toolbar"><label class="cm-search">Search cards<input id="cm-roster-query" value="${e(filter.q)}" placeholder="Name, type or rules text"></label>${b(activeFilters().length?`Filters (${activeFilters().length})`:'Filters','roster-filters')}${b('Columns','roster-columns')}${b('Clear filters','clear-filters')}${b('Back to Play Space','open-tabletop')}${s('Collection group','groupPick',[['','All groups'],...C.state.groups.map(g=>[g.id,C.groupLabel(g)])],params.get('group')||filter.group)}${s('Group rows by','groupBy',GROUP_CHOICES,gbGet())}</div>`)+`<div id="cm-filter-chips"></div>${shop?'<div id="cm-shop-strip"></div>':''}<div id="cm-roster-table"></div>`;
 foldPrints=foldFor(shop);pageSize=C.state.preferences.pageSize==='all'?Infinity:(Number(C.state.preferences.pageSize)||60);
 const scoped=()=>!!(params.get('card')||params.get('deck')||params.get('group')||Object.values(filter).some(v=>v!==''));
 /* One cell, rendered. `tight` is the phone's Shop layout, which is why this lives inside
    the view rather than beside canEdit(): the same column reads differently there. */
-const cell=(r,k)=>{
+const cell=(r,k)=>{const html=cellBody(r,k);
+  /* Status and Deck are menus of their own (Rob, 2026-10-18); a click anywhere else on the row opens the card. */
+  if((k==='status'||k==='deck')&&r.kind!=='fold'&&STATE_KINDS.includes(r.kind))return `<button type="button" class="cm-cell-menu" data-action="cell-${k}" data-record="${e(r.recordId)}" aria-haspopup="menu" title="${k==='status'?'Change status':'Change assignment'}">${html||'<span class="cm-muted">—</span>'}</button>`;
+  return html;};
+const cellBody=(r,k)=>{
   const mixed=r.kind==='fold'&&r.mixed?.has(k==='deck'?'deckId':k==='status'?'stateLabel':k);
   const body=mixed?'<span class="cm-muted">Various</span>'
     :k==='color'?C.colors(r.card.colorIdentity)
@@ -1011,12 +1089,12 @@ const cell=(r,k)=>{
      because the row came from the pending library; the mark is what tells a reader that this
      particular reading is theirs and is not written down yet. */
   const pendingBadge=stateCol&&r.pending?` <span class="cm-badge cm-badge-pending" title="Staged on the table and not saved yet — Review and confirm writes it.">Staged</span>`:'';
-  /* BESIDE THE PILL (docs/card-states.md): a card for a deck that is not in its box wears its role -- Upgrade, it
-     replaces a card that is in the box; Reserved, it takes an empty seat -- and a substitute reserved for another
-     deck says which. The legacy Allocation column keeps its own badge. */
-  const st=k==='status'&&!mixed?stateOfRow(r):null,deckName=id=>{const d=id&&C.state.decks.find(x=>x.id===id);return d?shortDeck(d):'';};
-  const stateBadge=!st?'':st.deckId&&!st.inBox&&(st.role==='upgrade'||st.role==='reserved')?` <span class="cm-badge cm-badge-${st.role}" title="${st.role==='upgrade'?`Replaces a card in ${e(deckName(st.deckId))}'s box`:`Takes an empty seat in ${e(deckName(st.deckId))}: the deck is short until it is in`}">${st.role==='upgrade'?'Upgrade':'Reserved'}</span>`
-    :st.role==='substitute'&&st.reservedFor?` <span class="cm-badge cm-badge-standin" title="Standing in, in ${e(deckName(st.deckId))}; reserved for ${e(deckName(st.reservedFor))}">In ${e(deckName(st.deckId))} · reserved for ${e(deckName(st.reservedFor))}</span>`:'';
+  /* BESIDE THE PILL (docs/card-states.md): the few words the model spells for the status -- what a Reserved card
+     or an Upgrade replaces, where a claimed copy sits, which seat a substitute holds -- so a row and The 100 say it
+     the same way. The legacy Allocation column keeps its own badge. */
+  const st=k==='status'&&!mixed?stateOfRow(r):null,deckName=id=>{const d=id&&C.state.decks.find(x=>x.id===id);return d?shortDeck(d):'';},cardName=id=>(C.card(id)||{}).name||'';
+  const noteText=st&&st.use?M.stateNote(st,cardName,deckName):'';
+  const stateBadge=noteText?` <span class="cm-badge cm-badge-${e(st.use)} cm-status-note" title="${e(noteText)}">${e(noteText)}</span>`:'';
   const standInBadge=k==='status'?stateBadge:stateCol&&r.standIn&&r.placement!=='Substitute'?` <span class="cm-badge cm-badge-standin" title="Physically in ${e(M.deck(C.state,r.standInDeckId).name)}, a substitute there until a real copy takes its seat">Substitute in ${e(M.deck(C.state,r.standInDeckId).name)}</span>`:'';
   if(stateCol&&(r.option||r.pinned))return (mixed?body:C.pill(body,C.pillKind(value(r,k),r.placement)))+standInBadge+pendingBadge+(r.option?` <span class="cm-badge cm-badge-option" title="${e(r.optionWhy||'First candidate to swap out')}">Option</span>`:'')+(r.pinned?' <span class="cm-badge" title="Pinned: kept whatever the Lab or a swap suggests">Pinned</span>':'');
   if(k==='color')return body;
@@ -1026,12 +1104,13 @@ const cell=(r,k)=>{
   return `<button type="button" class="cm-cell-edit" data-action="cell-edit" data-record="${e(r.recordId)}" data-field="${e(k)}" title="Click to set ${e(EDITS[k])}">${body}</button>`;
 };
 const draw=()=>{const everything=rows(params,shop),matched=everything.filter(r=>matches(r));lastRows=everything;
-/* The cards count everything the other filters leave, so all seven keep their figures while one is picked and a reader can move between them. */
-const ribbon=$('#cm-roster-stats');if(ribbon)ribbon.innerHTML=statsHTML(filter.kpi?everything.filter(r=>matches(r,{...filter,kpi:''})):matched,!!(params.get('card')||params.get('deck')||params.get('group')||Object.entries(filter).some(([k,v])=>k!=='kpi'&&v!=='')));
 const strip=$('#cm-shop-strip');if(strip)strip.innerHTML=stripHTML(matched);
 const chips=$('#cm-filter-chips');if(chips)chips.innerHTML=chipsHTML();
 /* A tick outlives a redraw only while its row still exists: a copy that was sold, a draft slot that was removed, a requirement that was filled all drop out. */
 const live=new Set(everything.map(r=>r.recordId));for(const id of picked)if(!live.has(id))picked.delete(id);
+/* The band's second row: the group and its counts at rest, the actions on what is ticked. The counts follow every filter but the chip itself, as the count cards did. */
+bandBase=filter.kpi?everything.filter(r=>matches(r,{...filter,kpi:''})):matched;
+const row2=$('#cm-band-row2');if(row2){row2.innerHTML=picked.size?bandTicked(shop):bandRest(params,tab,bandBase);const band=row2.closest('.cm-band');band.classList.toggle('has-ticks',picked.size>0);const bar=document.querySelector('.cm-sidebar'),rb=bar&&bar.getBoundingClientRect();band.style.setProperty('--band-top',(rb&&getComputedStyle(bar).position==='sticky'&&rb.width>innerWidth/2&&rb.height<innerHeight/3?Math.round(rb.height):0)+'px');}
 const groupBy=gbGet();
 visibleRows=(foldPrints?foldByCard(matched,groupBy):matched).sort((a,b)=>{if(groupBy){const g=groupOrder(a,groupBy).localeCompare(groupOrder(b,groupBy));if(g)return g;}const rank=sort.key==='status'?x=>statusRank(value(x,'status')):x=>value(x,sort.key),av=rank(a),bv=rank(b);return (typeof av==='number'&&typeof bv==='number'?av-bv:String(av??'').localeCompare(String(bv??''),undefined,{numeric:true}))*sort.dir||a.recordId.localeCompare(b.recordId);});
 /* In the reader's order (the Columns dialog saves it), Card first. */
@@ -1051,6 +1130,7 @@ const isPicked=r=>tickIds(r).length>0&&tickIds(r).every(id=>picked.has(id));
    is open again. */
 if(groupBy!==collapsedKey){collapsed.clear();collapsedKey=groupBy;}
 const bands=[];if(groupBy)for(const r of visibleRows){const label=groupLabel(r,groupBy)||'Unassigned',last=bands[bands.length-1];if(last&&last.label===label)last.rows.push(r);else bands.push({label,rows:[r]});}
+lastBands=bands.map(x=>x.label);
 const items=groupBy?bands.flatMap(band=>[{band},...(collapsed.has(band.label)?[]:band.rows.map(row=>({row})))]):visibleRows.map(row=>({row}));
 page=Math.min(page,Math.max(0,Math.ceil(items.length/pageSize)-1));
 /* On the Shop each band header also says what its To buy rows cost: Σ price × need over the
@@ -1064,7 +1144,7 @@ const bandTint=label=>{
   const ci=(C.card(deck.commanders[0])?.colorIdentity)||[];
   return /^[WUBRG]$/.test(ci[0]||'')?` style="--band:var(--mana-${ci[0]})"`:'';
 };
-const bandRow=band=>{const open=!collapsed.has(band.label),copies=band.rows.reduce((n,r)=>n+r.quantity,0),dollars=shop?band.rows.flatMap(r=>r.kind==='fold'?r.partRows:[r]).filter(r=>r.kind==='need').reduce((n,r)=>n+(r.card.price>0?r.card.price*r.quantity:0),0):0;return `<tr class="cm-group-row"${bandTint(band.label)}><td colspan="${span}"><button type="button" class="cm-group-toggle" data-group-toggle="${e(band.label)}" aria-expanded="${open}"><span class="cm-group-caret" aria-hidden="true">${open?'▾':'▸'}</span><span>${e(band.label)}</span><small>${band.rows.length} record${band.rows.length===1?'':'s'} · ${copies} cop${copies===1?'y':'ies'}${shop?` · <b class="cm-band-dollars">${C.money(Math.round(dollars*100)/100)}</b> to buy`:''}</small></button></td></tr>`;};
+const bandRow=band=>{const open=!collapsed.has(band.label),copies=band.rows.reduce((n,r)=>n+r.quantity,0),dollars=shop?band.rows.flatMap(r=>r.kind==='fold'?r.partRows:[r]).filter(r=>r.kind==='need').reduce((n,r)=>n+(r.card.price>0?r.card.price*r.quantity:0),0):0;return `<tr class="cm-group-row"${bandTint(band.label)}><td colspan="${span}"><h3 class="cm-row-group-heading"><button type="button" class="cm-group-toggle" data-group-toggle="${e(band.label)}" aria-expanded="${open}"><span class="cm-group-caret" aria-hidden="true">${open?'▾':'▸'}</span><span>${e(band.label)}</span><small>${band.rows.length} record${band.rows.length===1?'':'s'} · ${copies} cop${copies===1?'y':'ies'}${shop?` · <b class="cm-band-dollars">${C.money(Math.round(dollars*100)/100)}</b> to buy`:''}</small></button></h3></td></tr>`;};
 /* WHAT A ROW SHOWS BESIDE THE NAME. Every card carries its mana at 16px, so a hundred rows can be
    read by shape as well as by name. The name comes first and the mana after it (Rob, 2026-09-25: "Put
    the card name first then mana symbols"): led by the symbols, a phone's narrow Card column spent its
@@ -1080,7 +1160,7 @@ const rowMark=c=>/\bLand\b/.test(c.typeLine||'')&&!(c.manaCost||'').trim()
 const printsToggle=r=>{const n=printsOf(r).length;return n>1?` <button type="button" class="cm-text-button cm-prints-toggle" data-prints-toggle="${e(r.recordId)}" aria-expanded="${openPrints.has(r.recordId)}">${n} prints ${openPrints.has(r.recordId)?'▾':'▸'}</button>`:'';};
 const printsRow=r=>!openPrints.has(r.recordId)||printsOf(r).length<2?'':`<tr class="cm-print-rows"><td colspan="${span}"><ul class="cm-prints" aria-label="${e(r.card.name)}: its prints">${printsOf(r).map(p=>{const pr=p.printing,what=[pr.series||pr.set.toUpperCase(),pr.collector?'#'+pr.collector:'',pr.finish==='foil'?'Foil':'',pr.artist].filter(Boolean).map(e).join(' · ');
   return `<li><span class="cm-print-what">${what}</span><span class="cm-price">${p.value===null?'<span class="cm-muted">—</span>':C.money(p.value)}</span><span class="cm-print-where">${[...p.where].map(([w,n])=>`${n} in ${e(w)}`).join(', ')}</span></li>`;}).join('')}</ul></td></tr>`;
-const rowHTML=r=>`<tr class="cm-row-card${isPicked(r)?' cm-row-ticked':''}" data-record="${e(r.recordId)}" data-action="card" data-card="${e(r.cardId)}">${ticks?`<td class="cm-tick-cell">${pickable(r)?`<input type="checkbox" class="cm-row-tick" data-record="${e(r.recordId)}"${isPicked(r)?' checked':''} aria-label="Tick ${e(r.card.name)}">`:''}</td>`:''}${shown.map(([k])=>`<td class="cm-col-${k}${canEdit(r,k)?' cm-cell-live':''}">${k==='name'?`<button class="cm-card-name" data-action="card" data-card="${e(r.cardId)}"><span data-art="${e(r.card.image||'')}">${e(r.card.name)}${(tight||r.kind==='fold')&&r.quantity>1?` <em>×${r.quantity}</em>`:''}</span></button>${rowMark(r.card)}${tight?(shop?`<span class="cm-row-primary">${primary(r)}</span>`:''):`<small>${r.kind==='fold'?foldCaption(r)+printsToggle(r):`${primaryPurpose(r.card)?`<span class="cm-purpose-chip">${e(primaryPurpose(r.card))}</span>`:''}${/^(Bracket option|Upgrade)$/.test(value(r,'purpose'))?` <span class="cm-muted">${e(value(r,'purpose'))}</span>`:''}${r.kind==='option'?' <span class="cm-muted">Uncommitted suggestion</span>':''}`}</small>`}`:cell(r,k)}</td>`).join('')}<td class="cm-row-actions-cell">${r.kind==='fold'?`${!tight?primary(r):''}<span class="cm-muted cm-fold-note">${r.parts} records</span>`:`${!tight?primary(r):''}<button class="v-button compact cm-row-actions" data-action="row-actions" data-record="${e(r.recordId)}" aria-haspopup="menu" aria-label="Actions" title="Actions">⋯</button>`}</td></tr>${printsRow(r)}`;
+const rowHTML=r=>`<tr class="cm-row-card${isPicked(r)?' cm-row-ticked':''}" data-record="${e(r.recordId)}" data-action="card" data-card="${e(r.cardId)}">${ticks?`<td class="cm-tick-cell">${pickable(r)?`<input type="checkbox" class="cm-row-tick" data-record="${e(r.recordId)}"${isPicked(r)?' checked':''} aria-label="Tick ${e(r.card.name)}">`:''}</td>`:''}${shown.map(([k])=>`<td class="cm-col-${k}${canEdit(r,k)?' cm-cell-live':''}">${k==='name'?`<button class="cm-card-name" data-action="card" data-card="${e(r.cardId)}"><span data-art="${e(r.card.image||'')}">${e(r.card.name)}${(tight||r.kind==='fold')&&r.quantity>1?` <em>×${r.quantity}</em>`:''}</span></button>${rowMark(r.card)}${tight?(shop?`<span class="cm-row-primary">${rowVerb(r)}</span>`:''):`<small>${r.kind==='fold'?foldCaption(r)+printsToggle(r):`${primaryPurpose(r.card)?`<span class="cm-purpose-chip">${e(primaryPurpose(r.card))}</span>`:''}${/^(Bracket option|Upgrade)$/.test(value(r,'purpose'))?` <span class="cm-muted">${e(value(r,'purpose'))}</span>`:''}${r.kind==='option'?' <span class="cm-muted">Uncommitted suggestion</span>':''}`}</small>`}`:cell(r,k)}</td>`).join('')}<td class="cm-row-actions-cell">${r.kind==='fold'?`${!tight?rowVerb(r):''}<span class="cm-muted cm-fold-note">${r.parts} records</span>`:`${!tight?rowVerb(r):''}<button class="v-button compact cm-row-actions" data-action="row-actions" data-record="${e(r.recordId)}" aria-haspopup="menu" aria-label="Actions" title="Actions">⋯</button>`}</td></tr>${printsRow(r)}`;
 const allFolded=bands.length>0&&bands.every(band=>collapsed.has(band.label));
 const foldAll=groupBy&&bands.length?` · <button type="button" class="cm-text-button" data-groups="${allFolded?'expand':'collapse'}">${allFolded?'Expand all groups':'Collapse all groups'}</button>`:'';
 /* With a count card picked, the line also counts copies, the unit the card counts in, so the figure on the card can be found again under it. */
@@ -1088,7 +1168,7 @@ const copies=matched.reduce((n,r)=>n+r.quantity,0),copiesNote=filter.kpi?` · ${
 /* The paging line carries the records count; the fold-all button rides the top line only (the bottom one repeats the pager). */
 const pagingHTML=(fold=false)=>`<div class="cm-paging"><span>${Number.isFinite(pageSize)?`Page ${page+1} of ${Math.max(1,Math.ceil(items.length/pageSize))}`:`All ${items.length} rows`} · ${visibleRows.length.toLocaleString('en-US')} record${visibleRows.length===1?'':'s'}${copiesNote}${fold?foldAll:''}</span><div class="cm-actions"><button class="v-button" data-page="-1" ${page===0||!Number.isFinite(pageSize)?'disabled':''}>Previous</button><button class="v-button" data-page="1" ${!Number.isFinite(pageSize)||(page+1)*pageSize>=items.length?'disabled':''}>Next</button></div></div>`;
 const longer=Number.isFinite(pageSize)&&items.length>pageSize;
-$('#cm-roster-table').innerHTML=`${ticks?batchBar(shop):''}${longer?pagingHTML(true):`<p class="cm-status-line">${visibleRows.length.toLocaleString('en-US')} record${visibleRows.length===1?'':'s'}${copiesNote}${foldAll}</p>`}<div class="cm-table-wrap"><table class="cm-table${tight?' cm-table-shop':''}"><thead><tr>${ticks?`<th scope="col" class="cm-tick-cell"><input type="checkbox" class="cm-tick-all"${allTicked?' checked':''} aria-label="Tick every matching record"></th>`:''}${shown.map(([k,l])=>`<th scope="col" class="cm-col-${k}" aria-sort="${sort.key===k?(sort.dir===1?'ascending':'descending'):'none'}"><button data-sort="${k}">${l}${sort.key===k?` <span aria-hidden="true">${sort.dir===1?'↑':'↓'}</span>`:tight?'':' <span class="cm-sort-idle" aria-hidden="true">↕</span>'}</button></th>`).join('')}<th scope="col">Actions</th></tr></thead><tbody>${(Number.isFinite(pageSize)?items.slice(page*pageSize,page*pageSize+pageSize):items).map(it=>it.band?bandRow(it.band):rowHTML(it.row)).join('')||`<tr><td colspan="${span}">No matching records. Add your cards or clear the filters.</td></tr>`}</tbody></table></div>${pagingHTML()}`;$('#cm-roster-table').onclick=ev=>{
+$('#cm-roster-table').innerHTML=`${!tight?`<p class="cm-status-line">${visibleRows.length.toLocaleString('en-US')} record${visibleRows.length===1?'':'s'}${copiesNote}</p>`:longer?pagingHTML(true):`<p class="cm-status-line">${visibleRows.length.toLocaleString('en-US')} record${visibleRows.length===1?'':'s'}${copiesNote}${foldAll}</p>`}<div class="cm-table-wrap"><table class="cm-table${tight?' cm-table-shop':''}"><thead><tr>${ticks?`<th scope="col" class="cm-tick-cell"><input type="checkbox" class="cm-tick-all"${allTicked?' checked':''} aria-label="Tick every matching record"></th>`:''}${shown.map(([k,l])=>`<th scope="col" class="cm-col-${k}" aria-sort="${sort.key===k?(sort.dir===1?'ascending':'descending'):'none'}"><button data-sort="${k}">${l}${sort.key===k?` <span aria-hidden="true">${sort.dir===1?'↑':'↓'}</span>`:tight?'':' <span class="cm-sort-idle" aria-hidden="true">↕</span>'}</button></th>`).join('')}<th scope="col">Actions</th></tr></thead><tbody>${(Number.isFinite(pageSize)?items.slice(page*pageSize,page*pageSize+pageSize):items).map(it=>it.band?bandRow(it.band):rowHTML(it.row)).join('')||`<tr><td colspan="${span}">No matching records. Add your cards or clear the filters.</td></tr>`}</tbody></table></div>${pagingHTML()}`;$('#cm-roster-table').onclick=ev=>{
     const tick=ev.target.closest('.cm-row-tick'),all=ev.target.closest('.cm-tick-all');
     if(tick||all){
       /* The row itself opens the card. Stopping here keeps a tick a tick -- the document's
@@ -1105,7 +1185,7 @@ $('#cm-roster-table').innerHTML=`${ticks?batchBar(shop):''}${longer?pagingHTML(t
     if(one){ev.stopPropagation();const label=one.dataset.groupToggle;if(collapsed.has(label))collapsed.delete(label);else collapsed.add(label);draw();return;}
     if(every){ev.stopPropagation();if(every.dataset.groups==='collapse')for(const band of bands)collapsed.add(band.label);else collapsed.clear();draw();return;}
     const so=ev.target.closest('[data-sort]'),pa=ev.target.closest('[data-page]');if(so){const key=so.dataset.sort;sort={key,dir:sort.key===key?-sort.dir:1};draw();}if(pa){page+=Number(pa.dataset.page);draw();}};};
-$('#cm-roster-query').addEventListener('input',ev=>{filter.q=ev.target.value;page=0;draw();});$('[name=groupBy]')?.addEventListener('change',ev=>{gbSet(ev.target.value);page=0;draw();});$('[name=groupPick]')?.addEventListener('change',ev=>{filter.group=ev.target.value;goCards(tab,{deck:params.get('deck'),group:filter.group});});draw();}
+$('#cm-roster-query').addEventListener('input',ev=>{filter.q=ev.target.value;page=0;draw();});$('#cm-bench-too')?.addEventListener('change',ev=>{benchToo=ev.target.checked;page=0;draw();});$('[name=groupBy]')?.addEventListener('change',ev=>{gbSet(ev.target.value);page=0;draw();});$('[name=groupPick]')?.addEventListener('change',ev=>{filter.group=ev.target.value;goCards(tab,{deck:params.get('deck'),group:filter.group});});draw();}
 /* ONE RECEIPT FOR THE WHOLE BATCH. Each of these is the review dialog the single-record
    command already uses, handed every ticked record at once: one revision, one line in the
    history, one thing to undo. The ticks survive the change, because marking eleven cards
@@ -1118,7 +1198,60 @@ function batch(title,body,command){
 actions['batch-clear']=()=>{picked.clear();C.render();};
 /* THE SAME LADDER FOR A TICKED SET. Copy records change source; draft-list rows and To buy
    requirements become copies at that rung, filed with their deck -- one revision, one undo. */
-actions['batch-status']=el=>{if(!picked.size)throw Error('Tick at least one row first.');popAt(el,`<p>Set ${picked.size} ticked record${picked.size===1?'':'s'} to</p>${LADDER.map(([id,label,why])=>rung(label,why,`data-action="batch-source" data-source="${id}"`)).join('')}`);};
+/* SET STATUS (ROB-358; Rob, 2026-11-01): four things a card is, and two things to do with a deck. "I should be able to select
+   set status as boxed." There is no Assigned status: a card is watched, wanted, ordered or on the Bench, and assigning it to
+   a deck, or boxing it, is something you do with the deck. */
+actions['batch-status']=el=>{if(!picked.size)throw Error('Tick at least one row first.');
+  popAt(el,`<p>Set ${num(picked.size)} ticked record${picked.size===1?'':'s'} to</p>`
+    +rung('Watch','keeping an eye on it','data-action="status-watch"')+rung('To buy','interested in buying it','data-action="status-buy"')
+    +rung('Ordered','bought, on its way','data-action="status-ordered"')+rung('Bench','owned, in no deck','data-action="status-bench"')
+    +`<hr><p>With a deck</p>`+rung('Assign to a deck…','pick the deck','data-action="status-assign"')+rung('Box','into the box of its deck','data-action="status-box"'));};
+const bandAnchor=el=>document.querySelector('#cm-band-row2 [data-action=batch-status]')||el;
+const lotsPicked=()=>pickedIds().map(id=>C.state.lots.find(l=>l.id===id)).filter(Boolean);
+actions['status-watch']=()=>actions['batch-source']({dataset:{source:'watching'}});
+actions['status-ordered']=()=>actions['batch-order']();
+/* TO BUY: interested, not yet decided on a deck. A watched card moves to the To Buy list; a card you own or have ordered, or one
+   a deck already waits on, is left as it is, and the receipt says how many and why. */
+actions['status-buy']=()=>{if(!picked.size)throw Error('Tick at least one row first.');
+  const plan=M.wantCommands(C.state,pickedIds(),pickedSplit().plans.reduce((n,[,rs])=>n+rs.length,0));
+  if(!plan.command)throw Error(`Nothing to move to To buy. ${plan.stays.own?`${plan.stays.own} ticked ${plan.stays.own===1?'is':'are'} owned or ordered, and To buy is for cards you do not have yet. `:''}${plan.stays.buy?`${plan.stays.buy} already ${plan.stays.buy===1?'sits':'sit'} on the To Buy list or wait${plan.stays.buy===1?'s':''} on a deck. `:''}Tick Watch cards to move them.`);
+  C.review(`Move ${plan.moved} to To buy`,note(`${plan.moved} watched card${plan.moved===1?'':'s'} move${plan.moved===1?'s':''} to the To Buy list.`)+(plan.stays.own||plan.stays.buy?note(`${plan.stays.own+plan.stays.buy} ticked stay as they are: ${[plan.stays.own?`${plan.stays.own} owned or ordered`:'',plan.stays.buy?`${plan.stays.buy} already to buy`:''].filter(Boolean).join(', ')}.`,true):''),plan.command);};
+/* BENCH: the cards come to the Bench by the way they would have. An ordered copy has arrived; a copy in a deck's box comes out; a card
+   you watch or want is bought in store (the one form that asks the vendor). One receipt for all of it. */
+actions['status-bench']=()=>{const split=pickedSplit();if(!split.lots.length&&!split.plans.length)throw Error('Tick at least one row first.');
+  const L=lotsPicked(),arrived=L.filter(l=>l.source==='ordered'),inBox=L.filter(l=>l.source==='owned'&&l.location?.kind==='deck'),buy=L.filter(l=>l.source==='watching').map(l=>l.id);
+  const stay=L.filter(l=>l.source==='owned'&&l.location?.kind!=='deck').length;
+  const base=[];if(arrived.length){const paidByLot=Object.fromEntries(arrived.map(l=>{const r=findRow(l.id);return [l.id,r?priceOf(r):null];}).filter(([,p])=>p!==null));base.push({type:'bulk',op:'source',source:'owned',lotIds:arrived.map(l=>l.id),paidByLot,paidSource:'catalog',confirmed:true});}
+  if(inBox.length)base.push({type:'bulk',op:'bench',lotIds:inBox.map(l=>l.id),confirmed:true});
+  const said=(buyN)=>[arrived.length?`${arrived.length} ordered ${arrived.length===1?'has':'have'} arrived`:'',inBox.length?`${inBox.length} come${inBox.length===1?'s':''} out of ${inBox.length===1?'a deck’s box':'their decks’ boxes'}`:'',buyN?`${buyN} bought in store`:'',stay?`${stay} already on the Bench`:''].filter(Boolean).join(' · ');
+  const finish=(commands,buyN)=>{if(!commands.length)throw Error('Nothing to bring to the Bench: every ticked card is already on it.');C.review('Bring the ticked cards to the Bench',note(`${said(buyN)}.`),commands.length===1?commands[0]:{type:'batch',commands,summary:`Brought ticked cards to the Bench`});};
+  if(!buy.length&&!split.plans.length){finish(base,0);return;}
+  orderForm('Bought in store','Review purchase',v=>{const order={id:'order:'+C.uid(),vendor:v.vendor,ref:v.ref||'in store',expectedBy:v.expectedBy};const {commands,copies}=orderCommands({lots:buy,plans:split.plans},order,Number(v.shipping)||0,true);finish([...base,...commands],copies);},{store:true});};
+/* BOX: each ticked copy into the box of the deck it is assigned to (M.boxCommands). A box that would not hold the hundred is a warning
+   with a button that says so, never a refusal; the deck then does not read Boxed. */
+actions['status-box']=()=>{if(!picked.size)throw Error('Tick at least one row first.');
+  const plan=M.boxCommands(C.state,pickedIds()),{stays}=plan,left=stays.noDeck+stays.notInHand+stays.already+stays.offered;
+  const stayText=[stays.noDeck?`${stays.noDeck} on the Bench in no deck`:'',stays.notInHand?`${stays.notInHand} not in hand yet`:'',stays.already?`${stays.already} already boxed`:'',stays.offered?`${stays.offered} offered for Sell / Trade`:''].filter(Boolean).join(' · ');
+  if(!plan.command)throw Error(`Nothing to box. ${stayText?`${stayText}. `:''}${stays.noDeck?'A card in no deck stays on the Bench; assign it to a deck first (Set status → Assign to a deck…). ':''}${stays.notInHand?'A card you do not have yet cannot be boxed. ':''}`.trim());
+  const lines=plan.decks.map(d=>`<li class="${d.legalAfter?'':'cm-warn-line'}"><b>${e(d.name)}</b> · ${d.count?`${d.count} go in the box`:'the box loses a card'} · box ${d.before} → ${d.after} of ${d.size}${d.legalAfter?'':' ⚠'}</li>`).join('');
+  const warn=plan.warnings.map(d=>note(`${d.name}'s box would hold ${d.after} of ${d.size}. It will not read Boxed, or be playable, until the box holds ${d.size}.`,true)).join('');
+  C.review(`Box ${plan.total} card${plan.total===1?'':'s'}`,`<ul class="cm-box-lines">${lines}</ul>${warn}${left?note(`${stayText} stay${left===1?'s':''} as ${left===1?'it is':'they are'}.`):''}`,plan.command,{confirm:plan.warnings.length?'Box anyway':'Box',after:()=>picked.clear()});};
+/* ASSIGN TO A DECK: pick the deck, then name the card each one replaces where the list does not already want it (the recommendation is
+   filled in: the seats flagged Option first, then those still waiting on a buy), and one receipt. */
+actions['status-assign']=el=>{if(!picked.size)throw Error('Tick at least one row first.');
+  popAt(bandAnchor(el),`<p>Assign ${num(picked.size)} to</p>${C.state.decks.filter(d=>!d.archived&&!M.isLobbyDeck(d)).map(d=>{const t=M.deckStatus(C.state,d);return `<button type="button" class="cm-menu-row" data-action="assign-deck" data-deck="${e(d.id)}"><span>${e(d.name)}</span><small>${num(t.deckTotal)} of ${num(t.size)} boxed</small></button>`;}).join('')}`,{align:'left'});};
+actions['assign-deck']=el=>{const d=M.deck(C.state,el.dataset.deck),items=[];let other=0;
+  for(const id of picked){const r=findRow(id);if(r&&r.kind==='lot')items.push({recordId:r.recordId,kind:'lot',lotId:r.recordId,cardId:r.cardId,quantity:r.quantity});else other++;}
+  if(!items.length)throw Error(`Nothing to assign: ${other} ticked ${other===1?'is':'are'} already a seat on a deck's list. Tick copies or watched cards to assign them.`);
+  const first=M.assignCommands(C.state,items,d.id,{}),seats=M.assignSeats(C.state,d.id),fill=Object.fromEntries(first.needs.map((id,i)=>[id,(seats[i]||seats[0]||{}).slotId]));
+  const review=(seatFor)=>{const plan=M.assignCommands(C.state,items,d.id,seatFor);
+    if(!plan.command)throw Error(`Nothing to assign. ${plan.skipped.length?plan.skipped.map(x=>`${x.name}: ${x.why}`).join('; ')+'.':''}`);
+    C.review(`Assign ${plan.lines.length} to ${d.name}`,`<ul class="cm-box-lines">${plan.lines.map(x=>`<li><b>${e(x.name)}</b> · ${x.how==='to buy'?'Reserved · To buy':x.how==='listed'?'Added to the list; reserved when the list is locked':'Reserved, on the Bench until boxed'}${x.replaces?` · replaces <b>${e(x.replaces)}</b>, which stays in the box as the Substitute`:''}</li>`).join('')}</ul>`+(plan.skipped.length?note(`${plan.skipped.length} left as they are: ${plan.skipped.map(x=>`${x.name} (${x.why})`).join('; ')}.`,true):'')+(other?note(`${other} ticked ${other===1?'is':'are'} already a seat on a deck's list and stay${other===1?'s':''} as ${other===1?'it is':'they are'}.`):''),plan.command,{after:()=>picked.clear()});};
+  if(!first.needs.length){review({});return;}
+  const t=M.deckStatus(C.state,d),name=id=>(C.card(items.find(x=>x.recordId===id).cardId)||{}).name||'Card';
+  form(`Assign ${first.needs.length} to ${d.name}`,`<div class="cm-full">${note(`${d.name} holds ${t.onList}. Each card below names the card it replaces; that card stays in the box as the Substitute holding the seat until the new one is boxed.`)}</div>`
+    +first.needs.map(id=>s(`${name(id)} replaces`,'seat:'+id,seats.map(x=>[x.slotId,x.name+(x.rank===0?' · Option':x.rank===1?' · to buy':'')]),fill[id])).join(''),
+    v=>review(Object.fromEntries(first.needs.map(id=>[id,v['seat:'+id]]))),'Review');};
 actions['batch-source']=el=>{const source=el.dataset.source,label=C.source(source),{lots,plans}=pickedSplit();if(!lots.length&&!plans.length)throw Error('Tick at least one row first.');
   const commands=[];if(lots.length)commands.push({type:'bulk',op:'source',source,lotIds:lots,confirmed:true});
   for(const [deckId,rowsFor] of plans)commands.push({type:'acquireSlots',deckId,source,slotIds:rowsFor.map(r=>r.slotId),quantities:Object.fromEntries(rowsFor.map(r=>[r.slotId,r.quantity])),confirmed:true});
@@ -1158,7 +1291,7 @@ actions['batch-store']=()=>{const split=pickedSplit();if(!split.lots.length&&!sp
     C.review(`Bought ${copies} cop${copies===1?'y':'ies'} at ${v.vendor}`,note('Every ticked row becomes an owned copy on the bench, reserved where its deck is finalized, with the sheet price recorded at the catalog price, marked ≈ and the store as vendor.'),commands.length===1?commands[0]:{type:'batch',commands,summary:`Bought ${copies} copies at ${v.vendor}`});},{store:true});};
 actions['batch-arrived']=()=>{const lotIds=pickedIds().filter(id=>{const l=C.state.lots.find(x=>x.id===id);return l&&l.source==='ordered';});if(!lotIds.length)throw Error('Tick at least one ordered copy first.');
   const paidByLot=Object.fromEntries(lotIds.map(id=>{const r=findRow(id);return [id,r?priceOf(r):null];}).filter(([,p])=>p!==null));
-  C.review(`${lotIds.length} record${lotIds.length===1?'':'s'} arrived`,note('The copies land on the bench, still reserved to their decks; the sheet price is recorded at the catalog price, marked ≈ where nothing was. Add them to their decks from Ready to add.'),{type:'bulk',op:'source',source:'owned',lotIds,paidByLot,paidSource:'catalog'});};
+  C.review(`${lotIds.length} record${lotIds.length===1?'':'s'} arrived`,note('The copies land on the bench, still reserved to their decks; the sheet price is recorded at the catalog price, marked ≈ where nothing was. Add them to their decks from Planned Changes.'),{type:'bulk',op:'source',source:'owned',lotIds,paidByLot,paidSource:'catalog'});};
 /* WHICH BOX A COPY SITS IN IS A FACT ABOUT THE COPY, so it is recorded here rather than as
    a deck-wide button on the deck page: tick the copies you sleeved and say where they went.
    Only copies already reserved for that deck can go in it -- the model refuses the rest by
@@ -1211,7 +1344,7 @@ const FILTER_TYPES=['Creature','Instant','Sorcery','Artifact','Enchantment','Lan
 const FILTER_COLORS=[['W','W','White'],['U','U','Blue'],['B','B','Black'],['R','R','Red'],['G','G','Green'],['C','Colorless','Colorless']];
 /* The card states (docs/card-states.md): the stages, then where an owned card is, then the two roles a card for a
    deck has while it is not in the box -- an upgrade replaces a card in the box, a reserved card takes an empty seat. */
-const FILTER_STATUSES=['Watching','To buy','Ordered',['owned','Owned (any)'],'Bench','To add','Target','Substitute',['upgrade','Upgrade'],['reserved','Reserved']];
+const FILTER_STATUSES=['Final','Substitute','Reserved','Upgrade','Bench','Sell','Trade','Watch','To buy','To Buy · Ordered',['owned','Own (any)'],['to-buy','To buy (any)']];
 const MORE_FILTERS=['subtype','mechanic','mana','flag','offer'];
 actions['roster-filters']=()=>{const r=C.route(),params=new URLSearchParams(r.params),shop=buyTab(),tab=shop?'buy':'library',tight=compactShop(shop);
   const draft={...filter},deckNow=params.get('deck')||'';let deck=deckNow,grouping=shop?shopGroupBy:groupBy;
@@ -1274,15 +1407,15 @@ actions['roster-columns']=()=>{const shop=buyTab(),current=withStatus(shop?shopS
    them, and the Filters button says how many are on. */
 const FILTER_NAMES={q:'Search',type:'Type',subtype:'Subtype',mechanic:'Mechanic',color:'Color',status:'Status',offer:'Bench / Sell / Trade',min:'Min mana value',max:'Max mana value',priceMin:'Min price',price:'Max price',kpi:'Count',mana:'Mana',flag:'Slot flag',group:'Group'};
 const activeFilters=()=>Object.entries(filter).filter(([k,v])=>v!==''&&k!=='group');
-function chipsHTML(){const on=activeFilters();if(!on.length)return '';const label=(k,v)=>k==='color'?({W:'White',U:'Blue',B:'Black',R:'Red',G:'Green',C:'Colorless'}[v]||v):k==='status'?(v==='owned'?'Owned':v==='to-add'?'To add':v==='upgrade'?'Upgrade':v==='reserved'?'Reserved':v):k==='kpi'?(STAT_FIGURES.find(([id])=>id===v)||[,v])[1]:k==='price'||k==='priceMin'?C.money(Number(v)):k==='flag'?(v==='option'?'Option':'Pinned'):k==='offer'?({bench:'Unassigned bench',available:'Sell / Trade',held:'Pending deals'}[v]||v):v;
+function chipsHTML(){const on=activeFilters();if(!on.length)return '';const label=(k,v)=>k==='color'?({W:'White',U:'Blue',B:'Black',R:'Red',G:'Green',C:'Colorless'}[v]||v):k==='status'?(v==='owned'?'Own (any)':v==='to-buy'?'To buy (any)':v):k==='kpi'?(STAT_FIGURES.find(([id])=>id===v)||BAND_CHIPS.find(([id])=>id===v)||[,v])[1]:k==='price'||k==='priceMin'?C.money(Number(v)):k==='flag'?(v==='option'?'Option':'Pinned'):k==='offer'?({bench:'Unassigned bench',available:'Sell / Trade',held:'Pending deals'}[v]||v):v;
   return `<div class="cm-fchips">${on.map(([k,v])=>`<button type="button" class="cm-fchip" data-action="clear-filter" data-key="${e(k)}" aria-label="Remove filter ${e(FILTER_NAMES[k]||k)}">${e(FILTER_NAMES[k]||k)}: <strong>${e(label(k,v))}</strong> <span aria-hidden="true">✕</span></button>`).join('')}<button type="button" class="cm-text-button" data-action="clear-filters">Clear all</button></div>`;}
 actions['clear-filter']=el=>{filter[el.dataset.key]='';page=0;C.render();};
 /* The folded row's caption: how many copies, for which decks. */
 const foldCaption=r=>{const decks=[...new Set(r.partRows.map(p=>p.deckId?shortDeck(M.deck(C.state,p.deckId)):''))].filter(Boolean);return `×${r.quantity}${decks.length?' · '+decks.map(e).join(', '):''} · ${r.parts} records`;};
 /* DECK ASSEMBLY IS THE READY TO ADD LIST NOW. The Shop's second list was six hundred reserved copies in
    alphabetical order; assembling a deck at the table is one deck's sheet, grouped by where
-   each card is sitting. So the button asks which deck and opens that deck's Ready to add list. */
-actions['pull-picker']=el=>{const decks=C.state.decks.filter(d=>!d.archived&&d.status==='final');if(!decks.length)throw Error('Finalize a deck first — Ready to add lists a finalized deck’s owned, reserved copies.');popAt(el,`<p>Ready to add for</p>${decks.map(d=>{const r=M.readiness(C.state,d),n=r.pullFromBench+r.pullFromOtherBox+r.remove;return b(`${d.name}${n?` · ${n} ready to add`:''}`,'deck-pull',{deck:d.id});}).join('')}`);};
+   each card is sitting. So the button asks which deck and opens that deck's Planned Changes list. */
+actions['pull-picker']=el=>{const decks=C.state.decks.filter(d=>!d.archived&&d.status==='final');if(!decks.length)throw Error('Lock a deck’s list first — Planned Changes lists a locked deck’s owned, reserved copies.');popAt(el,`<p>Planned Changes for</p>${decks.map(d=>{const r=M.readiness(C.state,d),n=r.pullFromBench+r.pullFromOtherBox+r.remove;return b(`${d.name}${n?` · ${n} ready to add`:''}`,'deck-pull',{deck:d.id});}).join('')}`);};
 /* The phone toolbar's menus. Each one is the control the desktop shows inline, folded
    into a tap so the bar stays one row on a 375px screen. */
 actions['shop-tools']=el=>popAt(el,`<p>Library</p>${b('Add cards','add-card')}${b('Import a list or library','import-list')}${b('Export this view (CSV)','export-view')}${b('Print buy list','print-buy-list')}${b('Columns','roster-columns')}<hr><p>Phone and computer</p>${b('Load an emailed backup…','restore')}${b('Send this library to email…','share-export')}<hr>${b('Clear filters','clear-filters')}${b('Back to Play Space','open-tabletop')}`);
@@ -1302,16 +1435,117 @@ const sheetPrice=r=>Number.isFinite(r.card.price)&&r.card.price>=0?r.card.price:
    unassigned bench copy is reserved. A copy already in its box has nothing obvious left to do
    and gets no button. The menu keeps everything else, in sections. */
 const shortDeck=d=>{const m=d.name.match(/^(D\d+)\b/);return m?m[1]:d.name.length>18?d.name.slice(0,17)+'…':d.name;};
-function primary(r){if(r.kind==='fold'){const parts=r.partRows;if(parts.every(p=>p.kind==='need'||p.kind==='entry'||p.kind==='lot'&&M.PLANNED.includes(p.source)))return `<button class="v-button primary compact cm-row-buy" data-action="shop-buy" data-record="${e(r.recordId)}">Bought</button>`;if(parts.every(p=>p.kind==='lot'&&p.source==='ordered'))return `<button class="v-button primary compact cm-row-buy" data-action="shop-arrive" data-record="${e(r.recordId)}">Arrived</button>`;return '';}
-  if(r.kind==='need'||r.kind==='lot'&&M.PLANNED.includes(r.source))return `<button class="v-button primary compact cm-row-buy" data-action="shop-buy" data-record="${e(r.recordId)}">Bought</button>`;
-  if(r.kind==='entry')return `<button class="v-button primary compact cm-row-buy" data-action="shop-buy" data-record="${e(r.recordId)}">Bought</button>`;
-  if(r.kind==='lot'&&r.source==='ordered')return `<button class="v-button primary compact cm-row-buy" data-action="shop-arrive" data-record="${e(r.recordId)}">Arrived</button>`;
-  if(r.kind==='lot'&&r.source==='owned'&&r.allocation&&r.placement!=='Physical deck'){const d=M.deck(C.state,r.allocation.deckId);return `<button class="v-button primary compact cm-row-buy" data-action="place-now" data-record="${e(r.recordId)}" title="Record that this copy is in ${e(d.name)}’s physical deck">Put in ${e(shortDeck(d))}</button>`;}
+function rowVerb(r){if(r.kind==='fold'){const parts=r.partRows;if(parts.every(p=>p.kind==='need'||p.kind==='entry'||p.kind==='lot'&&M.PLANNED.includes(p.source)))return `<button class="v-button compact cm-row-buy" data-action="shop-buy" data-record="${e(r.recordId)}">Bought</button>`;if(parts.every(p=>p.kind==='lot'&&p.source==='ordered'))return `<button class="v-button compact cm-row-buy" data-action="shop-arrive" data-record="${e(r.recordId)}">Arrived</button>`;return '';}
+  if(r.kind==='need'||r.kind==='lot'&&M.PLANNED.includes(r.source))return `<button class="v-button compact cm-row-buy" data-action="shop-buy" data-record="${e(r.recordId)}">Bought</button>`;
+  if(r.kind==='entry')return `<button class="v-button compact cm-row-buy" data-action="shop-buy" data-record="${e(r.recordId)}">Bought</button>`;
+  if(r.kind==='lot'&&r.source==='ordered')return `<button class="v-button compact cm-row-buy" data-action="shop-arrive" data-record="${e(r.recordId)}">Arrived</button>`;
+  if(r.kind==='lot'&&r.source==='owned'&&r.allocation&&r.placement!=='Physical deck'){const d=M.deck(C.state,r.allocation.deckId);return `<button class="v-button compact cm-row-buy" data-action="place-now" data-record="${e(r.recordId)}" title="Record that this copy is in ${e(d.name)}’s physical deck">Put in ${e(shortDeck(d))}</button>`;}
   if(r.kind==='lot'&&r.placement==='Substitute')return `<button class="v-button compact cm-row-buy" data-action="place-row" data-record="${e(r.recordId)}" title="Move this substitute back to the Bench">To bench</button>`;
-  if(r.kind==='lot'&&r.source==='owned'&&!r.allocation&&r.location?.kind!=='deck')return `<button class="v-button compact cm-row-buy" data-action="reserve-row" data-record="${e(r.recordId)}">Reserve…</button>`;
+  /* A Bench copy is never Reserved (Rob, 2026-10-18): it goes straight into a deck, as Final or as a Substitute. */
+  if(r.kind==='lot'&&r.source==='owned'&&stateOfRow(r).use==='bench')return `<button class="v-button compact cm-row-buy" data-action="row-move" data-record="${e(r.recordId)}" title="Put this copy in a deck's box">Put in deck…</button>`;
   return '';}
+/* A substitute back to the Bench: the whole copy out of its box, said first because it changes a box. */
+actions['place-row']=el=>{const r=findRow(el.dataset.record);if(!r||r.kind!=='lot'||r.location?.kind!=='deck')throw Error('Only a copy in a deck\'s box can go back to the Bench.');const l=M.lot(C.state,r.id),d=M.deck(C.state,l.location.deckId);return C.review('Move to the Bench',note(`${r.card.name} comes out of ${d.name}’s box and goes on the Bench.${l.standInFor?' The seat it held is empty until its Reserved card is put in.':''}`),{type:'place',lotId:l.id,quantity:l.quantity,confirmed:true});};
 /* One tap: the whole lot into the box it is reserved for. */
-actions['place-now']=async el=>{const r=findRow(el.dataset.record);if(!r||r.kind!=='lot'||!r.allocation)throw Error('Only a copy reserved to a deck can go into its physical deck.');const l=M.lot(C.state,r.id),d=M.deck(C.state,l.allocation.deckId);await commit({type:'place',lotId:l.id,deckId:d.id,quantity:l.quantity,confirmed:true});C.notice(`${r.card.name} is in ${d.name}’s physical deck.`);};
+/* And the substitute holding its seat comes out to the Bench in the same change (Rob, 2026-10-18: the swap when a
+   Reserved card arrives), so the box stays at its hundred. */
+actions['place-now']=async el=>{const r=findRow(el.dataset.record);if(!r||r.kind!=='lot'||!r.allocation)throw Error('Only a copy reserved to a deck can go into its physical deck.');const l=M.lot(C.state,r.id),d=M.deck(C.state,l.allocation.deckId);
+  const sub=C.state.lots.find(x=>x.source==='owned'&&x.location?.kind==='deck'&&x.location.deckId===d.id&&x.standInFor===l.allocation.slotId&&x.allocation?.deckId!==d.id);
+  const cmds=[{type:'place',lotId:l.id,deckId:d.id,quantity:l.quantity,confirmed:true},...(sub?[{type:'place',lotId:sub.id,quantity:sub.quantity,confirmed:true}]:[])];
+  await commit(cmds.length===1?cmds[0]:{type:'batch',commands:cmds,confirmed:true});C.notice(`${r.card.name} is in ${d.name}’s box.${sub?` ${cardName(sub.cardId)} went to the Bench.`:''}`);};
+/* THE STATUS AND DECK CELLS ARE MENUS (Rob, 2026-10-18). A click on a row's Status opens that field's choices and a
+   click on its Deck opens where the card can go; the rest of the row still opens the card. A menu offers only the
+   moves the row's status admits (docs/card-states.md): the use moves first, then the ownership ladder. */
+const deckShort=id=>{const d=id&&C.state.decks.find(x=>x.id===id);return d?shortDeck(d):'';};
+const cardName=id=>(C.card(id)||{}).name||'';
+function useMenu(r){
+  const st=stateOfRow(r),rec=e(r.recordId),lot=r.kind==='lot',owned=lot&&r.source==='owned';
+  const it=(label,action,data={},why='')=>`<button type="button" data-action="${action}" data-record="${rec}"${Object.entries(data).map(([k,v])=>` data-${k}="${e(v)}"`).join('')}>${e(label)}${why?` <small>${e(why)}</small>`:''}</button>`;
+  const out=[];
+  if(owned&&st.use==='final'&&st.inBox)out.push(it('Take out of the box','place-row',{},'it stays the deck’s card, Loading'));
+  if(owned&&st.use==='final'&&!st.inBox)out.push(it(`Put in ${deckShort(st.deckId)}’s box`,'place-now'),it('Release to the Bench','release-row',{},'its seat goes back to To buy'));
+  if(owned&&st.use==='substitute')out.push(it('Move to the Bench','place-row'));
+  if(owned&&st.use==='reserved'&&st.from)out.push(it(`Move it into ${deckShort(st.deckId)}`,'place-now',{},`out of ${deckShort(st.from)}’s box`));
+  if(owned&&(st.use==='bench'||st.use==='upgrade'))out.push(it('Put in a deck…','row-move'));
+  if(r.kind==='option')out.push(it('Reserve it','upgrade-reserve',{},st.replaces?`${cardName(st.replaces)} stands in until it arrives`:''),it('Remove the Upgrade','remove-option',{deck:r.deckId,slot:r.slotId}));
+  if(st.use==='upgrade'&&r.kind!=='option')out.push(it('Choose what it replaces…','upgrade-for',{deck:st.deckId}));
+  if(st.use==='unowned')out.push(it('Reserve for a deck…','reserve-for'));
+  if(owned&&(st.use==='final'||st.use==='substitute'))out.push(it('Reserve for another deck…','reserve-for'));
+  if(st.use==='bench'||st.use==='unowned'||owned&&(st.use==='final'||st.use==='substitute'))out.push(it('Consider as an Upgrade…','upgrade-for'));
+  if(owned&&['bench','final','substitute','upgrade'].includes(st.use))out.push(it('Offer to sell…','offer-kind',{kind:'sell'}),it('Offer to trade…','offer-kind',{kind:'trade'}));
+  if(owned&&(st.use==='sell'||st.use==='trade'))out.push(it(st.use==='sell'?'Offer to trade instead':'Offer to sell instead','offer-kind',{kind:st.use==='sell'?'trade':'sell',now:'1'}),it('Back to the Bench','offer-kind',{kind:'none',now:'1'}));
+  if(r.kind==='need'&&st.use==='reserved')out.push(it('Replace or remove…','replacement',{deck:r.deckId,slot:r.slotId}));
+  return out.join('');
+}
+const menuHead=r=>{const st=stateOfRow(r),note=st.use?M.stateNote(st,cardName,deckShort):'';return `<p>${e(r.card?.name||cardName(r.cardId))} · ${e(r.stateLabel||M.stateLabel(st))}${note?` <small>${e(note)}</small>`:''}</p>`;};
+actions['cell-status']=el=>{const r=findRow(el.dataset.record);if(!r)throw Error('That row changed. Refresh the view.');const use=useMenu(r);
+  popAt(el,`${menuHead(r)}${use?`<p class="cm-menu-section">Use</p>${use}`:''}<p class="cm-menu-section">Ownership</p>${statusMenu(r).replace('<p>Status</p>','')}`);};
+actions['cell-deck']=el=>{const r=findRow(el.dataset.record);if(!r)throw Error('That row changed. Refresh the view.');const use=useMenu(r);
+  popAt(el,`${menuHead(r)}<p class="cm-menu-section">Assignment</p>${use||'<p class="cm-menu-fine">Nothing to change here: use the Status menu.</p>'}`);};
+/* THE CARD PANEL'S TWO ACTIONS (Rob, 2026-10-18): the same menus, for the card. With one record they open on it; with
+   several, the first menu names each record by where it is and what it is, and opens the one picked. */
+function cardRecords(cardId){return rows(new URLSearchParams(),false).filter(r=>r.cardId===cardId);}
+function cardMenu(el,kind){const list=cardRecords(el.dataset.card);if(!list.length)throw Error('You have no record of this card yet. Add copies, or consider it as an Upgrade for a deck.');
+  if(list.length===1){el.dataset.record=list[0].recordId;return actions[kind](el);}
+  popAt(el,`<p>${e(cardName(el.dataset.card))} · which record?</p>${list.map(r=>`<button type="button" class="cm-record-pick" data-action="${kind}" data-record="${e(r.recordId)}">${e(r.stateLabel||'')}${r.state?.deckId?` · ${e(deckShort(r.state.deckId))}`:''}${r.quantity>1?` <small>${r.quantity} copies</small>`:''}</button>`).join('')}`);}
+actions['card-status']=el=>cardMenu(el,'cell-status');
+actions['card-assign']=el=>cardMenu(el,'cell-deck');
+/* RESERVE FOR A DECK (Rob, 2026-10-18). Reserved is a card you don't own, or one in another deck's box, committed to
+   take a seat. The dialog asks the deck, the card it replaces -- a Final card there becomes the Substitute holding
+   the seat, a Substitute keeps holding it, an empty seat is filled -- and, when you own copies in other boxes,
+   which copy; the deck it comes from is then one short, and you say whether a replacement goes on To buy. A copy on
+   the Bench is refused with the way to put it in instead: a Bench card is never reserved. */
+const decksForCards=()=>C.state.decks.filter(d=>!d.archived&&(C.showLobbyDecks||!M.isLobbyDeck(d)));
+function seatChoices(d,cardId,{forUpgrade=false}={}){const ds=M.deckStatus(C.state,d),list=[];
+  for(const {r,st} of ds.rows){if(r.cardId===cardId)continue;
+    if(forUpgrade){if(r.kind==='lot'&&st.use==='final'||r.kind==='need'&&st.use==='reserved')list.push([st.slotId,`${cardName(r.cardId)} · ${M.stateLabel(st)}`]);continue;}
+    if(st.use==='final'&&st.inBox)list.push([st.slotId,`${cardName(r.cardId)} · Final, becomes its Substitute`]);
+    else if(st.use==='substitute'&&r.standInFor)list.push([r.standInFor,`${cardName(r.cardId)} · Substitute, keeps holding the seat (${cardName(st.holds)} leaves the list)`]);
+    else if(st.use==='reserved'&&!st.replaces&&r.kind==='need')list.push([st.slotId,`An empty seat (${cardName(r.cardId)} leaves the list)`]);}
+  return [...new Map(list).entries()].sort((a,b2)=>a[1].localeCompare(b2[1]));}
+actions['reserve-for']=el=>{const r=findRow(el.dataset.record);if(!r)throw Error('That row changed. Refresh the view.');
+  const cardId=r.cardId,raw=C.card(cardId)||r.card,owned=C.state.lots.filter(l=>l.cardId===cardId&&l.source==='owned');
+  const bench=owned.filter(l=>!l.allocation&&l.location?.kind!=='deck'&&(l.offer||'none')==='none');
+  if(bench.length&&!(r.kind==='lot'&&r.location?.kind==='deck'))throw Error(`A copy of ${raw.name} is on the Bench. A Bench card is not reserved: open its row's Status and choose Put in a deck.`);
+  const decks=decksForCards(),scope=new URLSearchParams(C.route().params).get('deck')||'',start=decks.find(d=>d.id===scope&&!(r.kind==='lot'&&r.location?.deckId===d.id))||decks.find(d=>!(r.kind==='lot'&&r.location?.deckId===d.id));
+  if(!start)throw Error('Make a deck first; a card is reserved for a deck.');
+  const boxed=owned.filter(l=>l.location?.kind==='deck'),copyOpts=[['','Buy one: it goes on To buy'],...boxed.map(l=>[l.id,`The copy in ${deckShort(l.location.deckId)}${l.allocation?.deckId===l.location.deckId?' (Final there)':' (a Substitute there)'}`])];
+  const preset=r.kind==='lot'&&r.location?.kind==='deck'?r.id:'';
+  const f=form(`Reserve ${raw.name}`,s('For the deck','deck',decks.map(d=>[d.id,d.name]),start.id)+`<label class="cm-full">It replaces<select name="seat" required></select></label>`
+    +(boxed.length?s('Which copy','copy',copyOpts,preset):'')
+    +(boxed.length?`<label class="cm-checkbox cm-full"><input type="checkbox" name="replaceDonor" checked> If a copy comes out of another deck, put a replacement for that deck on To buy</label>`:'')
+    +note(`The card it replaces is named, and a Final card there stays in the box as the Substitute holding the seat until ${raw.name} is in.`),
+    async v=>{const d=M.deck(C.state,v.deck);if(!v.seat)throw Error('Choose the card it replaces.');
+      const cmds=[v.seat==='new'?{type:'target',deckId:d.id,cardId,quantity:1,cards:[raw],confirmed:true}:{type:'swap',deckId:d.id,slotId:v.seat,cardId,cards:[raw],substitute:true,confirmed:true,...(v.copy?{lotId:v.copy}:{})}];
+      const donor=v.copy&&C.state.lots.find(l=>l.id===v.copy);
+      if(v.seat==='new'&&v.copy)throw Error('A copy from another deck takes an existing seat: choose the card it replaces.');
+      if(donor&&!v.replaceDonor&&donor.allocation&&donor.allocation.deckId!==d.id)cmds.push({type:'removeDeckCard',deckId:donor.allocation.deckId,slotId:donor.allocation.slotId,confirmed:true});
+      await commit(cmds.length===1?cmds[0]:{type:'batch',commands:cmds,confirmed:true});
+      C.notice(`${raw.name} is Reserved for ${d.name}${v.copy?'':' and on To buy'}.`);},'Reserve');
+  const deckSel=f.querySelector('[name=deck]'),seatSel=f.querySelector('[name=seat]');
+  const fill=()=>{const d=M.deck(C.state,deckSel.value),list=seatChoices(d,cardId);seatSel.innerHTML=`<option value="">Choose the card it replaces</option>${list.map(([v,l])=>`<option value="${e(v)}">${e(l)}</option>`).join('')}<option value="new">No card: add a seat (the list grows)</option>`;};
+  deckSel.addEventListener('change',fill);fill();};
+/* CONSIDER AS AN UPGRADE (Rob, 2026-10-18): a card that might improve a deck, naming the card it would replace. It is
+   an option on the deck and changes nothing in the box; Reserve it later and it takes the seat. A candidate filed in
+   the deck's group, or a Bench copy filed there, becomes the option and leaves the group. */
+actions['upgrade-for']=el=>{const r=findRow(el.dataset.record);if(!r)throw Error('That row changed. Refresh the view.');
+  const cardId=r.cardId,raw=C.card(cardId)||r.card,decks=decksForCards(),pre=el.dataset.deck||stateOfRow(r).deckId||new URLSearchParams(C.route().params).get('deck')||'';
+  if(!decks.length)throw Error('Make a deck first; an Upgrade is for a deck.');
+  const f=form(`Consider ${raw.name} as an Upgrade`,s('For the deck','deck',decks.map(d=>[d.id,d.name]),decks.some(d=>d.id===pre)?pre:decks[0].id)+`<label class="cm-full">It would replace<select name="seat" required></select></label>`+note('Nothing in the box changes. Reserve it later to commit; the card it replaces then stands in as a Substitute.'),
+    async v=>{if(!v.seat)throw Error('Choose the card it would replace.');const d=M.deck(C.state,v.deck),cmds=[{type:'option',deckId:d.id,replaces:v.seat,cards:[raw],option:{cardId,quantity:1,purpose:'upgrade'},reserve:false,confirmed:true}];
+      if(r.kind==='entry')cmds.push({type:'removeGroupEntries',groupId:r.groupId,entryIds:[r.id],confirmed:true});
+      if(r.kind==='lot'&&d.groupId&&(r.groupIds||[]).includes(d.groupId)&&!r.allocation)cmds.push({type:'groupLots',lotIds:[r.id],moveFrom:d.groupId,confirmed:true});
+      await commit(cmds.length===1?cmds[0]:{type:'batch',commands:cmds,confirmed:true});C.notice(`${raw.name} is an Upgrade for ${d.name}.`);},'Save the Upgrade');
+  const deckSel=f.querySelector('[name=deck]'),seatSel=f.querySelector('[name=seat]');
+  const fill=()=>{const list=seatChoices(M.deck(C.state,deckSel.value),cardId,{forUpgrade:true});seatSel.innerHTML=`<option value="">Choose the card it would replace</option>${list.map(([v,l])=>`<option value="${e(v)}">${e(l)}</option>`).join('')}`;};
+  deckSel.addEventListener('change',fill);fill();};
+actions['upgrade-reserve']=el=>{const r=findRow(el.dataset.record);if(!r||r.kind!=='option')throw Error('Choose an Upgrade.');const st=stateOfRow(r),d=M.deck(C.state,r.deckId);
+  return C.review(`Reserve ${cardName(r.cardId)}`,note(`${cardName(r.cardId)} takes ${st.replaces?cardName(st.replaces):'its'} seat in ${d.name}${st.replaces?`; ${cardName(st.replaces)} stays in the box as its Substitute until it is in`:''}. If you don't own it, it goes on To buy.`),{type:'acceptOption',deckId:d.id,slotId:r.slotId,substitute:true});};
+/* SELL OR TRADE (Rob, 2026-10-18): an offer says which. */
+actions['offer-kind']=el=>{const kind=el.dataset.kind,offer=kind==='none'?'none':'available';
+  if(el.dataset.now){const r=findRow(el.dataset.record),l=M.lot(C.state,r.id);return commit({type:'offer',lotId:l.id,quantity:l.quantity,offer,...(kind==='none'?{}:{offerKind:kind}),confirmed:true});}
+  return quantityAction(el,kind==='sell'?'Offer to sell':'Offer to trade',()=>note('The copy leaves any deck’s seat it holds; it stays where it is until the deal is done.'),()=>({type:'offer',offer,offerKind:kind}));};
+
 /* A folded row buys for every deck that wants the card: one command per part, one batch. */
 function tapCommand(r,to){const paid=sheetPrice(r);if(r.kind==='need')return {type:'acquire',cards:[r.card],lot:{cardId:r.cardId,quantity:r.quantity,source:to,printing:{...(r.printing||{})},location:{kind:'bench',box:''},notes:'',paid,paidSource:'catalog'},deckId:r.deckId,slotId:r.slotId};if(r.kind==='entry')return {type:'entry-buy',groupId:r.groupId,entryId:r.id,cardId:r.cardId,card:r.card,quantity:r.quantity,source:to,printing:{...(r.printing||{})},paid,paidSource:'catalog'};const l=M.lot(C.state,r.id);return {type:'source',source:to,lotId:l.id,quantity:l.quantity,paid,paidSource:'catalog',confirmed:true};}
 async function oneTap(el,to){const r=findRow(el.dataset.record);if(!r)throw Error('That row changed. Refresh the view.');
@@ -1328,8 +1562,8 @@ async function oneTap(el,to){const r=findRow(el.dataset.record);if(!r)throw Erro
   await commit(commands.length===1?commands[0]:{type:'batch',commands,summary:`${to==='owned'?'Bought':'Ordered'} ${r.card.name}${parts.some(p=>p.kind==='entry')?' and consumed want list entry':parts.length>1?' for '+parts.length+' decks':''}`});
   return r;}
 actions['shop-buy']=async el=>{const r=await oneTap(el,'owned');C.notice(`${r.quantity>1?r.quantity+' × ':''}${r.card.name} ${r.quantity>1?'are':'is'} yours — on the Bench until you put ${r.quantity>1?'them':'it'} in a physical deck${sheetPrice(r)!==null?', '+C.money(sheetPrice(r))+' recorded at the catalog price, marked ≈':''}. Undo is in the header menu.`);};
-actions['shop-order']=async el=>{const r=await oneTap(el,'ordered');C.notice(`${r.card.name} marked Ordered${sheetPrice(r)!==null?' at '+C.money(sheetPrice(r)):''}. Arrived is on the row when it lands.`);};
-actions['shop-arrive']=async el=>{const r=findRow(el.dataset.record);const parts=r&&r.kind==='fold'?r.partRows:[r];if(!r||!parts.every(p=>p&&p.kind==='lot'&&p.source==='ordered'))throw Error('Only an ordered copy can arrive.');const commands=parts.map(p=>({type:'source',source:'owned',lotId:p.id,quantity:p.quantity,paid:sheetPrice(p),paidSource:'catalog',confirmed:true}));await commit(commands.length===1?commands[0]:{type:'batch',commands,summary:`${r.card.name} arrived for ${parts.length} decks`});C.notice(`${r.card.name} arrived — on the bench, still reserved. Add it to its physical deck from Ready to add.`);};
+actions['shop-order']=async el=>{const r=await oneTap(el,'ordered');C.notice(`${r.card.name} marked To Buy · Ordered${sheetPrice(r)!==null?' at '+C.money(sheetPrice(r)):''}. Arrived is on the row when it lands.`);};
+actions['shop-arrive']=async el=>{const r=findRow(el.dataset.record);const parts=r&&r.kind==='fold'?r.partRows:[r];if(!r||!parts.every(p=>p&&p.kind==='lot'&&p.source==='ordered'))throw Error('Only an ordered copy can arrive.');const commands=parts.map(p=>({type:'source',source:'owned',lotId:p.id,quantity:p.quantity,paid:sheetPrice(p),paidSource:'catalog',confirmed:true}));await commit(commands.length===1?commands[0]:{type:'batch',commands,summary:`${r.card.name} arrived for ${parts.length} decks`});C.notice(`${r.card.name} arrived — on the bench, still reserved. Add it to its physical deck from Planned Changes.`);};
 /* THE CAP CELL: what the listing is worth taking at. Under $2 the sheet price; above it the
    sheet plus 10%; at $5 and over the local store gets first refusal, and the cell says so. */
 function capCell(price){const cap=R.capFor(price);if(cap===null)return '<span class="cm-muted">—</span>';return R.localOnly(price)?`<span class="cm-cap cm-cap-local">${C.money(cap)} <small>local only</small></span>`:`<span class="cm-cap">${C.money(cap)}</span>`;}
@@ -1353,7 +1587,7 @@ actions['print-buy-list']=()=>{if(!globalThis.MtgShopExport)throw Error('The pri
   const by=new Map();for(const r of visibleRows.filter(r=>r.kind==='need')){const deck=r.deckId?M.deck(C.state,r.deckId).name:'Unassigned';const row=by.get(r.cardId)||{name:r.card.name,color:groupLabel(r,'color'),type:r.card.typeLine.split('—')[0].trim(),price:r.card.price,need:0,ordered:0,inHand:0,deckNames:[],needByDeck:{}};row.need+=r.quantity;row.needByDeck[deck]=(row.needByDeck[deck]||0)+r.quantity;if(!row.deckNames.includes(deck))row.deckNames.push(deck);by.set(r.cardId,row);}
   const [file]=MtgShopExport.build([...by.values()],{toBuy:true},{date:M.today(),byDeck:true});
   const url=URL.createObjectURL(new Blob([file.content],{type:file.mime}));const tab=window.open(url,'_blank');if(!tab)C.download(file.filename,file.content,file.mime);setTimeout(()=>URL.revokeObjectURL(url),60000);};
-function findRow(id){return visibleRows.find(r=>r.recordId===id)||lastRows.find(r=>r.recordId===id)||M.projection(lens()).find(r=>r.recordId===id);}
+function findRow(id){const hit=visibleRows.find(r=>r.recordId===id)||lastRows.find(r=>r.recordId===id);if(hit)return hit;const r=M.records(lens()).find(x=>x.recordId===id);if(!r)return null;const st=M.stateReader(lens())(r);return {...r,card:r.card||C.card(r.cardId),state:st,stateLabel:M.stateLabel(st)};}
 
 /* A COUNT AND A YES, NOT A DIALOG.
  *
@@ -1503,7 +1737,10 @@ function statusMenu(r){
   const current=r.kind==='lot'?r.source:'';
   const items=LADDER.map(([id,label,why])=>{
     if(r.kind==='need'&&id==='watching')return '';
-    if(id===current)return rung(label,r.kind==='need'?'this requirement is already on the to-buy list':'current status','disabled aria-current="true"',true);
+    /* TO SELL AND TRADE ARE NEVER CHOSEN HERE (Rob, 2026-10-18): they follow the copy's use. Put it in Sell or Trade
+       (the Use section) and its ownership reads To sell or Trade by itself, shown as the current rung and locked. */
+    if(id===current){const auto=r.kind==='lot'&&r.source==='owned'&&(r.offer||'none')!=='none';
+      return rung(auto?M.ownershipLabel(r.offerKind==='sell'?'sell':'trade'):label,r.kind==='need'?'this requirement is already on the to-buy list':auto?`automatic while it is offered — Back to the Bench in Use ends it`:'current status','disabled aria-current="true"',true);}
     const loses=r.kind==='lot'&&r.source==='owned'&&(r.allocation||r.location?.kind==='deck');
     if(loses)return rung(label,'takes it out of its physical deck and clears the reservation — asks first',`data-action="status-dialog" data-record="${e(r.recordId)}" data-source="${id}"`);
     const op=r.kind==='lot'?'source':r.kind==='need'?'acquire':r.kind==='entry'?'entry':'plan';
@@ -1551,8 +1788,9 @@ actions['row-actions']=el=>{const r=findRow(el.dataset.record);if(!r)throw Error
   menu.innerHTML=`<p>${e(r.card.name)} · ${r.quantity}${r.kind==='draft'?' · Draft list':r.kind==='need'?' · To buy':''}</p>`
     +(r.kind==='fold'?'':flyout('cm-status-submenu','Status',statusMenu(r)))
     +section('Where it is',[r.kind==='lot'?b('Add / move to group','row-move',{record:r.recordId}):''])
-    +section('Plan',[r.kind==='lot'&&!M.PLANNED.includes(r.source)?b('Reserve for a deck','reserve-row',{record:r.recordId}):'',r.kind==='lot'&&r.allocation?b('Release reservation → To buy','release-row',{record:r.recordId}):'',r.deckId&&slotId?b('Replacements & options','replacement',{deck:r.deckId,slot:slotId}):'',r.deckId&&slotId&&!M.deck(C.state,r.deckId).archived?(M.deck(C.state,r.deckId).commanders.includes(r.cardId)?b('Change commander','change-commander',{deck:r.deckId}):M.slot(C.state,r.deckId,slotId).purpose==='main'?b('Remove from deck','remove-deck-card',{deck:r.deckId,slot:slotId}):''):'',r.deckId&&slotId?slotFlagButtons(r.deckId,slotId):''])
-    +section('Record',[r.kind==='lot'?b('Edit print & details','edit-row',{record:r.recordId}):'',b('Add another copy','add-card',{card:r.cardId}),r.kind==='entry'?b('Move / copy to group','group-entry-row',{record:r.recordId}):''])
+    +(r.kind==='fold'?'':section('Use',[useMenu(r)]))
+    +section('Plan',[r.deckId&&slotId?b('Replacements & options','replacement',{deck:r.deckId,slot:slotId}):'',r.deckId&&slotId&&!M.deck(C.state,r.deckId).archived?(M.deck(C.state,r.deckId).commanders.includes(r.cardId)?b('Change commander','change-commander',{deck:r.deckId}):M.slot(C.state,r.deckId,slotId).purpose==='main'?b('Remove from deck','remove-deck-card',{deck:r.deckId,slot:slotId}):''):'',r.deckId&&slotId?slotFlagButtons(r.deckId,slotId):''])
+    +section('Record',[r.kind==='lot'?b('Edit','edit-row',{record:r.recordId}):'',b('Add another copy','add-card',{card:r.cardId}),r.kind==='entry'?b('Move / copy to group','group-entry-row',{record:r.recordId}):''])
     +(owned?`<hr>${b('Sell / Trade','offer-row',{record:r.recordId})}`:'');
   /* ESCAPE CLOSES ONE THING (Rob, 15 September). This menu opens over the Table too, and the
      Table treats Escape as "back to the table at rest" from anywhere on the page. Chrome closes
@@ -1587,7 +1825,7 @@ function printing(v,prior={}){return {...prior,set:v.set,collector:v.collector,f
    source and printing, which is what makes "two more owned" read as one record of five. */
 const COPY_MAX = 6;
 const copyRow = (i, source = 'owned', qty = 1) => `<div class="cm-copy-row" data-i="${i}">`
-  +`<select name="source${i}" data-copy="source" aria-label="What these copies are">${[['owned','Owned'],['ordered','Ordered'],['wanted','Wanted'],['watching','Watched']].map(([k,l])=>`<option value="${k}"${k===source?' selected':''}>${l}</option>`).join('')}</select>`
+  +`<select name="source${i}" data-copy="source" aria-label="What these copies are">${[['owned','Owned'],['ordered','To Buy · Ordered'],['wanted','Wanted'],['watching','Watched']].map(([k,l])=>`<option value="${k}"${k===source?' selected':''}>${l}</option>`).join('')}</select>`
   +`<span class="cm-copy-count" role="group" aria-label="How many copies">`
   +`<button type="button" data-copy="less" data-i="${i}" aria-label="One fewer">&#8249;</button>`
   +`<input type="number" name="qty${i}" value="${qty}" min="1" max="1000000" required aria-label="Copies">`
@@ -1648,19 +1886,23 @@ async function acquire(c){
 actions['add-card']=el=>el.dataset.card?acquire(C.card(el.dataset.card)||C.catalog.get(el.dataset.card)):C.cardPicker('Add cards',c=>acquire(c),{label:'Search by name, or paste a list',paste:text=>C.importList({mode:'owned',text})});
 function quantityAction(el,title,extra,build){const r=findRow(el.dataset.record);if(!r||r.kind!=='lot')throw Error('Select a physical or pending card record.');const l=M.lot(C.state,r.id);return form(title,`<div class="cm-full">${note(C.affected(l),!!l.allocation||l.location?.kind==='deck')}</div>`+f('Copies affected','quantity',l.quantity,`type="number" min="1" max="${l.quantity}" required`)+extra(l),v=>commit({...build(l,v),lotId:l.id,quantity:Number(v.quantity),confirmed:true}),'Confirm change');}
 /* A SUBSTITUTE fills a seat while the real card is bought or on its way: the copy goes into the
-   box without a reservation, the deck counts it, and Ready to add asks for it back when a
+   box without a reservation, the deck counts it, and Planned Changes asks for it back when a
    real copy is ready. A copy the list does call for is reserved on the way in instead. */
 actions['reserve-row']=el=>quantityAction(el,'Reserve copies for a deck',l=>s('Target deck','deck',C.state.decks.filter(d=>!d.archived&&d.slots.some(r=>r.committed&&M.compatible(l,r)&&M.shortfall(C.state,d,r)>0)).map(d=>[d.id,d.name]),'')+note('This changes the reservation and exposes any donor deck shortfall. The physical box stays unchanged. Locked and In deck donors require this explicit confirmation.',true),(l,v)=>{if(!v.deck)throw Error('No deck has a compatible unfulfilled requirement. Accept a matching replacement first.');const d=M.deck(C.state,v.deck),r=d.slots.find(r=>r.committed&&M.compatible(l,r)&&M.shortfall(C.state,d,r)>=Number(v.quantity));if(!r)throw Error('This quantity exceeds the matching requirement. Reduce the quantity or choose another deck.');return {type:'allocate',deckId:d.id,slotId:r.id};});
 actions['release-row']=el=>quantityAction(el,'Release these copies',()=>note('The reservation becomes unfulfilled (To buy). Owned copies remain owned, with the same last confirmed physical location.'),()=>({type:'release',destination:'bench'}));
 actions['offer-row']=el=>quantityAction(el,'Sell / Trade collection',l=>s('Availability','offer',[['none','Remove from Sell / Trade'],['available','Available for sale / trade'],['held','Held for a pending deal']],l.offer)+note('Available offers remain candidates for builds. A pending deal releases a deck allocation and protects the copy from automatic reuse.'),(_,v)=>({type:'offer',offer:v.offer}));
 actions['dispose-row']=el=>quantityAction(el,'Record copies leaving your library',()=>s('Reason','reason',[['sold','Sold'],['traded','Traded away'],['lost','Lost'],['gifted','Gifted'],['correction','Inventory correction']],'sold')+note('Confirm only after the copies have left your ownership. This reduces owned quantity and restores any unfulfilled deck needs.',true),(_,v)=>({type:'dispose',reason:v.reason}));
-actions['edit-row']=el=>{const r=findRow(el.dataset.record),l=M.lot(C.state,r.id);form('Exact print & copy details',printFields(l.printing)+f('Price paid (optional)','paid',l.paid??'','type="number" min="0" step="0.01"')+`<label class="cm-full">Notes<textarea name="notes">${e(l.notes)}</textarea></label><label class="cm-checkbox cm-full"><input type="checkbox" name="keepBench" ${l.keepBench?'checked':''}>Use this copy last when a deck reserves from the Bench</label>`,async v=>{const p=printing(v,l.printing);if(p.set&&p.collector){const c=await C.catalog.resolve(r.card.name,{printing:p});if(!c)throw Error('Printing not found.');p.id=c.scryfallId;}else if(p.set!==l.printing.set||p.collector!==l.printing.collector)p.id='';await commit({type:'editLot',lotId:l.id,printing:p,notes:v.notes,paid:v.paid===''?null:Number(v.paid),keepBench:!!v.keepBench});});};
+actions['edit-row']=el=>{const r=findRow(el.dataset.record),l=M.lot(C.state,r.id);form('Edit',f('Quantity','quantity',l.quantity,'type="number" min="1" step="1" required')+printFields(l.printing)+f('Price paid (optional)','paid',l.paid??'','type="number" min="0" step="0.01"')+`<label class="cm-full">Notes<textarea name="notes">${e(l.notes)}</textarea></label><label class="cm-checkbox cm-full"><input type="checkbox" name="keepBench" ${l.keepBench?'checked':''}>Use this copy last when a deck reserves from the Bench</label>`,async v=>{const p=printing(v,l.printing);if(p.set&&p.collector){const c=await C.catalog.resolve(r.card.name,{printing:p});if(!c)throw Error('Printing not found.');p.id=c.scryfallId;}else if(p.set!==l.printing.set||p.collector!==l.printing.collector)p.id='';const edit={type:'editLot',lotId:l.id,printing:p,notes:v.notes,paid:v.paid===''?null:Number(v.paid),keepBench:!!v.keepBench},q=Number(v.quantity);await commit(q&&q!==l.quantity?{type:'batch',commands:[{type:'quantity',lotId:l.id,quantity:q,confirmed:true},edit],confirmed:true}:edit);});};
 /* A NEW GROUP CHOOSES ITS TEMPLATE. General is the default: a list kept by hand that never moves
    a copy. To sell / trade and the 40-card deck are physical places (a copy is in one place at a
    time); the Bench is offered only while there is none; a Commander deck is made with its deck,
    so choosing it opens deck creation instead. */
 const templateChoices=(keep='')=>[['general','General — a list; copies stay where they are'],['trade','To sell / trade — a physical pile'],['limited','40-card deck — a physical deck (Limited; its rules come later)'],...(!C.state.groups.some(g=>g.template==='bench')||keep==='bench'?[['bench','Bench — where unassigned copies sit']]:[])];
-actions['new-group']=()=>form('New Collection group',f('Group name','name','','required maxlength="100"')+s('Template','template',[...templateChoices(),['commander','Commander deck — opens New deck']],'general')+note('A copy sits in one physical place at a time: the Bench, a deck, or To sell / trade. General groups are lists: a copy can be in any number of them, and adding it to one moves nothing.'),async v=>{if(v.template==='commander')return actions['wizard-create']();const id='group:'+C.uid();await commit({type:'createGroup',groupId:id,name:v.name,template:v.template||'general'});goCards('library',{group:id});},'Create group');
+actions['roster-recommend']=async el=>{const d=M.deck(C.state,el.dataset.deck),g=await C.catalog.loadGraph(),rows=d.commanders.map(id=>g.cards.find(x=>x.name===C.card(id)?.name)).filter(Boolean);
+  if(!rows.length)throw Error('Choose a commander first.');
+  const x=d.definition,list=CrankRecommend.recommend({commanders:rows,definition:{styles:[x.composition?.primary,x.composition?.secondary,...(x.styles||[])].filter(Boolean),mechanics:x.mechanicIds||[]},pool:g.cards,relate:globalThis.CrankGraph?.relate||null,loops:globalThis.CrankLoops||null,limit:2000});
+  recScores=new Map(list.map(r=>[r.name,r.score]));sort={key:'recommended',dir:1};C.render();C.notice(`Sorted by what ${rows.map(r=>r.name.split(',')[0]).join(' and ')} and the deck's definition recommend.`,false,{undo:false});};
+actions['new-group']=()=>form('New Collection group',f('Group name','name','','required maxlength="100"')+s('Template','template',[...templateChoices(),['commander','Commander deck — opens New deck']],'general')+note('A copy sits in one physical place at a time: the Bench, a deck, or To sell / trade. General groups are lists: a copy can be in any number of them, and adding it to one moves nothing.'),async v=>{if(v.template==='commander')return actions['start-from']();const id='group:'+C.uid();await commit({type:'createGroup',groupId:id,name:v.name,template:v.template||'general'});goCards('library',{group:id});},'Create group');
 actions['group-entry-row']=el=>{const r=findRow(el.dataset.record);if(C.state.groups.length<2)throw Error('Create another Collection group first.');form('Move or copy planned card',s('Destination group','to',C.state.groups.filter(g=>g.id!==r.groupId).map(g=>[g.id,g.name]),'')+s('Action','operation',[['move','Move planned entry'],['copy','Copy planned entry']],'move'),v=>commit({type:'moveGroupEntries',from:r.groupId,to:v.to,entryIds:[r.id],copy:v.operation==='copy'}));};
 actions['manage-group']=el=>{const g=C.state.groups.find(g=>g.id===el.dataset.group),fixed=g.template==='commander'||g.template==='bench';form('Manage '+g.name,f('Group name','name',g.name,'required')+(fixed?note(g.template==='bench'?'Template: Bench. There is one Bench, and it stays.':'Template: Commander deck. It is this deck\'s box, and changes only with its deck.'):s('Template','template',templateChoices(g.template),g.template||'general'))+`<div class="cm-full">${b('Import cards into this group','import-list',{group:g.id})}${g.template==='bench'?'':b('Delete group','delete-group',{group:g.id})}</div>`,v=>{const commands=[];if(v.name!==g.name)commands.push({type:'renameGroup',groupId:g.id,name:v.name});if(!fixed&&v.template&&v.template!==(g.template||'general'))commands.push({type:'groupTemplate',groupId:g.id,template:v.template});return commands.length>1?commit({type:'batch',commands,summary:`Updated ${v.name}`}):commands.length?commit(commands[0]):undefined;});};actions['delete-group']=el=>C.review('Delete Collection group',note('Library copies remain owned. Group memberships and its draft entries will be removed.'),{type:'deleteGroup',groupId:el.dataset.group});
 actions['remove-deck-card']=el=>{const d=M.deck(C.state,el.dataset.deck),r=M.slot(C.state,d.id,el.dataset.slot),c=C.card(r.cardId);

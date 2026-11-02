@@ -41,6 +41,7 @@ import {GameTable, tableCards} from "../../cloud/game-room.mjs";
 import {boardPerson} from "./board-person.mjs";
 import {build, worktreeSource} from "../../tools/release-pages.mjs";
 import {joinLocation} from "../../cloud/worker.mjs";
+import {createGame, openNewGame} from "./new-game.mjs";
 
 let checks = 0;
 const ok = (c, m) => {assert.ok(c, m); checks += 1; console.log(`  ok  ${m}`);};
@@ -142,30 +143,20 @@ async function chooseDeck(page, seat, name) {
 /* ---- one table, end to end ---- */
 async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
   console.log(`play-journeys: table ${n} -- ${[robDeck, mayaDeck, ninaDeck, theoDeck].map((d) => d.name).join(" · ")}`);
-  /* LOBBY: New table, a person and two AIs. */
-  await rob.page.goto(`${base}/index.html#table`);
-  await rob.page.locator("#cm-table-new").waitFor({timeout: 30000});
-  await rob.page.fill("#cm-table-new [name=hostName]", "Rob");
-  await rob.page.fill("#cm-table-new [name=name2]", "Maya");
-  await rob.page.selectOption("#cm-table-new [name=kind3]", "ai");
-  await rob.page.fill("#cm-table-new [name=name3]", "Nina");
-  await rob.page.selectOption("#cm-table-new [name=kind4]", "ai");
-  await rob.page.fill("#cm-table-new [name=name4]", "Theo");
-  await rob.page.click("[data-action=table-create]");
+  /* LOBBY: New game, a person and two AIs. */
+  await createGame(rob.page, base, {host: "Rob", humans: [{name: "Maya"}], ai: [{name: "Nina"}, {name: "Theo"}]}, "#table");
   await rob.page.waitForFunction(() => /#table\?id=journey\d+/.test(location.hash), null, {timeout: 20000});
   const id = /#table\?id=(journey\d+)/.exec(await rob.page.evaluate(() => location.hash))[1];
   await rob.page.locator(".cm-cloud-table .cm-lobby-seat[data-seat='3']").waitFor({timeout: 20000});
-  eq((await rob.page.locator(".cm-cloud-table .cm-lobby-seat h3").allTextContents()).map((t) => t.trim()), ["Seat 1 · You", "Seat 2 · Maya", "Seat 3 · AI · Normal", "Seat 4 · AI · Normal"], `table ${n}: New table seats Rob, Maya to invite, and two AIs`);
+  eq((await rob.page.locator(".cm-cloud-table .cm-lobby-seat h3").allTextContents()).map((t) => t.trim()), ["Seat 1 · You · Host", "Seat 2 · Maya", "Seat 3 · Ninaai", "Seat 4 · Theoai"], `table ${n}: New table seats Rob, Maya to invite, and two AIs`);
   await chooseDeck(rob.page, 0, robDeck.name);
   await chooseDeck(rob.page, 2, ninaDeck.name);
   await chooseDeck(rob.page, 3, theoDeck.name);
   await waitText(rob.page, ".cm-lobby-seat[data-seat='3'] header", /Ready/);
   ok(true, `table ${n}: Rob brings ${robDeck.name} from his library, and chooses the AIs' (${ninaDeck.name}, ${theoDeck.name}); an AI with a deck is ready`);
   /* INVITE: the link, opened on Maya's phone. */
-  await rob.page.click(".cm-lobby-seat[data-seat='1'] [data-action=table-invite]");
-  await rob.page.locator("#cm-table-link").waitFor();
-  const link = await rob.page.inputValue("#cm-table-link");
-  await rob.page.keyboard.press("Escape");
+  /* (ROB-320: Create game named Maya, so the lobby sends nothing; she opens the lobby link her email carries.) */
+  const link = `${base}/api/join/${id}`;
   await maya.page.goto(joinLocation(new URL(link.replace(/^https?:\/\/[^/]+/, base))));   /* the Worker's answer to the link */
   await maya.page.waitForFunction(() => /#table\?id=/.test(location.hash), null, {timeout: 30000});
   await maya.page.locator(".cm-cloud-table .cm-lobby-seat").first().waitFor({timeout: 30000});
@@ -179,7 +170,7 @@ async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
   await rob.page.locator("#cm-table-seconds").waitFor();
   clock += 10000;
   await serial(() => tableFor(id).alarm());
-  await rob.page.locator("#cm-board .cm-board-strip").waitFor({timeout: 30000});
+  await rob.page.locator("#cm-board .cm-stage-top").waitFor({timeout: 30000});
   await maya.page.locator("#cm-board").waitFor({timeout: 30000});
   ok(true, `table ${n}: Maya brings ${mayaDeck.name}; everyone is ready; the countdown runs out and both pages are the board`);
 
@@ -234,11 +225,15 @@ async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
   for (const [width, height] of SIZES) {
     await rob.page.setViewportSize({width, height});
     for (const view of ["table", "focus", "full"]) {
-      await rob.page.click(`[data-action=board-view][data-view=${view}]`);
-      await rob.page.locator(view === "full" ? ".cm-full-rail" : view === "table" ? ".cm-board-table" : ".cm-board-mat").waitFor();
+      await rob.page.click("[data-action=board-camera]");
+      await rob.page.click(`.cm-stage-camera [data-action=board-view][data-view=${view}]`);
+      /* Full is the 3D table now (R03: Full screen always uses it), its own region; the old Full rail is gone. */
+      await rob.page.locator(view === "full" ? ".cm-stage-region" : view === "table" ? ".cm-board-table" : ".cm-board-mat").waitFor();
       await rob.page.waitForTimeout(300);
-      const g = await rob.page.evaluate(() => {
-        const hand = [...document.querySelectorAll(".cm-board-hand .cm-bcard")];
+      const g = await rob.page.evaluate((full) => {
+        /* In Full the hand is the 3D table's fan, flush with the window's foot and dipping below it by design (Rob): there
+           each card's upper half is in the window. Elsewhere the hand's tray is whole. */
+        const hand = [...document.querySelectorAll(full ? ".cm-stage-fan-slot .cm-bcard" : ".cm-board-hand .cm-bcard")];
         /* Every caption on a board -- a zone's (Battlefield, Lands · 3), a group's (Creatures · 2), a pile's count -- is
            read whole: no card of its zone over it, nor the life counter, a circle at the table's center. */
         const meet = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
@@ -258,15 +253,16 @@ async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
           if (card) covered.push(`${said} under ${card.getAttribute("aria-label")?.split(/[,:]/)[0]}`);
           else if (underPie(box)) covered.push(`${said} under the life counter`);
         }
-        return {cards: hand.length, whole: hand.every((c) => {const r = c.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 0.5;}), sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        return {cards: hand.length, whole: hand.every((c) => {const r = c.getBoundingClientRect(); return r.top >= 0 && (full ? r.top + r.height / 2 <= innerHeight : r.bottom <= innerHeight + 0.5);}), sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
           boards: document.querySelectorAll("#cm-board .cm-mat").length, covered};
-      });
-      ok(g.whole && g.sideways === 0 && g.boards >= (view === "focus" ? 1 : 4), `table ${n} at ${width}x${height}, ${view}: the hand whole in the window (${g.cards} cards), ${g.boards} boards, nothing scrolling sideways`);
+      }, view === "full");
+      ok(g.cards > 0 && g.whole && g.sideways === 0 && g.boards >= (view === "focus" ? 1 : 4), `table ${n} at ${width}x${height}, ${view}: the hand ${view === "full" ? "fanned with each card's upper half" : "whole"} in the window (${g.cards} cards), ${g.boards} boards, nothing scrolling sideways`);
       ok(g.covered.length === 0, `table ${n} at ${width}x${height}, ${view}: every zone's caption whole, no card or the life counter over it${g.covered.length ? ` -- ${g.covered.join("; ")}` : ""}`);
       await shot(rob.page, `t${n}-${view}-${width}x${height}`);
     }
     await rob.page.evaluate(() => document.fullscreenElement && document.exitFullscreen()).catch(() => {});
-    await rob.page.click("[data-action=board-view][data-view=focus]");
+    await rob.page.click("[data-action=board-camera]");
+    await rob.page.click(".cm-stage-camera [data-action=board-view][data-view=focus]");
   }
   await rob.page.setViewportSize({width: 1400, height: 900});
   /* THE PHONE, held sideways: Focus only, the board the whole screen. */
@@ -291,10 +287,13 @@ async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
   ok(/not switched on here yet/.test(await text(rob.page, ".cm-coach-thread")), `table ${n}: the Coach answers a suggested prompt with the door's honest reply while it is shut`);
   await rob.page.keyboard.press("Escape");
   await rob.page.locator("#cm-board-coach[hidden], #cm-board-coach:not(:has(.cm-coach-input))").first().waitFor({state: "attached", timeout: 5000}).catch(() => {});
-  /* CONCEDE, at the second table: Maya leaves it from the phone's settings, and the others play on. */
+  /* CONCEDE, at the second table: Maya leaves it from the phone's settings -- in its profile menu since the upright
+     phone layout (ROB-18) -- and the others play on. */
   const conceding = n === 2;
   if (conceding) {
-    await maya.page.click(".cm-phone-rail [data-action=board-tools]");
+    await maya.page.click(".cm-phone-rail [data-action=board-profile]");
+    await maya.page.click(".cm-profile-menu [data-action=board-tools]");
+    await maya.page.click("#cm-dialog [role=tab][data-tab=gameplay]");
     await maya.page.click("#cm-board-tools [data-action=board-concede]");
     await waitText(maya.page, ".cm-board-banner", /You have left this game; the others play on/);
     for (let i = 0; i < 100 && viewsAt(ROB, id).at(-1)?.departures?.s1 !== "conceded"; i += 1) await rob.page.waitForTimeout(50);
@@ -303,7 +302,9 @@ async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
     await settle();
   }
   /* END, and THE RECORD. */
-  await rob.page.click("[data-action=board-tools]");
+  await rob.page.click("[data-action=board-profile]");
+  await rob.page.click(".cm-profile-menu [data-action=board-tools]");
+  await rob.page.click("#cm-dialog [role=tab][data-tab=gameplay]");
   await rob.page.click("#cm-board-tools [data-action=board-end]");
   await rob.page.click("#cm-board-tools [data-action=board-end][data-confirm='1']");
   await waitText(rob.page, ".cm-board-over", /ended early/).catch(async (e) => {console.log("ROB AT END", (await text(rob.page, "#cm-main")).slice(0, 500).replace(/\n+/g, " | ")); throw e;});

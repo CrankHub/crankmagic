@@ -20,8 +20,8 @@
  *             no more passes than the run held when it was chosen.
  *   Kept      a room woken from storage in the middle of a run goes on the same way, and the game replays from its
  *             seed and tape to the same game.
- *   Board     the strip draws Resolve all beside the pass, and its click sends that option; the stack shows the run as one
- *             line, ×N.
+ *   Board     the shared header draws Resolve all beside the pass, and its click sends that option; the stack lists
+ *             each trigger in resolution order.
  *
  * Two lands stand in for the cards, so a board is built in two turns: Alarm Field ("Whenever another creature enters,
  * you gain 1 life.", Soul Warden's ability) and Goblin Den ("{T}: Create three 1/1 red Goblin creature tokens.",
@@ -246,6 +246,9 @@ let queue = Promise.resolve();
 const serial = (fn) => (queue = queue.then(fn, fn));
 const callAt = (p, body) => serial(async () => (await table.fetch(new Request(`https://table.internal${p}`, {method: body === undefined ? "GET" : "POST", headers: {"content-type": "application/json", "x-crankmagic-email": ROB}, ...(body !== undefined ? {body: JSON.stringify(body)} : {})}))).json());
 await callAt("/table/create", {tableId: TABLE, hostName: "Rob", seats: [{kind: "ai", name: "Maya"}]});
+/* Rob's triggers asked about, as before ROB-102: with the stack passed for a player with no answer, a run of them would
+   resolve unasked and Resolve all would never be offered. The rule's own proof is tests/game-table.mjs. */
+await callAt("/table/rules", {passStack: false});
 await callAt("/table/deck", {seatId: 0, deck: {name: "Rob's deck", ...deck("Rob", ["Quest Field", "Goblin Den"])}});
 await callAt("/table/deck", {seatId: 1, deck: {name: "Maya's deck", ...deck("Maya", ["Forest"])}});
 await callAt("/table/ready", {ready: true});
@@ -301,6 +304,7 @@ function carry(ws) {
 }
 try {
   const context = await browser.newContext({viewport: {width: 1400, height: 900}, serviceWorkers: "block"});
+  await context.addInitScript(() => localStorage.setItem("cm-board-view", "focus"));
   const page = await context.newPage();
   if (stub) await stub(page);
   await page.route(`${base}/index.html*`, (r) => r.fulfill({contentType: "text/html; charset=utf-8", body: html}));
@@ -310,35 +314,37 @@ try {
   await page.routeWebSocket(/\/api\/tables\/[a-z0-9]+\/connect$/, carry);
   await page.goto("about:blank");
   await page.goto(`${base}/index.html#table?id=${TABLE}`);
-  const button = page.locator(".cm-board-strip [data-action=board-resolve-all]");
+  const button = page.locator(".cm-stage-actions [data-action=board-resolve-all]");
   await button.waitFor({timeout: 60000});
-  eq((await button.textContent()).trim(), "Resolve all 3", "the strip draws Resolve all 3 beside the pass");
-  const pass = page.locator(".cm-board-strip [data-action=board-pass]");
+  eq((await button.textContent()).trim(), "Resolve all 3", "the action pop-up draws Resolve all 3 beside the pass (the header no longer carries the pass, 2026-10-28)");
+  const pass = page.locator(".cm-stage-actions [data-action=board-pass]");
   eq((await pass.textContent()).trim(), "Resolve Quest Field", "and the pass still says it resolves the one on top");
-  ok(await page.evaluate(() => {const a = document.querySelector(".cm-board-strip [data-action=board-pass]"), b = document.querySelector(".cm-board-strip [data-action=board-resolve-all]"); return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);}), "Resolve all comes right after the pass");
+  ok(await page.evaluate(() => {const a = document.querySelector(".cm-stage-actions [data-action=board-pass]"), b = document.querySelector(".cm-stage-actions [data-action=board-resolve-all]"); return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);}), "Resolve all comes right after the pass");
   const line = page.locator(".cm-board-stack li").first();
-  eq([await page.locator(".cm-board-stack li").count(), (await line.textContent()).replace(/\s+/g, " ").trim().startsWith("Quest Field ×3")], [1, true], "the stack shows the run as one line, Quest Field ×3");
+  eq([await page.locator(".cm-board-stack li").count(), (await line.textContent()).includes("Quest Field")], [3, true], "the shared stack lists each trigger in the run, with the first to resolve first");
   /* "You can also" is for what else there is to do; Resolve all is beside the pass, not in it. */
   const others = latest.decision.options.filter((o) => o.act !== "pass" && o.act !== "resolve-all").length;
-  eq(await page.locator(".cm-board-strip [data-action=board-also]").count() > 0, others > 0, `You can also shows only for what else there is (${others} other options): Resolve all is not counted in it`);
+  eq(await page.locator(".cm-stage-top [data-action=board-also]").count() > 0, others > 0, `You can also shows only for what else there is (${others} other options): Resolve all is not counted in it`);
   if (await page.locator("[data-action=board-also]").count()) {
     await page.click("[data-action=board-also]");
     eq(await page.locator(".cm-board-also [data-action=board-option]", {hasText: "Resolve all"}).count(), 0, "and it is not listed again under You can also");
     await page.click("[data-action=board-also]");
   }
   await button.click();
-  await page.waitForFunction(() => !document.querySelector(".cm-board-strip [data-action=board-resolve-all]"), null, {timeout: 20000});
+  await page.waitForFunction(() => !document.querySelector(".cm-stage-actions [data-action=board-resolve-all]"), null, {timeout: 20000});
   /* The first trigger asks "you may": the board says the answer goes for the run; one Yes, and the room answers the rest. */
   const note = page.locator("#cm-board-decision .cm-board-for-run");
   await note.waitFor({timeout: 20000});
   ok(/your answer goes for this same question each time the run asks it/.test(await note.textContent()), "the first of the run's questions says the answer goes for the rest of the run");
-  await page.locator("#cm-board-decision [data-action=board-option]", {hasText: /^Yes/}).first().click();
+  /* answered in the pop-up since ROB-319 (Yes, then Confirm); in the pane before it */
+  await page.locator("#cm-board-decision [data-action=board-option], #cm-board-decision [data-action=board-flow-choice]", {hasText: /^Yes/}).first().click();
+  await page.locator("#cm-board-decision [data-action=board-confirm], #cm-board-decision [data-action=board-flow-confirm]").first().click();
   for (let i = 0; i < 200 && latest.state.stack.length; i += 1) {clock += 1000; await serial(() => table.alarm()); await page.waitForTimeout(20);}
-  eq([latest.state.stack.length, latest.state.players[0].life - lifeBefore, latest.decision?.title ?? ""].map((x, i) => (i === 2 ? /you may/.test(x) : x)), [0, 3, false], "two clicks in all: Resolve all, then one Yes; the three resolve, Rob gains 3 life, and he is asked no more");
+  eq([latest.state.stack.length, latest.state.players[0].life - lifeBefore, latest.decision?.title ?? ""].map((x, i) => (i === 2 ? /you may/.test(x) : x)), [0, 3, false], "Resolve all, select Yes, and confirm once; the three resolve, Rob gains 3 life, and he is asked no more");
   await context.close();
 } finally {
   await close();
 }
 
-console.log(`room-resolve-all: ${checks} checks passed — a run of identical triggers on top of the stack is let resolve with one decision, through that run only, its same question answered once, kept across a wake and replayed; the board offers it beside the pass, shows the run as one line, and says the answer goes for the run.`);
+console.log(`room-resolve-all: ${checks} checks passed — a run of identical triggers on top of the stack is let resolve with one decision, through that run only, its same question answered once, kept across a wake and replayed; the board offers it beside the pass, shows the triggers in resolution order, and says the answer goes for the run.`);
 process.exit(0);

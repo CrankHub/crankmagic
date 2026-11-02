@@ -48,6 +48,8 @@ const heads = (page) => page.$$eval(".cm-table thead th[class*=cm-col-]", (ths) 
 const stateOf = (page) => page.evaluate(async () => { const r = await CrankRepository.open(); try { const s = await r.getState(); return {cards: s.cards, lots: s.lots, decks: s.decks.map((d) => ({id: d.id, name: d.name, archived: !!d.archived})), preferences: s.preferences, groups: s.groups}; } finally { r.close(); } });
 const opened = async (page, name) => { await page.locator("#cm-dialog[open]").waitFor(); eq(await page.locator("#cm-dialog-title").textContent(), name, `the dialog is ${name}`); };
 const settle = (page) => page.waitForFunction(() => document.querySelector("#cm-roster-table .cm-table"));
+/* Columns is in the View menu (ROB-358). */
+const openColumns = async (page) => { await page.locator("[data-action=view-menu]").click(); await page.locator(".cm-row-menu [data-action=roster-columns]").click(); };
 
 try {
   const context = await browser.newContext({viewport: {width: 1400, height: 900}, serviceWorkers: "block", acceptDownloads: true});
@@ -57,67 +59,87 @@ try {
   await page.goto(LIB);
   await settle(page);
 
-  /* 3, first: the head. */
-  eq(await page.$$eval(".cm-page-head .cm-actions > .v-button", (bs) => bs.map((b) => b.textContent.trim())), ["Import list", "New group", "More", "Add cards"], "the head ends with Add cards");
-  ok(await page.$eval(".cm-page-head [data-action=add-card]", (b) => b.classList.contains("primary")), "and Add cards is the primary");
+  /* 3, first: the band (ROB-358; Rob, 2026-11-01: "no more than a total of 10 clickable items above the red line"). */
+  const controls = () => page.$$eval(".cm-band button, .cm-band input, .cm-band select, .cm-band a", (els) => els.filter((e) => e.getClientRects().length).length);
+  eq(await controls(), 10, "the band is ten clickables at rest");
+  eq(await page.$$eval(".cm-band [role=tab]", (ts) => ts.map((t) => t.textContent.replace(/\s+/g, " ").trim().replace(/[\d,]+$/, "").trim())), ["Library", "To buy", "Orders"], "the tabs are the title: Library, To buy, Orders");
+  ok(await page.$eval(".cm-band [data-action=add-card]", (b) => b.classList.contains("primary")), "Add cards is the primary, one click");
+  ok((await page.$eval(".cm-band", (b) => b.getBoundingClientRect().height)) < 140, "and the band is under 140 px tall at 1400");
+  eq(await page.locator(".cm-kpi, .cm-batch-bar, .cm-toolbar").count(), 0, "the eight count cards, the toolbar and the old bar are gone from the page");
 
-  /* 7. The count cards (Rob, 2026-09-25: "When clicking on any of the card counts, it should filter the card table below it"). */
-  const figures = () => page.$$eval(".cm-kpi", (ks) => ks.map((k) => ({label: k.querySelector("span").textContent.trim(), n: Number(k.querySelector("strong").textContent.replace(/,/g, ""))})));
+  /* 7. THE COUNTS ARE THE GROUP MENU'S CHIPS (Rob, 2026-11-01: "wouldn't that give a dropdown to select one of those three"). They
+     partition the copies, each one selects, and a second press lets every row back. */
   const copiesShown = () => page.$eval("#cm-roster-table", (t) => { const m = (t.querySelector(".cm-paging span, .cm-status-line")?.textContent || "").match(/([\d,]+) cop(?:y|ies)/); return m ? Number(m[1].replace(/,/g, "")) : -1; });
+  const figures = async () => { await page.locator("[data-action=group-menu]").click(); const f = await page.$$eval(".cm-show-chip", (cs) => cs.map((c) => ({key: c.dataset.show, label: c.textContent.replace(/[\d,]+\s*$/, "").trim(), n: Number(c.querySelector("b").textContent.replace(/,/g, ""))}))); await page.keyboard.press("Escape"); return f; };
   const cardsBefore = await figures(), recordsBefore = await records(page);
-  eq(cardsBefore.map((f) => f.label), ["Watching", "To buy", "Ordered", "Owned", "Bench", "To add", "Target", "Substitute"], "eight count cards: the stages, then where an owned card is (docs/card-states.md)");
-  eq(cardsBefore[3].n, cardsBefore[4].n + cardsBefore[5].n + cardsBefore[6].n + cardsBefore[7].n, "and the second row adds up to Owned");
-  /* The caption divides To buy by role (Rob, 2026-09-26), judged by the model on the stored library. */
+  eq(cardsBefore.map((f) => f.label), ["All", "Boxed", "Reserved", "Upgrade", "Bench"], "the chips are All, then Boxed, Reserved, Upgrade and Bench (a state nobody holds is not offered)");
   {
     const stored = await page.evaluate(async () => { const r = await CrankRepository.open(); try { return await r.getState(); } finally { r.close(); } });
-    const read = M.stateReader(stored), buys = M.projection(stored).map(read).filter((x) => x.stage === "buy");
-    const recs = M.projection(stored);
-    const up = recs.filter((r) => { const x = read(r); return x.stage === "buy" && x.role === "upgrade"; }).reduce((n, r) => n + r.quantity, 0);
-    const res = recs.filter((r) => { const x = read(r); return x.stage === "buy" && x.role === "reserved"; }).reduce((n, r) => n + r.quantity, 0);
-    ok(buys.length > 0 && (await page.locator(".cm-kpi-caption").innerText()).includes(`To buy: ${up.toLocaleString("en-US")} upgrade${up === 1 ? "" : "s"}, ${res.toLocaleString("en-US")} reserved`), `the caption divides To buy into ${up} upgrades and ${res} reserved, as the model does`);
+    const recs = M.records(stored), all = recs.reduce((n, r) => n + (r.quantity || 1), 0);
+    eq(cardsBefore[0].n, all, `All is every copy the Library shows (${all})`);
+    eq(cardsBefore.slice(1).reduce((n, f) => n + f.n, 0), all, "and the other chips add up to it: they partition the copies");
   }
   for (const [i, f] of cardsBefore.entries()) {
-    await page.locator(".cm-kpi").nth(i).click();
-    await page.waitForFunction((n) => { const t = document.querySelector("#cm-roster-table .cm-paging span, #cm-roster-table .cm-status-line"); return t && /cop(y|ies)/.test(t.textContent); }, null);
-    eq(await copiesShown(), f.n, `${f.label}: the copies under the card add up to its figure, ${f.n}`);
-    eq(await page.$eval(".cm-kpi[aria-pressed=true] span", (s) => s.textContent.trim()), f.label, `${f.label}: the card is the one pressed`);
+    if (!i) continue;
+    await page.locator("[data-action=group-menu]").click();
+    await page.locator(`.cm-show-chip[data-show=${f.key}]`).click();
+    await page.waitForFunction(() => /cop(y|ies)/.test(document.querySelector("#cm-roster-table .cm-paging span, #cm-roster-table .cm-status-line")?.textContent || ""));
+    eq(await copiesShown(), f.n, `${f.label}: the copies under the chip add up to its figure, ${f.n}`);
     eq(await page.$eval(".cm-fchip", (c) => c.textContent.replace(/\s+/g, " ").replace("✕", "").trim()), `Count: ${f.label}`, `${f.label}: a chip names it`);
-    eq(await figures(), cardsBefore, `${f.label}: the other cards keep their figures`);
-    await page.locator(".cm-kpi").nth(i).click();
-    await page.waitForFunction(() => !document.querySelector(".cm-kpi[aria-pressed=true]"));
-    eq(await records(page), recordsBefore, `${f.label}: a second click lets every row back`);
+    eq(await figures(), cardsBefore, `${f.label}: the other chips keep their figures`);
+    await page.locator("[data-action=group-menu]").click();
+    await page.locator(`.cm-show-chip[data-show=${f.key}]`).click();
+    await page.waitForFunction(() => !document.querySelector(".cm-fchip"));
+    eq(await records(page), recordsBefore, `${f.label}: a second press lets every row back`);
   }
   /* Two figures judged from the library as stored, not from the page's rule. */
   {
     const st = await stateOf(page), sum = (f) => st.lots.filter(f).reduce((n, l) => n + l.quantity, 0);
-    eq(cardsBefore[3].n, sum((l) => l.source === "owned"), "Owned is every owned copy");
-    eq(cardsBefore[4].n, sum((l) => l.source === "owned" && !l.allocation && l.location?.kind !== "deck"), "the Bench is the owned copies no deck reserves and no deck box holds");
-    eq(cardsBefore[2].n, sum((l) => l.source === "ordered"), "Ordered is the copies on order");
+    const final = sum((l) => l.source === "owned" && l.allocation && l.location?.kind === "deck" && l.location.deckId === l.allocation.deckId);
+    const subs = sum((l) => l.source === "owned" && l.location?.kind === "deck" && l.allocation?.deckId !== l.location.deckId && (l.offer || "none") === "none");
+    eq(cardsBefore[1].n, final + subs, "Boxed is every owned copy in a deck's box: the deck's own cards, and the stand-ins in them");
+    /* The model needs the whole library -- deck groups and slots -- which stateOf trims, so it reads the stored one whole. */
+    const readStored = M.stateReader(await page.evaluate(async () => { const r = await CrankRepository.open(); try { return await r.getState(); } finally { r.close(); } }));
+    eq(cardsBefore[4].n, sum((l) => readStored({...l, kind: "lot"}).use === "bench"), "the Bench is what the model calls the Bench: owned, for no deck, not offered");
+    ok(sum((l) => readStored({...l, kind: "lot"}).use === "bench") <= sum((l) => l.source === "owned" && !l.allocation && l.location?.kind !== "deck"), "and never more than the owned copies no deck claims and no box holds");
   }
 
   /* 8. The name first, then its mana (Rob, 2026-09-25: "Put the card name first then mana symbols"). */
   const nameFirst = await page.$$eval("#cm-roster-table tr[data-card] td.cm-col-name", (tds) => tds.map((td) => { const n = td.querySelector(".cm-card-name"), m = td.querySelector(".cm-row-mana, .cm-row-land"); return !m || !!(n.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING); }));
   ok(nameFirst.length > 20 && nameFirst.every(Boolean), `in every row the card's name comes before its mana (${nameFirst.filter(Boolean).length} of ${nameFirst.length})`);
 
-  /* 9. The card states on the rows (docs/card-states.md): every pill is a word from the vocabulary, the Filters
-     dialog offers the states and the two roles outside a box, and "To add" finds exactly the owned copies Ready to add
-     lists, each wearing its role. */
-  const VOCAB = ["Watching", "To buy", "Ordered", "Bench", "To add", "Target", "Substitute"];
+  /* 9. The card status on the rows (docs/card-states.md, 2026-10-18): every pill is a word from the vocabulary, the
+     Filters dialog offers those words and two ownership readings, and "Loading" finds exactly the owned copies Ready to
+     add lists, each with its note. */
+  const VOCAB = M.STATE_LABELS;
   const pills = await page.$$eval("#cm-roster-table td.cm-col-status .cm-pill", (ps) => ps.map((p) => p.textContent.trim()));
   ok(pills.length > 20 && pills.every((p) => VOCAB.includes(p)), `every Status pill is a card-state word: ${[...new Set(pills.filter((p) => !VOCAB.includes(p)))].join(", ")}`);
   await page.getByRole("button", {name: /^Filters/}).click();
   await opened(page, "Filters");
-  eq(await page.$$eval("#cm-dialog [data-fd=status]", (bs) => bs.map((b) => b.textContent)), ["Watching", "To buy", "Ordered", "Owned (any)", "Bench", "To add", "Target", "Substitute", "Upgrade", "Reserved"], "the Filters dialog's Status chips are the card states");
-  await page.locator("[data-fd=status][data-value='To add']").click();
+  eq(await page.$$eval("#cm-dialog [data-fd=status]", (bs) => bs.map((b) => b.textContent)), ["Final", "Substitute", "Reserved", "Upgrade", "Bench", "Sell", "Trade", "Watch", "To buy", "To Buy · Ordered", "Own (any)", "To buy (any)"], "the Filters dialog's Status chips are the card status words, then two ownership readings");
+  await page.keyboard.press("Escape");
+  /* Reserved is more than one page of rows, so the list is read whole. */
+  await page.evaluate(async () => { const r = await CrankRepository.open(); try { const s = await r.getState(); await r.commit({id: crypto.randomUUID(), type: "preferences", values: {pageSize: "all"}}, s.revision); } finally { r.close(); } });
+  await page.reload();
+  await settle(page);
+  await page.getByRole("button", {name: /^Filters/}).click();
+  await opened(page, "Filters");
+  await page.locator("[data-fd=status][data-value='Reserved']").click();
   await page.locator("#cm-fd-show").click();
-  await page.waitForFunction(() => /Status: To add/.test(document.getElementById("cm-filter-chips")?.textContent || ""));
-  const toAdd = await page.$$eval("#cm-roster-table tr[data-card]", (trs) => trs.map((tr) => ({pill: tr.querySelector("td.cm-col-status .cm-pill")?.textContent.trim(), badge: !!tr.querySelector(".cm-badge-upgrade, .cm-badge-reserved"), q: Number(tr.querySelector("td.cm-col-quantity")?.textContent.trim() || 1)})));
+  await page.waitForFunction(() => /Status: Reserved/.test(document.getElementById("cm-filter-chips")?.textContent || ""));
+  const toAdd = await page.$$eval("#cm-roster-table tr[data-card]", (trs) => trs.map((tr) => ({pill: tr.querySelector("td.cm-col-status .cm-pill")?.textContent.trim(), badge: !!tr.querySelector("td.cm-col-status .cm-badge-final"), q: Number(tr.querySelector("td.cm-col-quantity")?.textContent.trim() || 1)})));
   {
     const st = await stateOf(page), five = st.lots.filter((l) => l.source === "owned" && l.allocation && !(l.location?.kind === "deck" && l.location.deckId === l.allocation.deckId) && !(l.location?.kind === "deck")).reduce((n, l) => n + l.quantity, 0);
-    ok(toAdd.length > 0 && toAdd.every((r) => r.pill === "To add" && r.badge), "To add shows owned copies waiting outside their box, each wearing its role (Upgrade or Reserved)");
-    eq(toAdd.reduce((n, r) => n + r.q, 0), five, `and exactly the ${five} copies reserved for a deck and not in any deck's box, judged from the stored lots`);
+    /* The filter also keeps a copy sitting in another deck's box that a deck has claimed (the model's old Reserved reading): a Substitute there. */
+    ok(toAdd.length > 0 && toAdd.every((r) => r.pill === "Reserved" || r.pill === "Substitute") && toAdd.filter((r) => r.pill === "Reserved").length > toAdd.length / 2, "Reserved shows Reserved pills: the seats to buy, and the owned copies waiting to be boxed (and the copies other decks have claimed)");
+    const owned = toAdd.filter((r) => r.badge);
+    ok(owned.length > 0, "and the owned copies waiting outside their box each say what to do");
+    eq(owned.reduce((n, r) => n + r.q, 0), five, `exactly the ${five} copies reserved for a deck and not in any deck's box, judged from the stored lots`);
   }
   await page.locator("#cm-filter-chips [data-action=clear-filters]").click();
+  await settle(page);
+  await page.evaluate(async () => { const r = await CrankRepository.open(); try { const s = await r.getState(); await r.commit({id: crypto.randomUUID(), type: "preferences", values: {pageSize: 60}}, s.revision); } finally { r.close(); } });
+  await page.reload();
   await settle(page);
   /* The To buy tab holds the decks' needs, and the To Buy list beside them: what no deck needs (R3.7). The rebuilt
      library's list is empty -- it only ever repeated the needs -- so a list entry and its Bought are proved in
@@ -130,9 +152,9 @@ try {
     const needs = await page.evaluate(async () => { const r = await CrankRepository.open(); try { return CrankCollection.projection(await r.getState()).filter((x) => x.kind === "need").reduce((n, x) => n + x.quantity, 0); } finally { r.close(); } });
     eq(tabN, needs + list, `the To buy tab counts the decks' ${needs} needed copies and the To Buy list's ${list}`);
     eq(list, 0, "and the To Buy list repeats none of the needs");
-    /* Each row outside a box wears its role beside the pill, whole: the Status cell wraps rather than cutting it off. */
+    /* Each Reserved row wears its note beside the pill, whole: the Status cell wraps rather than cutting it off. */
     const cut = await page.$$eval("#cm-roster-table td.cm-col-status", (tds) => tds.map((td) => { const c = td.getBoundingClientRect(), b = td.querySelector(".cm-badge-upgrade, .cm-badge-reserved"); if (!b) return null; const r = b.getBoundingClientRect(); return {inside: r.left >= c.left - 0.5 && r.right <= c.right + 0.5 && r.bottom <= c.bottom + 0.5, text: b.textContent}; }).filter(Boolean));
-    ok(cut.length > 0 && cut.every((x) => x.inside && /^(Upgrade|Reserved)$/.test(x.text)), `every role badge on the To buy tab shows whole inside its Status cell (${cut.length})`);
+    ok(cut.length > 0 && cut.every((x) => x.inside && /(replaces|empty seat)/.test(x.text)), `every note on the To buy tab shows whole inside its Status cell (${cut.length})`);
   }
   await page.goto(LIB);
   await settle(page);
@@ -181,7 +203,7 @@ try {
   await page.locator("#cm-fd-show").click();
   await page.waitForFunction((n) => { const t = document.querySelector("#cm-roster-table .cm-paging span, #cm-roster-table .cm-status-line"); return t && t.textContent.includes(n.toLocaleString("en-US") + " record"); }, narrow);
   eq(await records(page), narrow, `after Show the page counts exactly what the button promised (${narrow})`);
-  eq(await page.$eval("[data-action=roster-filters]", (b) => b.textContent.trim()), "Filters (4)", "the Filters button counts the four filters on");
+  eq(await page.$eval("[data-action=roster-filters]", (b) => b.textContent.trim()), "Filters 4", "the Filters button counts the four filters on");
   eq((await page.$$eval(".cm-fchip", (cs) => cs.map((c) => c.textContent.replace(/\s+/g, " ").replace("✕", "").trim()))).sort(), ["Color: Red", "Max mana value: 3", "Max price: $5.00", "Min price: $0.25"], "and each shows as a chip, the prices in dollars");
 
   /* Every row left is what was asked for, judged from the library's card records. */
@@ -217,13 +239,14 @@ try {
   await page.waitForFunction((id) => decodeURIComponent(location.hash).includes(`deck=${id}`), deck.id);
   await settle(page);
   ok(decodeURIComponent(page.url()).includes(`deck=${deck.id}`), `the deck chip put ${deck.name} in the address`);
-  ok(/Deck:/.test(await page.locator(".cm-scope-chip").innerText()), "and the page wears it as a scope chip");
+  await page.waitForFunction((n) => document.querySelector(".cm-band-group-name")?.textContent.includes(n), deck.name, {timeout: 30000});
+  ok((await page.locator(".cm-band-group-name").innerText()).includes(deck.name), "and the Group menu's button names the deck's group");
   eq(await records(page), forDeck, `and counts what the button promised for it (${forDeck})`);
   await page.goto(LIB);
   await settle(page);
 
   /* 2. Columns. */
-  await page.getByRole("button", {name: "Columns", exact: true}).click();
+  await openColumns(page);
   await opened(page, "Columns");
   const order = () => page.$$eval("#cm-col-list .cm-col-row", (ls) => ls.map((l) => l.dataset.col));
   eq((await order())[0], "name", "Card is first");
@@ -262,7 +285,7 @@ try {
   eq(csv.split(/\r?\n/)[0].split(",").map((h) => h.replace(/^"|"$/g, "")), want.map((k) => labels[k]), "the CSV export's columns come in the same order");
 
   /* Reset puts back the defaults; nothing is saved until Done. */
-  await page.getByRole("button", {name: "Columns", exact: true}).click();
+  await openColumns(page);
   await opened(page, "Columns");
   eq((await order()).slice(0, want.length), want, "the dialog reopens in the saved order");
   await page.getByRole("button", {name: "Reset", exact: true}).click();
@@ -311,11 +334,15 @@ try {
   await page.goto(LIB);
   await settle(page);
   await page.locator("#cm-roster-table .cm-row-tick").first().check();
-  ok(await page.locator(".cm-batch-bar").isVisible(), "§3: ticking a row brings up the ticked-rows bar");
-  await page.selectOption("[name=groupBy]", "deck");
+  ok(await page.locator(".cm-band-clear").isVisible(), "§3: ticking a row brings up the ticked-rows bar, the band's second row");
+  await page.locator(".cm-band-clear").click();
+  await page.locator("[data-action=view-menu]").click();
+  await page.locator(".cm-row-menu [data-action=band-arrange][data-by=deck]").click();
   await page.waitForFunction(() => document.querySelector("#cm-roster-table .cm-group-row"));
   ok(await page.locator("#cm-roster-table .cm-group-row").first().isVisible(), "§3: Group rows by draws a group band over the rows");
-  ok((await page.locator("[name=groupPick] option").count()) > 1, "§3: the collection groups are offered");
+  await page.locator("[data-action=group-menu]").click();
+  ok((await page.locator(".cm-row-menu .cm-menu-row").count()) > 1, "§3: the collection groups are offered");
+  await page.keyboard.press("Escape");
   await page.goto(`${base}/index.html#cards?view=sheet`);
   await page.locator(".cm-sheet-cell").first().waitFor();
   ok((await page.locator(".cm-sheet-cell").count()) > 10, "§3: the Sheet draws its editable cells");
@@ -363,16 +390,14 @@ try {
   /* A cell that ellipsizes replaces an inline box that runs past its edge with a bare "…", so the name's box has to end inside the cell. */
   const names = await small.$$eval("#cm-roster-table tr[data-card] td.cm-col-name", (tds) => tds.map((td) => { const b = td.querySelector(".cm-card-name").getBoundingClientRect(), c = td.getBoundingClientRect(), pr = parseFloat(getComputedStyle(td).paddingRight); return {name: td.querySelector(".cm-card-name").textContent, fits: b.right <= c.right - pr + 1 && b.width > 20}; }));
   ok(names.length > 20 && names.every((n) => n.fits), `8. on a phone every name is shown, never swapped for a bare ellipsis: ${JSON.stringify(names.filter((n) => !n.fits).slice(0, 4).map((n) => n.name))}`);
-  /* The figure's own text box, measured with a Range, has to sit inside the card's padding: a clipped or
-     overflowing figure is wider than the room the card gives it. */
-  const kpis = await small.$$eval(".cm-kpi", (ks) => ks.map((k) => { const s = k.querySelector("strong"), r = k.getBoundingClientRect(), cs = getComputedStyle(k), range = document.createRange(); range.selectNodeContents(s); const t = range.getBoundingClientRect();
-    return {text: s.textContent, fits: t.left >= r.left + parseFloat(cs.paddingLeft) - 1 && t.right <= r.right - parseFloat(cs.paddingRight) + 1, left: r.left, right: r.right}; }));
-  ok(kpis.length === 8 && kpis.every((k) => k.fits && k.left >= 0 && k.right <= 390), `on a phone every count card shows its whole figure: ${JSON.stringify(kpis.filter((k) => !(k.fits && k.left >= 0 && k.right <= 390)))}`);
-  await small.locator(".cm-kpi").nth(1).click();
-  /* Measure once the scroll has come to rest: the same scrollY twice, a quarter second apart. */
-  for (let last = -1, i = 0; i < 40; i++) { await small.waitForTimeout(250); const y = await small.evaluate(() => scrollY); if (y === last && y > 0) break; last = y; }
-  const landed = await small.evaluate(() => { const c = document.getElementById("cm-filter-chips").getBoundingClientRect(), bar = document.querySelector(".cm-sidebar").getBoundingClientRect(); return {chips: Math.round(c.top), bar: Math.round(bar.bottom), h: innerHeight}; });
-  ok(landed.chips >= landed.bar && landed.chips <= landed.bar + 24, `on a phone a count card's click brings the table up to just below the top bar: ${JSON.stringify(landed)}`);
+  /* The band on a phone (ROB-358): ten controls, none past the window's edge, no sideways scroll; the Group menu fits and its chips select. */
+  const bandFit = await small.evaluate(() => { const bd = document.querySelector(".cm-band"), cs = [...bd.querySelectorAll("button, input")].filter((c) => c.getClientRects().length); return {n: cs.length, out: cs.filter((c) => { const r = c.getBoundingClientRect(); return r.left < -0.5 || r.right > innerWidth + 0.5; }).length, sw: document.documentElement.scrollWidth, w: innerWidth}; });
+  ok(bandFit.n === 10 && bandFit.out === 0 && bandFit.sw <= bandFit.w, `on a phone the band is ten controls, all inside the window, with no sideways scroll: ${JSON.stringify(bandFit)}`);
+  await small.locator("[data-action=group-menu]").click();
+  const menuFit = await small.evaluate(() => { const m = document.querySelector(".cm-row-menu").getBoundingClientRect(); return {left: m.left, right: m.right, w: innerWidth}; });
+  ok(menuFit.left >= 0 && menuFit.right <= menuFit.w, `and the Group menu fits it: ${JSON.stringify(menuFit)}`);
+  await small.locator(".cm-show-chip[data-show=boxed]").click();
+  await small.waitForFunction(() => /cop(y|ies)/.test(document.querySelector("#cm-roster-table .cm-status-line")?.textContent || ""));
   await small.evaluate(() => scrollTo(0, 0));
   await small.getByRole("button", {name: /^Filters/}).click();
   await opened(small, "Filters");

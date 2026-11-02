@@ -24,11 +24,20 @@ export const REGISTRY = [
   {file: "data/commander-universe.json", id: "commander-universe@1", generator: "tools/commander-universe.mjs", checkedBy: "tools/commander-universe.mjs", main: "cards"},
   {file: "data/commander-ranks.json", id: "commander-ranks@1", generator: "tools/commander-ranks.mjs", checkedBy: "tools/commander-ranks.mjs", main: "cards"},
   {file: "data/commander-strategies.json", id: "commander-strategies@1", generator: "tools/commander-strategies.mjs", checkedBy: "tools/commander-strategies.mjs", main: "commanders"},
+  /* Start from's commander index (2026-10-23): every commander with its colors, rank, play styles and mechanics. Served and on demand, so
+     the manifest must list it (tests/data-manifest.mjs); stamped with the date of the data it is compiled from, so --check stays exact. */
+  {file: "data/commander-index.json", id: "commander-index@1", generator: "tools/build-commander-index.mjs", checkedBy: "tools/build-commander-index.mjs", main: "commanders"},
   /* R3.10b: every Commander precon, for Start from a precon. Its --check is offline (the build fetches MTGJSON). */
   {file: "data/precons.json", id: "precons@1", generator: "tools/build-precons.mjs", checkedBy: "tools/build-precons.mjs", main: "decks"},
   {file: "data/precons-latest.json", id: "precons-latest@1", generator: "tools/build-precons.mjs", checkedBy: "tools/build-precons.mjs", main: "decks"},
   {file: "data/flavor-names.json", id: "flavor-names@1", generator: "tools/flavor-names.mjs", checkedBy: "tools/flavor-names.mjs", main: "cards"},
+  /* The Commander banned list by name, dated (ROB-104): commander-legality.js refuses these before a table starts. */
+  {file: "data/commander-banned.json", id: "commander-banned@1", generator: "tools/commander-banned.mjs", checkedBy: "tools/commander-banned.mjs", main: "cards"},
   {file: "data/commander-glossary.json", id: "commander-glossary@1", generator: HAND, checkedBy: "tools/check-glossary.mjs", main: "entries"},
+  /* The Commander Brackets the compliance report judges by (ROB-111), dated. */
+  {file: "data/commander-brackets.json", id: "commander-brackets@1", generator: HAND, checkedBy: "tests/schemas.mjs", main: "brackets"},
+  /* The vendor assumptions behind the buy plan (ROB-119): price factor, shipping, lead time; the reader edits them in Settings. */
+  {file: "data/vendors.json", id: "vendors@1", generator: HAND, checkedBy: "tests/schemas.mjs", main: "vendors"},
   {file: "data/deck-guides.json", id: "deck-guides@1", generator: "tools/generate-guides.mjs", checkedBy: "tools/generate-guides.mjs", main: "decks"},
   {file: "data/deck-ratings.json", id: "deck-ratings@1", generator: "tools/sim/rate-decks.mjs", checkedBy: "tools/sim/rate-decks.mjs", main: "decks"},
   {file: "data/simulation-summary.json", id: "simulation-summary@3", generator: "tools/sim/rate-decks.mjs", checkedBy: "tools/sim/rate-decks.mjs", main: null},
