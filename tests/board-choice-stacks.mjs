@@ -54,6 +54,7 @@ async function board(mode, {width = 1440, height = 900} = {}) {
 function asked(change = (v) => v) {
   const v = structuredClone(search);
   v.matchId = sample.matchId; v.revision = ++rev; v.decision = {...v.decision, id: `${v.decision.id}:${rev}`};
+  v.decision.options=v.decision.options.map(o=>({...o,decisionPath:[{key:"option",value:o.index,label:o.label,kind:"option"}]}));
   return change(v);
 }
 const chosen = (page) => page.locator("#cm-board-decision .cm-board-decision-foot .cm-muted").textContent();
@@ -141,10 +142,10 @@ try {
         .filter((el) => !el.disabled).map(box).filter((r) => r.width && r.height);
       const covered = pops.filter((p) => controls.some((r) => p.left < r.right && p.right > r.left && p.top < r.bottom && p.bottom > r.top)).length;
       const ask = document.getElementById("cm-board-decision");
-      return {pops: pops.length, controls: controls.length, covered, past: !ask || pops.every((p) => p.left >= box(ask).right)};
+      return {pops: pops.length, controls: controls.length, covered, past: !ask || pops.every((p) => p.right <= box(ask).left || p.left >= box(ask).right)};
     });
     eq([geo.pops, geo.covered], [3, 0], `${mode} ${width}x${height}: the three cards played are held up, and none covers the question's ${geo.controls} controls`);
-    ok(geo.past, `${mode} ${width}x${height}: they stand past the question`);
+    ok(geo.past, `${mode} ${width}x${height}: they stand clear of the question, beside it and never across it (ROB-208: the question is the pop-up now, centered, not the left pane)`);
     eq(errors, [], `${mode} ${width}x${height}: no page error`);
     await context.close();
   }

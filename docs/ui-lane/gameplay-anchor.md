@@ -399,6 +399,8 @@ Titles vary, and the sample has 19 kinds. Among them:
 - `{type: "act", …}`: an answer.
 - `{type: "prefer", stepByStep: true | false}`.
 - `{type: "yield", on: true | false}`: Yield turn, and Stop yielding.
+- `{type: "history", before, limit?}`: "Load earlier" (ROB-332): the lines before the line numbered `before`, answered to the asker
+  alone as `{type: "history", before, first, lines}`; a spectator's socket takes it too.
 - `{type: "view", after: "event:N"}`: the latest view, its `events` everything since event N (see Events, below). The
   room takes `after` (`room.view(seatId, {after})`); the socket passes it once its one line is added in
   `cloud/game-room.mjs` (asked in ROB-11). Until then a `view` frame's `after` is ignored.
@@ -477,7 +479,12 @@ cast and resolved between two views (an opponent passed for, `passStack`) arrive
   - `seats: [{seatId, name, pilot, level?}]`;
   - `waitingOn`, `decision`, `state`, `history`;
   - sometimes `continuing`, `stepByStep`, `yourTurn`, `yielding` and `mayYield` (the last two the seat's own only);
-  - `eventsSchema` (`"events.v1"`), `events`, and sometimes `eventsReset` (below).
+  - `eventsSchema` (`"events.v1"`), `events`, and sometimes `eventsReset` (below);
+  - `manaSources` (Rob, Oct 26, the Mana Pool module): the seat's own permanents with a mana ability that taps them,
+    each `{cardId, name, tapped, ready, ways: [{mana: {W: 1, ...}, pay?}]}` (`rules/actions.mjs`, `manaSources`). A way is
+    what one activation adds; `pay` is mana it costs first (a Signet's 1); `ready` is untapped and able to tap now (not
+    summoning sick, nothing stopping its abilities). Facts only, the sums are the screen's; no other seat's view carries
+    them.
 - **`state`:** `turn`, `round`, `turnInRound`, `turnId`, `extraTurn`, `turnPlayerId`, `priorityPlayerId`, `phase`,
   `players`, `combat`, `stack`, `stackSize`, `gameOver`.
 - **Each player:** `{playerId, name, life, health, counters, mana, landsPlayed, monarch?, zones}`. A player's `counters`
@@ -488,7 +495,8 @@ cast and resolved between two views (an opponent passed for, `passStack`) arrive
   - `owner`, `controller`, `tapped`, `damage`;
   - `counters: {kind: n}`, an open set (+1/+1, −1/−1, loyalty, lore, charge and more);
   - `types`, `power`, `toughness`, `keywords`;
-  - `commander`, and sometimes `commanderKey`, `level`, `monstrous` or `prepared`;
+  - `commander`, and sometimes `commanderKey`, `level`, `monstrous`, `prepared` or `face` (`"back"` for a double-faced permanent whose back face is up, Linear ROB-207; the front says nothing);
+  - `appearance` (Linear ROB-329, `docs/ui-lane/view-appearance-contract.md`): `{token, colors, subtypes, power, toughness}` on a battlefield permanent an effect has made look like a token (creature types set and all abilities lost: Oko's Elk); the board draws that token's picture, the name stays the card's. Absent otherwise, and when the effect ends;
   - `why` (Linear ROB-24, Oct 21): on the viewing seat's own hand and command-zone cards, while that seat holds priority,
     for each one no option plays. It's a short sentence saying why it can't be played now: its time, its mana and the
     commander tax, a color nothing untapped makes, or no way to cast it (`rules/actions.mjs`, `whyNot`). It's words for
@@ -498,8 +506,7 @@ cast and resolved between two views (an opponent passed for, `passStack`) arrive
   - what an Aura or Equipment is attached to;
   - whether a permanent is a token;
   - summoning sickness;
-  - colors and mana cost;
-  - which face of a double-faced card is up.
+  - colors and mana cost.
 - **Not in the game at all:** the initiative.
 
 ### How the game ended, `result.ending` (Linear ROB-166)
@@ -585,7 +592,9 @@ had left the game". `ending` can:
 
 ## History
 
-`view.history` is newest first, up to 120 lines of `{turn, text, mark?}`. The `mark` is one of:
+`view.history` is the newest 40 lines, oldest first, each `{turn, seq, text, mark?, actor?, source?, targets?, modes?, cards?}`: the
+sentence, and the same as data. Older lines are asked for over the socket (`{type: "history", before}`); the whole shape, with the
+stack's `aimed`, is in `docs/ui-lane/history-and-targets-contract.md` (ROB-327, ROB-332). The `mark` is one of:
 - `turn`: a new turn began;
 - `quiet`: steps that passed with nothing to do, merged into one line;
 - `end`.
@@ -597,7 +606,7 @@ History is public. A draw says "drew a card", never which card, and taps, mana a
 - **Decks and cards:** decks of 100, up to four players, and an engine that knows 2,015 cards.
 - **Boards:** real games in testing ran from about 20 to 260 permanents on the table. A Goblin deck once made more than
   2,000 tokens in one turn.
-- **Games:** 10 to 60 turns or more, with 120 history lines in each view.
+- **Games:** 10 to 60 turns or more, with the newest 40 history lines in each view and the rest asked for as needed.
 - **Card images:**
   - Use `https://api.scryfall.com/cards/named?exact=<name>&format=image`, plus `&version=small|normal|large` as needed.
   - Show card images unaltered: never crop away the artist credit or copyright line.
@@ -648,3 +657,5 @@ When a concept is worth keeping, export the code with a `HANDOFF.md` that says:
 4. Anything it wanted that the view does not carry, and why. These become requests to CrankMagic's engine.
 5. Anything it assumed that this brief did not state.
 6. The libraries it uses, and their licenses.
+
+Mana source ways may include `payColors` for fixed colored activation requirements and `ready: false` when a non-mana cost cannot be paid. The source is ready only when at least one of its ways is ready. The Mana Pool counts activation funding with distinct sources and color balances; this does not choose or execute a player payment.

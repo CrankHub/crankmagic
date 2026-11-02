@@ -8,6 +8,9 @@
      4. Share: Invitee name and Invitee email, each a field under its label, Send and Cancel. Send adds the address to
         Cloudflare Access for staging and production, confirms each, and only then emails the invitation, as HTML.
         A refused Access sends nothing and says so. Cancel closes the window.
+     5. ROB-320 (Rob, 2026-10-30): after a send the window closes and a dialog says "Your email has been successfully sent" with one
+        Confirm button; the owner chooses Game Theory Insider (AI) or General; anyone else signed in is offered Invite alone, as General
+        (the server refuses AI to a non-owner). Invitations are recorded: tests/invitations.mjs, tests/invite-settings.mjs.
 
    Cloudflare's API and the mail provider are stood in for; the Worker's own code (cloud/sharing.mjs) answers the page.
    GEOMETRY_REQUIRED=1 refuses a missing browser.
@@ -22,7 +25,7 @@ import {social} from "../cloud/sharing.mjs";
 import {createLibrary} from "../cloud/library.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec("PRAGMA foreign_keys=ON");
-for (const f of ["0001_accounts", "0002_ai", "0003_sharing", "0004_mail_retries", "0005_access_invites"]) db.exec(readFileSync(path.join(ROOT, "cloud/migrations", f + ".sql"), "utf8"));
+for (const f of ["0001_accounts", "0002_ai", "0003_sharing", "0004_mail_retries", "0005_access_invites", "0011_invitations"]) db.exec(readFileSync(path.join(ROOT, "cloud/migrations", f + ".sql"), "utf8"));
 const st = (sql, args = []) => ({bind: (...a) => st(sql, a), first: async () => db.prepare(sql).get(...args) || null, all: async () => ({results: db.prepare(sql).all(...args)}), run: async () => ({meta: {changes: Number(db.prepare(sql).run(...args).changes)}}), sync: () => ({meta: {changes: Number(db.prepare(sql).run(...args).changes)}})});
 const D = {prepare: (s) => st(s), batch: async (a) => {db.exec("BEGIN"); try {const out = a.map((x) => x.sync()); db.exec("COMMIT"); return out;} catch (e) {db.exec("ROLLBACK"); throw e;}}};
 const lib = createLibrary(D), rob = await lib.user("rob@example.com"), friend = await lib.user("friend@example.com");
@@ -51,14 +54,20 @@ const eq = (a, b, m) => {assert.deepEqual(a, b, m); checks += 1;};
 const {browser, base, stub, close} = await openBrowser({name: "admin-window", flag: "GEOMETRY_REQUIRED"});
 const html = readFileSync(path.join(ROOT, "index.html"), "utf8").replace("<head>", '<head><meta name="crankmagic-accounts" content="on">');
 
-async function signedIn(person, {width = 1400, height = 900} = {}) {
+async function signedIn(person, {width = 1400, height = 900, readAdmin = person.id === rob.id} = {}) {
   const context = await browser.newContext({viewport: {width, height}, serviceWorkers: "block"});
   const page = await context.newPage();
   if (stub) await stub(page);
-  const errors = [];
+  const errors = [], adminReads = [];
+  await page.addInitScript(()=>(globalThis.CrankFeatures||=[]).push(C=>{globalThis.__adminFixtureC=C;}));
   page.on("pageerror", (e) => errors.push(e.message));
   await page.route("**/index.html*", (r) => r.fulfill({contentType: "text/html", body: html}));
-  await page.route("**/api/me", (r) => r.fulfill({json: {email: person.email, head: null}}));
+  await page.route("**/api/me", (r) => r.fulfill({json: {email: person.email, head: null, admin: readAdmin}}));
+  await page.route("**/api/admin**",r=>{const req=r.request(),p=new URL(req.url()).pathname;adminReads.push({path:p,method:req.method()});
+    if(!readAdmin)return r.fulfill({status:403,json:{error:'Only the verified read administrator can open this page.'}});
+    if(req.method()!=='GET')return r.fulfill({status:405,json:{error:'Administration is read-only.'}});
+    return r.fulfill({json:{readOnly:true,invitationsEnabled:true,features:[{key:'AI_COACH',value:'on',defaultValue:'off',source:'Worker configuration'}]}});
+  });
   await page.route("**/api/library", (r) => r.fulfill({status: 503, json: {error: "offline in this suite"}}));
   await page.route("**/version.json*", (r) => r.fulfill({json: {commit: "0123456789abcdef", profile: "cloud-staging"}}));
   await page.route("**/api/social/**", async (route) => {
@@ -69,8 +78,9 @@ async function signedIn(person, {width = 1400, height = 900} = {}) {
     } catch (e) {await route.fulfill({status: e.status || 500, json: {error: e.message}});}
   });
   await page.goto(base + "/index.html#decks");
-  await page.waitForFunction(() => document.querySelector("#cm-user-menu [data-profile-menu]"), null, {timeout: 30000});
-  return {page, context, errors};
+  await page.waitForFunction(() => globalThis.__adminFixtureC?.adminReady && globalThis.__adminFixtureC?.sharingReady, null, {timeout: 30000});
+  await page.evaluate(async()=>{await Promise.all([__adminFixtureC.adminReady,__adminFixtureC.sharingReady]);});
+  return {page, context, errors, adminReads};
 }
 const openMenu = async (page) => {await page.locator("#cm-user-functions").click(); await page.locator("#cm-user-menu:popover-open").waitFor();};
 const shots = process.env.UAT_SHOTS;
@@ -83,7 +93,20 @@ try {
     const {page, context, errors} = await signedIn(friend);
     await openMenu(page);
     eq(await page.locator("#cm-user-menu [data-action=open-admin]").count(), 0, "a player who is not the administrator has no Admin in the Menu");
-    eq(await page.locator("#cm-user-menu [data-action=open-profile]").count(), 1, "and still has Profile");
+    eq(await page.locator("#cm-user-menu").getByRole("button",{name:"Your Profile",exact:true}).count(), 1, "and keeps the shared menu’s single door to the account (Your Profile)");
+    /* ROB-320: anyone signed in may invite, so they are offered Invite alone: no Admin, no tabs, no choice of group (General, no AI). */
+    eq(await page.locator("#cm-user-menu [data-action=invite-crankmagic]").count(), 1, "but anyone signed in may invite, and the Menu offers Invite");
+    await page.locator("#cm-user-menu [data-action=invite-crankmagic]").click();
+    const invite = page.locator("#cm-dialog[open]");
+    await invite.locator("[data-admin-share]").waitFor();
+    eq([(await invite.locator("#cm-dialog-title").textContent()).trim(), await invite.locator("[role=tab]").count(), await invite.locator("[name=group]").count(), (await invite.locator("[data-invite-group]").textContent()).trim()],
+      ["Invite someone", 0, 0, "General · the full app, no AI"], "a plain window of its own: no tabs, no group to choose, and it says General with no AI");
+    await invite.getByLabel("Invitee name").fill("Kay Friend"); await invite.getByLabel("Invitee email").fill("kay@example.com");
+    await invite.getByRole("button", {name: "Send", exact: true}).click();
+    await page.waitForFunction(() => document.querySelector("#cm-dialog-title")?.textContent.trim() === "Invitation sent", null, {timeout: 10000});
+    eq({...db.prepare("SELECT grp, status FROM invitations WHERE invitee_email = 'kay@example.com'").get()}, {grp: "general", status: "admitted"}, "and what they send is a General invitation, recorded");
+    eq(db.prepare("SELECT count(*) AS n FROM ai_allowlist WHERE email = 'kay@example.com'").get().n, 0, "with no AI");
+    mail.length = 0;
     eq(await page.evaluate(async () => (await fetch("/api/social/admin")).status), 403, "and the Worker refuses Admin to them");
     eq(errors, [], `no page error (${errors.join(" | ")})`);
     await context.close();
@@ -95,12 +118,14 @@ try {
     await openMenu(page);
     await shot(page, "menu-1400");
     const admin = page.locator("#cm-user-menu [data-action=open-admin]");
+    eq(await admin.count(),1,"the combined read administrator and invite owner has exactly one Admin action");
     eq((await admin.textContent()).trim(), "Admin", "the administrator's Menu has Admin");
     await admin.click();
     const dialog = page.locator("#cm-dialog[open].cm-admin-dialog");
     await dialog.waitFor();
     eq((await dialog.locator("#cm-dialog-title").textContent()).trim(), "Admin", "it opens a window named Admin");
     eq(await dialog.locator(".cm-tabbed-nav [role=tab]").evaluateAll((els) => els.map((el) => el.textContent.trim())), ["⚙General", "✉Share"], "its sections down the left: General and Share");
+    eq(await dialog.locator("[data-action=admin-open-section]").count(),5,"the owner retains all five read-only operational sections inside General");
     const nav = await box(page, "#cm-dialog .cm-tabbed-nav"), panels = await box(page, "#cm-dialog .cm-tabbed-panels"), win = await box(page, "#cm-dialog");
     ok(nav.r <= panels.l && panels.r >= win.r - 40, `the tabs stand at the left and the section uses the rest of the window (${JSON.stringify({nav, panels, win})})`);
     await dialog.locator("[data-admin-general] dl").waitFor();
@@ -133,21 +158,58 @@ try {
     await shot(page, "share-refused-1400");
     refuse = null;
     await dialog.getByRole("button", {name: "Send", exact: true}).click();
-    await page.waitForFunction(() => document.querySelectorAll("#cm-dialog [data-admin-steps] [data-state=done]").length === 3, null, {timeout: 10000});
-    const steps = await dialog.locator("[data-admin-steps] li").allInnerTexts();
-    eq(steps.map((x) => x.trim()), ["staging.crankmagic.com · already had access · confirmed", "crankmagic.com/api/* · added · confirmed", "Invitation emailed to sam@example.com"],
-      "sent again: each sign-in is confirmed, then the email goes");
+    await page.waitForFunction(() => document.querySelector("#cm-dialog-title")?.textContent.trim() === "Invitation sent", null, {timeout: 10000});
+    /* ROB-320 (Rob, 2026-10-30): after a send the window closes and a dialog confirms it, with one Confirm button; nobody presses Cancel. */
+    const confirmation = page.locator("#cm-dialog[open]");
+    eq(await confirmation.locator("[data-admin-share]").count(), 0, "after a send the Share window is gone");
+    eq((await confirmation.locator("[data-invite-confirmation]").textContent()).trim(), "Your email has been successfully sent", "and the dialog says the email was sent");
+    eq(await confirmation.locator(".cm-form-footer button").evaluateAll((els) => els.map((el) => el.textContent.trim())), ["Confirm"], "with one Confirm button");
     eq(policy.map((p) => p.include.some((r) => r.email?.email === "sam@example.com")), [true, true], "the address is on staging's and production's policies");
     eq(mail.length, 1, "one email");
     await shot(page, "share-sent-1400");
     ok(mail[0].html.includes("Hi Sam Player,") && mail[0].html.includes("https://crankmagic.com/api/auth/login?to=%23welcome") && mail[0].text.includes("Hi Sam Player,"), "an HTML invitation with its text twin and the sign-in link");
-    eq([await name.inputValue(), await email.inputValue()], ["", ""], "the fields are cleared for the next invitation");
-    /* Cancel closes the window */
+    eq({...db.prepare("SELECT grp, status, inviter_email AS by FROM invitations WHERE invitee_email = 'sam@example.com'").get()}, {grp: "insider", status: "admitted", by: "rob@example.com"}, "the invitation is recorded: the owner's, as a Game Theory Insider");
+    await confirmation.getByRole("button", {name: "Confirm", exact: true}).click();
+    await page.waitForFunction(() => !document.getElementById("cm-dialog").open);
+    ok(true, "Confirm closes it");
+    /* Cancel closes the window; the group is the owner's to choose */
+    await openMenu(page);
+    await page.locator("#cm-user-menu [data-action=open-admin]").click();
+    await dialog.waitFor();
+    await dialog.getByRole("tab", {name: "Share"}).click();
+    eq(await dialog.getByLabel("Group").locator("option").allInnerTexts(), ["Game Theory Insider · AI", "General · no AI"], "the owner chooses Game Theory Insider (AI) or General");
     await dialog.getByRole("button", {name: "Cancel", exact: true}).click();
     await page.waitForFunction(() => !document.getElementById("cm-dialog").open);
     ok(true, "Cancel closes Admin");
     eq(errors, [], `no page error (${errors.join(" | ")})`);
     await context.close();
+  }
+
+  /* The two verified roles remain separate; neither role implies the other permission. */
+  for(const role of [{name:'read administrator only',person:friend,readAdmin:true,share:true},{name:'invite owner without read-admin',person:rob,readAdmin:false,share:true}]){
+    const {page,context,errors,adminReads}=await signedIn(role.person,{readAdmin:role.readAdmin});
+    await openMenu(page);
+    eq(await page.locator('#cm-user-menu [data-action=open-admin]').count(),1,role.name+': exactly one shared Admin entry');
+    eq(await page.locator('#cm-user-menu [data-action=invite-crankmagic]').count(),0,'invitations live in Admin Share rather than a duplicate account-menu action');
+    await page.locator('#cm-user-menu [data-action=open-admin]').click();
+    const dialog=page.locator('#cm-dialog[open].cm-admin-dialog');await dialog.waitFor();
+    eq(await dialog.locator('[role=tab]').evaluateAll(nodes=>nodes.map(n=>n.dataset.tab)),role.share?['general','share']:['general'],role.name+': only independently authorized sections are offered');
+    eq(await dialog.locator('[data-action=admin-open-section]').count(),role.readAdmin?5:0,role.name+': read-only doors follow /api/me.admin');
+    eq(await dialog.locator('[data-admin-share]').count(),role.share?1:0,role.name+': Share follows the existing social canInvite permission');
+    if(role.readAdmin){
+      eq(await page.evaluate(async()=> (await fetch('/api/social/admin')).status),403,'read-admin alone does not gain the invitation owner’s social Admin endpoint');
+      await dialog.getByRole('button',{name:'Feature switches',exact:true}).click();
+      await page.waitForFunction(()=>!document.getElementById('cm-dialog').open&&location.hash==='#admin?section=features');
+      await page.locator('.cm-table tbody').getByRole('rowheader',{name:'AI_COACH',exact:true}).waitFor();
+      ok(await page.locator('#cm-main').getByText('Read-only. Changes are made in the Worker configuration.',{exact:true}).isVisible(),'a native operational door closes the window and opens the existing guarded read-only view');
+      ok(adminReads.some(r=>r.path==='/api/admin/features')&&adminReads.every(r=>r.method==='GET'),'operational navigation performs reads only');
+    }else{
+      eq(await page.evaluate(async()=> (await fetch('/api/admin/features')).status),403,'an invitation owner without read-admin does not acquire read-only operational access');
+      await dialog.getByRole('tab',{name:'Share',exact:true}).click();
+      ok(await dialog.getByLabel('Invitee email').isVisible(),'the independently authorized invitation form remains usable');
+      await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+    }
+    eq(errors,[],role.name+': no uncaught page errors');await context.close();
   }
 
   /* ---- On a phone: the tabs across the top, nothing sideways ---- */

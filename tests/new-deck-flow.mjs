@@ -65,7 +65,9 @@ try {
   ok(!(await page.$eval("[data-action=flow-next]", (x) => x.disabled)), "a commander picked, Next is ready");
   await page.locator(".cm-flow-nav button", {hasText: "Choose colors"}).click();
   ok(!(await page.$eval("[data-action=flow-next]", (x) => x.disabled)) && /Krenko, Mob Boss/.test(await page.locator("#cm-flow-chosen").textContent()), "the selection survives switching methods");
-  await page.click("[data-action=flow-color][data-id=W]");await page.click("[data-action=flow-color][data-id=U]");
+  /* ROB-216: a chosen commander sets the colors, so changing them asks first and lets the commander go (tests/newdeck-color-lock.mjs). */
+  await page.click("[data-action=flow-color][data-id=W]");await page.click("[data-action=flow-color-yes]");
+  await page.click("[data-action=flow-color][data-id=R]");await page.click("[data-action=flow-color][data-id=U]");
   const exact = await page.$$eval(".cm-flow-results [data-name]", (bs) => bs.length);
   ok(exact > 5, `W + U lists Azorius commanders (${exact} shown)`);
   const exactCi = await page.$$eval(".cm-flow-results [data-name]", (bs) => bs.map((x) => (globalThis.__cm.catalog.exact(x.dataset.name)?.colorIdentity || []).slice().sort().join("")));
@@ -81,6 +83,9 @@ try {
   await page.locator("[data-action=flow-mech]").first().click();
   ok(await page.locator(".cm-flow-results [data-name]").count() > 0, "and so do mechanics");
   await page.locator(".cm-flow-nav button", {hasText: "Pick a commander"}).click();
+  /* The colors were changed past Krenko above (ROB-216), which let him go: he is chosen again. */
+  ok(await page.$eval("[data-action=flow-next]", (x) => x.disabled), "changing the colors let the commander go, so Next waits");
+  await page.locator(".cm-flow-results [data-name='Krenko, Mob Boss']").click();
 
   /* 3. Next: the commander only. */
   await page.click("[data-action=flow-next]");
@@ -100,7 +105,36 @@ try {
   await page.locator("#cm-sec-overview-empty [data-action=define-deck]").click();
   await page.waitForFunction(() => document.querySelector("#cm-dialog[open] #cm-dialog-title")?.textContent === "Define the Deck");
   eq(await page.$$eval(".cm-flow-nav button", (bs) => bs.map((x) => x.textContent.trim())), ["General", "Gameplay", "Mechanics", "Cards"], "four sections, in order");
+  const savedName = await page.inputValue('input[name=name]');
+  await page.fill('input[name=name]', '   ');
+  await page.locator('input[name=name]').dispatchEvent('change');
+  const beforeInvalid = await page.evaluate(() => globalThis.__cm.state.revision);
+  eq(await page.locator('.cm-flow-foot .v-button.primary').innerText(), 'Next', 'the primary button is Next on General (Rob, 2026-10-28)');
+  await page.click('[data-action=flow-def-next]');
+  eq(await page.locator('.cm-flow-nav button[aria-pressed=true]').innerText(), 'Gameplay', 'Next goes to the next section');
+  await page.click('[data-action=flow-def-next]'); await page.click('[data-action=flow-def-next]');
+  eq(await page.locator('.cm-flow-foot .v-button.primary').innerText(), 'Create deck', 'on Cards the primary button is Create deck');
+  await page.click('[data-action=flow-create]');
+  await page.locator('[name=name][aria-invalid=true]').waitFor();
+  eq(await page.locator('#cm-flow-name-error').textContent(), 'Name the deck.', 'a blank name has an error at its field');
+  ok(await page.locator('[name=name]').evaluate((x) => x === document.activeElement), 'the first invalid field receives focus');
+  eq(await page.evaluate(() => globalThis.__cm.state.revision), beforeInvalid, 'invalid input never commits');
+  eq(await page.locator('.cm-flow-nav .cm-flow-mark').count(), 0, 'validation is not a dot on a tab');
+  await page.fill('input[name=name]', savedName);
+  await page.locator('input[name=name]').dispatchEvent('change');
+  /* THE RESTRICTIONS ARE THE BRACKET'S: Game Changers none in B1-2, three in B3, lifted from B4; two columns; no free-text box. */
+  const restrictions = async () => page.$$eval(".cm-flow-restrict .cm-checkbox", (ls) => ls.map((l) => l.textContent.trim()));
   await page.selectOption("select[name=bracket]", "3");
+  eq(await restrictions(), ["No mass land denial", "No chained extra turns", "Two-card infinites only as late finishers", "At most 3 Game Changers"], "Bracket 3: three Game Changers, and the rest");
+  await page.selectOption("select[name=bracket]", "2");
+  eq((await restrictions()).at(-1), "No Game Changers", "Bracket 2 allows no Game Changer");
+  await page.selectOption("select[name=bracket]", "4");
+  eq(await restrictions(), [], "Bracket 4 lifts every restriction");
+  ok(/lifts these/.test(await page.locator(".cm-flow-lifted").innerText()), "and says so");
+  eq(await page.locator("input[name=restrictions]").count(), 0, "the free-text box under Restrictions is gone");
+  await page.selectOption("select[name=bracket]", "3");
+  const grid = await page.$eval(".cm-flow-restrict-grid", (g) => getComputedStyle(g).gridTemplateColumns.split(" ").length);
+  eq(grid, 2, "the restrictions sit in two columns");
   await page.fill("input[name=budget]", "150");await page.locator("input[name=budget]").dispatchEvent("change");
   await page.locator(".cm-flow-nav button", {hasText: "Cards"}).click();
   await page.check("input[name=cards][value=later]");

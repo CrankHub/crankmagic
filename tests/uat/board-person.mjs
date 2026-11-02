@@ -21,7 +21,22 @@ export async function visible(page, selector) {
 export async function click(page, selector) {
   const element = await visible(page, selector);
   assert.ok(element, `visible control ${selector}`);
-  await element.click({timeout: 10000});
+  await element.click({timeout: 10000}).catch(async error=>{
+    console.error('CONTROL GEOMETRY',selector,await element.evaluate(el=>{const result=[];for(let n=el;n;n=n.parentElement){const s=getComputedStyle(n);result.push({tag:n.tagName,cls:n.className,box:n.getBoundingClientRect().toJSON(),scroll:[n.scrollLeft,n.scrollTop],position:s.position,overflow:s.overflow,transform:s.transform});}return result;}));throw error;
+  });
+}
+/* Follow the branch containing the chosen engine index, through visible controls only. */
+export async function chooseFlow(page,index) {
+  for(let n=0;n<100;n++){
+    const hidden=page.locator(`details:not([open]) [data-action=board-flow-choice][data-indices~="${index}"]`);
+    if(await hidden.count())await hidden.first().locator('xpath=ancestor::details').locator('summary').click();
+    const branch=await visible(page,`[data-action=board-flow-choice][data-indices~="${index}"]`);
+    if(branch){await branch.click();continue;}
+    const confirm=await visible(page,'[data-action=board-flow-confirm]:not([disabled])');
+    if(confirm){await confirm.click();return;}
+    throw new Error(`No visible layered path to option ${index}`);
+  }
+  throw new Error('Layered choice did not terminate');
 }
 
 /* The options the pilot picked, pressed as a person would (Rob, 2026-10-25: the same card in a question is one stack, ×N):
@@ -41,6 +56,12 @@ async function pickOptions(page, indices) {
   }
 }
 
+async function bindSelected(page) {
+  const next=await visible(page,'[data-action=board-target-next]:not([disabled])');
+  if(next)await next.click();
+  return click(page,'[data-action=board-direct]:not([disabled]), [data-action=board-confirm]:not([disabled])');
+}
+
 /* The option the pilot picked at priority, found where the board shows it: in the decision panel, behind Also, in
    the card's own chooser, or grouped under one button with others of its kind. */
 async function priority(page, d, chosen) {
@@ -50,12 +71,12 @@ async function priority(page, d, chosen) {
     if (also) await also.click();
   }
   const exact = await visible(page, `[data-action=board-option][data-index="${chosen.index}"]`);
-  if (exact) {await exact.click();return click(page,"[data-action=board-confirm]:not([disabled])");}
+  if (exact) {await exact.click();return await visible(page,'.cm-choice-flow') ? chooseFlow(page,chosen.index) : bindSelected(page);}
   const chooser = await visible(page, `[data-action=board-choose][data-card="${chosen.cardId}"]`);
-  if (chooser) {await chooser.click(); await click(page, `#cm-board-decision [data-action=board-option][data-index="${chosen.index}"]`);return click(page,"[data-action=board-confirm]:not([disabled])");}
+  if (chooser) {await chooser.click();return chooseFlow(page,chosen.index);}
   const grouped = d.options.find((o) => o.act === chosen.act && o.label === chosen.label);
   await click(page, `[data-action=board-option][data-index="${grouped.index}"]`);
-  return click(page,"[data-action=board-confirm]:not([disabled])");
+  return bindSelected(page);
 }
 
 export function boardPerson({page, seat, cards, current, timeout = 15000}) {
@@ -75,13 +96,22 @@ export function boardPerson({page, seat, cards, current, timeout = 15000}) {
       throw new Error(`seat ${seat}: Turns went by's OK, still shown, could not be pressed (${error.message.split("\n")[0]}${why ? `: ${why}` : ""}); the board was drawn anew ${redraws} times in 2 s; the seat was asked "${d.title}" (${d.kind}), and the latest view waits on ${now?.waitingOn ?? "no one"} at revision ${now?.revision}`);
     });
     const at = Date.now();
-    if (d.kind === "draw") await click(page, "[data-action=board-draw]:not([disabled])");
+    if (d.kind === "draw") await click(page, "button[data-action=board-draw]:not(.cm-bcard):not([disabled])");
     else if (d.kind === "priority") {
       const options = d.options.map((o) => ({kind: o.act, objectId: o.cardId, label: o.label, option: o}));
       await priority(page, d, pilot.choose(v.state, options).option);
     } else {
       const picked = pilot.answer(v.state, d);
-      if (picked.amounts) {
+      let bound=false;
+      if(/^mulligan:/.test(d.id) && d.options.some(o=>o.label==='Keep')) {
+        await click(page,`[data-action=board-opening-hand][data-index="${picked.indices[0]}"]`);bound=true;
+      } else if(['one','boolean','index'].includes(d.mode) && await visible(page,'.cm-choice-flow')) {
+        await chooseFlow(page,picked.indices[0]);bound=true;
+      } else if(String(d.id).startsWith('declare-attackers:')) {
+        for(const i of picked.indices || []){const o=d.options.find(o=>o.index===i);await click(page,`[data-action=board-flow-attacker][data-card="${o.cardId}"]`);await chooseFlow(page,i);}
+      } else if(picked.indices?.length===1 && d.options.find(o=>o.index===picked.indices[0])?.decline && await visible(page,`[data-action=board-decline][data-index="${picked.indices[0]}"]`)) {
+        await click(page,`[data-action=board-decline][data-index="${picked.indices[0]}"]`);bound=true;
+      } else if (picked.amounts) {
         for (let i = 0; i < picked.amounts.length; i++) {
           const field = await visible(page, `[data-board-amount="${i}"]`);
           assert.ok(field, `amount input ${i}`);
@@ -89,14 +119,20 @@ export function boardPerson({page, seat, cards, current, timeout = 15000}) {
           await field.press("Tab");
         }
       } else if (d.mode === "many" && Array.isArray(d.legalBlocks)) {
-        for (const i of picked.indices ?? []) {
-          const o = d.options.find(o => o.index === i);
-          await click(page, `[data-action=board-block-select][data-block-object="${o.cardId}"]`);
-          await click(page, `[data-action=board-block-pair][data-index="${i}"]`);
+        const publicIds=new Set(v.state.players.flatMap(p=>p.zones.Battlefield.cards).map(c=>c.cardId));
+        const attacks=(v.state.combat?.attacks || []).filter(a=>a.defender===v.seat && publicIds.has(a.attacker));
+        for(const attack of attacks) {
+          const currentAttacker=await page.locator('.cm-block-draft').getAttribute('data-active-attacker');
+          const confirms=await visible(page,`[data-action=board-block-attacker-confirm][data-attacker="${attack.attacker}"]`);
+          if(Number(currentAttacker)!==attack.attacker || !confirms)await click(page,`[data-action=board-block-attacker][data-attacker="${attack.attacker}"]`);
+          const indices=(picked.indices || []).filter(i=>d.options.find(o=>o.index===i)?.attackerId===attack.attacker);
+          for(const i of indices)await click(page,`[data-action=board-block-pair][data-index="${i}"]`);
+          await click(page,`[data-action=${indices.length?'board-block-attacker-confirm':'board-block-attacker-none'}][data-attacker="${attack.attacker}"]`);
         }
-        await page.locator("[data-action=board-confirm]:not([disabled])").waitFor({timeout});
+        await page.locator('[data-action=board-send-blockers]:not([disabled])').waitFor({timeout});
+        await click(page,'[data-action=board-send-blockers]:not([disabled])');bound=true;
       } else await pickOptions(page, picked.indices ?? []);
-      if (["one", "boolean", "index", "many", "order", "ack", "damage", "amount"].includes(d.mode)) await click(page, "[data-action=board-confirm]:not([disabled])");
+      if (!bound && ["one", "boolean", "index", "many", "order", "ack", "damage", "amount"].includes(d.mode)) await bindSelected(page);
     }
     while (current()?.revision === v.revision && Date.now() - at < timeout) await page.waitForTimeout(20);
     assert.notEqual(current()?.revision, v.revision, `action advances ${d.title}`);

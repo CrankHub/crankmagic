@@ -1,22 +1,6 @@
 {
   "note": "Written by tests/asset-versions.mjs --update. Each entry records the content a ?v= was last bumped for; the test fails when content moves and the version does not.",
   "assets": {
-    "assets/crankmagic/barlowcondensed-600-ext.woff2": {
-      "version": 1,
-      "sha": "aef7edf54f79a532"
-    },
-    "assets/crankmagic/barlowcondensed-600.woff2": {
-      "version": 1,
-      "sha": "215a93c696f44203"
-    },
-    "assets/crankmagic/barlowcondensed-700-ext.woff2": {
-      "version": 1,
-      "sha": "9d351bd9222bfab9"
-    },
-    "assets/crankmagic/barlowcondensed-700.woff2": {
-      "version": 1,
-      "sha": "3787a5a419171630"
-    },
     "assets/crankmagic/barlowcondensed-800-ext.woff2": {
       "version": 1,
       "sha": "22539b785b3cbcee"
@@ -24,6 +8,14 @@
     "assets/crankmagic/barlowcondensed-800.woff2": {
       "version": 1,
       "sha": "2515494e8cc2ca07"
+    },
+    "assets/crankmagic/cinzel-600-ext.woff2": {
+      "version": 1,
+      "sha": "a5779eb98b504609"
+    },
+    "assets/crankmagic/cinzel-600.woff2": {
+      "version": 1,
+      "sha": "61efc27ceb7d08bb"
     },
     "assets/crankmagic/commander-atraxa.webp": {
       "version": 1,
@@ -53,29 +45,21 @@
       "version": 1,
       "sha": "3cc0812ddfe08cc9"
     },
-    "assets/crankmagic/satoshi-400.woff2": {
+    "assets/crankmagic/lato-400-ext.woff2": {
       "version": 1,
-      "sha": "50dca57f0b77918e"
+      "sha": "8b9fc9737043f88c"
     },
-    "assets/crankmagic/satoshi-500.woff2": {
+    "assets/crankmagic/lato-400.woff2": {
       "version": 1,
-      "sha": "af02a72246f53ad4"
+      "sha": "918b7dc3e2e2d015"
     },
-    "assets/crankmagic/satoshi-700.woff2": {
+    "assets/crankmagic/lato-700-ext.woff2": {
       "version": 1,
-      "sha": "353a7fbfb4475f0c"
+      "sha": "3a5797f440bc67b5"
     },
-    "assets/crankmagic/satoshi-900.woff2": {
+    "assets/crankmagic/lato-700.woff2": {
       "version": 1,
-      "sha": "a4f962f7f9c049b2"
-    },
-    "assets/crankmagic/youngserif-400-ext.woff2": {
-      "version": 1,
-      "sha": "9e6eb8e5e38f9dcb"
-    },
-    "assets/crankmagic/youngserif-400.woff2": {
-      "version": 1,
-      "sha": "6ba68b9927ad2a64"
+      "sha": "c447dd7677b419db"
     },
     "assets/mana/2.svg": {
       "version": 1,
@@ -106,8 +90,8 @@
       "sha": "b4cc36093b2df3e8"
     },
     "card-catalog.js": {
-      "version": 25,
-      "sha": "250fcc6e992b6bc3"
+      "version": 26,
+      "sha": "e78fb490ade5a665"
     },
     "card-classify.js": {
       "version": 10,
@@ -134,8 +118,8 @@
       "sha": "ed5b8619450f0b9d"
     },
     "collection-model.js": {
-      "version": 63,
-      "sha": "b2dec28a873d3b4a"
+      "version": 66,
+      "sha": "31778bc6aef613f8"
     },
     "collection-repository.js": {
       "version": 4,
@@ -154,28 +138,36 @@
       "sha": "5843be95892058c1"
     },
     "crankmagic-account.js": {
-      "version": 12,
-      "sha": "f58515300523d360"
+      "version": 14,
+      "sha": "0fd3312307740e4a"
+    },
+    "crankmagic-admin-ai.js": {
+      "version": 1,
+      "sha": "dd101c628d6df9f1"
+    },
+    "crankmagic-admin.js": {
+      "version": 5,
+      "sha": "2aab705af2b64a2f"
     },
     "crankmagic-advisor.js": {
       "version": 12,
       "sha": "5dd742bd996b24a6"
     },
     "crankmagic-app.js": {
-      "version": 583,
-      "sha": "d0de17b295f8f118"
+      "version": 769,
+      "sha": "8590fbd146f19708"
     },
     "crankmagic-assets.js": {
-      "version": 36,
-      "sha": "5a27dc08e080223a"
+      "version": 41,
+      "sha": "dde4ffd5665c1015"
     },
     "crankmagic-audio.js": {
       "version": 1,
       "sha": "ddab072cfc45df40"
     },
     "crankmagic-board.js": {
-      "version": 107,
-      "sha": "379451b0ad3af4a3"
+      "version": 182,
+      "sha": "771e7d295358a789"
     },
     "crankmagic-brand.js": {
       "version": 6,
@@ -190,24 +182,36 @@
       "sha": "bc92293019782657"
     },
     "crankmagic-change.js": {
-      "version": 4,
-      "sha": "48d909f4e319a07d"
+      "version": 5,
+      "sha": "74bf7030175d1ddb"
+    },
+    "crankmagic-choice-flow.js": {
+      "version": 2,
+      "sha": "78021c509e67716e"
+    },
+    "crankmagic-coach.css": {
+      "version": 1,
+      "sha": "d23f97d010c0e49e"
+    },
+    "crankmagic-coach.js": {
+      "version": 2,
+      "sha": "8f21d8c3e5d43cb6"
     },
     "crankmagic-collection.js": {
-      "version": 109,
-      "sha": "3f5449f914bd7b86"
+      "version": 115,
+      "sha": "a2c9b8437993dc8c"
     },
     "crankmagic-decks.js": {
-      "version": 116,
-      "sha": "520edba12bff2d96"
+      "version": 124,
+      "sha": "c0391d847a0ab29c"
     },
     "crankmagic-design.css": {
-      "version": 26,
-      "sha": "fddbf907399a047c"
+      "version": 28,
+      "sha": "18ed40eacd82dfe3"
     },
     "crankmagic-discover.js": {
-      "version": 76,
-      "sha": "3244750d1b9b86c9"
+      "version": 81,
+      "sha": "740a3eb6cc197384"
     },
     "crankmagic-evidence.js": {
       "version": 4,
@@ -220,6 +224,10 @@
     "crankmagic-facets.js": {
       "version": 15,
       "sha": "7acbff56e4c98939"
+    },
+    "crankmagic-feedback.js": {
+      "version": 1,
+      "sha": "aa87d2d19680f234"
     },
     "crankmagic-game.js": {
       "version": 80,
@@ -234,8 +242,8 @@
       "sha": "d77245bd485ce9b7"
     },
     "crankmagic-graph.js": {
-      "version": 23,
-      "sha": "a5306f26922493ca"
+      "version": 25,
+      "sha": "a7347d44277b03d8"
     },
     "crankmagic-groupings.js": {
       "version": 2,
@@ -250,8 +258,8 @@
       "sha": "3ddf4a43cfa372e3"
     },
     "crankmagic-landing.js": {
-      "version": 8,
-      "sha": "764100dffa421e94"
+      "version": 10,
+      "sha": "9bd22af73d9f189d"
     },
     "crankmagic-lens.js": {
       "version": 2,
@@ -265,13 +273,17 @@
       "version": 4,
       "sha": "8bc4072293739dab"
     },
+    "crankmagic-lounge.js": {
+      "version": 7,
+      "sha": "7dee54866de035f3"
+    },
     "crankmagic-mats.css": {
       "version": 2,
       "sha": "63072d792c0f337c"
     },
     "crankmagic-newdeck.js": {
-      "version": 1,
-      "sha": "1b0758d6246f9046"
+      "version": 7,
+      "sha": "4bfac82640de9784"
     },
     "crankmagic-online.css": {
       "version": 5,
@@ -290,8 +302,8 @@
       "sha": "d9cbaccbac245070"
     },
     "crankmagic-pull.js": {
-      "version": 17,
-      "sha": "acbd06d36784299f"
+      "version": 19,
+      "sha": "63b16dafea4fc818"
     },
     "crankmagic-qr.js": {
       "version": 1,
@@ -314,20 +326,20 @@
       "sha": "4e08c75b8d320b77"
     },
     "crankmagic-seat-art.js": {
-      "version": 2,
-      "sha": "430a2293c29f4df7"
+      "version": 3,
+      "sha": "ffb2ae1e9ab6a476"
     },
     "crankmagic-settings-play.js": {
-      "version": 2,
-      "sha": "417cd522d3faf84b"
+      "version": 4,
+      "sha": "7f6dc81990bc13f9"
     },
     "crankmagic-settings.js": {
-      "version": 17,
-      "sha": "d265daaa37d6f6e5"
+      "version": 20,
+      "sha": "c1a3a419dd5bd449"
     },
     "crankmagic-sharing.js": {
-      "version": 4,
-      "sha": "1d2b5f46d2d2ed08"
+      "version": 8,
+      "sha": "8f13ff0d7eebaa2b"
     },
     "crankmagic-sim.js": {
       "version": 25,
@@ -338,36 +350,36 @@
       "sha": "3efd6092b02b8385"
     },
     "crankmagic-stage-tables.js": {
-      "version": 3,
-      "sha": "fd7accd751b01d3e"
+      "version": 4,
+      "sha": "66bbfde592de2d04"
     },
     "crankmagic-stage.css": {
-      "version": 64,
-      "sha": "49d4811f1daf689a"
+      "version": 189,
+      "sha": "942071a139877508"
     },
     "crankmagic-stage.js": {
-      "version": 19,
-      "sha": "2055a22e3099252a"
+      "version": 47,
+      "sha": "98a927e3ac912295"
     },
     "crankmagic-strategies.js": {
       "version": 4,
       "sha": "07440b83396bb9e2"
     },
     "crankmagic-sw.js": {
-      "version": 566,
-      "sha": "fb1ef775b80f96ac"
+      "version": 752,
+      "sha": "c11081fb9413e196"
     },
     "crankmagic-table.js": {
-      "version": 42,
-      "sha": "2701cd8453fa3e9b"
+      "version": 59,
+      "sha": "97fccd24e06a2ba2"
     },
     "crankmagic-tabletop.js": {
       "version": 33,
       "sha": "8a31f71a801f8c29"
     },
     "crankmagic-tour.js": {
-      "version": 24,
-      "sha": "a6f1385306162b4c"
+      "version": 26,
+      "sha": "8331b4999861b239"
     },
     "crankmagic-trace.js": {
       "version": 4,
@@ -378,40 +390,40 @@
       "sha": "ca657a27caa9093d"
     },
     "crankmagic.css": {
-      "version": 304,
-      "sha": "67ada575036052b6"
+      "version": 317,
+      "sha": "52b8df05863b8ee1"
     },
     "custom-model.js": {
       "version": 3,
       "sha": "4c2b2793f05a10be"
     },
     "data/card-facts.json": {
-      "version": 10,
-      "sha": "2621e41dbbae4a3d"
+      "version": 12,
+      "sha": "493614e56659b872"
     },
     "data/cards.json": {
-      "version": 13,
-      "sha": "4dde4bd87622bdff"
+      "version": 15,
+      "sha": "6bb4a95fd10e0ca5"
     },
     "data/commander-glossary.json": {
       "version": 2,
       "sha": "53a48ee6727fe50d"
     },
     "data/commander-index.json": {
-      "version": 1,
-      "sha": "2541dfac5b4f9c3b"
+      "version": 3,
+      "sha": "751a89b2dd3ca459"
     },
     "data/commander-ranks.json": {
-      "version": 5,
-      "sha": "e0c08d3382aad867"
+      "version": 7,
+      "sha": "977776dd59b7cc27"
     },
     "data/commander-strategies.json": {
-      "version": 6,
-      "sha": "3ca5f2398a73a386"
+      "version": 8,
+      "sha": "9e20bb7880cfa56b"
     },
     "data/commander-universe.json": {
-      "version": 5,
-      "sha": "86de616341486376"
+      "version": 7,
+      "sha": "cf6a90e383a0a8cc"
     },
     "data/composition-targets.json": {
       "version": 1,
@@ -422,24 +434,24 @@
       "sha": "37c351c5b3741d08"
     },
     "data/flavor-names.json": {
-      "version": 5,
-      "sha": "7c8c5232ac47ea89"
+      "version": 7,
+      "sha": "440efb887ac0d300"
     },
     "data/graph-played.json": {
-      "version": 3,
-      "sha": "3f2ad92308c05b32"
+      "version": 5,
+      "sha": "90d284ec23c1a1f8"
     },
     "data/graph.json": {
-      "version": 22,
-      "sha": "99f97e6db1173612"
+      "version": 24,
+      "sha": "e64d60205d8f4bb5"
     },
     "data/precons-latest.json": {
-      "version": 1,
-      "sha": "771f9f07f4359ea6"
+      "version": 3,
+      "sha": "9c52db521bcfe93f"
     },
     "data/precons.json": {
-      "version": 2,
-      "sha": "b20c428c2122b23d"
+      "version": 4,
+      "sha": "04bfe48da34a2870"
     },
     "deck-autocreate.js": {
       "version": 1,
@@ -476,6 +488,10 @@
     "draft-builder.js": {
       "version": 9,
       "sha": "2ea37a108afaeb50"
+    },
+    "feedback-schema.js": {
+      "version": 1,
+      "sha": "c554cfa172dfc4cd"
     },
     "game-record.js": {
       "version": 3,

@@ -7,11 +7,13 @@
         device -- except over a row of cards that scrolls, which still scrolls; ⌘/Ctrl with the wheel zooms there too,
         and ⌘/Ctrl + and − still size the cards.
      2. A mat dragged with the left button moves the view across the table, the place taken hold of staying under the
-        pointer; dragging the empty table still tilts it. ⌖ Center puts the view back.
+        pointer; dragging the empty table still tilts it. Camera's Reset puts the view back (Oct 26: in place of ⌖ Center).
      3. A right button held (200 ms) anywhere on the table -- a card, a mat, the bare table -- looks at the place: the
         head turns, the shoulders lean, the head pitches down, until the place is about halfway to the center of the view, in 0.25 s +
         0.40 s·r (the farthest about 0.65 s); let go, the same motion backward from wherever it reached, to exactly the
         resting camera. Reduced motion jumps. The DOM cards stay on the Babylon table through every frame of it.
+        (Oct 26) The eye rises first, without turning, then goes over and down; the read at the end comes 30% closer; and
+        moved while held, the head turns after the pointer, by the angle its offset spans, and comes home on letting go.
      4. A quick right click on a card, in every view, shows what it can do: the card to read (🔍 and its name), then each
         offer of the room's for it as a glyph and the fewest words, nothing the room did not offer. A row stages the
         choice; the Menu key and Shift+F10 open it from the keyboard; Escape closes it, back to the card. The browser's
@@ -64,15 +66,35 @@ async function board(mode, {width = 1440, height = 900, reduced = false} = {}) {
   await page.locator(`#cm-board .cm-bcard[data-card='${ISLAND}']`).first().waitFor({timeout: 20000});
   if (mode === "full") await page.locator("[data-engine=babylon][data-renderer=webgl]").waitFor({timeout: 20000});
   await page.waitForTimeout(300);
+  await page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
   /* Every browser menu asked for, and whether the board kept it shut. */
-  await page.evaluate(() => {globalThis.__menus = []; addEventListener("contextmenu", (e) => __menus.push({open: !e.defaultPrevented, table: !!e.target.closest?.(".cm-stage-region")}));});
+  await page.evaluate(() => {globalThis.__menus = []; addEventListener("contextmenu", (e) => __menus.push({open: !e.defaultPrevented, table: !!e.target.closest?.(".cm-stage-region"), target: e.target.outerHTML?.slice(0,180)}));});
   const acts = () => sent.filter((x) => x.type === "act").map((x) => x.indices);
   /* The room's answer to a play: here, the same offers again at a new revision. */
   let revision = view.revision;
   const again = async () => {sock.send(JSON.stringify({type: "receipt", receipt: {}})); sock.send(JSON.stringify({type: "view", view: {...structuredClone(view), revision: ++revision}})); await page.waitForTimeout(350);};
   return {page, context, errors, sent, acts, again};
 }
+/* The drawers are the top layer: a card of yours may lie under one. A player shuts the Actions drawer to reach it, and the pointer
+   then goes only to a point the browser says is that card's (the Actions pop-up may stand over the middle of the stage). */
+const pointOn = (page, id, where) => page.evaluate(({id, where}) => {
+  const r = document.querySelector(`${where} .cm-bcard[data-card='${id}']`).getBoundingClientRect();
+  for (let y = r.top + r.height / 2; y < r.bottom; y += 3) for (let x = r.left + r.width / 2; x < r.right; x += 3) if (document.elementFromPoint(x, y)?.closest(".cm-bcard")?.dataset.card === String(id)) return {x, y};
+  for (let y = r.top + 2; y < r.bottom; y += 3) for (let x = r.left + 2; x < r.right; x += 3) if (document.elementFromPoint(x, y)?.closest(".cm-bcard")?.dataset.card === String(id)) return {x, y};
+  return null;
+}, {id, where});
+const rightClickCard = async (page, id, where = ".cm-stage-fan") => {
+  let at = await pointOn(page, id, where);
+  if (!at) {
+    const rail = page.locator("[data-action=board-stage-rail][aria-expanded=true]");
+    if (await rail.count()) {await rail.click(); await page.waitForTimeout(450); at = await pointOn(page, id, where);}
+  }
+  ok(at, `a point on card ${id} that the pointer reaches`);
+  await page.mouse.click(at.x, at.y, {button: "right"});
+};
 const diag = (page) => page.evaluate(() => CrankStage.diagnostics());
+/* How far the lean has gone at 35% of the time (its phase .2-.8, eased): what it has taken back of the rise by the peak. */
+const phase35 = () => {const x = (.35 - .2) / .6; return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;};
 /* The Babylon table and the DOM surfaces, one projection: the table's corners as Babylon draws them against the DOM's, and
    the front mat's matrix3d as the browser applied it against the geometry's. */
 const misalign = (d) => Math.max(...d.quad.map((n, i) => Math.abs(n - d.domQuad[i])));
@@ -100,13 +122,14 @@ try {
   const zoomSlider = () => page.getByRole("slider", {name: "Table zoom", exact: true});
   await page.getByRole("button", {name: "Camera", exact: false}).click();
   eq(await zoomSlider().inputValue(), "100", "the zoom starts at 100%");
-  const point = {x: region.x + region.width * .7, y: region.y + region.height * .55};
+  const point = await page.evaluate(({fx,fy})=>{const region=document.querySelector('.cm-stage-region'),r=region.getBoundingClientRect(),want={x:r.left+r.width*fx,y:r.top+r.height*fy};let best=null,distance=Infinity;for(let y=r.top+20;y<r.bottom-20;y+=9)for(let x=r.left+20;x<r.right-20;x+=9){const el=document.elementFromPoint(x,y),d=(x-want.x)**2+(y-want.y)**2;if(el?.matches('.cm-stage-canvas,.cm-stage-region')&&CrankStage.pick(x,y)&&d<distance){best={x,y};distance=d;}}if(!best)throw new Error('no native bare table point for wheel zoom');return best;},{fx:.7,fy:.55});
   const beforePick = await page.evaluate(({x, y}) => CrankStage.pick(x, y).world, point);
+  const wheelHit=await page.evaluate(({x,y})=>{const el=document.elementFromPoint(x,y);return {hit:el?.outerHTML.slice(0,180),row:!!el?.closest('[data-zone-scroll]'),overlay:!!el?.closest('.cm-stage-camera,.cm-stage-actions,#cm-card-inspector,.cm-stage-side,.cm-stage-rail')};},point);
   await page.mouse.move(point.x, point.y);
   await page.mouse.wheel(0, -240);
   await page.waitForTimeout(400);
   const zoomed = Number(await zoomSlider().inputValue());
-  ok(zoomed > 120 && zoomed <= 200, `the wheel up zooms in, the slider following (${zoomed}%)`);
+  ok(zoomed > 120 && zoomed <= 200, `the wheel up zooms in, the slider following (${zoomed}%; native hit ${JSON.stringify(wheelHit)})`);
   /* kept a moment after the wheel stops, as the slider keeps it when let go */
   ok(await page.waitForFunction((v) => localStorage.getItem("cm-board-zoom-v2") === v, String(zoomed), {timeout: 3000}).then(() => true, () => false), "and the zoom is kept on this device, as the slider keeps it");
   const afterPick = await page.evaluate(({x, y}) => CrankStage.pick(x, y).world, point);
@@ -117,8 +140,8 @@ try {
   await page.waitForTimeout(400);
   eq(await zoomSlider().inputValue(), "60", "the wheel down zooms out to the slider's least, 60%");
   await zoomSlider().fill("100");
-  await page.locator("[data-action=board-camera-center]").click();
-  eq((await diag(page)).pan, {x: 0, y: 0}, "⌖ Center puts the view back over the table's center");
+  await page.locator("[data-action=board-camera-reset]").click();
+  eq((await diag(page)).pan, {x: 0, y: 0}, "Reset puts the view back over the table's center");
   const centered = await diag(page);
   ok(centered.domQuad.every((n, i) => Math.abs(n - rest.domQuad[i]) < 1e-6), "and at 100% the table is exactly where it rested");
   /* Over a row of cards that scrolls the wheel scrolls it, as it did; with Ctrl it zooms. */
@@ -141,7 +164,9 @@ try {
   await page.keyboard.up("Control");
   await page.waitForTimeout(400);
   ok(JSON.stringify(await tableAt()) !== JSON.stringify(quadWas) && await page.waitForFunction(() => Number(localStorage.getItem("cm-board-zoom-v2")) > 100, null, {timeout: 3000}).then(() => true, () => false), "with Ctrl the wheel over the row zooms the table");
-  eq(await scrolled(), rowAt, "and leaves the row where it was");
+  /* Zoomed, the row sits under a scale transform and the browser snaps its scroll offset to a device pixel: a row at its end (86) reads 85.5 about half the time.
+     The row did not scroll (a Ctrl wheel of -200 would move it 200), so the measure is within a pixel. */
+  near(await scrolled(), rowAt, 1, "and leaves the row where it was");
   /* ⌘/Ctrl + and − still size the cards, not the table. */
   const scale = () => page.evaluate(() => getComputedStyle(document.getElementById("cm-board")).getPropertyValue("--card-scale") || document.documentElement.style.getPropertyValue("--card-scale"));
   const zoomBefore = await page.evaluate(() => localStorage.getItem("cm-board-zoom-v2"));
@@ -158,9 +183,9 @@ try {
   await zoomSlider().fill("100");
 
   /* ---- 2. a mat drags the view; the bare table still tilts ---- */
-  await page.locator("[data-action=board-camera-center]").click();
+  await page.locator("[data-action=board-camera-reset]").click();
   await page.getByRole("button", {name: "Camera", exact: false}).click();
-  const tiltWas = await page.evaluate(() => localStorage.getItem("cm-board-tilt-v2"));
+  const tiltWas = await page.evaluate(() => localStorage.getItem("cm-board-tilt-v4"));
   const grab = await page.evaluate(({x, y}) => CrankStage.pick(x, y).world, spots.mat);
   await page.mouse.move(spots.mat.x, spots.mat.y);
   await page.mouse.down();
@@ -170,18 +195,18 @@ try {
   ok(panned.pan.x > 40, `dragging a mat to the left moves the view to the right (${JSON.stringify(panned.pan)})`);
   const held = await page.evaluate(({x, y}) => CrankStage.pick(x, y).world, {x: spots.mat.x - 140, y: spots.mat.y - 30});
   ok(Math.hypot(held[0] - grab[0], held[2] - grab[2]) < 1.5, `the place taken hold of stays under the pointer (${JSON.stringify([grab, held])})`);
-  eq(await page.evaluate(() => localStorage.getItem("cm-board-tilt-v2")), tiltWas, "dragging a mat does not tilt the table");
+  eq(await page.evaluate(() => localStorage.getItem("cm-board-tilt-v4")), tiltWas, "dragging a mat does not tilt the table");
   ok(misalign(panned) < .03 && mismatrix(panned) < .001, `moved, the DOM and Babylon tables still agree (${misalign(panned)}px)`);
   eq(acts(), [], "dragging a mat plays nothing");
   await page.mouse.move(spots.ground.x, spots.ground.y);
   await page.mouse.down();
   await page.mouse.move(spots.ground.x, spots.ground.y + 20, {steps: 5});
   await page.mouse.up();
-  eq(await page.evaluate(() => localStorage.getItem("cm-board-tilt-v2")), "44", "dragging the bare table still tilts it, as before");
+  eq(await page.evaluate(() => localStorage.getItem("cm-board-tilt-v4")), "32", "dragging the bare table still tilts it, as before (40 to 32 from the floor)");
   eq((await diag(page)).pan, panned.pan, "and does not move the view");
   await page.getByRole("button", {name: "Camera", exact: false}).click();
   await page.getByRole("slider", {name: "Table tilt", exact: true}).fill("40");
-  await page.locator("[data-action=board-camera-center]").click();
+  await page.locator("[data-action=board-camera-reset]").click();
   await page.getByRole("button", {name: "Camera", exact: false}).click();
   const home = await diag(page);
   ok(home.camera.position.every((n, i) => Math.abs(n - rest.camera.position[i]) < 1e-9), "centered again, the camera is back where it rested");
@@ -251,7 +276,9 @@ try {
   ok(a.moving.every((x, i) => i === 0 || x.t >= a.moving[i - 1].t), "it moves one way while held");
   const mid = a.moving.reduce((best, x) => Math.abs(x.t - .5) < Math.abs(best.t - .5) ? x : best), end = a.reached;
   ok(mid.t > .2 && mid.t < .8, `a frame halfway through (t ${mid.t.toFixed(2)})`);
-  ok(mid.rotation[1] > 0 && mid.rotation[1] < end.rotation[1], `halfway the head has turned part of the way toward the right (yaw ${mid.rotation[1].toFixed(4)} of ${end.rotation[1].toFixed(4)})`);
+  /* The turn has its own time, the first 60% (a runner that draws a frame at 65% finds it already turned): a frame inside it. */
+  const turning = a.moving.filter((x) => x.t < .6).reduce((best, x) => Math.abs(x.t - .3) < Math.abs(best.t - .3) ? x : best, mid);
+  ok(turning.rotation[1] > 0 && turning.rotation[1] < end.rotation[1], `while it turns (t ${turning.t.toFixed(2)}) the head has turned part of the way toward the right (yaw ${turning.rotation[1].toFixed(4)} of ${end.rotation[1].toFixed(4)})`);
   ok(mid.rotation[0] >= rest.camera.rotation[0] && mid.rotation[0] < end.rotation[0], `halfway it has pitched part of the way down (${mid.rotation[0].toFixed(4)} of ${end.rotation[0].toFixed(4)}, at rest ${rest.camera.rotation[0].toFixed(4)})`);
   ok(end.position[0] > rest.camera.position[0] && end.position[1] < rest.camera.position[1], `the shoulders lean toward the place and lower the eye (${JSON.stringify(end.position)} from ${JSON.stringify(rest.camera.position)})`);
   /* A glance, about half (Rob, Oct 25): the place ends about halfway from where it was to the center of the view. */
@@ -271,6 +298,46 @@ try {
   ok(onTime(b) && backOnTime(b), "and keeps its own time there and back");
   ok(off(b.reached) < off(b.moving[0]) && (off(b.moving[0]) < 20 || (glance(b) > .3 && glance(b) < .7)), `ending with that place about halfway to the center of the view (${Math.round(off(b.moving[0]))}px → ${Math.round(off(b.reached))}px)`);
   ok(same(b.last, atRest), "and it too comes back exactly");
+  /* UP, THEN OVER, THEN CLOSER (Rob, Oct 26), from the motion itself (CrankStage.headPose), not from how many frames this
+     runner draws: the eye goes up first, straight up and without turning to look, and the rise is given back by the end. */
+  const rise = await page.evaluate(({x, y}) => {
+    const r = document.querySelector(".cm-stage-region").getBoundingClientRect(), g = CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3});
+    const P = g.unproject(x - r.left, y - r.top).world, at = (t) => CrankStage.headPose(g, P, t);
+    const toP = (p) => Math.hypot(P[0] - g.camera.eye[0] - p.x, P[1] - g.camera.eye[1] - p.y, P[2] - g.camera.eye[2] - p.z), rest = toP({x: 0, y: 0, z: 0});
+    const forward = (px, py) => CrankStage.headPose(g, g.unproject(px - r.left, py - r.top).world, 1).z;
+    return {early: at(.15), peak: at(.35), end: at(1), eye: g.camera.eye[1], closer: 1 - toP(at(1)) / rest, forwardFar: forward(x, y), forwardNear: forward(r.left + r.width / 2, r.bottom - 30), forwardSide: forward(r.left + 40, r.top + r.height * .6)};
+  }, far);
+  ok(rise.forwardFar > 0 && rise.forwardNear > 0 && rise.forwardSide > 0, `the camera moves forward over the table to look down at the place held, wherever on the table it is (${rise.forwardFar.toFixed(0)}, ${rise.forwardNear.toFixed(0)}, ${rise.forwardSide.toFixed(0)} forward)`);
+  ok(rise.early.y > 0 && rise.peak.y > rise.early.y && Math.abs(rise.early.yaw) < .02 && Math.abs(rise.early.pitch) < .002, `the head rises first, before it turns to look (${rise.early.y.toFixed(1)} then ${rise.peak.y.toFixed(1)} up; yaw ${rise.early.yaw.toFixed(4)})`);
+  near(rise.peak.y / rise.eye, .02 - .06 * phase35(), .006, "about 2% of its height over the table at the far corner, less what the lean has begun to lower (the lean lowers it twice as far as it did)");
+  ok(rise.end.y < 0, "and by the end it has gone over and down, as before");
+  ok(rise.closer > .12 && rise.closer < .19, `the read at the end comes closer still, the eye leaning forward over the table (the eye ${(rise.closer * 100).toFixed(1)}% nearer the place; it was 9% before it leaned forward)`);
+  /* Moved while held, the head turns after the pointer, by the angle the offset spans, and back on letting go. */
+  await frames();
+  await page.mouse.move(close_.x, close_.y);
+  await page.mouse.down({button: "right"});
+  await page.waitForFunction(() => CrankStage.diagnostics().look?.t === 1, null, {timeout: 4000, polling: "raf"});
+  const heldAt = await diag(page);
+  await page.mouse.move(close_.x + 160, close_.y + 60, {steps: 4});
+  await page.waitForFunction(() => {const l = CrankStage.diagnostics().look; return l?.steer && Math.abs(l.steer.yaw - l.turned.yaw) < 1e-4 && Math.abs(l.steer.pitch - l.turned.pitch) < 1e-4;}, null, {timeout: 4000, polling: "raf"});
+  await page.waitForTimeout(120);
+  const turnedAt = await diag(page), focal = await page.evaluate(() => {const r = document.querySelector(".cm-stage-region").getBoundingClientRect(); return CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3}).focal;});
+  near(turnedAt.camera.rotation[1] - heldAt.camera.rotation[1], Math.atan2(160, focal), .002, "160 px to the right turns the head right by the angle 160 px spans");
+  near(turnedAt.camera.rotation[0] - heldAt.camera.rotation[0], Math.atan2(60, focal), .002, "and 60 px down pitches it down by the angle 60 px spans");
+  ok(same({position: turnedAt.camera.position, rotation: [0, 0, 0]}, {position: heldAt.camera.position, rotation: [0, 0, 0]}), "turning the head turns it: the eye stays where it is");
+  ok(misalign(turnedAt) < .05, `turned, the DOM cards stay on the Babylon table (${misalign(turnedAt).toFixed(4)}px)`);
+  await page.mouse.move(close_.x, close_.y, {steps: 3});
+  await page.waitForFunction(() => {const l = CrankStage.diagnostics().look; return l && Math.abs(l.turned.yaw) < 1e-4 && Math.abs(l.turned.pitch) < 1e-4;}, null, {timeout: 4000, polling: "raf"});
+  await page.waitForTimeout(120);
+  const backAt = await diag(page);
+  ok(Math.abs(backAt.camera.rotation[1] - heldAt.camera.rotation[1]) < 1e-3, "brought back to the place pressed, it looks where it did");
+  await page.mouse.move(close_.x - 300, close_.y - 120, {steps: 3});
+  await page.waitForTimeout(150);
+  await page.mouse.up({button: "right"});
+  await page.waitForFunction(() => CrankStage.diagnostics().look === null, null, {timeout: 4000, polling: "raf"});
+  await page.waitForTimeout(150);
+  const home2 = await diag(page);
+  ok(same({position: home2.camera.position, rotation: home2.camera.rotation}, atRest), "let go turned away, it comes home exactly");
   /* Let go partway: backward from there, in the time it took to get there. */
   /* Let go partway: on a slow runner a frame can come 250 ms and more after the last, and the whole 0.65 s motion can end
      between the test seeing t >= .3 and the button coming up -- so the look is tried again, up to four times, until the
@@ -292,7 +359,7 @@ try {
   ok(dHold.reached && same(dHold.last, atRest), "held on a card, the camera looks at it, and back");
   eq(await page.locator("#cm-card-menu").count(), 0, "and the card's menu does not open");
   await frames();
-  await proft.click({button: "right"});
+  await page.mouse.click(onProft.x, onProft.y, {button: "right"});   /* at the point the pointer finds on Proft: the drawers are the top layer now, so the card's center may be under one */
   await page.locator("#cm-card-menu").waitFor({timeout: 2000});
   await page.waitForTimeout(300);
   ok((await frames()).f.every((x) => x.t === null), "a quick right click on a card does not move the camera");
@@ -300,7 +367,7 @@ try {
   /* ---- 4. a card's menu: what it can do, in shorthand ---- */
   const menu = page.locator("#cm-card-menu");
   const readMenu = () => menu.evaluate((m) => ({label: m.getAttribute("aria-label"), role: m.getAttribute("role"),
-    card: [...(m.querySelector("[data-action=board-card-menu-view]")?.children || [])].map((n) => n.textContent).join(" ") || null,
+    card: [...(m.querySelector("[data-action=board-card-menu-view]")?.children || [])].map((n) => n.textContent).join(" ").replace(/\s+/g," ").trim() || null,
     rows: [...m.querySelectorAll("[data-action=board-card-menu-do]")].map((r) => ({index: Number(r.dataset.index), text: [...r.children].map((n) => n.textContent).join(" ").replace(/\s+/g, " ").trim(), said: r.getAttribute("aria-label"), mana: r.querySelectorAll(".cm-mana img, .cm-mana svg").length})),
     none: m.querySelector(".cm-card-menu-none")?.textContent.trim() || null, focused: document.activeElement?.closest("#cm-card-menu") ? document.activeElement.getAttribute("aria-label") : null}));
   let m = await readMenu();
@@ -309,7 +376,7 @@ try {
   await page.keyboard.press("Escape");
   ok(await menu.count() === 0, "Escape closes it");
   const cardOn = (id, where = ".cm-stage-fan") => page.locator(`${where} .cm-bcard[data-card='${id}']`).first();
-  await cardOn(ISLAND).click({button: "right"});
+  await rightClickCard(page, ISLAND);
   m = await readMenu();
   eq(m.rows.map((r) => r.index), offered(ISLAND), "the Island's menu lists the one thing the room offers for it");
   eq([m.card, m.rows[0].text, m.rows[0].said, m.focused], ["🔍 Island", "⤓ Play", "Play Island", "Play Island"], "as ⤓ Play under the card's name, said in full, the focus on it");
@@ -318,25 +385,22 @@ try {
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   ok(await menu.count() === 0, "choosing an offer closes the menu");
-  await page.locator("#cm-board-decision [data-action=board-confirm]").waitFor({timeout: 3000});
-  eq(acts(), [], "and stages it, as a click on the card does: nothing is sent yet");
-  await page.locator("#cm-board-decision [data-action=board-confirm]").click();
   for (let i = 0; i < 100 && !acts().length; i += 1) await page.waitForTimeout(20);
-  eq(acts(), [[1]], "Confirm plays it, once");
+  eq(acts(), [[1]], "and plays it at once, once: the card and its row are two presses already (Rob, 2026-10-27)");
   /* The view a played land leaves is not this test's business: the offers come back as they were. */
   await again();
-  await cardOn(RIME).click({button: "right"});
+  await rightClickCard(page, RIME);
   m = await readMenu();
   eq(m.rows.map((r) => r.index), offered(RIME), "Rime Chill's menu lists only its own offer");
   eq(m.rows[0].text, "✦ Cast → up to two targets · ↷ Island, Access Tunnel", "✦ Cast, then where it goes and what it taps, in shorthand");
   eq(m.rows[0].said, "Cast Rime Chill → up to two targets · tapping Island, Access Tunnel", "and in full to a reader");
   await page.keyboard.press("Escape");
-  await cardOn(TOWER, ".cm-stage-front").click({button: "right"});
+  await rightClickCard(page, TOWER, ".cm-stage-front");
   m = await readMenu();
   eq(m.rows.map((r) => r.index), offered(TOWER), "the Command Tower's menu lists its two ways of making mana");
   ok(m.rows.every((r) => r.text.startsWith("↷") && r.mana === 1), `each a tap and the mana it makes, as a symbol (${JSON.stringify(m.rows)})`);
   await page.keyboard.press("Escape");
-  await cardOn(CHALICE, ".cm-stage-front").click({button: "right"});
+  await rightClickCard(page, CHALICE, ".cm-stage-front");
   m = await readMenu();
   eq([m.rows.map((r) => r.index), m.rows[0]?.text], [offered(CHALICE), "↶ Untap"], "the Chalice's: ↶ Untap");
   /* The card, to read, at one press. */
@@ -357,10 +421,10 @@ try {
   await page.mouse.click(5, 5);
   ok(await menu.count() === 0, "a press anywhere else puts it away");
   eq(acts(), [[1]], "opening and reading menus plays nothing more");
-  if (SHOTS) {await cardOn(TOWER, ".cm-stage-front").click({button: "right"}); await page.screenshot({path: path.join(SHOTS, "card-menu-3d.png")}); await page.keyboard.press("Escape");}
+  if (SHOTS) {await rightClickCard(page, TOWER, ".cm-stage-front"); await page.screenshot({path: path.join(SHOTS, "card-menu-3d.png")}); await page.keyboard.press("Escape");}
   await page.keyboard.press("Escape");
   const menus = await page.evaluate(() => __menus);
-  ok(menus.length > 0 && menus.every((m) => !m.open), `the browser's own menu never opens on the 3D table (${menus.length} asked)`);
+  ok(menus.length > 0 && menus.every((m) => !m.open), `the browser's own menu never opens on the 3D table (${menus.length} asked; ${JSON.stringify(menus)})`);
   eq(acts(), [[1]], "looking plays nothing: the one act sent is the Island confirmed above");
   ok(!errors.length, `no page error (${errors.join(" | ")})`);
   await context.close();
@@ -369,7 +433,7 @@ try {
   for (const mode of ["focus", "table"]) {
     const {page, context, errors, acts} = await board(mode);
     const menu = page.locator("#cm-card-menu");
-    await page.locator(`.cm-board-hand .cm-bcard[data-card='${ISLAND}']`).click({button: "right"});
+    await rightClickCard(page, ISLAND);
     await menu.waitFor({timeout: 2000});
     const rows = await menu.locator("[data-action=board-card-menu-do]").evaluateAll((els) => els.map((r) => Number(r.dataset.index)));
     eq(rows, offered(ISLAND), `${mode}: a right click on the Island shows the room's one offer for it`);
@@ -380,7 +444,7 @@ try {
     const menus = await page.evaluate(() => __menus);
     ok(menus.length === 1 && !menus[0].open, `${mode}: the browser's own menu stays shut on a card`);
     eq(acts(), [], `${mode}: nothing played`);
-    if (SHOTS && mode === "focus") {await page.locator(`.cm-board-hand .cm-bcard[data-card='${RIME}']`).click({button: "right"}); await page.screenshot({path: path.join(SHOTS, "card-menu-focus.png")});}
+    if (SHOTS && mode === "focus") {await rightClickCard(page, RIME); await page.screenshot({path: path.join(SHOTS, "card-menu-focus.png")});}
     ok(!errors.length, `${mode}: no page error (${errors.join(" | ")})`);
     await context.close();
   }

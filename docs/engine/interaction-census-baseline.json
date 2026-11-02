@@ -1,0 +1,30 @@
+{
+ "schema": "interaction-census-baseline@1",
+ "note": "A ratchet: findings known when it was written. It only shrinks. See game/tools/interaction-census.mjs.",
+ "classes": {
+  "CAST_ONLY_WHEN_FLOATED": {
+   "owner": "ROB-354 (what the table's flags leave; {X} and Phyrexian casts are fixed by xTaps and phyrexianTaps, ROB-326)",
+   "keys": [
+    "Burn at the Stake|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Mountain, Mountain, Mount",
+    "Reigning Victor|CAST_ONLY_WHEN_FLOATED|cast: offered once Mountain, Plains, Swamp are tapped into t",
+    "Reigning Victor|CAST_ONLY_WHEN_FLOATED|cast: offered once Mountain, Plains, Wastes, Wastes are tapp",
+    "Reigning Victor|CAST_ONLY_WHEN_FLOATED|cast: offered once Mountain, Wastes, Wastes, Swamp are tappe",
+    "Reigning Victor|CAST_ONLY_WHEN_FLOATED|cast: offered once Mountain, Wastes, Wastes, Wastes, Wastes ",
+    "Reigning Victor|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Plains, Swamp are tapped ",
+    "Reigning Victor|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Plains, Wastes, Wastes ar",
+    "Spectral Procession|CAST_ONLY_WHEN_FLOATED|cast: offered once Plains, Plains, Plains are tapped into th",
+    "Spectral Procession|CAST_ONLY_WHEN_FLOATED|cast: offered once Plains, Plains, Wastes, Wastes are tapped",
+    "Spectral Procession|CAST_ONLY_WHEN_FLOATED|cast: offered once Plains, Wastes, Wastes, Plains are tapped",
+    "Spectral Procession|CAST_ONLY_WHEN_FLOATED|cast: offered once Plains, Wastes, Wastes, Wastes, Wastes ar",
+    "Spectral Procession|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Plains, Plains are tapped",
+    "Spectral Procession|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Plains, Wastes, Wastes ar",
+    "Temur Tawnyback|CAST_ONLY_WHEN_FLOATED|cast: offered once Forest, Island, Mountain are tapped into ",
+    "Temur Tawnyback|CAST_ONLY_WHEN_FLOATED|cast: offered once Forest, Island, Wastes, Wastes are tapped",
+    "Temur Tawnyback|CAST_ONLY_WHEN_FLOATED|cast: offered once Forest, Wastes, Wastes, Mountain are tapp",
+    "Temur Tawnyback|CAST_ONLY_WHEN_FLOATED|cast: offered once Forest, Wastes, Wastes, Wastes, Wastes ar",
+    "Temur Tawnyback|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Island, Mountain are tapp",
+    "Temur Tawnyback|CAST_ONLY_WHEN_FLOATED|cast: offered once Wastes, Wastes, Island, Wastes, Wastes ar"
+   ]
+  }
+ }
+}

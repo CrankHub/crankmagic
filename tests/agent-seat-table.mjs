@@ -27,7 +27,7 @@ const eq = (a, b, m) => {assert.deepEqual(a, b, m); checks += 1;};
 
 function d1() {
   const db = new DatabaseSync(":memory:");
-  for (const f of ["0001_accounts.sql", "0002_ai.sql"]) db.exec(readFileSync(new URL(`../cloud/migrations/${f}`, import.meta.url), "utf8"));
+  for (const f of ["0001_accounts.sql", "0002_ai.sql", "0012_ai_settings.sql"]) db.exec(readFileSync(new URL(`../cloud/migrations/${f}`, import.meta.url), "utf8"));
   const statement = (sql, args = []) => ({bind: (...values) => statement(sql, values), first: async () => db.prepare(sql).get(...args) ?? null,
     all: async () => ({results: db.prepare(sql).all(...args), success: true, meta: {}}), run: async () => ({success: true, meta: {changes: Number(db.prepare(sql).run(...args).changes)}})});
   return {raw: db, prepare: (sql) => statement(sql), batch: async () => {throw Error("unused");}};
@@ -117,8 +117,10 @@ const pilotCalls = () => DB.raw.prepare("SELECT email, feature, model, outcome, 
   await refused({...OPEN, AI_CAP_TOTAL_CENTS: undefined}, ROB, "no caps: refused");
   await refused(OPEN, EVE, "a host not on the allowlist: refused");
   eq((await tableWith(OPEN, "evetableplain", {host: EVE, level: "normal"})).made.status, 201, "while a Normal AI is anyone's");
-  /* Rob, 2026-10-14: the door open to everyone signed in (AI_EVERYONE): a host Access let in seats one, list or no list. */
-  eq((await tableWith({...OPEN, AI_EVERYONE: "on"}, "evetableeveryone", {host: EVE})).made.status, 201, "with AI_EVERYONE on, a host not on the allowlist seats an AI on Claude");
+  /* Rob, 2026-10-26: General Access never spends. AI_EVERYONE opens the sign-in, not the roster: a host not on it is
+     refused with the switch on; the owner (OWNER_EMAIL), on no list, is seated. */
+  await refused({...OPEN, AI_EVERYONE: "on"}, EVE, "with AI_EVERYONE on, a host not on the roster is still refused: General Access never spends");
+  eq((await tableWith({...OPEN, OWNER_EMAIL: EVE}, "evetableowner", {host: EVE})).made.status, 201, "the owner, named by OWNER_EMAIL and on no list, seats an AI on Claude");
 }
 
 /* ---- 2. In play, through the model, on the tape ---- */
@@ -128,8 +130,8 @@ const pilotCalls = () => DB.raw.prepare("SELECT email, feature, model, outcome, 
   eq([game.made.json.table.seats[1].level, game.room.status], ["llm", "finished"], `an AI on Claude, seated and played to the end (${game.room.view("s0").state.turn} turns)`);
   ok(sent.length > 0, `its close calls went to the model: ${sent.length} of them`);
   ok(game.waits > 0 && game.alarmed === game.waits, `each time the room waited on the seat, the object's alarm was set for then (${game.alarmed} of ${game.waits})`);
-  ok(sent.every((b) => !b.messages[0].content.includes("Rob") && b.model === "claude-haiku-5-5" && b.output_config.effort === "low" && b.system === PILOT_SYSTEM),
-    "every request without a person's name, on the door's model at low effort, with the seat's instructions");
+  ok(sent.every((b) => !b.messages[0].content.includes("Rob") && b.model === "claude-haiku-5-5" && b.output_config.effort === "low" && b.system[0].text === PILOT_SYSTEM && b.system[0].cache_control.type === "ephemeral"),
+    "every request without a person's name, on the door's model at low effort, with the seat's instructions as the cached system prompt");
   const brief = JSON.parse(sent[0].messages[0].content);
   ok(brief.players.some((p) => p.seat === "you" && Array.isArray(p.hand)) && brief.players.filter((p) => p.hand).length === 1 && brief.decision.options.length > 0,
     "the brief: its own hand alone, the board, and the decision's options");
@@ -143,6 +145,16 @@ const pilotCalls = () => DB.raw.prepare("SELECT email, feature, model, outcome, 
   const replay = await replayMatch({storage: objectStorage(game.ctx.storage), matchId: game.matchId, cards: tableCards});
   const before = sent.length;
   ok(replay.same && sent.length === before, "and the game replays from its tape to the same end without asking the model again");
+}
+
+/* ---- 2b. The owner's stored model (ROB-338) is the seat's model, read at each call, and outranks AI_MODEL ---- */
+{
+  DB.raw.prepare("INSERT INTO ai_settings (key, value, previous, updated_at, updated_by) VALUES ('model', 'claude-sonnet-5-5', 'claude-haiku-5-5', '2026-10-10T19:00:00Z', ?)").run(ROB);
+  sent = []; answerWith = (body) => ({indices: [JSON.parse(body.messages[0].content).housePilotWouldChoose[0] ?? 0], why: "The heuristic is right."});
+  const game = await playAt(OPEN, "llmtablea2");
+  ok(sent.length > 0 && sent.every((b) => b.model === "claude-sonnet-5-5"), `with the owner's stored model Sonnet 5.5 and AI_MODEL Haiku 5.5, all ${sent.length} of the seat's calls are made on the stored one`);
+  eq(game.room.status, "finished", "and the game still plays to the end");
+  DB.raw.prepare("DELETE FROM ai_settings").run();
 }
 
 /* ---- 3. The game's cap ---- */

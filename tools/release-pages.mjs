@@ -68,13 +68,13 @@ export const ROOTS = ["index.html", "crankmagic.html", "graph.html", "not-invite
    the two files stay in the repository for the tools that build them and are never served. */
 export const NEVER = /^(game|tools|tests|docs|design|prototype|graph|payload|payload_v3|schema|\.github|\.claude)\/|^data\/(engine|source|archive|game-logs)\/|^data\/live-(state|load)\.json$/;
 
-const PLAY = ["crankmagic-mats.css", "crankmagic-seat-art.js", "crankmagic-game.js", "crankmagic-lobby.js", "crankmagic-online.js", "crankmagic-online.css", "collection-lobby-draft.js", "crankmagic-table.js", "crankmagic-board.js", "crankmagic-audio.js", "crankmagic-stage.js", "crankmagic-stage.css", "crankmagic-stage-tables.js", "crankmagic-stage-paint.js", "vendor/babylon.js", "vendor/BABYLON-LICENSE.txt"];
+const PLAY = ["crankmagic-mats.css", "crankmagic-seat-art.js", "crankmagic-game.js", "crankmagic-lobby.js", "crankmagic-online.js", "crankmagic-online.css", "collection-lobby-draft.js", "crankmagic-table.js", "crankmagic-lounge.js", "crankmagic-choice-flow.js", "crankmagic-board.js", "crankmagic-coach.js", "crankmagic-coach.css", "crankmagic-audio.js", "crankmagic-stage.js", "crankmagic-stage.css", "crankmagic-stage-tables.js", "crankmagic-stage-paint.js", "vendor/babylon.js", "vendor/BABYLON-LICENSE.txt"];
 /* PLAY IN THE CLOUD (M5): the table's lobby, the seats it draws, Rob's artwork mats, the board, and its sound (B8: the pack
    in assets/audio/, reached only from crankmagic-audio.js), over the Worker's /api/tables. The rest of PLAY is the
    local game host's (a Node server on this machine or a tunnel), which no release carries. */
-const PLAY_CLOUD = ["crankmagic-mats.css", "crankmagic-seat-art.js", "crankmagic-table.js", "crankmagic-board.js", "crankmagic-audio.js", "crankmagic-stage.js", "crankmagic-stage.css", "crankmagic-stage-tables.js", "crankmagic-stage-paint.js", "vendor/babylon.js", "vendor/BABYLON-LICENSE.txt"];
+const PLAY_CLOUD = ["crankmagic-mats.css", "crankmagic-seat-art.js", "crankmagic-table.js", "crankmagic-lounge.js", "crankmagic-choice-flow.js", "crankmagic-board.js", "crankmagic-coach.js", "crankmagic-coach.css", "crankmagic-audio.js", "crankmagic-stage.js", "crankmagic-stage.css", "crankmagic-stage-tables.js", "crankmagic-stage-paint.js", "vendor/babylon.js", "vendor/BABYLON-LICENSE.txt"];
 const LOCAL_PLAY = PLAY.filter((f) => !PLAY_CLOUD.includes(f));
-const ACCOUNTS = ["cloud-sync.js", "crankmagic-account.js", "crankmagic-sharing.js"];
+const ACCOUNTS = ["cloud-sync.js", "crankmagic-account.js", "crankmagic-sharing.js", "crankmagic-admin.js"];
 /* What every release shares: Play says Coming Soon, no game host, served by Cloudflare. */
 const RELEASE = {
   play: "coming-soon",
@@ -202,6 +202,14 @@ export const LIMITS_PER_MINUTE = Object.freeze({ip: 240, person: 120});
 /* Workers Logs for a cloud release (M3): the Worker's own lines, and never the platform's per-request one. */
 export const OBSERVABILITY = {enabled: true, head_sampling_rate: 1, logs: {enabled: true, invocation_logs: false}};
 
+/* The Access policy of each group an invitation can put someone in (ROB-320, docs/program/rob-320-invitations-contract.md §6):
+   comma lists the same length and order as ACCESS_INVITE_APP_IDS, one reusable policy per application. A profile that names neither
+   keeps today's single ACCESS_INVITE_POLICY_ID for both groups. The ids are Rob's to supply from the Cloudflare dashboard (General: no
+   AI; Game Theory Insider: AI); none is written in this repository, and nothing here has been checked against real Cloudflare. */
+const groupPolicies = (sharing) => ({
+  ...(sharing.accessPolicyIdGeneral ? {ACCESS_INVITE_POLICY_ID_GENERAL: sharing.accessPolicyIdGeneral} : {}),
+  ...(sharing.accessPolicyIdInsider ? {ACCESS_INVITE_POLICY_ID_INSIDER: sharing.accessPolicyIdInsider} : {}),
+});
 export const HOST_FILES = {
   cloudflare: ({date, origin, profile}) => ({
     "wrangler.jsonc": JSON.stringify({
@@ -214,7 +222,7 @@ export const HOST_FILES = {
       preview_urls: false,
       ...(profile.cloud ? {
         d1_databases: [{binding: "DB", database_name: profile.cloud.database.name, database_id: profile.cloud.database.id, migrations_dir: "cloud/migrations"}],
-        vars: {...(profile.sharing ? {SHARING_ENABLED: "on", INVITE_ADMIN_ID: profile.sharing.adminId, CLOUDFLARE_ACCOUNT_ID: profile.sharing.accountId, ACCESS_INVITE_APP_IDS: profile.sharing.accessAppIds, ACCESS_INVITE_POLICY_ID: profile.sharing.accessPolicyId, ...(profile.sharing.linkOrigin ? {INVITE_LINK_ORIGIN: profile.sharing.linkOrigin} : {})} : {}), ACCESS_TEAM_DOMAIN: profile.cloud.access.team, ACCESS_AUD: profile.cloud.access.aud, ...(profile.tables?.playtest ? {PLAYTEST_TABLES: "on"} : {}), ...(profile.serviceSeats ? {SERVICE_SEATS: "on"} : {}), ...(profile.tables?.closed ? {PLAY_TABLES_CLOSED: "on"} : {}), ...aiVars(profile)},
+        vars: {...(profile.sharing ? {SHARING_ENABLED: "on", INVITE_ADMIN_ID: profile.sharing.adminId, CLOUDFLARE_ACCOUNT_ID: profile.sharing.accountId, ACCESS_INVITE_APP_IDS: profile.sharing.accessAppIds, ACCESS_INVITE_POLICY_ID: profile.sharing.accessPolicyId, ...groupPolicies(profile.sharing), ...(profile.sharing.linkOrigin ? {INVITE_LINK_ORIGIN: profile.sharing.linkOrigin} : {})} : {}), ACCESS_TEAM_DOMAIN: profile.cloud.access.team, ACCESS_AUD: profile.cloud.access.aud, ...(profile.tables?.playtest ? {PLAYTEST_TABLES: "on"} : {}), ...(profile.serviceSeats ? {SERVICE_SEATS: "on"} : {}), ...(profile.tables?.closed ? {PLAY_TABLES_CLOSED: "on"} : {}), ...aiVars(profile)},
         ratelimits: [
           {name: "LIMIT_IP", namespace_id: profile.cloud.limits.ip, simple: {limit: LIMITS_PER_MINUTE.ip, period: 60}},
           {name: "LIMIT_PERSON", namespace_id: profile.cloud.limits.person, simple: {limit: LIMITS_PER_MINUTE.person, period: 60}},
@@ -328,6 +336,8 @@ export function referencesOf(file, text, files) {
    imports through the same commit. A bare or node: import, or a module the commit lacks, is named: the Worker
    could not be bundled from the release. */
 export const PLAY_WORKER = "cloud/play-worker.mjs";
+/* The account cloud's Worker (cloud/worker.mjs), whose imports a release without Play carries the same way. */
+export const API_WORKER = "cloud/worker.mjs";
 const IMPORT = /\b(?:import|export)\s+(?:[^;]*?\sfrom\s+)?["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
 export function workerModules(source, entry = PLAY_WORKER) {
   const seen = new Set(), queue = [entry], problems = [];
@@ -400,6 +410,8 @@ export function verify(built, profile) {
   const problems = [], files = new Set(built.keys());
   const engine = profile.cloud && profile.tables ? workerModules(builtSource(built)) : {files: [], problems: []};
   for (const f of files) if (NEVER.test(f) && !(/^game\/.+\.mjs$/.test(f) && engine.files.includes(f))) problems.push(`${f} is in a folder that never ships`);
+  /* The API Worker bundles from the release tree: a module it imports that the tree lacks is a Worker wrangler cannot build. */
+  if (profile.cloud) for (const p of workerModules(builtSource(built), API_WORKER).problems) problems.push(p.replace("Play's Worker", "the Worker"));
   for (const f of profile.leaveOut) if (files.has(f)) problems.push(PLAY.includes(f) ? `${f} is Play, and Play is not in this release` : `${f} is left out of this release, and is in it`);
   for (const [f, body] of built) {
     if (!TEXT.test(f)) continue;
@@ -528,9 +540,11 @@ export function build({source, profileName = "pages", origin = "", domain = ""})
   built.set("version.json", Buffer.from(JSON.stringify({commit: source.commit, date: source.date, profile: profileName, source: source.ref, origin: origin || FIRST_PUBLIC}, null, 2) + "\n"));
   if (domain) built.set("CNAME", Buffer.from(domain + "\n"));
   if (profile.host) for (const [f, text] of Object.entries(HOST_FILES[profile.host]({date: source.date, origin: origin || FIRST_PUBLIC, profile}))) built.set(f, Buffer.from(text));
-  /* The Worker and its migrations, from the same commit as the pages (never walked: nothing links to them). */
+  /* The Worker and its migrations, from the same commit as the pages (never walked: nothing links to them), and every
+     module the Worker imports from outside cloud/ (feedback-schema.js, the report's schema the pages load too). */
   if (profile.cloud) {
     const worker = [...source.files].filter((f) => /^cloud\/[\w.-]+\.mjs$|^cloud\/migrations\/[\w.-]+\.sql$/.test(f));
+    for (const f of workerModules(source, API_WORKER).files) if (!worker.includes(f)) worker.push(f);
     source.readMany(worker);
     for (const f of worker) built.set(f, source.read(f));
     if (profile.tables) for (const f of workerModules(source).files) if (!built.has(f)) built.set(f, source.read(f));

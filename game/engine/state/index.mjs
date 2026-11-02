@@ -128,13 +128,20 @@ export function createState(pod) {
     /* A cast tapped for tops up floating mana, and a source of more than one mana is tapped for all of it (rules/actions.mjs,
        `pooledTaps`; Rob, 2026-10-15). Only a pod that asks carries the key, as above. */
     ...(pod?.pooledTaps === true ? {pooledTaps: true} : {}),
+    /* New matches may fund the prepared inset's cast from its controller's sources, as a hand cast can be funded. */
+    ...(pod?.preparedTaps === true ? {preparedTaps: true} : {}),
     /* And an {X} spell tapped for too, for each X the pool and the untapped sources pay together (rules/actions.mjs, `xTaps`;
        Oct 21). Only a pod that asks carries the key, as above. */
     ...(pod?.xTaps === true ? {xTaps: true} : {}),
+    /* And a spell with Phyrexian mana tapped for too, in each way its symbols can be paid, {U} or 2 life (rules/actions.mjs, `phyrexianTaps`;
+       ROB-326). Only a pod that asks carries the key, as above. */
+    ...(pod?.phyrexianTaps === true ? {phyrexianTaps: true} : {}),
     /* And the players who may play their land in any step of their own turn, not only a main phase (rules/actions.mjs,
        `landAnyStep`; Rob, 2026-10-21: "When I am on any step of my turn, I should be able to play a land"): a house rule,
        for the people at a table, never its AI seats. Only a pod that names them carries the key, as above. */
     ...(Array.isArray(pod?.landAnyStep) && pod.landAnyStep.length ? {landAnyStep: [...pod.landAnyStep]} : {}),
+    /* The people whose upkeep and draw-step mana stays for the turn (rules/turn.mjs, emptyManaPools; Rob, 2026-10-28), a house rule. Only a pod that asks carries the key. */
+    ...(Array.isArray(pod?.keepStepMana) && pod.keepStepMana.length ? {keepStepMana: [...pod.keepStepMana]} : {}),
     /* A starting life other than 40, for "your starting life total" (startingLifeOf, above). */
     ...(life !== STARTING_LIFE ? {startingLife: life} : {}),
     players: seats.map((seat, id) => ({
@@ -323,7 +330,14 @@ export function turnFaceUp(state, id) {
 export function showFace(state, id, face) {
   const object = state.objects[id];
   if (!object?.mdfc) return;
-  Object.assign(object, faceOf(object.mdfc, face));
+  /* A characteristic the face shown has not is absent, not present as nothing (showAdventure, below): a land has no spell,
+     loyalty, defense or enchant. Copied as undefined they survive in memory and not through JSON, so a state saved while the
+     card is still in the hand -- a game waiting on how the land enters, Fell Mire's "pay 3 life?" -- is refused by
+     saveCheckpoint and the table cannot go on (ROB-343). Shown and put back, the card is exactly as it was. */
+  for (const [key, value] of Object.entries(faceOf(object.mdfc, face))) {
+    if (value === undefined || (PRESENT_ONLY.includes(key) && Array.isArray(value) && !value.length)) delete object[key];
+    else object[key] = value;
+  }
   if (face === "back") object.face = "back"; else delete object.face;
 }
 

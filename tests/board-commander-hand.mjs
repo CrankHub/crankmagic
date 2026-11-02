@@ -4,8 +4,8 @@
  *
  * The commander tax: a commander in the command zone carries the room's `commanderTax` (game/engine/projection.mjs),
  * and the board shows it at the card's top-right, as Rob asked, and says it with the card's name. Partners: the command
- * zone draws every card in it, so the second partner can be seen, inspected and cast from the pile, not only from
- * "You can also". A castable commander is lit like a castable card in hand, and a click casts it.
+ * zone draws every card in it, so the second partner can be seen, inspected and cast from the pile. A castable commander
+ * is lit like a castable card in hand; its native menu stages Cast, then W14's primary binds the single offered action.
  *
  * A look at another player's hand (the `handLook` decision, mode `ack`, game/engine/script/effects/asking.mjs): the
  * cards it is about are drawn above OK, each opens Card zoom, and OK answers it with nothing chosen.
@@ -57,10 +57,14 @@ async function fixture(view, width, height, mode) {
   await page.goto(`${base}/index.html#table?id=cmdr0001`);
   await page.locator("#cm-board").waitFor();
   await page.waitForTimeout(400);
+  /* The drawers are the top layer: on the phone one lies over the board, and a person puts it away to reach a card under it. */
+  if (width < 500) {for (const rail of await page.locator("[data-action=board-stage-rail][aria-expanded=true]").all()) await rail.click(); await page.waitForTimeout(500);}
   return {page, context, frames, errors};
 }
 /* Reached where a person would press it: the element itself is under the point, inside the window. */
 async function reach(page, selector, [fx, fy] = [0.5, 0.5]) {
+  /* The phone's board is taller than its window and scrolls inside it: a person scrolls to a card before pressing it. */
+  if (page.viewportSize().width < 500) {await page.locator(selector).first().evaluate((el) => el.scrollIntoView({block: "center", inline: "center", behavior: "instant"})); await page.waitForTimeout(300);}
   return page.locator(selector).first().evaluate((el, [fx, fy]) => {
     const r = el.getBoundingClientRect(), x = r.x + r.width * fx, y = r.y + r.height * fy;
     return {ok: x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && el.contains(document.elementFromPoint(x, y)), x, y};
@@ -75,59 +79,57 @@ try {
     /* ---- the commander tax and partners ---- */
     {
       const {page, context, frames, errors} = await fixture(commanderView(), width, height, mode);
-      const pile = `[data-zone="command"]`, tymna = `${pile} [data-card="${TYMNA}"]`, kraum = `${pile} [data-card="${KRAUM}"]`;
-      ok(await page.locator(tymna).count() === 1 && await page.locator(kraum).count() === 1 && await page.locator(tymna).evaluate((el, k) => !!el.closest('[data-zone="command"]').querySelector(`[data-card="${k}"]`), KRAUM), `${where}: both partners are drawn, together in the command zone`);
-      ok((await page.locator(`${tymna} .cm-bcard-tax`).innerText()).trim() === "+2", `${where}: Tymna's tax badge says +2`);
-      ok((await page.locator(`${kraum} .cm-bcard-tax`).innerText()).trim() === "+0", `${where}: Kraum's tax badge says +0`);
+      const pile = `[data-zone="command"]`, tymna = `${pile} .cm-bcard[data-card="${TYMNA}"]`, kraum = `${pile} .cm-bcard[data-card="${KRAUM}"]`;
+      ok(await page.locator(tymna).count() === 1 && await page.locator(kraum).count() === 1 && await page.locator(tymna).evaluate((el, k) => !!el.closest('[data-zone="command"]').querySelector(`.cm-bcard[data-card="${k}"]`), KRAUM), `${where}: both partners are drawn, together in the command zone`);
+      ok((await page.locator(`${tymna} .cm-bcard-tax`).textContent()).trim() === "+2", `${where}: Tymna's tax badge says +2`);
+      ok((await page.locator(`${kraum} .cm-bcard-tax`).textContent()).trim() === "+0", `${where}: Kraum's tax badge says +0`);
       ok(/commander tax 2/.test(await page.locator(tymna).getAttribute("aria-label")), `${where}: the tax is said with Tymna's name`);
-      /* Measured in the card's own layout, before any transform: the phone's board is turned 90 degrees and Full's table tilted. */
-      const badge = await page.locator(`${tymna} .cm-bcard-tax`).evaluate((b) => {const c = b.closest(".cm-bcard"); return {right: c.clientWidth - b.offsetLeft - b.offsetWidth, top: b.offsetTop, w: c.clientWidth, px: parseFloat(getComputedStyle(b).fontSize)};});
-      ok(badge.right < badge.w * 0.2 && badge.top < badge.w * 0.2 && badge.px >= 10, `${where}: the badge sits at the card's top-right, at 10px or more (${JSON.stringify(badge)})`);
-      const apart = await page.locator(tymna).evaluate((el) => {const b = el.querySelector('.cm-bcard-tax'), n = el.querySelector('.cm-bcard-name'); return n.offsetLeft + n.offsetWidth <= b.offsetLeft + 0.5 || n.offsetTop + n.offsetHeight <= b.offsetTop + 0.5;});
-      ok(apart, `${where}: the badge never lies over the name`);
+      /* Legible or absent (Rob, 2026-10-29): on a board whose cards are too small for the badge at the text floor it stands down, and the card's label says the tax (above). */
+      const shownBadge = await page.locator(`${tymna} .cm-bcard-tax`).isVisible();
+      if (!shownBadge) ok(await page.locator(tymna).evaluate((el) => !!el.closest("[data-tiny]")), `${where}: the badge is absent only on a board of cards too small for it`);
+      else {
+        /* Measured in the card's own layout, before any transform: the phone's board is turned 90 degrees and Full's table tilted. */
+        const badge = await page.locator(`${tymna} .cm-bcard-tax`).evaluate((b) => {const c = b.closest(".cm-bcard"); return {right: c.clientWidth - b.offsetLeft - b.offsetWidth, top: b.offsetTop, w: c.clientWidth, px: parseFloat(getComputedStyle(b).fontSize)};});
+        ok(badge.right < badge.w * 0.2 && badge.top < badge.w * 0.2 && badge.px >= 10, `${where}: the badge sits at the card's top-right, at 10px or more (${JSON.stringify(badge)})`);
+        const apart = await page.locator(tymna).evaluate((el) => {const b = el.querySelector('.cm-bcard-tax'), n = el.querySelector('.cm-bcard-name'); return n.offsetLeft + n.offsetWidth <= b.offsetLeft + 0.5 || n.offsetTop + n.offsetHeight <= b.offsetTop + 0.5;});
+        ok(apart, `${where}: the badge never lies over the name`);
+
+      }
       ok(await page.locator(kraum).evaluate((el) => el.classList.contains("is-bright")), `${where}: castable Kraum is lit`);
       ok(!(await page.locator(tymna).evaluate((el) => el.classList.contains("is-bright"))), `${where}: Tymna, with nothing to do, is not`);
       ok((await page.locator(tymna).getAttribute("aria-label")).endsWith(`. ${TYMNA_WHY}`), `${where}: and says why, with her name (ROB-24)`);
-      const k = await reach(page, kraum), t = await reach(page, tymna, [0.3, 0.15]);
+      /* Pressed on the card's upper part: its quick tab opens over the foot of a small card, and a press there is the tab's own. */
+      let k = await reach(page, kraum, [0.5, 0.2]);
+      for (const fy of [0.5, 0.8]) if (!k.ok) k = await reach(page, kraum, [0.5, fy]);
+      const t = await reach(page, tymna, [0.3, 0.15]);
       ok(k.ok, `${where}: Kraum takes the pointer`);
       ok(t.ok, `${where}: Tymna's uncovered top takes the pointer`);
-      /* A click on the lit commander casts it: at once, or through the one option its pick or zoom offers. */
+      /* Current native path (Rob, 2026-10-27): the card, then its row -- two presses -- and a row that asks nothing more is sent at once. */
+      /* measured again where the phone's scroll left the board: reaching Tymna moved it */
+      k = await reach(page, kraum, [0.5, 0.2]);
+      for (const fy of [0.5, 0.8]) if (!k.ok) k = await reach(page, kraum, [0.5, fy]);
+      ok(k.ok, `${where}: Kraum still takes the pointer where it is pressed`);
       await page.mouse.click(k.x, k.y);
-      await page.waitForTimeout(300);
-      if (!acts(frames).length) {
-        /* The one way to use it, where it shows (Card zoom, the hand's pop-up; in Full, where a click only selects, "You can
-           also"): pressed where a person sees it. */
-        const visibleOption = () => page.evaluate(() => {
-          for (const el of document.querySelectorAll('[data-action="board-zoom-do"][data-index="1"], [data-action="board-option"][data-index="1"], [data-action="board-hand-do"][data-index="1"]')) {
-            const r = el.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
-            if (r.width && r.height && x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && el.contains(document.elementFromPoint(x, y))) return {x, y};
-          }
-          return null;
-        });
-        let at = await visibleOption();
-        if (!at) {
-          const also = await reach(page, '[data-action="board-actions-open"]');
-          if (also.ok) {await page.mouse.click(also.x, also.y); await page.waitForTimeout(300); at = await visibleOption();}
-        }
-        ok(!!at, `${where}: Kraum's cast is offered where a person can press it`);
-        await page.mouse.click(at.x, at.y);
-        await page.waitForTimeout(300);
-      }
-      await page.locator("#cm-board-decision [data-action=board-confirm]").click();
+      const cast = '[data-action=board-flow-confirm]';
+      await page.locator(cast).waitFor();
+      ok(acts(frames).length === 0, `${where}: opening Kraum's native menu sends no action`);
+      const castAt = await reach(page, cast);
+      ok(castAt.ok, `${where}: Kraum's Cast offer takes the pointer`);
+      await page.mouse.click(castAt.x, castAt.y);
       await page.waitForTimeout(100);
-      ok(acts(frames).some((f) => f.choiceId === "priority:25:3:900" && JSON.stringify(f.indices) === "[1]"), `${where}: the click casts Kraum from the command zone (${JSON.stringify(acts(frames))})`);
+      ok(acts(frames).length === 1 && acts(frames)[0].choiceId === "priority:25:3:900" && JSON.stringify(acts(frames)[0].indices) === "[1]", `${where}: exactly one action casts Kraum from the command zone (${JSON.stringify(acts(frames))})`);
       ok(!errors.length, `${where}: no page error (${errors.join(" | ")})`);
       await context.close();
     }
     /* ---- why Tymna can't be cast now (ROB-24): shown where her options would be, once she is picked ---- */
     {
       const {page, context, errors} = await fixture(commanderView(), width, height, mode);
-      const t = await reach(page, `[data-zone="command"] [data-card="${TYMNA}"]`, [0.3, 0.15]);
+      const t = await reach(page, `[data-zone="command"] .cm-bcard[data-card="${TYMNA}"]`, [0.3, 0.15]);
       await page.mouse.click(t.x, t.y);
       await page.waitForTimeout(400);
-      /* Card zoom or the hand's pop-up (Table, Focus, the phone); in Full, where a click selects, a notice too. */
-      const said = await page.evaluate(() => [...document.querySelectorAll(".cm-hand-why, #cm-notice")].filter((el) => el.getBoundingClientRect().width > 0).map((el) => el.textContent.trim()));
-      ok(said.includes(TYMNA_WHY), `${where}: Tymna picked, the reason she can't be cast is shown where her options would be (${JSON.stringify(said)})`);
+      await page.locator('#cm-card-menu .cm-card-menu-none').waitFor();
+      const said = await page.locator('#cm-card-menu .cm-card-menu-none').innerText();
+      ok(said.endsWith(TYMNA_WHY), `${where}: Tymna's native menu gives the authoritative reason she can't be cast (${JSON.stringify(said)})`);
       ok(errors.length === 0, `${where}: no page errors`);
       await context.close();
     }

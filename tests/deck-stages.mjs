@@ -27,6 +27,10 @@ const slotOf=(s,id,n)=>M.deck(s,id).slots.find(r=>r.cardId==='card:'+n);
 {let s=M.empty();s=make(s,'d99',names('C',99));s=make(s,'d100',names('C',100));
   eq([st(s,'d99').onList,st(s,'d99').stage,st(s,'d99').boxed],[99,'building',false],'99 seats is Building');
   eq([st(s,'d100').onList,st(s,'d100').stage,st(s,'d100').boxed],[100,'defined',false],'100 seats is Defined, as a draft: Lock list is not needed (Q7)');
+  /* Past the hundred (Rob, 2026-10-26): "add as many cards to a deck, even more than 100. It just becomes unplayable in Play
+     and can't box; stays in building". */
+  s=make(s,'d101',names('C',101));
+  eq([st(s,'d101').onList,st(s,'d101').stage,st(s,'d101').boxed,st(s,'d101').over,st(s,'d101').play],[101,'building',false,true,'over'],'101 seats is Building, not Boxed, and Over');
   /* A commander kept out of the main list is still one of the hundred (the seats Play reads). */
   s=run(s,{type:'createDeck',deckId:'lead',name:'lead',commanders:['card:Lead'],cards:[card('Lead'),...names('C',99).map(card)],slots:names('C',99).map(n=>({cardId:'card:'+n,quantity:1}))});
   eq([st(s,'lead').onList,st(s,'lead').stage],[100,'defined'],'the commander is a seat even when not in the main list');
@@ -56,7 +60,7 @@ const example=()=>{let s=M.empty();
   /* Substitute · Loading: the copy's status, and what it is not. */
   const read=M.stateReader(s),sub=read({...lotOf(s,'S1'),kind:'lot'});
   eq([sub.use,sub.play,sub.inBox,sub.deckId,sub.holds],['substitute','loading',false,'D1','card:B1'],'a chosen stand-in is a Substitute · Loading');
-  eq(M.stateNote(sub,x=>x.replace('card:','')),'Loading · stands in for B1');eq(M.placeLabel(sub),'Loading');
+  eq(M.stateNote(sub,x=>x.replace('card:','')),'Reserved · stands in for B1');eq(M.placeLabel(sub),'Reserved');
   ok(!M.seats(s).free.has('card:S1'),'a chosen stand-in is not a free copy');
   refuses(()=>run(s,{type:'standIn',lotId:lotOf(s,'S1').id,deckId:'D1',slotId:slotOf(s,'D1','B2').id}),/Choose an owned copy on the Bench/);
   let t=own(s,['Extra']);refuses(()=>run(t,{type:'standIn',lotId:lotOf(t,'Extra').id,deckId:'D1',slotId:slotOf(t,'D1','B1').id}),/B1's seat is already filled or held/);
@@ -117,5 +121,5 @@ const example=()=>{let s=M.empty();
 }
 /* The vocabulary About Deck Building reads. */
 eq(M.STAGES.map(x=>x.label),['Building','Defined','Boxed','Playable']);
-eq(M.LADDER.map(x=>x.label),['Watch','To buy','To Buy · Ordered','Own','Upgrade','Reserved','Loading','Substitute','Final']);
+eq(M.LADDER.map(x=>x.label),['Watch','To buy','To Buy · Ordered','Own','Upgrade','Reserved','Substitute','Final']);
 console.log(`deck-stages: ${checks} checks passed; Building at 99, Defined at 100, Boxed at a full box, and Rob's example boxing 55, 65 and 70.`);

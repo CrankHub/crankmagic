@@ -1,4 +1,449 @@
-# Who holds the work
+# Who held the work (archive, frozen 2026-10-29)
+
+> **Retired.** Rob, 2026-10-29, chose one structure for all work, in Linear: the roadmap is initiative I-1, the
+> process is its document "How work flows: the one loop", and who holds what is an issue's In Progress status with
+> a holder comment. The record of what a piece of work did is its draft PR's body. This file is kept unchanged below
+> as the archive of everything recorded here up to that day; **do not add to it**. Open items found in it were filed
+> as Linear issues (ROB-228 to ROB-311). See `AGENTS.md`, "The work is in Linear: one loop".
+
+
+## Luke's Oct 28 playtest: ROB-201 to ROB-221 (a Claude cloud session, for Rob; `claude/crankmagic-oct28-playtest-zgybjx`, one PR per issue, each merged to `main` before the next)
+
+Rob asked for the playtest's bugs and improvements to be fixed in the order Linear gives (ROB-204, ROB-205, then ROB-210, 201, 208, 209, 211, then the Medium and Low items; ROB-212 and ROB-222 to 225 are not in scope). The session crosses lanes at Rob's word, one issue at a time, and says so in each PR. Linear is the record: each issue is In Progress while its PR is open and Done once it is merged, with the PR linked.
+
+- **ROB-204 (Confirm lock on "up to" / "any number" target questions).** The network-tab test settled it: **client-side, no request was sent.** `board-confirm` returned early for every target question not stepped through Next, and a counted target (`choose-targets:`, mode `many`) has no Next. Fixed in `crankmagic-board.js` (a counted target's Confirm is the commit, checked against its own min and max; its Pick/Review labels are not drawn). Proven by `tests/board-optional-count-targets.mjs` (red before, green after) and `tests/room-optional-count-targets.mjs` (the server takes one, several or none; red when `countedChoice`'s min is forced to 1). **The issue's Claim Jumper text does not match the card** (Claim Jumper is the "search for a Plains" creature, no target); Brago is the real "any number" case. Commented on the issue.
+- **ROB-204 merged** (#932, main 0aee1474, on the touched-suites gate; staging reads b9999b16 until the release owner's next release). Handed to the engine lane's session with ROB-205, 209, 210 and 211.
+- **ROB-213 (the catalog is Commander-legal paper cards only).** `tools/catalog-rule.mjs` is the rule (Scryfall Commander "legal", no "A-" name, a paper printing by Scryfall's own `legal:commander game:paper` search; a bulk row's `digital` flag is the chosen printing's, not the card's, and wrongly names 1,046 paper cards). `tools/commander-universe.mjs` and `tools/build-engine-cards.mjs` apply it. Today it removes exactly one card from 32,116: "Name Sticker" Goblin (MTGO-only). It stays in the committed `oracle.json`, `support.json`, `commander-universe.json` and `graph.json` until the next refresh: `graph-played.json`'s 701,916 edges address `graph.json`'s cards by position, so it cannot be dropped by hand. `tests/catalog-rule.mjs` holds the one exception and fails the day the rebuild removes it.
+- **ROB-214 (Explore says a commander is not in the catalog).** Not an import that failed to register: Explore's data is `data/graph.json` (baked Sep 11, 3,411 commanders) and 86 of the 3,497 commanders in the universe (Sep 28) are not in it at all (Aerid Konstrari, Arni, Avacyn, Angel of Horror, ...); library cards pushed in beside the graph also had no `isCommander`. `crankmagic-discover.js` now brings every catalog commander in as a visitor row, finds a commander by whole name in any case or by the start of it when that names one ("Giada"), says so when a deep link names none (it opened Atraxa), and lists all of them. `tests/explore-commander-door.mjs`. Giada herself *is* flagged in the committed graph, so Luke's exact typed text is unconfirmed; commented on the issue.
+- **ROB-216 (New deck: the colors drift off the commander).** In Start from, once a commander is chosen "Choose colors" shows and locks to its identity; pressing another color asks first (it names the commander and says it will be disconnected), Keep changes nothing, Change colors lets the commander go and applies the change from its colors (`crankmagic-newdeck.js`, two rules in `crankmagic.css`). `tests/newdeck-color-lock.mjs`. `tests/new-deck-flow.mjs` changed with it, on purpose: it changed the colors past a chosen Krenko and expected him kept; it now goes through the warning and chooses him again before Next.
+- **ROB-221 (Resources and Mana Pool on by default).** `DEFAULT_MODULES` in `crankmagic-board.js` is now stack, mana, resources, history, chat, coach: the layout of anyone who has not saved one. A saved layout keeps what its owner chose (nothing is added to it). `tests/table-tabletop.mjs` pins the new list. Visible cost: at 900px tall History, Chat and Coach start below the drawer's fold (it scrolls); say if you want the order changed.
+- **ROB-220 (Play settings, Background and Table design move to the Table menu).** `crankmagic-board.js`: Camera keeps the view's own controls (seats, tilt, zoom, sizes); Table holds Play settings (so Set Side Drawer Modules) and, in 3D, the two pickers. Closing Settings returns focus to Table, where it was opened. `tests/board-table-menu-settings.mjs`; eleven suites that opened Settings through Camera now open it through Table (`a11y-board`, `board-fullscreen-notes`, `board-graphics`, `board-mana-pool`, `board-r2-actions-inspection`, `board-r4-views`, `board-settings-window`, `table-board`, `table-shared-shell`, `table-tabletop`).
+- **A regression of mine from ROB-221, fixed in the same PR.** Putting the Mana Pool on by default made `tests/a11y-board.mjs` see its dimmed zero counts (`opacity:.45` on the whole cell: under 4.5:1). Now only the symbol dims and the count keeps full ink. `a11y-board` was red on `main` from #945 until this PR.
+- **Flaky on a clean `main`:** `tests/board-r2-actions-inspection.mjs` (a timeout on the view switch; 1 failure in 3 runs).
+- **ROB-202 (the hover tooltip covers a card's text).** It was the browser's native `title` on battlefield cards ("Drag within this section to reorder...", the land stack's "n untapped; double click taps the next copy", "Targeted by ..."): drawn at the pointer over the card, and a page cannot move it. `crankmagic-board.js` no longer puts a `title` on a card; "targeted by" is in the card's name, and how to reorder or tap is its `aria-description`. The hover pop-up (the card, large) is unchanged. `tests/board-card-no-native-tooltip.mjs`; `board-mana-pool` and `board-r4-layout` read the old titles and now read the new places.
+- **ROB-207, first half (the engine's view; a small additive PR merged before the board's).** The room's view now carries `face: "back"` on a double-faced permanent whose back face is up, to every seat, as its name is (`game/engine/projection.mjs`; the UI's Requests row 5, "which face is up"; `docs/ui-lane/gameplay-anchor.md`). A name alone cannot say which side of one picture to draw, and `face=back` is refused (422) by Scryfall for a split card, so the client cannot guess. `tests/room-view-face.mjs`. This is the engine lane's file, touched at Rob's word for the playtest list and said here for the lane's session.
+- **ROB-207, second half (the board).** `pictureOf` in `crankmagic-board.js` asks Scryfall for `face=back` of a card whose view says `face: "back"` (#955); every picture on the mat, in the peek, in combat, in the card menu and in a target's layers passes the card. Checked against Scryfall: the generated URL returns the same image bytes as the full-name back request, and not the front's. `tests/board-modal-face.mjs` (red before: the URL had no `face=back`).
+- **ROB-206 (drawer resize lags before the module reflows).** Measured, not guessed: the drawer's width and a module's height both reach the box, every module and the Mana Pool's cells in the very next frame; what did not follow was the *list inside*: History is a band fixed at 240px and Chat's list is capped, so a taller module showed empty space and never caught up (still the same after 1.2 s). `crankmagic-stage.css`: a module with a height of its own lets History and Chat use all of it. No observer or redraw was needed. `tests/board-module-fills.mjs`.
+- **ROB-201 (the Actions pane stacks nested windows).** Measured on seven kinds of question: each sat inside three scrolling boxes (the drawer, its own section, its list of options; a target list scrolled 164px of 259 by itself). `crankmagic-stage.css` (four rules at the end): the drawer is the one scroll region; the question and its options take the height they need; the answering row (Confirm, Don't) is sticky at the foot; a module given its own height (`.has-height`) scrolls the question itself. `tests/board-actions-one-scroll.mjs`. The pop-up for mandatory decisions is ROB-208, next.
+- **Known and not mine, red on a clean `main`:** `tests/board-target-lands.mjs`, `tests/board-direct-blocking.mjs`, `tests/board-yield.mjs`.
+
+## Play: Table and Focus are the 3D view's HUD without the canvas; the drawers lie over the stage; Chat a default module, 2026-10-28 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`, the third PR of the day)
+
+Rob, 2026-10-28: *"Include Chat module in default. Ensure chat in-game is fully functional"*, then *"make Table and Focus HUD and all the functionality we have in 3D exactly the same ... except for the canvas ... revisit my original instruction on the Table view, where each mat had a specific aspect ratio ... include the zoom and camera functionalities ... You are not making any changes to 3D"*, then *"when a drawer opens, the table and hand of cards shifts. They shouldn't. The drawers should not affect the canvas. They should sit as the top layer"* (all three views).
+
+- **Review (what was different).** Table and Focus were their own layouts (`tableView`, `focusView`, a seat pane, `.cm-other-seats`, a row hand, End turn / Skip to end in the header, an internal scroll, a forced Actions pop-up, no zoom or pan). 3D was the HUD (`hud()`): header, turn box, action pop-up, Camera, drawers, the fan hand. **Table** needed: the HUD, four identical 16:9 boards, the 3D zoom/pan. **Focus** needed: the HUD, one 16:9 board for the seat looked at with the others behind it, the four piles card-sized with History between them (the old bottom band is gone), the page scroll instead of its own.
+- **One stage.** `CrankStage.flatGeometry` (`crankmagic-stage.js`) lays the boards on a plane at no tilt and `placeFlat` sets each with one matrix, as 3D does, so the wheel, Camera's Zoom and a drag across the table move them and cards stay sharp (`data-sharp`). `mount(host, {flat:true})` has no canvas; `hud()` (the HUD) is told apart from `stageEnabled()` (the canvas). Table: 2×2 (side by side for two; two over one for three), 16:9 boards, the turn box cleared by going to its right or below it, whichever leaves larger boards. Focus: the board looked at the largest 16:9 between the others (a row across the back, or a column at the right in a wide, short window) and the hand. A board's own layout is the legacy `mat()` at the size it is drawn (`--row-w`, `--mat-w`, `--bc-cap`; below 200px tall it drops its zone captions, `data-tight`).
+- **The drawers are the top layer** (all three views, **a change to 3D that Rob asked for**): the stage and the hand are the window's whole width whatever is open; the drawers lie over them. The turn box keeps beside the left drawer (`--drawer-l`), as the tabs do. A flat view keeps its boards clear of fixed gutters (`--gut-l`, `--gut-r`: the drawer's width, measured when open and remembered, plus the 40px tab) - the same whether a drawer is open or not, so nothing moves when one opens; the cost is that with a drawer shut those margins stay empty (zoom, or pan, uses them). This supersedes Rob's earlier "the hand's center card is the center between the drawers" (`board-r5-visual` now asserts the window's center). Say if you would rather the flat boards take the whole width and run under the drawers as 3D's do.
+- **Boards (Rob's later requests the same day).** Table: no center dial (its life, names and priority are in the top left box; Table vitals stay in the Table menu), no header chip and no Focus button on a board: each board is only a 16:9 mat with its name as plain text above it (no container or fill; the turn's seat in the accent color), the boards meeting with 8px between them, yours 12% larger (`youArea`, `youScale` in `flatGeometry`; the others identical). Focus: the others are boards of their own (16:9, name above) in a strip or, in a wide short window, a column; the seat looked at has its name above it and no header. A double click on a board (its name too) focuses it; a board pressed in the Boards module focuses it and, pressed again, gives the focus back (Focus to Table, 3D to your own board). `tests/board-flat-views.mjs` proves each.
+- **The game fits the window, a standing rule** (Rob, later the same day: *"No scrolling down to see more of the game ... You can scroll down within panes in the game, but not the full game itself"*; `AGENTS.md`, "The game fits the window; it never scrolls"). This replaces the least-board-size-and-scroll I built an hour earlier at his previous word: every board is the largest that fits, however small the window, and `board-flat-views` proves nothing scrolls in Table, Focus or 3D at 1280x720, 1100x640 and 1440x560.
+- **Table's Max** (a button beside Turn): boards run out to the drawers that are open (the edges butt against them), cards scaling with them, and the hand is put away. Pressed again, the default returns with the hand. **The hand's tab** ("Your hand", now a button in every view) puts the hand away and shows it. State is kept for the visit only; leaving Table clears Max.
+- **The quick action tab** (`quickTab`, `cardUndo`; Rob confirmed this is what he meant): under a card of yours on the mat, on hover or focus, the undo drawer holds Tap, Cast and Play (one press where the card offers one way; a menu where several) beside Undo, in all three views; on a small card it is as short as its words allow so a press in the middle still reaches the card.
+- **The card pop-up** is 20% smaller (320px at most, was 400px) in every view.
+- **The peek** (Table and Focus; right button held on a board): the view moves over the board, then zooms to at least 1.6x, and returns when the button is let go (`peeking` in `crankmagic-board.js`); the camera's tilt and 3D's free look have no place on a flat table.
+- **Chat** is a default module of the right drawer (`DEFAULT_MODULES`, migration of saved layouts, `paneLayout`), with an unread count on the Stack tab, the log sticking to the newest line, and a line sent by the watcher refused (`tests/lounge-board.mjs`).
+- **Removed:** `tableView`, `focusView`, `hand`, `handBacks`, the seat pane, the legacy grid rules keyed on `data-view=table|focus`, the header's End turn / Skip to end in Table and Focus.
+- **Proven:** `board-flat-views` 97 (new: one HUD, drawers move nothing, boards identical 16:9 and between the gutters, no board's content past its edge, zoom, pan), `table-tabletop` (flat geometry for 1-4 seats at three window sizes), `board-r5-visual` 72, `lounge-board`, `board-babylon` 90. Seen at 1280x720, 1440x900 and 1863x902, with two, three and four seats.
+- **The road to a production-ready release (2026-10-29):** the handoff to the next session is `docs/handoff-roadmap-2026-10-29.md` (Rob: make it the live roadmap and backlog, mirrored in Linear; the public release is a Future item). `docs/program/ROADMAP-production-readiness-2026-10-29.md` lists what is outstanding by outcome and by four cross-cutting tracks, Rob's decisions and manual steps, the hosting recommendation (stay on Workers and Durable Objects, measure the lag first, decide public sign-in separately) and the order of work.
+- **Decided (Rob, 2026-10-29): legible or absent.** A card under 30px wide on the page (times the text size chosen) carries no power/toughness, count, tax or marks (`data-tiny` on its board, set by `placeFlat`); a pile's count that cannot fit its frame at the text floor is left unseen (`data-caption-none`), and the label of the card or pile still says it; Focus, 3D, Max and the zoom pop-up show them. The quick tab's and hand tab's text is 15px as drawn. `board-r4-caption-fit` reads this (an absent badge is accepted only where every board's cards are that small). The piles on the flat mats are card-shaped (5:7), cards lie over the mat's edge (mat, cards, card HUD, game HUD, bottom to top), and a rear board in Focus is a whole mat in its 16:9.
+- **Released (Rob, 2026-10-29):** PR 910 merged to main as `d25bac19` (a merge commit; the Actions job cannot finish inside its 60-minute limit, so the gate was a full local run: 672 ok, 13 FAIL, 12 of them identical on main, the 13th fixed and re-run green); staging `release/cloud-staging` `8e608cfe`, read back by `tools/staging-check.mjs --expect d25bac1`; `release-acceptance` 22 passes on the built pages. Not released to production.
+- **Phone follow-up PR (Rob, 2026-10-29: phone work left PR 910).** On `claude/gifted-ride-w6xoa3` after the merge: the phone's one frame scrolls a crowded lands row (the lands zone and the grid's rows take the room their cards need; this also clears `board-r3-zone-navigation` at phone/390, which failed on main), and `board-commander-hand`'s 390x844 case is back in its loop (the phone's board scrolls inside its window, so the test scrolls to the card as a person does). Still failing on main and not touched: `board-target-lands`, `board-ending-rematch`, `board-mana-symbols`, `board-control`, `browser-geometry`, `precons`, `page-budget`, `coach`, `crankmagic-coach`, `engine-breaks-anchors`, `table-record`. After the phone PR: the additional work planned before. **Released:** PR 925 merged to main as `b9999b16`; staging `release/cloud-staging` `a8abf916`, read back by `tools/staging-check.mjs --expect b9999b1`; `release-acceptance` 22 passes. Not released to production. PRs merged to main after it (#932, #935, #936, #942, #945) are not on staging.
+- **Known and Rob's:** at 1280x720 with both drawers open the stage is about 590px wide, so Table's boards are small; press Max, shut a drawer, or zoom. Staging D1 now has migrations 0009 and 0010 (applied 2026-10-29 through the Cloudflare D1 API and recorded in `d1_migrations`, as `wrangler d1 migrations apply` would); production's D1 was not read or changed (its record, from the 10-25 release, is 0001 and 0002 only).
+
+## Play and the app's menus: Rob's follow-ups of 2026-10-28 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`, the second PR of the day)
+
+Rob asked for these after the lounge push (the section below), as a separate PR, and to ship them to staging without him.
+
+- **Table menu** (Play): Concede and Leave table now sit below Help and above CrankMagic Pages.
+- **Actions**: a question about a card (what to tap for it) no longer draws that card twice. The mechanism: `decisionPick` (the small tile with the card's name, type and controller) was drawn above `deskCard()` (the desk's large copy of the same card); the tile is left out whenever the desk shows that very card.
+- **Account menu** (the avatar, `index.html` and `crankmagic.html`): it holds You (Your Profile in place of Settings, which goes to Settings and the Profile card, `open-profile`), Skin, Help (Help & glossary, Term definitions on hover only) and Sign out. This device, Your data, Careful, Take a Tour, Send Feedback and the QR code are gone from it. Nothing was removed from the app: Settings now carries **Reset All…** (Danger zone) and **Reload with newest files** (Data), where Save a backup, Restore, Sync now (Account) already were; the tour is the Help dialog's "Take a tour"; Send feedback is the glyph on every page's head. `tests/uat/browser-runner.mjs`' `loadLiveState` restores through Settings now.
+- **Feedback form error on staging**: "The cloud library had a problem, and nothing was changed" is the Worker's 500. Read from the staging database (read-only): it has **no `feedback` table** (nor `match_results`): migrations 0009 and 0010 were never applied there (it holds 0001 to 0006). *(Superseded 2026-10-29: applied, see the third PR's "Known and Rob's".)* **Rob's step, not done:** `wrangler d1 migrations apply crankmagic-staging --remote` (applying them by raw API call was refused as a shared-resource write). Until then the Worker answers 503 "Feedback is not switched on here yet." (`tests/feedback-store.mjs`, 3a) instead of a 500. Production's database has only 0001 and 0002.
+- **Mana**: mana made in the upkeep or the draw step stays in the pool until it is spent or the turn ends (a house rule over CR 500.4, `game/engine/rules/turn.mjs` `emptyManaPools`, kept as Birgi's `turnMana`); `tests/engine-mana-upkeep.mjs`.
+- **New deck, Define the Deck**: Restrictions follow the bracket (B1-2: no Game Changers; B3: at most 3 Game Changers; B4-5: all lifted, said so), in two columns, and the free-text box is gone; the primary button is **Next** (to the next section) and is **Create deck** on Cards.
+- **Deck tiles**: the tick sits under the status pill at the left; the ⋯ drops below Play it.
+- **Not reproduced: Staff of the Storyteller.** Its script matches its Oracle text (a Spirit when it enters; a story counter whenever you create creature tokens), and its scenarios and `tests/engine-afterlife-tokens.mjs` pass: a noncreature spell cast makes no Spirit. The note said the Spirits came from spell-cast triggers; that needs the game's log (which other card made them) to chase.
+- **Released**: main `1f5b5a61` (PRs 908 and 909), staging `release/cloud-staging` `2e471907`, read back by `tools/staging-check.mjs --expect 1f5b5a6`. Not released to production. `release-acceptance` 22 passes on the built pages; `tour-walk` (7 tours, 61 steps) passes; `crankmagic-journeys` fails on main as well. The mana rule is for people at a table with House rules on (`keepStepMana`); AI pilots keep the book's rule.
+- **Proven**: `new-deck-flow` 54, `account-menu-r4` 85, `settings-r3` 73, `menu-help` 14, `reset-all` 43, `landing-r3` 55, `sharing-ui` 17, `admin-window` 51, `feedback-sheet` 38, `feedback-store` 136, `engine-mana-upkeep` 6, `decks-hub` 76, `board-choices` 47, `board-r4-decisions` 119, `table-board` 320, `feature-wiring`, `release-pages`, `asset-versions`, `a11y-app`.
+
+## Play: the New game pop-up, the Lobby with its tour, the board for a watcher and the table's chat, the server half merged, 2026-10-28 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`, PR 905)
+
+Rob, 2026-10-28: the New game pop-up and the Lobby with walkthrough from his three Claude Design screens, then his lists of extras; *"You can do the server half"*; and *"Get all work done, tested, confirmed, then merge and push to staging, all without me being required."* The server half below this section is merged into this branch (a clean merge; `docs/ui-lane/lounge-contract.md` is the page's side of it).
+
+- **New game pop-up** (`crankmagic-lounge.js`): Observe AI toggle (the admin's), human and AI rows, difficulty and personality (hover descriptions), rules, privacy, a person found by name (`GET /api/users/search`) or invited by email; Submit is `POST /api/tables` then the lobby. Hard stays disabled until `GET /api/ai-seat` lists it; Veteran is the server's `llm` gate.
+- **Lobby** (`views.table` in `crankmagic-table.js`): the four-seat grid from the design, an AI seat's Deck, Personality and Difficulty with a summary and tags, Remove seat / Add an AI for the organizer, Table rules in the middle (starting life, bracket, seats, privacy, **House rules Yes/No**; Edit at the top right; "N to Ready Up"), End game that asks once, and the **Lobby tour** (ten steps for the organizer, seven for a guest). An AI editor opens in front of the rules. An AI seat's Ready (its deck) no longer holds the rules (`game/room/table.mjs`, `tests/game-table.mjs`): only a person's Ready does.
+- **The board for a watcher** (`isYou`, `spectator` in `crankmagic-board.js`; `tests/lounge-board.mjs`): `#table?id=…&watch=1` opens the socket with `?watch=1`; the top says Watching, nobody is "You", no action buttons, no hand face up; a watcher's `watching: n` shows. **Chat module** (in Settings, Drawer modules, as before; not in the defaults): the table's last lines, a line to write on, `POST /chat`, the room's `{type:"chat"}` frames, the draft and focus kept through redraws; only players and the admin write. The Pre-lobby's Game log lists the game's lines and then the chat.
+- **Extras Rob listed:** deck rows with a green/red check and hover descriptions, Help in tabs in a drawer twice as wide, no second countdown, shorter Boards rows, Turn text in light mode, AI seats' mats chosen for them (server), Settings changes the play mat, your own card off your mat, the mat divider leaves the right-hand piles alone and the mat has almost no margin, the hand's middle card centered, the look leans forward over the table, and the card-draw flip is item 10 of `BACKLOG.md`.
+- **Proven** (cloud container, `GEOMETRY_REQUIRED=1`): `lounge-ui` 120, `lounge-board` 14, `table-lobby`, `table-setup` 70, `table-board` 320, `table-tabletop`, `board-babylon` 90, `board-r5-visual` 72, `board-r4-caption-fit` 171, `board-r4-views` 129, `board-r4-shell` 111, `board-settings-window` 114, `board-combat-display`, `board-r4-decisions` 119, `board-r4-input` 62, `board-r4-layout` 90, `a11y-board`, `feature-wiring` 131, `release-pages`, `asset-versions`, `game-table` 182, `game-room` 531, `cloud-worker` 155, `table-rematch` 66, and the lounge suites (`lounge-registry` 53, `lounge-lobby` 78, `lounge-watch` 451, `lounge-chat` 21, `lounge-results` 34). `coach` (its browser half) fails on the base commit too.
+- **Not proven / Rob's:** *(superseded 2026-10-29: 0010 is applied on staging, not on production)* migration `cloud/migrations/0010_match_results.sql` is Rob's to apply (until then the leaderboard is empty and nothing is lost). Nothing here ran against a real Durable Object or D1: the registry's behavior on staging, a watcher's socket on hibernation and the migration are proved only on staging. Voice chat is not built (text chat is). The Chat module is not in the default drawer modules.
+
+## The lounge's server half: live and mine, seats, requests, quit, watching, chat, results, leaderboard, 2026-10-28 (a Claude cloud session, for Rob; worktree branch `worktree-agent-a1bba86cf562e4338`, from `claude/gifted-ride-w6xoa3`)
+
+Rob, 2026-10-28: *"You can do the server half."* The contract is `docs/ui-lane/lounge-contract.md`; this is every route of it, built, with the Play session's
+one change of the day (the AI-seat controls are for every seated person). Nothing was pushed, no migration was run, nothing was deployed.
+
+- **Where it lives.** New: `game/room/lounge.mjs` (everything a table owes the lounge: seat operations, requests, quit, log, chat, results rows, the registry
+  summary), `cloud/lounge.mjs` (the registry, users/search, results, leaderboard; imports nothing from `game/`, as `cloud/tables.mjs` still does not).
+  Small, additive hooks in `game/room/table.mjs` (about 60 lines: `create`, `rules`, `deck`, `settle`, `tick`, `view`, a `step` guard once a table has ended),
+  `game/room/room.mjs` (one method, `watch()`), `game/contracts/table-lifecycle.mjs` (a table with no person, for Observe AI game), `cloud/game-room.mjs`,
+  `cloud/tables.mjs`, `cloud/worker.mjs`. The AI-players branch's `readSeatAi`/`levelOf`/`personaOf` are not touched: a seat's `persona` is stored as an opaque
+  key on the lifecycle seat and echoed.
+- **The registry is one more object of the `TABLES` binding**, named `lounge-registry` (a hyphen, so never a table), answered by the same `GameTable` class at
+  `/lounge/*`: no new binding, no new class migration, so `tools/release-pages.mjs` and its exact-equality tests are unchanged. Each table reports its summary
+  after every POST, every alarm and (at most every 15 s) every broadcast; an entry a day old is dropped when read; a table that is over reports itself unlisted.
+- **Routes.** `GET /api/tables/live`, `GET /api/tables/mine`, `GET /api/leaderboard`, `GET /api/users/search?q=`, `GET /api/ai-seat` (+`levels`), `POST
+  /api/tables` (+`privacy`, `observe`, seat `email`/`user`/`persona`), `POST /:id/rules` (+`houseRules`, `privacy`), `POST /:id/seat|request-join|request|quit|chat`,
+  `GET /:id/log`, `GET /:id?watch=1`, `GET /:id/connect?watch=1`; the `deck` action now lets anyone seated bring an AI seat's deck.
+- **Migration `cloud/migrations/0010_match_results.sql`** (0007 and 0008 stay the engine lane's; 0009 is feedback): `match_results(match_id, seat_id, email, name,
+  outcome win|loss|tie|unfinished, humans, ai, turns, ended_at)`, one row per person's seat when a game ends, never an AI seat. **Rob applies it.** Until then
+  the leaderboard answers `{rows: []}`, the game is unharmed, and the table keeps its rows and retries (at most every 10 minutes, on its next change or alarm).
+- **Deviations from the contract, each deliberate:** (1) `rules.houseRules` and `rules.privacy` appear in `rules` only once the host has set them (five exact
+  `rules` equalities in `tests/game-table.mjs` stand); the view always carries top-level `houseRules` (true unless turned off) and `privacy`. `houseRules: false`
+  leaves the match without its `undoLastPlay` house rule. (2) A table that was ended (`quit`) reads `phase: "over"` in its view, with `quit: {at, by}`. (3) The
+  seat view gains `open` (a person's chair nobody holds or is invited to) and `persona`; a seat `remove`d becomes an open human chair, it is not dropped from
+  `seats[]`, so `seats[yourSeat]` keeps working. (4) Seat operations are refused when a *person* is ready (an AI seat is ready from its deck, so that cannot count
+  or `edit-ai` after its deck was impossible). (5) `GET /api/ai-seat` always answers `levels: ["easy","normal"]`; the AI on Claude stays `open`'s. `tests/coach.mjs` asserted the exact old shape `{open}`
+  and now asserts `{open, levels}` (the contract's own addition). (6) A game line in `GET log` has `at: null` (the
+  game's history lines carry no wall-clock) and `turn`; lobby lines have a real `at`. (7) `request-join` answers `201 {request: {requestId, name, status}}`; a person
+  who asked and is not seated yet reads `403 {error, request: {requestId, status: open|declined}}` from `GET /:id`. (8) `GET /:id?watch=1` is added so a spectator
+  can read a public table's lobby. (9) A person's name for requests and chat comes from their profile or invitation name, else "A player". (10) `tests/game-table.mjs`
+  had one assertion that only the host chooses an AI's deck; it now says a stranger cannot (Rob's Lobby change, 2026-10-28). (11) **An AI seat's mat is chosen for it**
+  (Rob, same day): at `create`, at `add-ai` and for Observe AI game, a hash of tableId + seatId over `AI_MATS` (the art mats and the drawn ones except felt), moved on
+  to one no other seat holds; stored in `record.mats[seatId]`, so `seats[].mat` carries it; `edit-ai` leaves it, `remove` clears it, people start on felt. (12) Hard is
+  refused (422) at the table object's routes, not inside `tableOn`, which still reads an unknown level as Normal (`tests/room-seat-pilots.mjs` creates one). (13) Other
+  tests changed for the contract, none weakened: `tests/coach.mjs` (`/api/ai-seat` is `{open, levels}`), `tests/feedback-store.mjs` (0009 is followed only by 0010),
+  `tests/game-table.mjs` ("every person starts on felt", was every seat), `README.md` names the five suites and says 639.
+- **Proven** (Node, cloud container; `NODE_PATH=/opt/node-tools/node_modules GEOMETRY_REQUIRED=1 node tests/<name>.mjs`): `lounge-registry` 53, `lounge-lobby` 78,
+  `lounge-watch` (about 500; a spectator is sent none of 200 hands' card names, and an action frame is refused and not applied; red when the projection is made to
+  leak), `lounge-chat` 21, `lounge-results` 34 (an AI-only game plays to its end in 41 alarms; the mid-slice quit path is exercised), plus the existing
+  `game-table` 182, `game-room` 531, `room-ending` 34, `cloud-worker` 155, `release-pages` 230, `feedback-store` 135, `data-integrity`, `room-seat-pilots` 15, the other
+  `room-*` suites, `agent-seat-table`, `card-demand`, `advisor`, `engine-room-games`, `game-history/leave/replay`, `table-basics/candidates/game-record/rematch`, and
+  `node --test game/tests/*.test.mjs` 262. **Failing on the base commit too, not from this work:** `ai-door` ("and the refusal says who may"), `table-record` ("the seed is
+  nowhere in it"), `coach` (its browser half: `page.click` times out; its Worker half now passes). **Failing at the base commit's HEAD:** `feature-wiring` counts one UK
+  spelling in `docs/ui-lane/lounge-contract.md` line 78 (the Play lane's file; fixed in the merge).
+- **Not proven:** nothing here ran against a real Durable Object, D1 or a browser: the sockets are recorded stand-ins and D1 is Node's SQLite with the real
+  migrations. The registry's `storage.list` on a real object, the 15-second report throttle, hibernation of a watcher's socket, and the migration on a real D1 are
+  unproven until staging. A spectator's `chat`/`quit` frames are pushed to every socket but the board does not read them yet (the Play lane's half).
+
+## Play: the Pre-lobby (first of three screens), the top-left box, History, 2026-10-27 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`)
+
+Rob sent three Claude Design screens (Pre-lobby, New game pop-up, Lobby with walkthrough) and asked for screenshots that look exactly like them. This push is the first screen and four of his notes.
+
+- **Pre-lobby** (`views.playHome`, `crankmagic-table.js`; styles `.cm-pl-*` at the end of `crankmagic-stage.css`): hero, then Live games (2.5x) beside Start a game, Leaderboard (sortable) and the chat's Coming soon. Join existing game opens a pop-up (open lobbies, or the invitation link); it is greyed while no lobby has a seat, as in the design.
+- **Asked of the engine lane, not built here** (nothing is made up; each part reads empty and says so until its door answers): `GET /api/tables/live` (games: `tableId, location live|lobby, organizer, commander, mechanic, privacy, ai, human, open, startedAt, roster[{name,ai,commander,mechanic}], mine`; private games only to their seats and the admin), `GET /api/leaderboard` (`rows[{name,wins,losses,ties,unfinished,you}]`), and `POST /api/tables/:id/request-join|quit`, `GET /api/tables/:id/watch|log` (spectator: no hands or libraries).
+- **Top-left box** (3D): Turn row with a fold arrow (kept on the device); each life row has a blue dot at the right where priority sits; no Priority text; what the table waits on, when it is not a question in Actions, is in the ribbon.
+- **Combat tile**: the empty-blocks box stays inside its tile. **History** (module and pop-up): lines scroll sideways, never an ellipsis.
+- **Proven**: `table-board` 320, `table-lobby` 154, `board-babylon` 90, `board-r5-visual` 68, `board-r4-caption-fit` 171, `board-r4-views` 129, `board-combat-display`, `board-r4-decisions` 119, `board-r4-input` 62, `board-r4-layout` 90, `board-r4-shell` 111, `board-r4-combat` 99, `board-drawer-sizes` 47, `board-choices` 47, `board-battlefield-rows` 8, `board-settings-window` 114, `feature-wiring` 131, `board-hand-table` 111, `a11y-board` (one place: the white-sanctum card ring, 89%, as before). `board-3d-camera` (105) and `board-r4-views` each failed once on timing and passed on rerun; `board-3d-camera` does the same on main.
+- **Not done**: the New game pop-up and the Lobby with its walkthrough (the old `#table?new=1` page is still what Start a new game opens); in-game chat and the log.
+
+## Play screen, batch 4 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`, PR 902), 2026-10-27
+
+Rob's list after batch 3: dropdown verbs and direct rows, library-search stacks, scrollbars, tilt 0 at the floor's slope, the Camera menu, Turn and Priority out of the ribbon,
+the do-nothing arrow, the divider dragging the table, free battlefield rows; then: life on the name's baseline, the current step on the others' line, Alt+Left
+(the browser's Back) no longer a shortcut, and Alt + drag for card size.
+
+- **Card menu**: a row that asks nothing more is sent by the press (priority offers only: a many-of question's rows still toggle a pick). The card is also shown in Actions.
+- **Stacks**: `sameKey` ignores `affected` when it is only the card itself, so a search lists "Forest x5". `board-choices` passes (it failed on main).
+- **3D ribbon**: no turn, no priority, no arrow while the drawer is open; Priority is under the life totals. Table and Focus have no caption and keep their ribbon text.
+- **Camera menu**: View seats + Reset, then HUD text; every slider word has a 76px column.
+- **Divider**: the mat pan ignores `[data-drag]`. **Rows**: `rowMoves()` keeps a card's row per game on this device; lands never leave theirs.
+- **Tilt**: 0 = the backdrop's floor (`FLOOR_ELEVATION` in `crankmagic-stage.js`, **estimates** from each clip's first frame; correct by eye). Key v4, default 40; the geometry's limit 80 degrees.
+- **Keyboard**: card reordering is Shift + Alt + Left/Right (Alt + Left is Back); the tooltip says so. **Alt + drag** up/down over a mat sizes cards (Cards in 3D, Board cards in Table and Focus).
+- **Proven**: `board-r5-visual` 63, `board-battlefield-rows` 8 (new), `board-fullscreen-notes` 47, `board-choices` 47, `board-r4-decisions` 119, `board-r4-input` 62, `board-r4-layout` 90, `board-r4-shell` 111,
+  `board-r4-views` 129, `board-r4-combat` 99, `board-r4-caption-fit` 171, `board-drawer-sizes` 47, `board-settings-window` 114, `board-babylon` 90, `board-3d-camera` 105, `board-hand-table` 111,
+  `table-board` 320, `table-tabletop`, `board-card-sharpness` (it is sensitive to the exact camera angle: seeded at 40 degrees), `a11y-board` 71 places, the same set as before this batch.
+  `table-tabletop` once failed a cards-cycling animation check under load and passed on the rerun.
+- **Not done**: the Actions drawer narrower by default with wrap-then-scale (Rob's notes on wireframes A1/A2), and A3's one-screen target flow (a draft awaiting his call).
+
+## Card load, 2026-10-27: Rob's Orzhov deck, 25 cards (Claude Code on Personal-HP, for Rob; `claude/load-25-cards-deck-2daa2e`, not pushed)
+
+Rob, 2026-10-27: *"There are 25 cards not loaded into the engine in this set of cards. Identify those 25, then load them into the engine so this deck becomes playable."*
+`docs/engine/card-load-deck-2026-10-27/README.md` has the 25, what each needed, what was built, the ignores and the proof.
+
+- **Done:** all 25 written with scenarios (**6,405 definitions became 6,430**). Engine, in the Claude · Engine lane's files: `monocolored`, the
+  Blood token and the decayed Zombie, "without being played", `life-for-less` (Defiler of Faith), "discard X cards" as a cost (Gix),
+  `differentManaValues` (Agadeem's Awakening).
+- **Ignores, named:** Deep Gnome Terramancer's "only once each turn" is the ability's first resolution, so declining the first forfeits the
+  turn; Defiler of Faith does not reduce a hybrid white symbol.
+- **Proof:** `check-cards` 6,430 definitions, 11,000+ scenarios, 0 failed; 436 suites green (`engine-*`, `card-*`, `table-candidates`, `table-basics`,
+  `sentence-*`, `room-*`, `data-integrity`, `feature-wiring`, `asset-versions`) but `engine-breaks-anchors`, which fails on the same 45 stale anchors of
+  other lanes' breaks as before this load; the load's breaks file `missed: []`; two breaks of earlier loads re-anchored and caught again.
+  **Not proven:** a game at a real table with this deck. Not released to staging.
+
+## The Play screen made consistent: drawers, tabs, seat cards, pop-ups, the land screen, 2026-10-27 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`)
+
+Rob, 2026-10-27, from screenshots and a list added as the work went: drawers that do not reach the ribbon, a poison counter at the top left, text out of
+alignment and at the wrong sizes, seat cards where "Deciding" and "Waiting" take a row of their own, circles on the table's corners, a "Your decision"
+section that should be "Actions" with bars always showing, tabs whose text falls out of them, pop-ups with a wide empty side, action buttons 15% too
+large, and a land played through a card, target, card review. His answers: *"Keep poisons in table vitals"* and *"Colored dot with the word on hover"*;
+*"Remove my no tests rule ... Only retest new changes"*; *"You'll merge to main and push to staging when done."* Files of the Codex · Play and
+Workshop lanes, at his word: `crankmagic-stage.css`, `crankmagic-stage.js`, `crankmagic-board.js`, `crankmagic.css` and four suites.
+
+- **Drawers** start at the ribbon (`--full-pane-top` was the ribbon plus the Next step row plus 24px, and is now the ribbon, plus the combat band;
+  the old sum lives on as `--full-clear-top`, which only the decision card's height uses). One inset (12px) and one heading size (15px) in both,
+  one helper size (13px); neither scrolls sideways; scrolling something into view leaves a margin.
+- **Actions body**: the section is called Actions. Its options list was a second scroller with a -3px margin that stood 3px outside its parent and
+  made the parent scroll too; it is now part of the decision, which scrolls only when it is taller than its cap.
+- **Poison** is gone from the ribbon, the table labels and the seat cards; Table vitals keeps it, and a seat that has some is still read aloud.
+- **A seat's state** is a colored dot (`data-state`: deciding, turn, waiting, out), the word in the page for a screen reader and shown on hover.
+  A seat card is two rows of one height: portrait, name over commander, the dot; then "40 life · 7 in hand" as plain text. The large bold life stays in
+  the ribbon alone.
+- **Tabs** are narrow flags hung from the top of the drawer's outer edge in the 3D view, the label running down them with a count badge below it, the
+  outer foot cut on a slant (Rob's sketch). In the flat views they stay at the middle. The right tab's offset now includes the drawer's own width.
+- **Ribbon**: one control height (36px) and radius; Camera built like Table; the words about whose move it is join the priority line, so the ribbon is
+  the same height in every state; its minimum height is explicit, with the combat band added while it hangs from it.
+- **Table corners** draw nothing and keep their 22px target and cursors. **Pop-ups**: an unclassed pop-up fits its content (floor 420px, ceiling 900px);
+  ones that name their own width keep it. **Action buttons** (Next step, Skip to end) are 42px high with 15px type, from 49px and 17px.
+- **Land**: a land, or any offer whose only target is its own card, goes straight to its screen: the card's name once, the picture, "Play Island" and
+  Cancel. Casting a spell with a real target still asks which; its layout is waiting on Rob's wireframe requirements (the canvas "Actions Drawer
+  Wireframes" holds one wireframe per situation).
+- **Rob's standing rule (2026-10-27):** keep the footprint of overlays small. Where something does not fit, make the type smaller or say it with an icon and a
+  hover tooltip; do not widen a gap or a box. The status dot, the hung tabs and the profile button's inset focus ring follow it.
+- **Not done, by decision:** the table region does not shrink when the right drawer opens (r4 keeps mats and hand fixed there, and tests it). Text on the
+  far mats is still foreshortened by the tilt; only the empty-state message got a floor, since larger labels wrapped the far mats at 1366px.
+- **Proven**, on the final code: `board-r5-visual` 49 (new; six breaks caught); `board-r4-shell` 111, `board-r4-views` 129, `board-r4-caption-fit` 171,
+  `board-r4-decisions` 120 (with a new check on the land screen), `board-r4-input` 62, `board-r4-combat` 99, `board-combat-display`, `board-fullscreen-notes` 49,
+  `board-drawer-sizes` 47, `board-settings-window` 114, `admin-window` 51, `board-graphics` 87, `board-hand-table` 111, `board-mana-pool` 20, `table-lobby` 155,
+  `table-tabletop`, `table-board` 325, `board-stack-choices`, `menu-help`, `settings-r3`, `account-menu-r4`, and the static suites (`asset-versions`, `design-tokens`,
+  `feature-wiring`, `service-worker`, `release-pages`). Tests changed for Rob's new rules: the land screen's button, the action buttons' size (42px, 15px type),
+  the right pane starting at the ribbon, and a module's own height measured in the same state.
+  `a11y-board` fails at 71 places, main at 72: three of main's are fixed and none is new (found and fixed on the way: Camera's focus ring, the profile button's
+  size). One `board-r4-views` read (a Coach header at 0px) failed once under load and passed twice alone.
+  **Already failing on main before this work, not repaired here:** `page-budget` (the Decks page has five explainer words before its grid, budget four),
+  `feedback-sheet` (waits for `#cm-account [data-action=account-sync]`, which r4 moved), `board-choices` (a scried card's stack shows no ×2),
+  `board-3d-camera` (a timing check), `board-commander-hand` (Table at 1280×720), `board-target-lands`, `board-r2-actions-inspection`,
+  `board-hover-during-choice` and `board-control`.
+
+## The incoming wave merged into main: #893, #895, #896, #897, 2026-10-27 (a Claude cloud session, at Rob's word)
+
+Rob, 2026-10-27, after Codex ran out of credits: finish the merges of #893, #895, #896 and #897 in that order, preserving
+history, then deploy the combined main to staging; **no more test runs**, `[skip ci]` on every merge commit, production not
+touched, no other PRs. PR #890 had merged at 2c141c8c. Each merge is a merge commit made by hand on `main`.
+
+- **Conflicts, by merge:**
+  - #893: `/api/me` carries both `group` and the Admin window's `admin`; the fan keeps r4's `limit` with #893's
+    left-over-right stacking; `tests/ai-door.mjs` keeps #893's group door checks and r4's Coach probes, now asked as an
+    insider (General Access is never offered the Coach).
+  - #895: documents only.
+  - #896: main's Account menu button with the feedback glyph beside it; main's richer `live()` with #896's fuller `held()`;
+    `feedbackButton` added to the app's helpers beside `tabbed`; the deck header's button on main's line; the two new
+    scripts (`feedback-schema.js`, `crankmagic-feedback.js`) in both pages and the service worker.
+  - #897: documents only.
+  - Every merge: README's suite count (629, 630, 631, 632: derived from `tests/*.mjs`, not 603), this file (both sides kept)
+    and the pins, regenerated by `node tests/asset-versions.mjs --update` (135 assets).
+- **One change to #897 as written:** `.github/workflows/feedback-triage.yml` keeps its hourly schedule, but the job runs
+  only on `workflow_dispatch` (`if:` on the job). The secrets are not set, and the findings in
+  `docs/r4-execution/INCOMING-QUEUE.md` (the prompt built from reporters' words under `bypassPermissions`, a duplicate
+  Linear issue, a replacement body that drops the reporter's facts, paths outside the repository, equal-timestamp
+  paging) are unrepaired. Delete that one line when they are.
+- **Not repaired, still open (from the queue):** the agent's service token falling back to ordinary app verification
+  beside `SERVICE_SEATS`; `INVITE_ADMIN_ID` as a second owner beside `OWNER_EMAIL`; #896's hovered-card context
+  surviving a route or account change. Migration 0009 and `OWNER_EMAIL` on staging are Rob's.
+- **Proven:** nothing was run after these merges, by instruction. Each touched JavaScript file parses. The suites that
+  covered each PR on its own base (see the PRs) have not run on the combined tree; `tests/ai-door.mjs` and the
+  feedback-triage suite's hourly check were edited or relied on without a run.
+- **Staging:** built and pushed from the combined main without the test-running wrapper; the revision and the version read
+  back are recorded on PR #890.
+
+## r4 coordinated execution, October26,2026 (Codex; Rob: "go")
+
+**Later direct instruction:** "No more test runs. Merge it all now." Tests are stopped and the first
+Actions run40429396786 was canceled. OpenAI is merging the completed work and releasing staging under
+that explicit direction, preserving the rollback checkpoint. This is not a green-CI claim. The final
+repair commits, known Scry grouping and accessibility findings, and the no-test release procedure are
+recorded at the top of docs/r4-execution/HANDOFF.md; PR #890 holds the actual merge/deployment result.
+
+**Pre-CI source/local-proof snapshot:** main b13607b2 is reconciled. All targeted local gates are green; current production/pins are through 0ea8fba6 (board118, stage.js22, stage.css73, table46, app600, SW583). All browsers are released. Real-table321, full tabletop, shared-shell, sectioned Settings114, fullscreen49, graphics87, Admin51/menu85 and targeted backend/build/static checks have bounded evidence in docs/r4-execution/HANDOFF.md. The coordinator owns final scan/push/CI/main; Engine executes staging after green CI/main. Preserve the untracked design renders.
+
+The rollback tag rollback/pre-r4-2026-10-26-b13607b2 is pushed and verified; docs/r4-execution/ROLLBACK.md also records the current Cloudflare deployment/version. EX-28 permits hand overlap without restricting zoom. No further 3D behavior work is authorized for that concern.
+
+The current CI, main merge, staging deployment/readback and remaining release limits are maintained in
+[PR #890](https://github.com/minorrob/mtg-deck-matrix/pull/890), linked to ROB-197. This section is the
+pre-CI checkpoint rather than a claim about a later deployment. Production requires Rob's separate go.
+PR #894 is merged at91989100 and its canonical/browser hold is complete. EX-01–EX-28 record the source
+conflicts and later explicit requests; CH-03's unchanged wordmark is superseded by EX-18.
+
+The61-row program uses integration/r4 from the original main c567c581, now reconciled with b13607b2 and Rob-authorized isolated worktrees, one Play
+writer, serial browser checks and preserved Git history. All129 audit findings retain bounded evidence;
+source mapping alone does not close the53 unmapped findings or partial/open follow-ups.
+
+Rob's later direct instruction assigns OpenAI all review/merge and staging/production operations for
+Claude's incoming #893 and #895–#897. They form the next release wave after r4's main/staging gates;
+dependency order, exact submitted heads, unfinished author validation and security/configuration gates
+are tracked in docs/r4-execution/INCOMING-QUEUE.md. No incoming source or live workflow is accepted yet.
+
+## AI players built: PR 6 access groups, PR 1 the threat model; the hand fan stacked left over right, 2026-10-26 (a Claude cloud session, for Rob; `claude/sharp-hawking-8lbwy9`, PR #893; hand-off `docs/handoff-ai-players-2026-10-26.md`)
+
+Rob, 2026-10-26: *"Confirmed on all six calls, start PR 6 then PR 1"*, with three changes folded into the plan (hugginess
+into friendliness; politics read by Hard and the Veteran; response urgency as variable N; the Veteran knows its own
+mechanics), then: *"I'll have you give me a hand-off to merge your work with the other session's work that we'll then hand
+all of that work over to OpenAI that is handling all of the merges"*, and the feedback-loop session's work is to be
+rationalized into that hand-off. **Nothing here is merged; the hand-off is the deliverable.**
+
+- **The hand fan** (his screenshot: *"The left side of each card should be under the next card as the default view"*):
+  `crankmagic-board.js` `stageHand` stacks `z-index: count - i`, the leftmost card on top; `crankmagic-stage.css` moves
+  the fanned name past the card to the left (`:not(:first-child)`, a `left`). Play-lane files, at his word. Asset
+  versions bumped (board 107, stage.css 64, sw 565, app 582) and recorded. `board-hand-table` 110 (two new checks; the
+  stacking one red under the old order: "1 > 2 > 3 > 4 > 5 > 6 > 7").
+- **PR 6, the access groups** (`cloud/access.mjs` `groupOf`; `docs/ai-door.md`): `owner` is `OWNER_EMAIL` (a dashboard
+  variable, never in the repository), `insider` a row in `ai_allowlist`, **now the Game Theory Insiders roster**, `general`
+  everyone else. `createAi(db, {owner}).allowed` is "not general", so Explain, the Coach, the advisor, the meter and the AI
+  seat on Claude refuse General Access; **`AI_EVERYONE` now widens the sign-in only** (Rob's 2026-10-26 word supersedes
+  2026-10-14's). `/api/me` carries `group`; `GET`/`PUT /api/admin/groups` is the owner's roster. No migration: the roster
+  reuses `ai_allowlist`, so no number is taken. `ai-door` 78, `agent-seat-table` 20, `cloud-worker` 127, `coach` 65,
+  `advisor` 56, `card-demand` 43, `sharing` 119. Requests row 14 asks the Workshop lane for the browser's half.
+- **PR 1, the threat model** (`game/engine/pilots/threat.mjs`; the plan's §4): one row per living opponent, six signals
+  in [0, 1] (life, hitters, growth, ramp; engine and commander 0 until PR 2), the weighted mean under the setting's
+  weights, `over(id)` the score less the table's mean (where, never whether: one opponent moves nothing), Easy's rank
+  (the top row 1), and `absurd` (every attacker lost, nothing through). L1 (`scored-pilot.mjs`): an attack plan gains
+  `threat × over × effect` (`WEIGHTS.threat` 6), a hostile aim `threatAim × over` (0.5), absurd plans are dropped before
+  any draw, and Easy attacks only the top of its rank while it offers an attack, else the table is open. New
+  `tests/engine-threat.mjs` 46 (the person-bias invariant among them: the same board marked person or AI gives the same
+  table to the byte and the same answers; the LLM brief carries no kind, level or persona; the target check red with the
+  weight at 0). `engine-scored-pilot` 60, `engine-house-pilot` 19, `engine-pilot-picks` 116, `room-seat-pilots` 15,
+  `room-agent-seat` 23, `data-integrity` green, README at 599 suites. **The bench** (`tools/pilot-bench.mjs --games 100`,
+  L1 Normal against L0): before, L1 65% of the decided games (95%: 56–74%); after, L1 66% (95%: 57–75%); blunders 0 / 0 both ways.
+- **Not proven:** the fan on a GPU browser or a phone; `OWNER_EMAIL` set on staging and production (Rob's); the Actions
+  run (the PR is a draft). **Not started:** PR 2, 3, 4, 5, 7 of the plan, and the Workshop half of PR 6.
+- **Gate:** `tools/local-ci.sh HEAD 0` before the push (its line is in the PR).
+- **Paused, 2026-10-27, on Rob's word** (*"We'll pause all other work here, and you'll create a plan of the remaining
+  work you have, which we'll store for tomorrow"*): the remaining work is `docs/ai-players/NEXT-2026-10-27.md` (the
+  merge's aftermath, then PR 2 Hard, PR 4 Veteran, PR 3, PR 5 personas and decks, PR 7 game logs; about seven engine
+  sessions and two of screens). The hand-off to OpenAI is `docs/handoff-ai-players-2026-10-26.md`.
+- **Resumed, 2026-10-27, on Rob's word** (*"Execute the AI agent tasks defined at the beginning of this session"*, then *"go ahead
+  and push this up ... get this merged in to the main and then pushed to staging"*): built **PR 2, Hard** (`threat.mjs` engine and
+  commander signals from `roles.mjs`/`roles-data.mjs`, generated by `tools/build-pilot-roles.mjs`; `reserve.mjs`, `urgency.mjs`,
+  `chains.mjs`; a joint defender plan per creature) and **PR 4, the Veteran** (Hard, with a Haiku 5.5 consult on close calls;
+  `veteran-skill.md` as the cached system prompt, generated into `cloud/veteran-skill.mjs`; the brief shaped by seat words only, no
+  kind, level or other persona), and the persona half of **PR 5** (`roster.mjs`, `data/ai-players/roster.json`, four avatars under
+  `assets/personas/`). **Hard is offered at Rob's word** (*"Push hard anyway ... And Veteran ... We're working with the staging environment and I will test them also"*; `available: true` in `roster.mjs`), though the bench has it at 37-45% against
+  Normal in two seats and about 20% in a pod of four (a fair share 25%) with its features on, 50-52% with them off, so a table
+  that offers it offers a weaker seat than Normal, for Rob to test on staging. `tools/pilot-bench.mjs` gains `--off` (ablate a
+  feature) and `--seats 4` (a pod); `available: false` takes it back out of every lobby. The Veteran stands on Hard and is gated by the AI door (owner and
+  insiders only). **For the Play lane** (Requests row 14, the session on the lobby): read `data/ai-players/roster.json`
+  (`CrankAiRoster@1`; only `available` levels are offered; the seat is `{kind: "ai", level, persona}`), label `llm` as "Veteran".
+  Not started: the deck matrix (5.5), Normal tuning (PR 3), game logs (PR 7), the politics read.
+- **Landing, 2026-10-28, on Rob's word** (*"Include the following in your merge ... Orzhov deck card load"*, then *"Complete the push
+  to staging"*): PR #903 carries both pieces: the AI players work above **and** `claude/load-25-cards-deck-2daa2e` (Rob's Orzhov deck,
+  25 cards, 6,405 -> 6,430 definitions), each merged into the branch as a merge commit with `main` (9e5b612e). The generated engine
+  files, the roles table and the data inventory were regenerated after the merge; `check-cards` 6,430 definitions and 11,023
+  scenarios, 0 failed; `engine-deck-load-1027` 184, `engine-cards` 55, `engine-catalog` 41, `pilot-roles` 31. `engine-breaks-anchors`
+  holds at main's 45 stale anchors (three of this branch's own, in `breaks-pilot-picks.py`, were re-anchored on Hard's pilot).
+  The Actions `suites` job was pinned to `ubuntu-24.04` (latest became 26.04, which Playwright 1.56.0 cannot install a browser on).
+
+## AI players: the plan for Easy, Normal, Hard, the Veteran agent, personas, the deck matrix, access groups and the game-log admin panel, 2026-10-26 (a Claude cloud session, for Rob; `claude/sharp-hawking-8lbwy9`, planning only)
+
+Rob, 2026-10-26: *"Pick up the work on improving the AI player modes in CrankMagic ... Answer those questions and create the
+plan for it before we execute. I want to see the plan in easy-to-read HTML. On the second part, also create a plan for
+that ... Create a new session to kick off that work."* Two plans, no engine code changed:
+
+- **`docs/ai-players/PLAN-2026-10-26.html`** (published at https://claude.ai/artifact/Ge9uK8r41hNHbgZ9CPCiSh): the three
+  settings as the code has them (Easy and Normal are L1 at temperature 4 and 0; **Hard does not exist in the engine**;
+  "Claude" is L1 plus a Haiku 5.5 consult at close calls), the twelve variables every difficulty is defined on, the
+  definitions of Easy, Normal, Hard and the Veteran agent on them, a table-wide threat model (`threat.mjs`: life,
+  hitters, growth, ramp, engines, commander; `threat x effect` picks the target; a floor under absurd attacks), Hard's
+  per-attacker targets and counted blocker reserve, the Veteran as Hard reasoned over by the cheapest model, four seed
+  personas (`CrankPersona@1`, overrides on the variables, saltiness cap raised only by a persona), a default-deck matrix
+  built by the generator from the engine-playable catalog, three access groups (Owner, Game Theory Insiders, General
+  Access: General never spends), and the game-log admin panel (index, detail, NDJSON `CrankGameLog@1` export). Seven PRs,
+  engine lane, suggested order 6, 1, 2, 4, 3, 5, 7. Six calls for Rob are listed in its section 12 (the dial's sign,
+  the lobby's names, the personas, the insiders roster, the Veteran's budget, what "AI-8" names: no AI-8 is in the
+  repository; it is read as the LLM seat).
+- **`docs/feedback-loop/PLAN-2026-10-26.html`** (published at https://claude.ai/artifact/1gEvtSpNM5vpPAK45frwVV): feedback
+  from any page or mid-game (`CrankFeedback@1`, the metadata gathered by the sheet), stored in D1 by a Worker route
+  (not Supabase), triaged hourly by a GitHub Actions agent into Linear with a lane label and a digest, approved by a
+  Linear label set from email, a scheduled Claude session on the phone, or Codex, executed under AGENTS.md as it
+  stands, and a thank-you email to the reporter on the production release. Six PRs across the lanes. **Handed to a
+  new session** created by this one with the plan's kick-off brief.
+- **Not done here:** no pilot, room, Worker or migration change; nothing is proven beyond the plans reading true to the
+  code at main c567c581. The next engine session on this work starts at PR 6 (access groups) or PR 1 (threat model) on
+  `claude/engine-ai-players`, after Rob's six calls.
+
+## The feedback loop, PR 3: the triage agent, 2026-10-26 (the same Claude cloud session; `claude/deck-feedback-triage`, from PR 2's head; the Deck intelligence lane's tool, the engine lane's workflow)
+
+Rob, 2026-10-26, through the plan's kick-off brief: PR 3 after PR 2. Rob, later the same day: his other Claude session and
+OpenAI hold the merges, so nothing here was merged; the handoff for the merging session is
+`docs/handoff-feedback-loop-2026-10-26.md` (the three branches stacked in merge order, what each proves and assumes, the
+commands, Rob's steps).
+
+- **Built:** `tools/feedback-triage.mjs`: reads the `new` rows from the Worker's admin route with the agent's own Access
+  service token; groups duplicates (the same screen and build, the words they share); picks the lane from the charter's
+  file table by the route and the files the console names, and the outcome project the route maps to (Rob's call D3 on
+  the default); a severity (1 blocks play, 2 wrong result, 3 friction, 4 wish); a title and a body with every fact (the
+  reports' words, where, the game context pointing at the admin game log, the console, the files believed involved, every
+  row id, never a reporter's address); one Linear issue per group in team ROB with the Lane label and `feedback` (made on
+  the first live run) and the severity as the priority; every row of the group moved to `triaged` with the issue key; the
+  digest, fix-now lines first, each with its recommendation (fix now, batch, or decline naming the standing rule: another
+  format is held, anything from outside the United States is refused, sizes are sliders). The rules decide, so a run is
+  the same on the same rows; the model (Claude Haiku 5.5 through the Claude Agent SDK, the repository checked out to read
+  with Read, Grep and Glob) sharpens the title, the body and the files, and its answer is taken only where it keeps the
+  draft's facts. The agent never executes a fix. `.github/workflows/feedback-triage.yml` runs it at :17 every hour and on
+  demand, the secrets by name, the SDK installed for the run and never committed, the digest on the job summary and as an
+  artifact.
+- **Proven here:** `feedback-triage` (75, on `tests/fixtures/feedback-rows.json`, Linear, the Worker and the model stood
+  in), red under each of 24 breaks (`tools/feedback-triage-breaks.py`); `--dry-run` writes `digest.md` and `issues.json`;
+  `data-integrity`, `feature-wiring`.
+- **Not proven, and why:** a live run: no Linear key, model key or agent service token is in this container, by design;
+  the Linear GraphQL shapes and the Agent SDK's `query()` are written from their documented shapes. The plan's first live
+  run on staging, one issue Rob reviews, waits on his steps.
+- **Rob's steps:** repository secrets `ANTHROPIC_API_KEY`, `LINEAR_API_KEY`, `FEEDBACK_AGENT_CLIENT_ID`,
+  `FEEDBACK_AGENT_CLIENT_SECRET`; the variable `FEEDBACK_API` (staging by default); the agent's Access application with a
+  Service Auth policy and its audience as `FEEDBACK_AGENT_AUD` in the staging profile; then one `workflow_dispatch` run.
+- **Next, not built:** PR 4 (approval channels), PR 5 (release notification), PR 6 (the admin view), as the handoff lists.
+
+## The feedback loop, PR 2: the control and the sheet, 2026-10-26 (the same Claude cloud session; `claude/workshop-feedback-sheet`, from PR 1's head; the Workshop shell and the Play rail at Rob's word)
+
+Rob, 2026-10-26, through the plan's kick-off brief: PR 2 after PR 1, in order. At his word this changes the Codex · Workshop
+lane's `crankmagic-app.js`, `crankmagic-decks.js`, `crankmagic.css`, the pages and the service worker, and the Codex · Play
+lane's `crankmagic-board.js` and `crankmagic-stage.css`.
+
+- **Built:** `crankmagic-feedback.js`, a feature module: one glyph (✉, named "Send feedback" for a reader) on every page's
+  head (`pageHead`), beside More on a deck's page, and in the board's profile strip during a game (`stageProfile`, and a
+  line in its menu); the Menu's Send Feedback opens the same sheet. The sheet: two glyph tiles for the kind (🐞 bug, ✦
+  idea), the text, a picture (the browser's own capture where it offers one, else a picture chosen; encoded to WebP under
+  1 MiB), a glyph line saying what goes with the report, Send. Gathered, never typed: the route and screen, the board's
+  view, the build from `version.json`, the game the board holds (`C.board.held()` now carries the step, the seat's name,
+  the decision id, the last public history line and the view), the deck page's deck and the card under the pointer, the
+  device, the last 20 console errors (a ring kept from the moment the script loads). Bounded by `CrankFeedback.boundReport`
+  and posted to `POST /api/feedback` with `x-crankmagic: feedback`; the person is never named in it. Signed out, the sheet
+  refuses with Sign in and Email instead; a copy with no account cloud keeps the Menu's mailto. `C.feedback.draft()` gives
+  a suite, or another module, the report as it would go.
+- **Proven here:** `feedback-sheet` (38, a real browser against stubbed routes: three pages and the Menu, the report's
+  every field, the Worker's 429 shown with the text kept, a picture as WebP, signed out), red under each of 18 breaks
+  (`tools/feedback-sheet-breaks.py`); `table-board`'s Send feedback checks rewritten to the richer `held()` and the
+  report's game context (`tools/feedback-breaks.py`, 10 breaks); `feature-wiring`, `menu-help`, `settings-r3`,
+  `data-integrity`, `service-worker`, `asset-versions` (re-recorded: two new files, five bumps).
+- **Not proven:** the browser's own screen capture (`getDisplayMedia` needs a person to pick the tab; the picture-chosen
+  path is the one proved); a phone's layout of the sheet; the round trip against the Worker (PR 1's suite proves the
+  Worker's side of the same contract).
+- **Merge order:** after PR 1 (#895): this branch starts from PR 1's head.
+
+## The feedback loop, PR 1: the schema, the table and the routes, 2026-10-26 (a Claude cloud session, for Rob; `claude/engine-feedback-store`, the Claude · Engine lane)
+
+Rob, 2026-10-26 (through the planning session's kick-off brief; the plan is `docs/feedback-loop/PLAN-2026-10-26.html`, PR
+#893): build the feedback loop in the plan's order, PR 1 first, on the defaults of his five calls, each named in the PR.
+
+- **Built, on main c567c581:** `feedback-schema.js` (CrankFeedback@1, one module the sheet and the Worker both load:
+  `boundReport` for the sheet, `readReport` and `readPatch` for the Worker, the six states and what each move carries);
+  **migration 0009** `feedback` (0007 and 0008 stay reserved as the engine section below records them; 0009 was the next
+  free, and is now taken); `cloud/feedback.mjs` (the store: ten reports an hour a person, counted in the rows; the
+  reporter from the Access token, never the report; a screenshot dropped and its bytes kept nowhere until R2 is on);
+  `cloud/worker.mjs` routes `POST /api/feedback` (any signed-in person), `GET /api/admin/feedback` and
+  `PATCH /api/admin/feedback/:id` (the owner, and the triage agent's service token for its own Access application,
+  `FEEDBACK_AGENT_AUD`; `cloud/access.mjs` admits a service token where a route asks for one). The contract for the other
+  lanes: `docs/feedback-loop/CrankFeedback.md`.
+- **Rob's calls, taken on the defaults:** D1 not Supabase; GitHub Actions for the agent; approval by Linear label;
+  screenshots dropped until R2 is on; the invite sender for the reporter's email (PR 5). The owner is `OWNER_EMAIL` (the
+  AI players plan's access groups, in any letter case) once Rob sets it, else `INVITE_ADMIN_ID` (sharing's administrator);
+  production's profile sets neither yet, so there the admin routes admit only the agent until one is set.
+- **Proven here:** `feedback-store` (132), red under each of 29 breaks (`tools/feedback-store-breaks.py`); `card-demand`,
+  `cloud-worker`, `ai-door`, `release-pages` (the schema module and the migration ship with the Worker in every cloud
+  profile; a release missing a module the Worker imports is refused by name), `data-integrity`, `feature-wiring`,
+  `sharing`, `agent-seat-table`.
+- **Not proven, and why:** the agent's token against live Access (no application exists yet: Rob's dashboard step, with
+  a Service Auth policy, then `FEEDBACK_AGENT_AUD` in the staging profile); migration 0009 on staging D1 (applied at the
+  next staging release, on Rob's go, as 0006 was).
+- **Next:** PR 2 (the control and the sheet: the shell's glyph and the board rail's, at Rob's word in the Workshop and
+  Play lanes' files) on `claude/workshop-feedback-sheet`, and PR 3 (the triage agent: `.github/workflows/feedback-triage.yml`,
+  `tools/feedback-triage.mjs`) on `claude/deck-feedback-triage`, each from main once PR 1 is there.
 
 ## 2026-10-25: main 9ca99e5 in production (Rob: "release main 9ca99e5 to production")
 
@@ -33,33 +478,50 @@ back with `tools/staging-check.mjs --expect 9ca99e53`.
   Worker setting was added since 1fcfc3d. Sharing stays off in `cloud-production` (it is on in the staging profile
   only), so the `cloud/sharing.mjs` changes do not run there.
 
-## The invitation email, designed: General and Game Theory Insiders, 2026-10-26 (a Claude cloud session, for Rob; `claude/eloquent-bardeen-wlwt3h`)
+## Play 3D's backdrop fills the stage, no blurred sides, 2026-10-27 (a Claude cloud session, for Rob; `claude/gifted-ride-w6xoa3`)
 
-Rob, 2026-10-26: *"You're creating an HTML email file that will be the invite that gets auto-sent from CrankMagic when I
-invite someone to the game from the Invite function in the Admin pane. The admin pane will have an option where I
-select: General or Game Theory Insiders. If Game Theory Insiders, it will also indicate that it's AI powered ... use
-the CrankMagic logo and design system ... a CTA button for CrankMagic with the staging.crankmagic.com hyperlink."*
-Design work in the Workshop lane's `docs/design/**` and a new `assets/email/`; no code, no lane's file edited.
+Rob, 2026-10-27, with a screenshot of the Studious Retreat at 1884×899: *"update the background videos to crop their
+height, then zoom in to fill the screen so that the aspect ratio would fit the ratio seen in the screenshot, so that we
+don't have the blurred sides on each side."* At his word this changes the Codex · Play lane's `crankmagic-stage.css`,
+`crankmagic-stage.js` (one line of the tier rule) and `tests/board-graphics.mjs`. No open PR touched them.
 
-- **Two templates** in `docs/design/invite-email/`: `invite-general.html` and `invite-insiders.html` (the Insiders one
-  carries an "AI powered" band and eyebrow; General never mentions AI). Both keep `{{name}}` and `{{assets}}`; the
-  button is **Open CrankMagic** to https://staging.crankmagic.com, written in at Rob's word, so `{{link}}` is unused.
-  Feedback goes to admin@crankmagic.com (the address privacy.html publishes). Its README says what differs and how to
-  wire them.
-- **The pictures** in `assets/email/` (PNG, 2x): the gear logo, the Cinzel wordmark in gilt rendered from the design
-  system's font file, four highlight icons. They need a production release before a template that names them.
-- **The design canvas:** the Claude Design artifact "CrankMagic Invite Email", three artboards (General desktop,
-  Insiders desktop, Insiders phone), built on the CrankMagic design system (Sapphire & Obsidian, dark).
-- **Proven here:** the UK-spelling and "e-mail" scan of `tests/feature-wiring.mjs` applied to the new files (clean);
-  each template's tokens, pictures and links counted. **Not proven:** the templates in real inboxes (Gmail, Apple Mail,
-  Outlook); that is Rob's send from staging once they are wired into `cloud/invite-email.mjs`.
-- **Rob's revisions, 2026-10-27:** "get the cards"; the three callouts are Build and tune decks, Manage library, Play
-  with AI and others (General: Play with others, since it never names AI); the yellow "AI powered" band is gone (the
-  Insiders eyebrow still says AI powered); the button is centered; the headline is "Your exclusive CrankMagic invite is
-  here!". And `docs/design/invite-email/gmail/`: the same two templates with the pictures served from this repository
-  and "[Name]" to type over, to paste into a Gmail compose until Admin › Share sends them (the README says how).
-- **Not done, by design:** the wiring (`cloud/invite-email.mjs`, an audience field in Admin › Share, `cloud/sharing.mjs`,
-  `tests/sharing.mjs`) is the Codex · Workshop lane's; the README lists the steps.
+- **The video covers the stage** (`.cm-stage-environment video`: absolute, the stage's width and height, `object-fit:
+  cover`): on a screen wider than 16:9 it is scaled to the width and cropped top and bottom, centered; on one narrower it
+  is scaled to the height and cropped at the sides. The letterbox (the video at its own 16:9 inside the stage, the blurred
+  poster filling the sides, the feathered edge into it) is gone. The blurred poster stays behind the video until its
+  first frame draws.
+- **The tier follows the cover** (`backdropLines`): the lines needed are the larger of the stage's height and its width
+  at 16:9 (it was the smaller), times the pixel ratio, times the kept resolution, 1440 at most. On the suite's 1830×1000
+  stage that is 1029 lines, so 70% now plays the 1080 file (it played 720); a stage narrower than 16:9 plays the file for
+  its height. The 720 cap where WebGL is drawn in software and no resolution is chosen holds.
+- **Merged with main after r4 and the incoming wave (52b65462):** r4's EX-22 had already made the video the stage's full
+  width at 16:9 (no side blur on a wide stage, still a blurred, feathered letterbox on a taller one). This keeps the cover
+  for the whole stage, as Rob asked, and rewrites `board-graphics`' fit checks to match; the pins were regenerated on
+  main's with `node tests/asset-versions.mjs --update`. No suite was run on the merged tree, by instruction.
+- **Proven here:** `board-graphics` 77 (the video the stage's size with `cover`, no mask, no poster at the sides at
+  1830×772; the tiers 720/1080/1080/1440/1440/1440 and the narrow stage's 1080; the cover check seen red against a first
+  draft that kept the video at its intrinsic height), `feature-wiring` 124, `release-pages` 224, `asset-versions` 134. A
+  screenshot of the Studious Retreat at Rob's 1884×899 showed the video 1884×841, the stage's whole.
+- **Not proven:** the crop on a phone held upright (the sides go instead of the top and bottom), and the 1080 file at 70%
+  on a slow machine.
+
+## Rob's October 26 follow-ups to r4: the wordmark to the Mana Pool, 2026-10-26 (a Claude cloud session, for Rob; `claude/r4-rob-1026`)
+
+Rob, 2026-10-26, asked for these together, in one PR merged to `integration/r4` (*"Include all of these changes in the
+same PR and merge."*). At his word this changes files of three lanes; each change is an EX row of
+`docs/r4-execution/DECISIONS.md`.
+
+- **Claude · Engine:** `game/engine/rules/actions.mjs` gains `manaSources(state, player)`, additive, and
+  `game/room/room.mjs` one view field, `manaSources`, the seat's own (`docs/ui-lane/gameplay-anchor.md`).
+  `tests/room-mana-pool.mjs` covers it, and that a Signet's floating mana is spent first when a spell is cast. No rule,
+  decision or journal changes.
+- **Codex · Play:** `crankmagic-board.js`, `crankmagic-stage.js`, `crankmagic-stage.css`, `crankmagic-table.js` and their
+  suites: Tilt as the angle to the floor (`cm-board-tilt-v3`) and Reset in place of ⌖ (the camera suites now use both),
+  the hand that shows what fits, you in the life list, opponents' play cards past the open drawer and below the life
+  list, the head look's rise, closer read and steer, the Mana Pool module, and your targeted cards outlined in red.
+- **Codex · Workshop:** the Cinzel gilt wordmark, the deck tile's star, Planned Changes' adds and decks past 100
+  (`crankmagic.css`, `crankmagic-design.css`, `crankmagic-decks.js`, `collection-model.js`, `crankmagic-change.js`,
+  `crankmagic-pull.js`, `docs/design/2026-10-25-redesign-r4/`).
 
 ## Admin, Play's Settings in sections, and the invitation to staging and production, 2026-10-26 (a Claude cloud session, for Rob; `claude/confident-cori-v447il`)
 
@@ -951,6 +1413,8 @@ other lane answers in the last column.
 
 | # | From | Asks for | What for | Answer |
 | --- | --- | --- | --- | --- |
+| 14 | Engine → Workshop (and Play) | **The access groups (Rob, 2026-10-26; `claude/sharp-hawking-8lbwy9`, PR #893).** `/api/me` now carries `group`: `owner`, `insider` or `general` (`cloud/access.mjs` `groupOf`; `docs/ai-door.md`). Please (1) hide, for `general`, every control that spends: Ask the advisor, Explain the score, the Coach, the AI seat on Claude in New table (it already follows `/api/ai-seat`), the AI Coach Settings meter, and the deck page's AI button when it lands; (2) in `cloud/sharing.mjs`, refuse a mail send (a share notification, an invitation) for a `general` sender with the named reason, since Rob closes "anywhere else that costs could be generated from that user group"; (3) give the owner a roster card in Settings or the Admin panel over `GET` and `PUT /api/admin/groups` (`{email, group: "insider" \| "general", note}`). The Worker is the gate either way: a `general` request at any paid route is already refused. | Rob: "General Access will never be able to run or cause token costs ... I would have access to absolutely everything" | Requested Oct 26. |
+| 15 | Engine → Workshop, Play | The feedback sheet (the plan's PR 2) to build against `docs/feedback-loop/CrankFeedback.md`: load `feedback-schema.js` (a classic script; `?v=` bumped), bound the draft with `CrankFeedback.boundReport`, `POST /api/feedback` with `x-crankmagic: feedback` and a JSON body, and never send who the person is (the Worker takes it from the token). The board rail's glyph reads the game context from the view it already holds (table id, match id, turn, step, seat, decision id, the last history line), never another seat's cards. This session builds it at Rob's word unless a Workshop or Play session has it in hand first: say so here | The feedback loop, PR 2; the routes are on `claude/engine-feedback-store` | `feedback-schema.js`, `cloud/feedback.mjs` | Built by the same session on `claude/workshop-feedback-sheet` (PR 2), from PR 1's head |
 | 13 | Workshop (Decks) → Play | An intermittent failure in `tests/table-board.mjs` (Codex · Play's suite), seen once in CI and never locally: "the real-game inspector keeps its card aspect beside an independently arranged History module" (lines 667-669) failed on Oct 25 in Actions run 40157906338 (PR #769's head `33c6749e`, `main` `71929eb` merged in, a branch that changes no Play file). The next run passed it (run 40161187064), and on `main` `afe58d5` it passes 3 of 3 locally (290 checks). The check measures `#cm-full-pick .cm-bcard`'s ratio (within 0.01 of 5/7) and counts the History module straight after the click, with no wait for the layout to settle, so a slow runner may read a mid-layout card. Please make it wait for the settled size, or fix the layout if the card really drifts from 5:7. (The other Play failure seen alongside it, `tests/board-control.mjs` "Escape dismisses hover", is fixed on `main` by #854: it now passes there.) | A Play suite that fails at random turns any lane's PR red, and the next run passing it hides the cause | `tests/table-board.mjs` | |
 | 11 | Codex · Play → Engine | ROB-172 for ROB-171: project public control provenance, displaced controller(s), source object identity/name and exact Oracle effect text/duration; define chained steals, return destinations, entering under another controller and face-down sources | Rob requests the actual card on its controller's board and a ghost where control was lost, with who took it and how it returns. Current owner/controller fields cannot establish prior control or a return condition. Document and merge the additive contract before Play consumes it | Requested Oct 20 in ROB-11; Play builds existing-contract placement and ownership marker meanwhile |
 | 12 | Codex · Play → Engine | ROB-167: expose `POST /api/tables/:id/rematch {accept}` and public votes/deadline; launch the next round with retained seats/decks using the existing lifecycle | Board/lobby Play again, visible votes and Leave need a deployed route and documented table state. Prove one person/three AIs, a declined human seat, deadline expiry, and a fresh match ID | Requested Oct 20 on ROB-167 and ROB-11; Engine half must merge before Play consumes it **Built:** `POST /api/tables/:id/rematch {accept}` (#806): votes, deadline (2 minutes, `REMATCH_WINDOW`) and the next round with the same seats, decks and rules as `<tableId>g<n>`; the view's `table.rematch` `{lastMatchId, deadline, outcome, reason, votes}`; the host must stay for a next game; documented in `docs/ui-lane/gameplay-anchor.md` ("After the game: Play again"). Play wires the buttons next. |
