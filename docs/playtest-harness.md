@@ -74,7 +74,7 @@ A run, step by step (the decks to paste, the tables to make, the records to hand
 
 Buttons carry `data-action`:
 
-- `table-create`: start a table.
+- Starting a table is the New game pop-up (`crankmagic-lounge.js`, opened from Play's Pre-lobby): rows for the humans and the AI seats, difficulty and personality, rules and privacy, then Create; its buttons carry `data-ng` (not `data-action`). It replaced the lobby's old create button on 2026-10-28.
 - `table-invite`, `table-copy-link`, `table-uninvite`: invite a seat, copy its link, take the invitation back.
 - `table-deck`, then `table-use-deck` or `table-use-test-deck`: choose a deck for your seat.
 - `table-mat`, `table-mat-pick`, `table-mat-use`: choose a mat. *Use this mat* sits beside the ✕ and is off until a mat is picked.
@@ -120,11 +120,11 @@ few seconds (*The AI players are still taking their turns*); try again when the 
 
 **Deciding:**
 
-- **With priority,** a card you can use now is lit (`.cm-bcard.is-bright`); click it to do its one thing.
-- **Anything else the room asks** (Keep, attackers, blockers, an order, a number) floats as `#cm-board-decision`. It has `data-action=board-option` buttons, and `data-action=board-confirm` where several are picked. Its `h3` is the question.
+- **With priority,** a card you can use now is lit (`.cm-bcard.is-bright`); click it to select its action for review in the left Actions pane. Selection alone sends nothing; `data-action=board-confirm` commits the reviewed choice.
+- **Anything else the room asks** (Keep, attackers, blockers, an order, a number) appears as `#cm-board-decision`. It has `data-action=board-option` buttons and an explicit `data-action=board-confirm`. Its `h3` is the question. Review and confirm single choices too; a changed game revision clears the draft.
 - **A card with more than one way to use it** (a spell with two modes, a cost the pool pays more than one way) is
-  offered under *You can also* as `data-action=board-choose` (*Cast Zap · 2 ways*). It opens the card with one
-  `data-action=board-zoom-do` button per way (`.cm-board-choices`, *Choose one:*), each with `data-index`.
+  offered under *Actions* as `data-action=board-choose` (*Cast Zap · 2 ways*). It opens the shared Actions pane with one
+  `data-action=board-option` button per way, each with `data-index`. Choose one, review the full card beside the board, then confirm. Payment and target questions may follow as separate authoritative steps.
 - **A question of numbers** (combat damage among blockers, a split, an X) has one `input[data-board-amount=<n>]` per row
   (`label.cm-board-amount`). Fill each, then `data-action=board-confirm`.
 - **Turns that went by while you waited** float as `section.cm-board-went` (named *Turns 3–5 went by*), a
@@ -136,7 +136,7 @@ few seconds (*The AI players are still taking their turns*); try again when the 
 
 - The count sits beside `data-action=board-show-hand`.
 - The counts by type are `.cm-board-hand-types li[data-type]` (*Land 2/5*: castable now over in hand).
-- Space fans the hand; 1–9 holds a card up; Enter does its first thing; Escape puts it back. ☰ › *Keys and help* lists every key the board has.
+- Space fans the hand; 1–9 holds a card up; Enter selects its first action for review; Escape puts it back. ☰ › *Keys and help* lists every key the board has.
 
 **The playmat** (`section.cm-mat[data-seat][data-fit]`):
 
@@ -145,7 +145,7 @@ few seconds (*The AI players are still taking their turns*); try again when the 
 
 **Table view:**
 
-- The life counter at the center: `.cm-board-pie`, `role=group`, named *Life: You 40, Maya 40*. Its logo, `data-action=board-vitals`, opens Table vitals.
+- Life, names and priority are in the turn box at the top left (`.cm-stage-caption`, one `.cm-stage-life` row per seat). The Table view's center life counter is gone (2026-10-28); Table vitals open from the Table menu (`data-action=board-vitals`).
 - The row bar and the tray bar: `[data-drag=rows]` and `[data-drag=hand]`, `role=separator`. The arrow keys move them.
   With two seats the boards sit side by side, yours on the right, and the row bar stands upright between them (← and →).
 - The hand never takes the boards' room: a hand larger than the table's card size runs on below the window, and the
@@ -177,8 +177,8 @@ one that does not can ignore it.
 ## A worked example
 
 `tests/uat/board-person.mjs` answers one seat through exactly these hooks, as the house pilot would answer it: the
-draw, Pass, an option by `data-index` (under *You can also* when it is not in the panel, through `board-choose` and
-`board-zoom-do` when the card has several ways), the amount fields, then Confirm, and it times each answer.
+draw, Pass, an option by `data-index` (through `board-choose` when the card has several ways), the amount fields, then
+Confirm, and it times each answer. Draw and Pass remain direct; card actions and single-choice answers need review and confirmation.
 `tests/uat/play-journeys.mjs` plays two four-seat tables of Rob's seven decks with it, every card the deck's own, a
 person on a desk and one on a phone held sideways; `tests/uat/real-deck-game.mjs` plays a whole game to its end.
 

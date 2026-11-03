@@ -6,14 +6,14 @@
  *      feedback, sharing) and none of what moved: Excel, the emailed export, history and Undo,
  *      Confirmations, Clear all data, the card data ages. Reset comparison picks is gone.
  *   2. Menu → Settings opens #settings, with the design's sections, Play and AI Coach (AI-6): Account, Appearance, Play, Prices,
- *      AI Coach, Data, About. Every entry that left the Menu is there, and Publish your To Trade list is in the
+ *      Budget (Rob, 2026-10-18), AI Coach, Data, About. Every entry that left the Menu is there, and Publish your To Trade list is in the
  *      Library's More menu.
  *   3. The theme can be chosen here too, and both places show the same choice.
  *   4. Reduce motion is saved: it stills transitions and the rail's animation, survives a reload, and
  *      turns off again. So is Play's Stop at every step of my turn (Rob, 2026-10-11), with the preferences the board
  *      tells the room (tests/table-board.mjs).
- *   5. The default budget cap is what a deck with no cap of its own is held to, on the deck's own
- *      page; empty goes back to the pod's rule.
+ *   5. Budgets (Rob, 2026-10-18): a deck with no budget of its own has none; the account's budget is set here,
+ *      set against what the decks plan, and said again under the Decks page's tiles; empty is none.
  *   6. About names the card data's ages, and on a phone the cards stack in one column.
  *
  * Needs Playwright and Chromium; GEOMETRY_REQUIRED=1 (CI) turns a missing browser into a failure.
@@ -29,7 +29,7 @@ const eq = (a, b, msg) => { checks++; assert.deepEqual(a, b, msg); };
 
 const {browser, base, stub, close} = await openBrowser({name: "settings-r3", flag: "GEOMETRY_REQUIRED"});
 const openMenu = async (page) => { await page.getByRole("button", {name: "Menu", exact: true}).click(); await page.locator("#cm-user-menu:popover-open").waitFor(); };
-const toSettings = async (page) => { await openMenu(page); await page.locator("#cm-user-menu").getByRole("button", {name: "Settings"}).click(); await page.locator(".cm-settings").waitFor({timeout: 30000}); };
+const toSettings = async (page) => { await page.evaluate(() => {location.hash = "#settings";}); await page.locator(".cm-settings").waitFor({timeout: 30000}); };
 const entries = (page) => page.$$eval("#cm-user-menu button, #cm-user-menu a", (els) => els.map((el) => el.textContent.replace(/^[^\p{L}]+/u, "").trim()));
 
 try {
@@ -42,8 +42,9 @@ try {
   await openMenu(page);
   /* Rob, 2026-09-29: Switch theme under Help, a glossary switch in Help, no Share CrankMagic by email (tests/menu-help.mjs).
      Rob, 2026-10-03: Reset All beside the backups (tests/reset-all.mjs). */
-  eq(await entries(page), ["Settings", "Save a backup file", "Restore from a backup file", "Reset All",
-    "Help & glossary", "Term definitions on hover: Off", "Take a Tour", "Send Feedback", "Show a QR code", "Moss & Iron", "Brass & Slate", "Felt & Cream", "Steel & Cobalt"], "the Menu holds what INTAKE §4.7 lists, in the order Rob set on 2026-09-29");
+  /* Rob, 2026-10-28: the menu holds Your Profile, the skin, and two Help entries; the rest is in Settings. */
+  eq(await entries(page), ["Your Profile", "Sapphire & Obsidian", "Bronze & Basalt", "Chalk & Coal", "Dark", "Light", "System",
+    "Help & glossary", "Term definitions on hover: Off"], "the Menu holds Your Profile, the skin and the two Help entries");
   for (const moved of ["Share CrankMagic by email", "Export as Excel", "Email the export…", "See every change…", "Undo last change", "Confirmations…", "Clear all data", "Reset comparison picks", "Publish your To Trade list"])
     ok(!(await entries(page)).includes(moved), `${moved} has left the Menu`);
   ok(!(await page.$("#cm-user-menu #cm-data-dates")), "and so have the card data ages");
@@ -52,7 +53,7 @@ try {
   /* 2. Settings, with everything that left the Menu. */
   await toSettings(page);
   ok(page.url().endsWith("#settings"), `Menu → Settings opens #settings (${page.url()})`);
-  eq(await page.$$eval(".cm-settings-card h2", (hs) => hs.map((h) => h.textContent)), ["Account", "Profile", "Appearance", "Play", "Prices", "AI Coach", "Data", "About"], "Settings has the design's five sections, Play and AI Coach (AI-6)");
+  eq(await page.$$eval(".cm-settings-card h2", (hs) => hs.map((h) => h.textContent)), ["Account", "Profile", "Appearance", "Play", "Prices", "Budget", "AI Coach", "Data", "About"], "Settings has the design's five sections, Play and AI Coach (AI-6)");
   /* AI COACH SETTINGS (AI-6): six controls, their defaults, saved with the preferences; the meter from the door. */
   await page.route(`${base}/api/ai-meter`, (r) => r.fulfill({json: {open: true, spentCents: 0.4, capCents: 25}}));
   const aiPanel = async () => {await page.locator(".cm-settings-card", {has: page.locator("h2", {hasText: "AI Coach"})}).getByRole("button", {name: "AI Coach settings…"}).click(); await page.locator("#cm-ai-settings").waitFor({timeout: 10000});};
@@ -79,16 +80,24 @@ try {
   ok(/Signing in is not offered on this copy/.test(await page.locator("#cm-settings-account").innerText()), "without accounts, Account says so rather than offering a sign-in that cannot work");
   eq(await page.locator(".cm-settings").getByRole("button", {name: "Delete account…"}).count(), 0, "and there is no Delete account to offer");
   await page.goto(`${base}/index.html#cards`);
-  await page.locator("[data-action=roster-more]").first().click();
+  await page.locator("[data-action=band-more]").click();
   ok(await page.getByRole("button", {name: "Publish your To Trade list"}).isVisible(), "Publish your To Trade list is in the Library's More menu");
   await page.keyboard.press("Escape");
 
+  await toSettings(page);
+  await page.getByRole('button', {name:'Clear all data', exact:true}).click();
+  ok(await page.locator('#cm-dialog form.cm-destructive').count() === 1, 'Clear all data has the same danger-fill confirmation as deletion');
+  ok(await page.getByLabel('Type CLEAR to confirm').count() === 1, 'clearing still requires typed confirmation');
+  await page.locator('#cm-dialog [data-action=close]').first().click();
+  await page.getByRole('button', {name:'Confirmations…', exact:true}).click();
+  eq(await page.locator('.cm-confirmation-rules dt').count(), 4, 'the confirmation classes explain the available way back without fake switches');
+  await page.locator('#cm-dialog [data-action=close]').first().click();
   /* 3. The theme, from Settings. */
   await toSettings(page);
   /* A1: four swatch cards, each drawn in its own theme's colors and face. */
   /* PLAY › OVERLAY (2026-10-12): the callouts' loudness is a slider, 60% until moved, saved with the Play preferences. */
   const overlay = page.locator(".cm-settings [data-settings-overlay]");
-  eq([await overlay.getAttribute("type"), await overlay.inputValue(), (await page.locator(".cm-settings-slider output").innerText()).trim()], ["range", "60", "60%"], "Play has the Overlay slider, at 60% until moved");
+  eq([await overlay.getAttribute("type"), await overlay.inputValue(), (await page.locator(".cm-settings-slider:has([data-settings-overlay]) output").innerText()).trim()], ["range", "60", "60%"], "Play has the Overlay slider, at 60% until moved");
   await overlay.fill("0");
   await page.waitForFunction(() => document.querySelector(".cm-settings [data-settings-overlay]").getAttribute("aria-valuetext") === "off");
   await page.waitForTimeout(400);
@@ -97,26 +106,28 @@ try {
   eq(await page.locator(".cm-settings [data-settings-overlay]").inputValue(), "0", "moved to the left it is off, and saved: Settings opened again shows it off");
   await page.locator(".cm-settings [data-settings-overlay]").fill("60");
   await page.waitForTimeout(400);
-  eq(await page.$$eval(".cm-settings .cm-theme-card", (bs) => bs.map((b) => b.getAttribute("aria-label"))), ["Moss & Iron", "Brass & Slate", "Felt & Cream", "Steel & Cobalt"], "Settings shows the four themes as swatch cards");
+  eq(await page.$$eval(".cm-settings .cm-theme-card", (bs) => bs.map((b) => b.getAttribute("aria-label"))), ["Sapphire & Obsidian", "Sapphire & Obsidian, light", "Bronze & Basalt", "Bronze & Basalt, light", "Chalk & Coal", "Chalk & Coal, light"], "Settings shows all six skin/register combinations as swatch cards");
   const swatchBg = await page.$$eval(".cm-settings .cm-theme-swatch", (ss) => ss.map((x) => getComputedStyle(x).backgroundColor));
-  eq(new Set(swatchBg).size, 4, `each swatch is drawn in its own theme's ground (${swatchBg.join(", ")})`);
-  eq(await page.$eval(".cm-settings .cm-theme-card[data-theme-choice='moss-iron'] strong", (el) => [getComputedStyle(el).fontFamily.includes("Barlow Condensed"), getComputedStyle(el).textTransform]), [true, "uppercase"], "and Moss & Iron's name is in its own face, Barlow Condensed capitals");
-  await page.locator(".cm-settings").getByRole("button", {name: "Felt & Cream", exact: true}).click();
+  eq(new Set(swatchBg).size, 6, `each swatch is drawn in its own theme's ground (${swatchBg.join(", ")})`);
+  eq(await page.$eval(".cm-settings .cm-theme-card[data-theme-choice='sapphire-obsidian'] strong", (el) => [getComputedStyle(el).fontFamily.includes("Lato"), getComputedStyle(el).textTransform]), [true, "none"], "skin names use the shared Lato component type");
+  await page.locator(".cm-settings").getByRole("button", {name: "Sapphire & Obsidian, light", exact: true}).click();
   await page.waitForFunction(() => document.getElementById("matrix-v2").dataset.theme === "light");
-  eq(await page.$$eval("[data-theme-choice][aria-pressed=true]", (bs) => bs.map((b) => b.dataset.themeChoice)), ["felt-cream", "felt-cream"], "Felt & Cream chosen in Settings is pressed in Settings and in the Menu alike");
-  await page.locator(".cm-settings").getByRole("button", {name: "Moss & Iron", exact: true}).click();
-  await page.waitForFunction(() => document.getElementById("matrix-v2").dataset.palette === "moss-iron");
+  eq(await page.$$eval("[data-theme-choice][aria-pressed=true]", (bs) => bs.map((b) => b.dataset.themeChoice)), ["sapphire-obsidian-light"], "Settings marks the chosen skin/register combination");
+  eq(await page.locator('[data-theme-mode="light"]').getAttribute("aria-pressed"), "true", "the menu register agrees with Settings");
+  await page.locator(".cm-settings").getByRole("button", {name: "Sapphire & Obsidian", exact: true}).click();
+  await page.waitForFunction(() => document.getElementById("matrix-v2").dataset.theme === "dark");
 
   /* 4. Reduce motion. */
+  eq(await page.getByRole("switch", {name: "Reduce motion: Off", exact: true}).count(), 1, "the motion switch says its state in words");
   const motion = () => page.evaluate(() => ({attr: document.documentElement.dataset.motion || null, reduced: globalThis.CrankMotion.reduced(),
-    pressed: document.querySelector('[data-action="set-motion"]').getAttribute("aria-pressed"), aether: document.querySelector(".v-aether")?.dataset.motion,
+    pressed: document.querySelector('[data-action="set-motion"]').getAttribute("aria-checked"), aether: document.querySelector(".v-aether")?.dataset.motion,
     transition: document.querySelector("[data-motion-probe]") ? getComputedStyle(document.querySelector("[data-motion-probe]")).transitionDuration : "no probe after a reload"}));
   /* The probe is an element that really transitions before the switch; one that never did would read
      0s either way and prove nothing. */
   ok(await page.evaluate(() => { const el = [...document.querySelectorAll("#matrix-v2 *")].find((n) => getComputedStyle(n).transitionDuration.split(",").some((d) => parseFloat(d) > 0)); if (el) el.dataset.motionProbe = ""; return Boolean(el); }), "the page has an element that transitions, to measure");
   const before = await motion();
   ok(before.attr === null && !before.reduced && before.pressed === "false" && before.aether === "running" && before.transition.split(",").some((d) => parseFloat(d) > 0), `motion is on by default: ${JSON.stringify(before)}`);
-  await page.getByRole("button", {name: "Reduce motion"}).click();
+  await page.getByRole("switch", {name: /Reduce motion/}).click();
   await page.waitForFunction(() => document.documentElement.dataset.motion === "reduce");
   const still = await motion();
   ok(still.reduced && still.pressed === "true" && still.aether === "still" && still.transition.split(",").every((d) => parseFloat(d) === 0),
@@ -125,46 +136,60 @@ try {
   await page.locator(".cm-settings").waitFor({timeout: 60000});
   await page.waitForFunction(() => document.documentElement.dataset.motion === "reduce", null, {timeout: 15000});
   ok((await motion()).pressed === "true", "it is saved: after a reload the page is still and the switch still pressed");
-  await page.getByRole("button", {name: "Reduce motion"}).click();
+  await page.getByRole("switch", {name: /Reduce motion/}).click();
   await page.waitForFunction(() => !document.documentElement.dataset.motion);
   ok((await motion()).aether === "running", "and turning it off sets the rail moving again");
   /* Play's Stop at every step of my turn: off by default, saved with the preferences, kept through a reload. */
-  const steps = () => page.evaluate(async () => ({pressed: document.querySelector('[data-action="set-step-by-step"]').getAttribute("aria-pressed"),
+  const steps = () => page.evaluate(async () => ({pressed: document.querySelector('[data-action="set-step-by-step"]').getAttribute("aria-checked"),
     saved: await (async () => {const r = await CrankRepository.open(); try {return ((await r.getState()).preferences.play || {}).stepByStep ?? null;} finally {r.close();}})()}));
   eq(await steps(), {pressed: "false", saved: null}, "Stop at every step of my turn is off by default");
   ok(/never ends by itself/.test(await page.locator(".cm-settings-card", {hasText: "Stop at every step"}).innerText()), "and Play says your turn never ends by itself, either way");
-  await page.getByRole("button", {name: "Stop at every step of my turn"}).click();
-  await page.waitForFunction(() => document.querySelector('[data-action="set-step-by-step"]')?.getAttribute("aria-pressed") === "true");
+  await page.getByRole("switch", {name: /Stop at every step of my turn/}).click();
+  await page.waitForFunction(() => document.querySelector('[data-action="set-step-by-step"]')?.getAttribute("aria-checked") === "true");
   eq(await steps(), {pressed: "true", saved: true}, "pressed, it is saved with the preferences (play.stepByStep), which the board tells the room");
   await page.reload();
   await page.locator(".cm-settings").waitFor({timeout: 60000});
   eq(await steps(), {pressed: "true", saved: true}, "and kept through a reload");
-  await page.getByRole("button", {name: "Stop at every step of my turn"}).click();
-  await page.waitForFunction(() => document.querySelector('[data-action="set-step-by-step"]')?.getAttribute("aria-pressed") === "false");
+  await page.getByRole("switch", {name: /Stop at every step of my turn/}).click();
+  await page.waitForFunction(() => document.querySelector('[data-action="set-step-by-step"]')?.getAttribute("aria-checked") === "false");
   eq(await steps(), {pressed: "false", saved: false}, "and off again");
 
-  /* 5. The default budget cap. */
+  /* 5. Budgets (Rob, 2026-10-18; docs/budgets.md). A deck's budget is its own and inherits nothing; the account's is
+     set here and set against what the decks plan to spend, and the Decks page under its tiles says the same. */
   const deck = "deck:live:D6";
-  const capOnDeck = async () => {await page.goto(`${base}/index.html#decks?deck=${encodeURIComponent(deck)}`); await page.locator(".cm-bento").waitFor({timeout: 30000}); return (await page.locator("#cm-main").innerText()).match(/Cap \$[\d,.]+/)?.[0];};
-  eq(await capOnDeck(), "Cap $225.00", "a deck with no cap of its own is held to the pod's rule, $225");
+  const budgetOnDeck = async () => {await page.goto(`${base}/index.html#decks?deck=${encodeURIComponent(deck)}`); await page.locator(".cm-bento").waitFor({timeout: 30000}); return (await page.locator("#cm-main .cm-bento-cost").innerText()).match(/No budget|Budget \$[\d,.]+/)?.[0];};
+  eq(await budgetOnDeck(), "No budget", "a deck with no budget of its own has none: it takes neither the account's nor the pod's");
+  const model = () => page.evaluate(async () => { const r = await CrankRepository.open(); try { const a = CrankCollection.budgets(await r.getState()); return {budget: a.budget, planned: a.planned, left: a.left, decks: a.decks.length}; } finally { r.close(); } });
+  const money = (n) => "$" + n.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
   await page.goto(`${base}/index.html#settings`);
   await page.locator(".cm-settings").waitFor();
-  await page.getByLabel("Default budget cap ($)").fill("300");
-  await page.getByLabel("Default budget cap ($)").press("Enter");
-  await page.waitForFunction(() => /held to \$300/.test(document.getElementById("cm-notice").textContent));
-  ok(/held to \$300/.test(await page.locator(".cm-settings").innerText()), "Enter saves the cap, and Settings says what decks are held to now");
-  eq(await capOnDeck(), "Cap $300.00", "and the deck's own page holds it to the new default");
+  const atFirst = await model();
+  ok(atFirst.budget === null && atFirst.planned > 0, `no account budget yet, and the decks plan ${money(atFirst.planned)}`);
+  const card5 = () => page.locator(".cm-settings-card", {has: page.locator("h2", {hasText: "Budget"})}).innerText();
+  ok((await card5()).includes(`Your decks plan ${money(atFirst.planned)} together`), "the Budget card says what the decks plan");
+  eq(await page.locator(".cm-settings-budgets tbody tr").count(), atFirst.decks, "and lists every live deck, with its budget, cost and what it counts at");
+  await page.getByLabel("Account budget ($)").fill("1000");
+  await page.getByLabel("Account budget ($)").press("Enter");
+  await page.waitForFunction(() => /Account budget \$1,000/.test(document.getElementById("cm-notice").textContent));
+  const after = await model();
+  eq([after.budget, after.left], [1000, Math.round((1000 - atFirst.planned) * 100) / 100], "Enter saves the account budget, and the model sets it against the decks");
+  ok((await card5()).includes(`${money(Math.abs(after.left))} ${after.left < 0 ? "over" : "left"}`), "and Settings says what is left of it");
+  eq(await budgetOnDeck(), "No budget", "the deck still has no budget: the account's is never inherited");
+  await page.goto(`${base}/index.html#decks`);
+  await page.locator(".cm-deck-grid").waitFor({timeout: 30000});
+  const line = await page.locator(".cm-decks-budget").innerText();
+  ok(line.includes(`of your $${(1000).toFixed(2)} account budget`) && line.includes(`$${atFirst.planned.toFixed(2)}`), `the Decks page says the same under its tiles: ${line}`);
   await page.goto(`${base}/index.html#settings`);
   await page.locator(".cm-settings").waitFor();
-  await page.getByLabel("Default budget cap ($)").fill("-5");
-  ok(!(await page.getByLabel("Default budget cap ($)").evaluate((i) => i.validity.valid)), "the browser itself flags a cap below one dollar");
-  await page.getByRole("button", {name: "Save cap"}).click();
+  await page.getByLabel("Account budget ($)").fill("-5");
+  ok(!(await page.getByLabel("Account budget ($)").evaluate((i) => i.validity.valid)), "the browser itself flags a budget below one dollar");
+  await page.getByRole("button", {name: "Save budget"}).click();
   await page.waitForFunction(() => document.getElementById("cm-notice").classList.contains("error"));
   ok(/above zero/.test(await page.locator("#cm-notice").innerText()), "and the button refuses it too, with a reason");
-  await page.getByLabel("Default budget cap ($)").fill("");
-  await page.getByRole("button", {name: "Save cap"}).click();
-  await page.waitForFunction(() => /pod’s rule again/.test(document.getElementById("cm-notice").textContent));
-  eq(await capOnDeck(), "Cap $225.00", "an empty box goes back to the pod's rule");
+  await page.getByLabel("Account budget ($)").fill("");
+  await page.getByRole("button", {name: "Save budget"}).click();
+  await page.waitForFunction(() => /No account budget now/.test(document.getElementById("cm-notice").textContent));
+  eq((await model()).budget, null, "an empty box is no account budget");
 
   /* 6. About, and a phone. */
   await page.goto(`${base}/index.html#settings`);
@@ -222,8 +247,10 @@ try {
   ok(await g.evaluate(() => (1400).toLocaleString() === "1.400"), "the browser really is German: its own locale writes 1,400 as 1.400");
   await g.goto(`${base}/index.html#cards`);
   await g.locator("#cm-roster-table").waitFor({timeout: 60000});
-  const summary = await g.locator("#cm-main .cm-page-head").innerText();
-  ok(/1,598 copies/.test(summary) && !/1\.598/.test(summary), `the Library still says 1,598, the US way: ${summary.replace(/\s+/g, " ").slice(0, 80)}`);
+  await g.locator("[data-action=group-menu]").click();
+  const summary = (await g.locator(".cm-band").innerText()) + " " + (await g.locator(".cm-row-menu").innerText());
+  ok(/1,158/.test(summary) && /All 1,718/.test(summary.replace(/\s+/g, " ")) && !/1\.158|1\.718/.test(summary), `the Library still says 1,158 records and 1,718 copies, the US way: ${summary.replace(/\s+/g, " ").slice(0, 80)}`);
+  await g.keyboard.press("Escape");
   await g.goto(`${base}/index.html#settings`);
   await g.locator(".cm-settings").getByRole("button", {name: "See every change…"}).click();
   await g.locator("#cm-history-rows article").first().waitFor();
@@ -243,4 +270,4 @@ try {
 } finally {
   await close();
 }
-console.log(`settings-r3: ${checks} checks passed — the Menu slimmed to INTAKE §4.7, Settings holds the rest in five sections, Play and AI Coach, Reduce motion (which stills the page) and Stop at every step are saved, and the default cap reaches a deck's own page.`);
+console.log(`settings-r3: ${checks} checks passed — the Menu slimmed to INTAKE §4.7, Settings holds the rest in five sections, Play and AI Coach, Reduce motion (which stills the page) and Stop at every step are saved, and the account's budget is set against the decks' while no deck inherits it.`);

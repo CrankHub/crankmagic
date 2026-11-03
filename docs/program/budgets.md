@@ -81,10 +81,10 @@ AssertionError [ERR_ASSERTION]: performance budgets exceeded at 2 place(s):
 
 ```sh
 # With Playwright and Chromium installed:
-GEOMETRY_REQUIRED=1 node tests/budgets.mjs
+GEOMETRY_REQUIRED=1 node tests/perf-budgets.mjs
 
 # Print all measurements:
-BUDGETS_REPORT=1 GEOMETRY_REQUIRED=1 node tests/budgets.mjs
+BUDGETS_REPORT=1 GEOMETRY_REQUIRED=1 node tests/perf-budgets.mjs
 ```
 
 The suite runs as part of `bash runtests.sh`. Without a browser, it prints SKIPPED and exits 0. Set `GEOMETRY_REQUIRED=1` to turn the skip into a failure (CI sets this).

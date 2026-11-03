@@ -11,9 +11,10 @@
  *             "{W}"; two that would read the same are told apart by power and toughness and whether they are tapped,
  *             then numbered; no two of one card's options read alike; nothing the seat may not see is named.
  *   Room      a real table, Rob against an AI seat: the priority question's cast options carry their details, distinct.
- *   Board     "You can also ▾" lists the spell once, with how many ways; pressing it, or the card in the hand, opens a
- *             pop-up listing every way by its target; "→ Maya" casts it at Maya, and the stack says so. The card's own
- *             label names what it can do once, not once per target.
+ *   Board     the Actions module of the left drawer (the same in Table, Focus and 3D, where the forced Actions pop-up is
+ *             gone) lists the spell once, with how many ways; pressing it, or the card in the hand, lists every way by its
+ *             target; "→ Maya" casts it at Maya, and the stack says so. The card's own label names what it can do once,
+ *             not once per target. Table and 3D are read before anything is cast; the cast itself is walked in Focus.
  *   Scry      a second table, where Rob casts "Scry 3.": the board draws the question as a pick-several pop-up (any to
  *             the bottom, none included; a second press puts one back), then the order of the two kept; and the saved
  *             game has the picked card on the bottom of his library and the other two on top in his order. The board
@@ -143,6 +144,8 @@ async function socket(onFrame, at = object, email = ROB) {
 const deck = (who, basic, spell) => ({name: `${who}'s deck`, commander: [`${who} General`], cards: [...Array(40)].map((_, i) => (i % 2 ? basic : spell))});
 async function startTable(at, tableId, robSpell) {
   await callAt(at, "/table/create", {tableId, hostName: "Rob", seats: [{kind: "ai", name: "Maya"}]});
+  /* Every spell asked about, as the seeded games below were found before ROB-102 (the stack passed for a player with no answer). */
+  await callAt(at, "/table/rules", {passStack: false});
   await callAt(at, "/table/deck", {seatId: 0, deck: deck("Rob", "Mountain", robSpell)});
   await callAt(at, "/table/deck", {seatId: 1, deck: deck("Maya", "Forest", "Maya Bear")});
   await callAt(at, "/table/ready", {ready: true});
@@ -200,10 +203,14 @@ const canPeek = (v) => v.state.turnPlayerId === v.seat && v.state.phase === "MAI
   && v.state.players[v.seat].zones.Battlefield.cards.some((c) => c.name === "Mountain" && !c.tapped);
 await playUntil(scryAt, () => scryView, scrySend, canPeek);
 ok(scryView && canPeek(scryView), `the second table reaches Rob's main phase with Peek Three in hand, a Mountain untapped and his land still to play (turn ${scryView?.state.turn})`);
-/* Tapped and cast: the cast passes for him (game/room/room.mjs, passAfterCast), the AI seat passes, and the spell resolves
-   to its question. */
+/* Tapped and cast: CH-57 preserves the caster's Undo/priority window. Explicitly pass the offered action;
+   the AI seat then passes and the spell resolves to its question. */
 for (const pick of [(o) => o.act === "activate-mana" && o.label === "Mountain", (o) => o.act === "cast" && o.label === "Peek Three"])
   await scrySend(scryView, {indices: [scryView.decision.options.find(pick).index]});
+const scryPass=scryView.decision?.options.find(o=>o.act==='pass');
+ok(scryView.canUndo===true && scryView.decision?.kind==='priority' && scryView.state.stack.some(s=>s.name==='Peek Three') && scryPass,
+  'casting Peek Three preserves the server-offered Undo window and priority before any library information is revealed');
+await scrySend(scryView,{indices:[scryPass.index]});
 /* The game as the table saved it (the room checkpoints at every person's decision): what no seat's view shows, the order of
    a library. */
 function savedLibrary(tableId, seat) {
@@ -225,6 +232,7 @@ DEFS.set("Brute", {types: ["Creature"], power: 3, toughness: 3, manaCost: "{R}"}
 const damageAt = standUp(DAMAGE_TABLE);
 const callAs = (email, p, body) => serial(async () => (await damageAt.fetch(new Request(`https://table.internal${p}`, {method: body === undefined ? "GET" : "POST", headers: {"content-type": "application/json", "x-crankmagic-email": email}, ...(body !== undefined ? {body: JSON.stringify(body)} : {})}))).json());
 await callAs(ROB, "/table/create", {tableId: DAMAGE_TABLE, hostName: "Rob", seats: [{kind: "human", name: "Maya"}]});
+await callAs(ROB, "/table/rules", {passStack: false});
 await callAs(MAYA, "/table/join", {code: (await callAs(ROB, "/table/invite", {seatId: 1})).invite.code});
 await callAs(ROB, "/table/deck", {seatId: 0, deck: deck("Rob", "Mountain", "Brute")});
 await callAs(MAYA, "/table/deck", {seatId: 1, deck: deck("Maya", "Forest", "Maya Bear")});
@@ -245,12 +253,18 @@ function policy(v) {
     const tap = mine && me.zones.Hand.cards.some((c) => c.name === spell) && d.options.find((o) => o.act === "activate-mana");
     return {indices: [(cast || land || tap || d.options.find((o) => o.act === "pass")).index]};
   }
+  /* Creatures chosen by the cards they are, not by an option's words: the room numbers same-named ones (ROB-168,
+     "Maya Bear 2/2 #1 blocks Brute"). */
+  const named = (cardId) => (v.state.players.flatMap((p) => p.zones.Battlefield.cards).find((c) => c.cardId === cardId) || {}).name;
   if (String(d.id).startsWith("declare-attackers:")) {
     const bears = v.state.players[1].zones.Battlefield.cards.filter((c) => c.name === "Maya Bear" && !c.tapped).length;
-    const brute = d.options.find((o) => o.label.startsWith("Brute → "));
+    const brute = d.options.find((o) => named(o.cardId) === "Brute" && o.defenderId !== undefined && o.planeswalkerId === undefined);
     return {indices: bears >= 2 && brute ? [brute.index] : []};
   }
-  if (String(d.id).startsWith("declare-blockers:")) return {indices: d.options.filter((o) => o.label === "Maya Bear blocks Brute").slice(0, 2).map((o) => o.index)};
+  if (String(d.id).startsWith("declare-blockers:")) {
+    const pairs = d.options.filter((o) => named(o.cardId) === "Maya Bear" && named(o.attackerId) === "Brute");
+    return {indices: pairs.filter((o, i) => pairs.findIndex((x) => x.cardId === o.cardId) === i).slice(0, 2).map((o) => o.index)};
+  }
   if (d.mode === "many") return {indices: d.options.slice(0, d.min).map((o) => o.index)};
   if (d.mode === "order") return {indices: d.options.map((o) => o.index)};
   if (d.mode === "ack") return {indices: []};
@@ -294,61 +308,83 @@ function carry(ws) {
   ws.onMessage((message) => serial(() => at.webSocketMessage(server, message)));
   ws.onClose(() => {server.closed = true;});
 }
-try {
-  const context = await browser.newContext({viewport: {width: 1400, height: 900}, serviceWorkers: "block"});
-  const page = await context.newPage();
+/* The page's routes: the shell with the cloud board on, and the real tables above behind a stubbed API and socket. */
+async function wire(page) {
   if (stub) await stub(page);
   await page.route(`${base}/index.html*`, (r) => r.fulfill({contentType: "text/html; charset=utf-8", body: html}));
   await page.route(`${base}/api/me`, (r) => r.fulfill({json: {email: ROB}}));
   await page.route(`${base}/api/library**`, (r) => r.fulfill({json: {head: null}}));
   await page.route(`${base}/api/tables**`, answer);
   await page.routeWebSocket(/\/api\/tables\/[a-z0-9]+\/connect$/, carry);
-  await page.goto("about:blank");
+  await page.route(/\/assets\/environments\/[^/?]+\.webm(\?.*)?$/, (r) => r.abort());
+}
+try {
+  /* ---- 3a. the same choice in every view: Table and 3D draw the Actions module the Focus view does (Rob, 2026-10-28: one HUD), read before
+     anything is cast on this table; the walk through the cast is in Focus below ---- */
+  for (const view of ["table", "full"]) {
+    const ctx = await browser.newContext({viewport: {width: 1400, height: 900}, serviceWorkers: "block", reducedMotion: "reduce"});
+    const pg = await ctx.newPage();
+    await pg.addInitScript((m) => {localStorage.setItem("cm-board-view", m); localStorage.setItem("crankmagic-audio-muted", "true");}, view);
+    await wire(pg);
+    await pg.goto(`${base}/index.html#table?id=${TABLE}`);
+    await pg.locator("#cm-board .cm-stage-top").waitFor({timeout: 60000});
+    await pg.locator(".cm-stage-rail [data-action=board-choose]").first().waitFor({timeout: 20000});
+    const here = pg.locator(".cm-stage-rail [data-action=board-choose]", {hasText: "Cast Zap"});
+    ok(await here.count() === 1 && /Cast Zap/.test((await here.innerText()).replace(/\s+/g, " ")), `${view}: Actions lists Zap once, saying how many ways`);
+    ok(/^Zap: Cast Zap, \d+ ways$/.test(await pg.locator(".cm-stage-fan .cm-bcard[aria-label^='Zap']").first().getAttribute("aria-label")), `${view}: and the card in the hand says what it can do once, and how many ways`);
+    ok(await pg.locator("[data-action=board-actions-open]").count() === 0, `${view}: with no forced Actions pop-up to open`);
+    await ctx.close();
+  }
+  const context = await browser.newContext({viewport: {width: 1400, height: 900}, serviceWorkers: "block"});
+  const page = await context.newPage();
+  await page.addInitScript(() => {if (!localStorage.getItem("cm-board-view")) localStorage.setItem("cm-board-view", "focus");});
+  await wire(page);
   await page.goto(`${base}/index.html#table?id=${TABLE}`);
   await page.locator("#cm-board .cm-stage-top").waitFor({timeout: 60000});
-  await page.locator("[data-action=board-also]").waitFor({timeout: 20000});
+  /* Choices are in the Actions module of the left drawer (open by default), not in a forced Actions pop-up: that pop-up and its opener
+     (board-actions-open) are gone by Rob's request (2026-10-28), and the pop-up over the stage keeps only the turn's buttons. */
+  await page.locator(".cm-stage-rail [data-action=board-choose]").first().waitFor({timeout: 20000});
+  ok(await page.locator("[data-action=board-actions-open]").count() === 0, "there is no forced Actions pop-up to open: the choice is already in the drawer's Actions module");
 
-  const zapCard = page.locator(".cm-board-hand .cm-bcard[aria-label^='Zap']").first();
+  const zapCard = page.locator(".cm-stage-fan .cm-bcard[aria-label^='Zap']").first();
   const label = await zapCard.getAttribute("aria-label");
   ok(/^Zap: Cast Zap, \d+ ways$/.test(label), `the card in the hand says what it can do once, and how many ways: "${label}"`);
 
-  await page.click("[data-action=board-also]");
-  const choose = page.locator(".cm-board-also [data-action=board-choose]", {hasText: "Cast Zap"});
-  ok(await choose.count() === 1, "You can also ▾ lists Zap once");
-  ok(new RegExp(`Cast Zap · ${castOptions.length} ways`).test((await choose.innerText()).replace(/\s+/g, " ")), `saying how many ways (${(await choose.innerText()).replace(/\s+/g, " ").trim()})`);
+  const choose = page.locator(".cm-stage-rail [data-action=board-choose]", {hasText: "Cast Zap"});
+  ok(await choose.count() === 1, "Actions lists Zap once");
+  ok(/Cast Zap/.test((await choose.innerText()).replace(/\s+/g, " ")), `saying how many ways (${(await choose.innerText()).replace(/\s+/g, " ").trim()})`);
   await choose.click();
-  const dialog = page.locator("#cm-dialog[open]");
-  await dialog.waitFor({timeout: 5000});
-  const ways = (await dialog.locator(".cm-board-choices [data-action=board-zoom-do]").allInnerTexts()).map((w) => w.replace(/\s+/g, " ").trim());
-  eq(ways.length, castOptions.length, "pressing it opens a pop-up with every way");
-  ok(ways.includes("Cast Zap → Maya") && ways.includes("Cast Zap → Rob (you) · ⚠ against you") && ways.some((w) => /^Cast Zap → Maya Bear \(Maya's\)/.test(w)), `each by what it is aimed at: ${ways.join("; ")}`);
-  eq(await dialog.locator(".cm-board-choices [data-action=board-zoom-do] .cm-lean.is-against").allInnerTexts(), ["⚠ against you"], "the one against Rob himself marked so, and only it");
-  ok(await page.locator(".cm-board-also").count() === 0, "and the menu it came from is put away");
-  if (SHOTS) await page.screenshot({path: path.join(SHOTS, "board-choices-1400.png")});
-  await dialog.locator("[data-action=close]").first().click();
+  const dialog = page.locator("#cm-board-decision");
+  const mayaOffer=latest.decision.options.find(o=>o.act==='cast'&&o.label==='Zap'&&o.detail==='→ Maya');
+  if(await dialog.locator('[data-action=board-flow-choice][data-kind=source]').count())await dialog.locator(`[data-action=board-flow-choice][data-indices~="${mayaOffer.index}"]`).click();
+  const targets=dialog.locator('[data-action=board-flow-choice]');
+  const currentCastOptions=latest.decision.options.filter(o=>o.act==='cast'&&o.cardId===mayaOffer.cardId);
+  const offeredTargets=new Set(currentCastOptions.flatMap(o=>o.decisionPath?.filter(n=>n.kind==='target').map(n=>JSON.stringify(n.value)) || []));
+  eq(await targets.count(),offeredTargets.size,'every current legal target is available in its own layer');
+  ok((await targets.allTextContents()).some(t=>t.includes('Maya')),'player targets retain their names');
+  eq(await page.locator('.cm-required-popup').count(),1,'casting uses one required popup');
+  eq(await page.locator('.cm-stage-module[data-module=actions]').count(),0,'casting hides the optional Actions drawer');
+  await page.setViewportSize({width:1280,height:720});
+  ok(await dialog.locator('.cm-flow-card').isVisible(),'the source card stays with its choices');
+  const beforeStaging=latest.revision;
+  await dialog.locator(`[data-action=board-flow-choice][data-indices~="${mayaOffer.index}"]`).click();
+  eq(latest.revision,beforeStaging,'choosing a target sends no game action before confirmation');
+  ok(await dialog.locator('[data-action=board-flow-confirm]').isVisible(),'selected target is ready for confirmation');
+  if(SHOTS)await page.screenshot({path:path.join(SHOTS,'board-choices-1280x720.png')});
+  /* Casting keeps Rob's explicit Undo/priority window. A native Pass closes it before the AI passes and Zap resolves;
+     what it hit is still read off the game, Maya one life down, rather than inferred from the stack. */
+  /* ROB-327: the cast line names its target, "Rob cast Zap targeting Maya". */
+  const CAST = "Rob cast Zap targeting Maya", mayaLife = (v) => v.state.players[1].health.life, before = mayaLife(latest), castsBefore = latest.history.filter((h) => h.text === CAST).length;
+  eq([mayaLife(latest),latest.history.filter(h=>h.text===CAST).length,latest.state.stack.filter(s=>s.name==='Zap').length],[before,castsBefore,0],"staging the selected offer has changed neither life, cast history nor the stack");
+  await dialog.locator("[data-action=board-flow-confirm]").click();
   await page.waitForFunction(() => !document.querySelector("#cm-dialog[open]"));
-
-  /* The card itself, pressed in the hand: the same pop-up -- here at 1280 by 720, the smallest desk size, where the card
-     is drawn smaller while choosing so that every way and Close are on screen without scrolling. */
-  await page.setViewportSize({width: 1280, height: 720});
-  await page.waitForTimeout(400);
-  await zapCard.click();
-  await dialog.waitFor({timeout: 5000});
-  const fit = await page.evaluate(() => {
-    const d = document.querySelector("#cm-dialog[open]"), r = (el) => el.getBoundingClientRect();
-    const all = [...d.querySelectorAll(".cm-board-choices [data-action=board-zoom-do]"), d.querySelector(".cm-form-footer [data-action=close]")];
-    return {inside: all.every((el) => r(el).bottom <= innerHeight && r(el).top >= 0), scrolls: d.scrollHeight > d.clientHeight + 1, card: Math.round(r(d.querySelector(".cm-board-zoom .cm-bcard")).height)};
-  });
-  ok(fit.inside && !fit.scrolls, `at 1280 by 720 every way and Close are on screen, the pop-up unscrolled (card ${fit.card}px tall)`);
-  if (SHOTS) await page.screenshot({path: path.join(SHOTS, "board-choices-1280x720.png")});
-  eq((await dialog.locator(".cm-board-choices [data-action=board-zoom-do]").allInnerTexts()).map((w) => w.replace(/\s+/g, " ").trim()).sort(), [...ways].sort(), "pressing Zap in the hand opens the same pop-up, rather than casting it at the first target");
-  /* The cast passes for Rob (game/room/room.mjs, passAfterCast) and the AI seat passes, so Zap resolves in the same turn of
-     the room as it is cast: what it hit is read off the game, Maya one life down, rather than off the stack. */
-  const mayaLife = (v) => v.state.players[1].health.life, before = mayaLife(latest), castsBefore = latest.history.filter((h) => h.text === "Rob cast Zap").length;
-  await dialog.locator(".cm-board-choices [data-action=board-zoom-do]", {hasText: /^Cast Zap → Maya$/}).click();
-  await page.waitForFunction(() => !document.querySelector("#cm-dialog[open]"));
+  for (let t = 0; t < 100 && !latest.canUndo; t += 1) await new Promise((r) => setTimeout(r, 100));
+  ok(latest.canUndo===true && latest.decision?.kind==='priority' && latest.state.stack.some(s=>s.name==='Zap') && latest.decision.options.some(o=>o.act==='pass') && mayaLife(latest)===before,
+    'native Cast leaves Zap on the stack with Undo and an offered Pass, without applying its damage');
+  /* the pass is Next step in the pop-up over the stage (the header carries no pass any more) */
+  await page.locator('#cm-board .cm-stage-actions [data-action=board-pass]:not([disabled])').click();
   for (let t = 0; t < 100 && mayaLife(latest) === before; t += 1) await new Promise((r) => setTimeout(r, 100));
-  ok(mayaLife(latest) === before - 1 && latest.history.filter((h) => h.text === "Rob cast Zap").length === castsBefore + 1 && latest.history.some((h) => h.text === "Zap resolved"),
+  ok(mayaLife(latest) === before - 1 && latest.history.filter((h) => h.text === CAST).length === castsBefore + 1 && latest.history.some((h) => h.text === "Zap resolved"),
     `choosing "→ Maya" casts Zap at Maya: it resolves, and Maya's life goes ${before} → ${mayaLife(latest)}`);
 
   /* ---- 4. the board answers scry: a pick-several pop-up, then the order of what stays ---- */
@@ -358,24 +394,34 @@ try {
   await page.goto("about:blank");
   await page.goto(`${base}/index.html#table?id=${SCRY_TABLE}`);
   const box = page.locator("#cm-board-decision");
-  await box.locator("h3", {hasText: "Scry 3"}).waitFor({timeout: 60000});
+  await box.getByRole("heading", {name: /^Scry 3:/}).waitFor({timeout: 60000});
   const cardsBox = box.locator("[data-action=board-option]"), confirm = box.locator("[data-action=board-confirm]");
-  const pressed = async () => Promise.all((await cardsBox.all()).map((el) => el.getAttribute("aria-pressed")));
   const foot = async () => (await box.locator(".cm-board-decision-foot .cm-muted").first().innerText()).replace(/\s+/g, " ").trim();
-  eq([(await box.locator("h3").textContent()).trim(), await cardsBox.count(), await pressed()], ["Scry 3: choose any to put on the bottom", 3, ["false", "false", "false"]],
-    "the board draws Rob's scry as a pick-several pop-up: the question, a button for each card looked at, none picked");
+  /* THE SAME CARD, ONE STACK (Rob, 2026-10-25): a button for each different card looked at, and the same card twice one
+     stack, ×2. Rob's library is Mountains and Peek Threes, so the top three repeat a name; the groups are read off the
+     question, in its order (the first of a stack is what its click takes). */
+  const groups = [...new Map(scry.options.map((o) => [o.label, scry.options.filter((x) => x.label === o.label)])).values()];
+  const choices = box.locator("[data-action=board-option], [data-action=board-option-same]");
+  const choicePressed = async () => Promise.all((await choices.all()).map((el) => el.getAttribute("aria-pressed")));
+  const words = async () => (await choices.allInnerTexts()).map((x) => x.replace(/\s+/g, " ").trim());
+  eq([(await box.getByRole("heading").first().textContent()).trim(), await words(), await choicePressed()],
+    ["Scry 3: choose any to put on the bottom", groups.map((g) => g.length > 1 ? `${g[0].label} ×${g.length}` : g[0].label), groups.map(() => "false")],
+    "the board draws Rob's scry as a pick-several pop-up: the question, a button for each different card looked at (the same card one stack), none picked");
   ok(await confirm.isEnabled() && await foot() === "0 chosen · 0 to 3", `Confirm is ready with none picked, since keeping all three is an answer ("${await foot()}")`);
-  await cardsBox.nth(2).focus();
+  const last = groups.length - 1;
+  await choices.nth(last).focus();
   await page.keyboard.press('Enter');
-  ok(await cardsBox.nth(2).evaluate(el=>el===document.activeElement), 'a non-first many-choice option keeps keyboard focus through its redraw');
-  await cardsBox.nth(0).click();
-  eq(await pressed(), ["true", "false", "true"], "two cards pressed, each marked picked");
-  await cardsBox.nth(2).click();
-  eq([await pressed(), await foot()], [["true", "false", "false"], "1 chosen · 0 to 3"], "and a second press puts one back: a pick-several, not a pick-one");
+  ok(await choices.nth(last).evaluate(el=>el===document.activeElement), 'a non-first many-choice option keeps keyboard focus through its redraw');
+  if (last > 0) {
+    await choices.nth(0).click();
+    eq(await choicePressed(), groups.map((_, i) => i === 0 || i === last ? "true" : "false"), "two cards pressed, each marked picked");
+    await choices.nth(last).click();
+  }
+  eq([await choicePressed(), await foot()], [groups.map((_, i) => i === 0 ? "true" : "false"), "1 chosen · 0 to 3"], "and a second press puts one back: a pick-several, not a pick-one");
   if (SHOTS) await page.screenshot({path: path.join(SHOTS, "board-scry-bottom-1400.png")});
   await confirm.click();
-  await box.locator("h3", {hasText: "Put the rest back on top"}).waitFor({timeout: 10000});
-  eq([(await box.locator("h3").textContent()).trim(), await cardsBox.count()], ["Put the rest back on top of your library, the first you choose on top", 2],
+  await box.getByRole("heading", {name: /^Put the rest back on top/}).waitFor({timeout: 10000});
+  eq([(await box.getByRole("heading").first().textContent()).trim(), await cardsBox.count()], ["Put the rest back on top of your library, the first you choose on top", 2],
     "one to the bottom and two kept: the board asks the order of the two, a second pop-up");
   await cardsBox.nth(1).focus();
   await page.keyboard.press('Enter');
@@ -396,7 +442,7 @@ try {
   await page.goto("about:blank");
   await page.goto(`${base}/index.html#table?id=${DAMAGE_TABLE}`);
   const dbox = page.locator("#cm-board-decision");
-  await dbox.locator("h3", {hasText: "Assign 3 damage"}).waitFor({timeout: 60000});
+  await dbox.getByRole("heading", {name: /^Assign 3 damage/}).waitFor({timeout: 60000});
   const rows = dbox.locator(".cm-board-amount"), dconfirm = dbox.locator("[data-action=board-confirm]");
   const said = async () => (await dbox.locator(".cm-board-decision-foot .cm-muted").first().innerText()).replace(/\s+/g, " ").trim();
   const rowWords = async () => (await rows.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
@@ -421,5 +467,5 @@ try {
   await close();
 }
 
-console.log(`board-choices: ${checks} checks passed — a card used more than one way says each way (its target, its sacrifice, its color), and the board asks which in a pop-up rather than doing the first; a scry is a pick-several pop-up for the bottom, then the order of the rest; combat damage among two blockers is divided by amounts, in no order.`);
+console.log(`board-choices: ${checks} checks passed — a card used more than one way says each way (its target, its sacrifice, its color), and the board stages the selection in an exclusive popup for confirmation; a scry is a pick-several pop-up for the bottom, then the order of the rest; combat damage among two blockers is divided by amounts, in no order.`);
 process.exit(0);

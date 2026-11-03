@@ -36,6 +36,7 @@ import {joinLocation} from "../../cloud/worker.mjs";
 import {boardPerson} from "./board-person.mjs";
 import {replayRecord} from "../../tools/playtest-triage.mjs";
 import {checkLeaks} from "../../tools/fuzz-live.mjs";
+import {createGame, openNewGame} from "./new-game.mjs";
 
 let checks = 0;
 const ok = (c, m) => {assert.ok(c, m); checks += 1; console.log(`  ok  ${m}`);};
@@ -138,30 +139,20 @@ async function chooseDeck(page, seat, name) {
 /* ---- one table, end to end ---- */
 async function journey(n, rob, maya, [robDeck, mayaDeck, ninaDeck, theoDeck]) {
   console.log(`real-deck-game: table ${n} -- ${[robDeck, mayaDeck, ninaDeck, theoDeck].map((d) => d.name).join(" · ")}`);
-  /* LOBBY: New table, a person and two AIs. */
-  await rob.page.goto(`${base}/index.html#table`);
-  await rob.page.locator("#cm-table-new").waitFor({timeout: 30000});
-  await rob.page.fill("#cm-table-new [name=hostName]", "Rob");
-  await rob.page.fill("#cm-table-new [name=name2]", "Maya");
-  await rob.page.selectOption("#cm-table-new [name=kind3]", "ai");
-  await rob.page.fill("#cm-table-new [name=name3]", "Nina");
-  await rob.page.selectOption("#cm-table-new [name=kind4]", "ai");
-  await rob.page.fill("#cm-table-new [name=name4]", "Theo");
-  await rob.page.click("[data-action=table-create]");
+  /* LOBBY: New game, a person and two AIs. */
+  await createGame(rob.page, base, {host: "Rob", humans: [{name: "Maya"}], ai: [{name: "Nina"}, {name: "Theo"}]}, "#table");
   await rob.page.waitForFunction(() => /#table\?id=journey\d+/.test(location.hash), null, {timeout: 20000});
   const id = /#table\?id=(journey\d+)/.exec(await rob.page.evaluate(() => location.hash))[1];
   await rob.page.locator(".cm-cloud-table .cm-lobby-seat[data-seat='3']").waitFor({timeout: 20000});
-  eq((await rob.page.locator(".cm-cloud-table .cm-lobby-seat h3").allTextContents()).map((t) => t.trim()), ["Seat 1 · You", "Seat 2 · Maya", "Seat 3 · AI · Normal", "Seat 4 · AI · Normal"], `table ${n}: New table seats Rob, Maya to invite, and two AIs`);
+  eq((await rob.page.locator(".cm-cloud-table .cm-lobby-seat h3").allTextContents()).map((t) => t.trim()), ["Seat 1 · You · Host", "Seat 2 · Maya", "Seat 3 · Ninaai", "Seat 4 · Theoai"], `table ${n}: New table seats Rob, Maya to invite, and two AIs`);
   await chooseDeck(rob.page, 0, robDeck.name);
   await chooseDeck(rob.page, 2, ninaDeck.name);
   await chooseDeck(rob.page, 3, theoDeck.name);
   await waitText(rob.page, ".cm-lobby-seat[data-seat='3'] header", /Ready/);
   ok(true, `table ${n}: Rob brings ${robDeck.name} from his library, and chooses the AIs' (${ninaDeck.name}, ${theoDeck.name}); an AI with a deck is ready`);
   /* INVITE: the link, opened in the second browser session. */
-  await rob.page.click(".cm-lobby-seat[data-seat='1'] [data-action=table-invite]");
-  await rob.page.locator("#cm-table-link").waitFor();
-  const link = await rob.page.inputValue("#cm-table-link");
-  await rob.page.keyboard.press("Escape");
+  /* (ROB-320: Create game named Maya, so the lobby sends nothing; she opens the lobby link her email carries.) */
+  const link = `${base}/api/join/${id}`;
   await maya.page.goto(joinLocation(new URL(link.replace(/^https?:\/\/[^/]+/, base))));   /* the Worker's answer to the link */
   await maya.page.waitForFunction(() => /#table\?id=/.test(location.hash), null, {timeout: 30000});
   await maya.page.locator(".cm-cloud-table .cm-lobby-seat").first().waitFor({timeout: 30000});

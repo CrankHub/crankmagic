@@ -8,9 +8,17 @@
  * identities and storage.
  *
  * A PERSON IS THEIR SIGNED-IN ADDRESS. In the cloud there are no seat tokens: Cloudflare Access has already
- * said who is asking, and only people on CrankMagic's invite list get that far (a table's link never adds
- * anyone to it; Rob, 2026-09-26). A seat is bound to an address when its invitation is redeemed, and from
- * then on that address is the seat. The address stays here, in the table; the room is told only "s0".."s3".
+ * said who is asking, and only people on CrankMagic's invite list get that far. A seat is bound to an address when its
+ * person arrives, and from then on that address is the seat. The address stays here, in the table; the room is told only
+ * "s0".."s3".
+ *
+ * A TABLE'S LINK SEATS A SIGNED-IN PERSON (ROB-320; Rob, 2026-10-29: "they click the link, their browser opens and they are in the
+ * seat in the lobby. No confirmations ... They could click it to join [from Live games] ... they are then in the lobby in the seat").
+ * This SUPERSEDES Rob's 2026-09-26 rule that "a table's link never adds anyone to it", and the host's answer to a request to join:
+ * Create game holds a seat for each address it invites (`reserved`, game/room/lounge.mjs), and `join` with no code seats whoever
+ * holds one, or anyone signed in at a public table with an open seat. The refusals are the ones the rules need -- a full table, a
+ * table that has started or ended, a private table holding nothing for the person -- each saying what to do instead
+ * (docs/program/rob-320-invitations-contract.md). A code the host sends (`invite`) still works and still names its seat.
  *
  * THE JOURNEYS, AS RULES:
  *   host     creates the table and sits in seat 1; seats 2-4 are a person to invite, an AI, or left out
@@ -21,14 +29,21 @@
  *   ready    then the host starts a 10-second countdown that waits for every person, and can cancel it
  *   launch   when the countdown ends the room starts; if it cannot, the table says why and goes back to
  *            choosing, the AI seats still ready
+ *   again    when the game is over each person answers Play again, Yes or No (No is leaving), within two minutes;
+ *            the people who stay play the next game with the same seats, decks and rules (`rematch`)
  */
 import {createTable, transitionTable, countdownBlockers} from "../contracts/table-lifecycle.mjs";
 import {coachBrief} from "./coach-brief.mjs";
 import {startRoom, openRoom, RoomError, basicCards} from "./room.mjs";
 import {createMatchStore} from "../engine/storage.mjs";
+import {resultRecord} from "./result-record.mjs";
+import {loungeOn} from "./lounge.mjs";
+import {readSeatAi} from "../engine/pilots/roster.mjs";
 
-/* An AI seat's setting (AI-2): "easy", "llm" (an AI on Claude) or, unless one of those was chosen, "normal". */
-const levelOf = (s) => (s.level === "easy" || s.level === "llm" ? s.level : "normal");
+/* An AI seat's setting (AI-2) and persona (docs/ai-players/PLAN-2026-10-26.html §7), as the roster offers them
+   (game/engine/pilots/roster.mjs): a level that is available, "normal" unless one was chosen; a persona on the roster, or none. */
+const levelOf = (s) => readSeatAi(s).level;
+const personaOf = (s) => readSeatAi(s).persona;
 /** Whether the room is waiting on an LLM seat, whose answer the table's object gives (cloud/game-room.mjs). */
 export const llmWaiting = (room) => !!room && !!room.waitingOn && room.status !== "finished" && room.seats.some((s) => s.seatId === room.waitingOn && s.level === "llm");
 
@@ -43,11 +58,22 @@ export const ART_MATS = Object.freeze(["cloud-wolf", "sand-lion", "ember-serpent
   "star-tome", "dragon-pact", "moon-wolf", "falls-tree", "star-whale", "grove-arch", "molten-sword", "sky-tree", "void-ring", "desert-portal",
   "night-citadel", "white-sanctum", "grave-king", "tree-portal", "ringed-world", "mirror-gates", "orrery-bridge"]);
 export const MATS = Object.freeze([...DRAWN_MATS, ...ART_MATS]);
-/* A dropped player has this long to come back before they concede (Rob, 2026-09-26: five minutes). */
+/* The mats an AI seat is given (the lounge, game/room/lounge.mjs): the art mats and the drawn ones, felt kept for the people. */
+export const AI_MATS = Object.freeze([...ART_MATS, ...DRAWN_MATS.filter((m) => m !== "felt")]);
+/* A dropped player has this long to come back before they concede (Rob, 2026-09-26: five minutes), when another person is
+   at the table to wait on them (`dropped`). */
 export const AWAY_LIMIT = 5 * 60 * 1000;
+/* How long a finished game's players have to answer Play again (Requests row 12, Linear ROB-167), from the moment it ended.
+   The lifecycle counts from `rematchAt` and names no length (game/contracts/table-lifecycle.mjs, `rematch-deadline`), so
+   it is set here: two minutes, what the local host's table waited (game/server/table-broker.mjs, settleRematch) -- long
+   enough to read the result and answer, short enough that nobody waits long on a player who walked away. Past it, a
+   person who has not answered has said No. */
+export const REMATCH_WINDOW = 2 * 60 * 1000;
 const TABLE_ID = /^[a-z0-9]{8,40}$/;
 export const MATCH_ID = /^[a-z0-9]{8,40}g[1-9][0-9]{0,5}$/;
 const KEY = "table";
+/* The candidate reports one table keeps (`reportCard`): ample for a playtest, and a bound on what one table stores. */
+const CARD_REPORTS = 200;
 
 export class TableError extends Error {
   constructor(status, message, extra = {}) {super(message); this.status = status; Object.assign(this, extra);}
@@ -127,11 +153,15 @@ function readSource(source) {
  * The table over its storage (a Durable Object's own, in the cloud).
  *
  * @param {object} storage  the M4 storage contract
- * @param {{cards?: Function, random?: (n: number) => Uint8Array, slice?: number}} options  `slice`: the engine steps a
- *   room plays in one call before it stops for the object's alarm to play on (game/room/room.mjs, `continuing`)
+ * @param {{cards?: Function, candidates?: Function, random?: (n: number) => Uint8Array, slice?: number}} options  `slice`: the
+ *   engine steps a room plays in one call before it stops for the object's alarm to play on (game/room/room.mjs,
+ *   `continuing`). `candidates`: the card compiler's (game/engine/cards/candidates.mjs), which a playtest table alone
+ *   plays where `cards` has no definition, labeled (Rob's decision 2; card load step 5)
  */
-export function tableOn(storage, {cards = basicCards, random = (n) => crypto.getRandomValues(new Uint8Array(n)), slice} = {}) {
-  let record = null, room = null;
+export function tableOn(storage, {cards = basicCards, candidates = () => null, random = (n) => crypto.getRandomValues(new Uint8Array(n)), slice, watching = () => 0} = {}) {
+  let record = null, room = null, lounge = null;
+  /* The cards a table takes in a deck: its own, and at a playtest table a candidate where it has none. */
+  const cardsAt = (rec) => (rec?.playtest === true ? (name) => cards(name) ?? candidates(name) : cards);
   const load = async () => {
     if (!record) record = JSON.parse((await storage.get(KEY)) || "null");
     if (!record) throw new TableError(404, "There is no table here.");
@@ -141,6 +171,7 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
   const seatOf = (email) => {const n = Object.entries(record.members).find(([, e]) => e === email); return n ? Number(n[0]) : null;};
   const isHost = (email) => email === record.host;
   const step = (event, now, extra = {}) => {
+    if (record.quit) throw new TableError(409, "This table has ended. Start a new table to play again.");
     try {record.lifecycle = transitionTable(record.lifecycle, {...event, revision: record.lifecycle.revision}, {now, ...extra});}
     catch (error) {throw new TableError(409, error.message);}
   };
@@ -149,10 +180,14 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
   /* THE TABLE'S RULES (Rob, 2026-09-30): the starting life (CR 903.7's 40 unless the host says otherwise) and a bracket
      limit (none unless the host sets one). And whether the player who goes first in a two-player game skips their first
      draw step (CR 103.8a): on unless the host turns it off, a house rule (Rob, 2026-10-12: "this can be toggled off in game
-     setup by the lobby owner"). A game of three or more has no such skip (103.8c), whatever this says. */
+     setup by the lobby owner"). A game of three or more has no such skip (103.8c), whatever this says. And whether the stack
+     is passed for a person with no meaningful answer to what is on it (Linear ROB-102, `passStack`): on unless the host turns
+     it off, so a person at a table of AIs is not stopped at every spell they could not answer. */
   const rulesOf = () => {const r = (record.lifecycle && record.lifecycle.settings) || {};
     return {startingLife: Number.isInteger(r.startingLife) ? r.startingLife : 40, bracketLimit: Number.isInteger(r.bracketLimit) ? r.bracketLimit : null,
-      skipFirstDraw: r.skipFirstDraw !== false};};
+      skipFirstDraw: r.skipFirstDraw !== false, passStack: r.passStack !== false,
+      /* The lounge's two (lounge-contract §2): said only once the host has set them, so a table that never did reads as it always did. */
+      ...(typeof r.houseRules === "boolean" ? {houseRules: r.houseRules} : {}), ...(r.privacy ? {privacy: r.privacy} : {})};};
   const seatNames = (list) => list.length === 1 ? list[0] : `${list.slice(0, -1).join(", ")} and ${list.at(-1)}`;
 
   /* A seat leaves the game (by choice, or when their time ran out), and the table follows the room. */
@@ -164,37 +199,93 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
     if (record.away) delete record.away[seat];
     await settle(now);
   }
-  /* When the game in the room is over, the table moves on to the rematch question. */
+  /* When the game in the room is over, the table moves on to the rematch question -- however it ended: through the table
+     (End game, a concession, a clock running out), or in the room itself, the last opponent knocked out over a socket,
+     which the object's alarm notices (`nextAlarm`, `tick`). */
   async function settle(now) {
     if (record.lifecycle.phase === "playing" && room && room.status === "finished") {
+      const matchId = record.lifecycle.matchId;
+      record.gameRecords ??= {};
+      if (!record.gameRecords[matchId]) {
+        record.gameRecords[matchId] = Object.fromEntries(room.seats.filter(s => s.pilot !== "house").map(s => {
+          const mine = room.view(s.seatId), seat = Number(s.seatId.slice(1));
+          const opponents = room.seats.filter(other => other.seatId !== s.seatId).map(other => ({seatId: other.seatId, name: other.name,
+            commanders: [...(record.decks[Number(other.seatId.slice(1))]?.commander ?? [])], ai: other.pilot === "house"}));
+          return [s.seatId, resultRecord({tableId: record.tableId, matchId, view: mine, deck: record.decks[seat], opponents, now})];
+        }));
+      }
+      lounge.fileResults(record, matchId, room);
       step({type: "completed", matchId: record.lifecycle.matchId}, now);
       record.away = {};
+      decideRematch(now);
     }
     await save();
+  }
+  /* A person still to answer Play again: the lifecycle's own test of who is waited on (`next-selection`). */
+  const unanswered = (s) => s.kind === "human" && s.occupied && s.rematch === null;
+  /* EVERY PERSON ASKED HAS ANSWERED PLAY AGAIN, or the clock answered for them: the next game, or the end of the table.
+   *
+   * The next game is this one again: the same seats, decks and rules, every seat staying ready -- a person's Yes is their
+   * Ready, and an AI seat always stays -- and the ten-second countdown every game starts with, which the host can still
+   * cancel. The object's alarm launches it as it launches a first game, as the next match (`<tableId>g<n>`). A seat whose
+   * person said No, did not answer in time, or left the game before it ended is released by the lifecycle
+   * (`next-selection`), never refused (AGENTS.md, U-09), and its person is no longer at the table: their address, deck and
+   * mat go with them, and the host may invite someone else to the chair.
+   *
+   * There is no next game when the host is not staying -- the table's controls (start, cancel, invitations, the AI seats'
+   * decks) and its AI seats' costs are the host's, and nobody else could run the next game -- or when fewer than two seats
+   * would play. Then the table is over: it stays in `rematch` with every answer final (`closed`), and the view tells
+   * everyone at it to start a new table. The host's No, or the host's having left the game, settles that at once, with
+   * nobody kept waiting for the others' answers. Called only while Play again is undecided; the caller saves. */
+  function decideRematch(now) {
+    const t = record.lifecycle;
+    const over = (why) => {record.closed = {at: now, reason: `${why} Start a new table to play again.`};};
+    const host = t.seats[0];
+    if (!host.occupied) return over("The host left the game, so this table's games are over.");
+    if (host.rematch === false) return over("The host is not staying for another game, so this table's games are over.");
+    if (t.seats.some(unanswered)) return;
+    try {step({type: "next-selection"}, now);}
+    catch {return over("Nobody else is staying for another game, and a game needs at least two seats.");}
+    for (const s of record.lifecycle.seats) {
+      if (s.occupied) continue;
+      delete record.members[s.seatId]; delete record.decks[s.seatId];
+      if (record.mats) delete record.mats[s.seatId];
+    }
+    for (const s of record.lifecycle.seats) if (s.occupied) step({type: "ready", seatId: s.seatId, ready: true}, now);
+    /* Something may still hold the countdown -- an invitation the host sent to an empty chair meanwhile: the table then
+       waits in the lobby, everyone ready, and says what it is waiting for, as any table does. */
+    try {step({type: "countdown"}, now);} catch {/* the lobby's blockers say why */}
   }
 
   const api = {
     /** A new table, the host in seat 1. Seats after the first are a person to invite or an AI. */
     /* `llmAllowed`: whether this host may seat an AI on Claude (the LLM seat, AI-2), which the table's object works out
        from the AI door's gates (cloud/game-room.mjs); without it, such a seat is refused. */
-    async create({tableId, host, hostName, seats, settings = {}, playtest = false, llmAllowed = false}) {
+    async create({tableId, host, hostName, seats, settings = {}, playtest = false, llmAllowed = false, privacy, observe = false, admin = false, now = Date.now()}) {
       if (!TABLE_ID.test(String(tableId || ""))) throw new TableError(400, "A table needs its id.");
       if (await storage.get(KEY) !== null) throw new TableError(409, "This table already exists.");
+      if (observe === true) {
+        record = lounge.observe({tableId, host, hostName, seats, settings, playtest, admin, privacy, createTable, now, levelOf});
+        await save();
+        return api.view(host, {admin});
+      }
       const others = Array.isArray(seats) ? seats : [];
+      lounge.vetCreate(others, {privacy, admin});
       if (others.length < 1 || others.length > 3) throw new TableError(400, "A table seats two to four players.");
       /* An AI seat plays at a setting (AI-2, Rob, 2026-10-10): "easy" or "normal", normal unless the host chose easy; or
          "llm", an AI on Claude, only where the AI door lets this host seat one. */
       if (others.some((s) => s && s.kind === "ai" && s.level === "llm") && !llmAllowed) throw new TableError(403, "An AI on Claude needs CrankMagic's AI features, switched on here and open to you. Choose a Normal or Easy AI.");
       const all = [{kind: "human", name: clean(hostName) || "Host"}, ...others.map((s, i) => (s && s.kind === "ai"
-        ? {kind: "ai", name: clean(s.name) || `AI ${i + 2}`, level: levelOf(s)}
+        ? {kind: "ai", name: clean(s.name) || `AI ${i + 2}`, level: levelOf(s), ...(personaOf(s) ? {persona: personaOf(s)} : {})}
         : {kind: "human", name: clean(s && s.name) || `Seat ${i + 2}`}))];
       record = {
         schema: TABLE_SCHEMA, tableId, host, created: true,
-        lifecycle: createTable({tableId, seats: all.map((s, seatId) => ({seatId, kind: s.kind, name: s.name, ...(s.level ? {level: s.level} : {}), occupied: seatId === 0})), settings: {startingLife: 40, bracketLimit: null, ...settings}}),
+        lifecycle: createTable({tableId, seats: all.map((s, seatId) => ({seatId, kind: s.kind, name: s.name, ...(s.level ? {level: s.level} : {}), ...(s.persona ? {persona: s.persona} : {}), occupied: seatId === 0})), settings: {startingLife: 40, bracketLimit: null, ...settings}}),
         members: {0: host}, invites: [], decks: {}, matches: [], away: {}, playtest: playtest === true,
       };
+      lounge.decorate(record, others, {privacy, now});
       await save();
-      return api.view(host);
+      return api.view(host, {admin});
     },
 
     /** The host sends a seat's link. A new link for the same seat withdraws the one before. */
@@ -219,7 +310,9 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
     },
 
     /** The invited person lands on their seat. The same person opening the link again is already there. */
-    async join(email, code, now) {
+    async join(email, code, now, name = "") {
+      /* No code (ROB-320): the email's lobby link and Live games' one press. The lounge seats a signed-in person at once. */
+      if (code === undefined || code === null || code === "") return lounge.joinNow({email, name, admin: false}, now);
       await load();
       const already = seatOf(email);
       const h = await sha256(String(code || ""));
@@ -239,9 +332,10 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
     /** Which of these card names the table cannot play yet (M5): what Change deck counts per deck -- "87 of 100 known,
         13 to learn" -- before a deck is brought, so a deck that is not whole is said to be so before it is refused.
         Names only, read against the table's own cards; nothing about any seat or game. */
-    unknown(names) {
+    async unknown(names) {
       if (!Array.isArray(names) || names.length > 2000) throw new TableError(400, "Send at most 2000 card names.");
-      return [...new Set(names.map((n) => clean(n, 200)).filter(Boolean))].filter((n) => !cards(n)).sort();
+      const known = cardsAt(record ?? JSON.parse((await storage.get(KEY)) || "null"));
+      return [...new Set(names.map((n) => clean(n, 200)).filter(Boolean))].filter((n) => !known(n)).sort();
     },
 
     /** A seat's deck: the person's own, or, for an AI seat, the host's choice (and an AI with a deck is ready). */
@@ -249,8 +343,9 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       await load();
       const seat = record.lifecycle.seats[seatId];
       if (!seat) throw new TableError(400, "There is no such seat.");
-      if (seat.kind === "ai" ? !isHost(email) : seatOf(email) !== seatId) throw new TableError(403, "That is not your seat to choose for.");
-      const read = readDeck(deck, cards, {playtest: record.playtest === true}), limit = rulesOf().bracketLimit;
+      /* Anyone at the table brings an AI seat's deck (Rob's Lobby, 2026-10-28); a person's own seat stays its sitter's. */
+      if (seat.kind === "ai" ? !(isHost(email) || seatOf(email) !== null) : seatOf(email) !== seatId) throw new TableError(403, "That is not your seat to choose for.");
+      const read = readDeck(deck, cardsAt(record), {playtest: record.playtest === true}), limit = rulesOf().bracketLimit;
       if (limit !== null && read.bracket !== null && read.bracket > limit)
         throw new TableError(409, `${read.name} is bracket ${read.bracket}, above this table's limit of ${limit}. Choose a deck at bracket ${limit} or lower, or ask the host to raise the limit.`);
       const version = (await sha256(JSON.stringify(read))).slice(0, 16);
@@ -265,10 +360,12 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
         instead (AGENTS.md). */
     async rules(email, body, now) {
       await load(); needHost(email);
+      if (body && Object.keys(body).length && Object.keys(body).every((k) => k === "privacy")) return lounge.setPrivacy({email}, body.privacy);
       const t = record.lifecycle;
       if (t.phase !== "selecting") throw new TableError(409, "The table's rules can change only before the game starts.");
-      const ready = t.seats.filter((x) => x.ready).map((x) => x.name);
-      if (ready.length) throw new TableError(409, `The rules can't change once a seat is ready, and ${seatNames(ready)} ${ready.length === 1 ? "is" : "are"}. Take back Ready (an AI seat is ready once its deck is chosen, so choose AI decks after the rules), then edit the rules.`);
+      /* An AI seat is ready from its deck, never by a choice, so only a person's Ready holds the rules (the lobby's host edits them with AI decks chosen; a deck above a new bracket limit is refused below). */
+      const ready = t.seats.filter((x) => x.ready && x.kind !== "ai").map((x) => x.name);
+      if (ready.length) throw new TableError(409, `The rules can't change once a seat is ready, and ${seatNames(ready)} ${ready.length === 1 ? "is" : "are"}. Take back Ready, then edit the rules.`);
       const now_ = rulesOf(), b = body || {};
       const life = b.startingLife === undefined ? now_.startingLife : Number(b.startingLife);
       if (!Number.isInteger(life) || life < 1 || life > 999) throw new TableError(400, "Starting life is a whole number from 1 to 999.");
@@ -281,10 +378,39 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       }
       const skip = b.skipFirstDraw === undefined ? now_.skipFirstDraw : b.skipFirstDraw;
       if (typeof skip !== "boolean") throw new TableError(400, "Whether the player who goes first skips their first draw is on or off: true or false.");
+      const pass = b.passStack === undefined ? now_.passStack : b.passStack;
+      if (typeof pass !== "boolean") throw new TableError(400, "Whether the stack is passed for a player with no answer to it is on or off: true or false.");
       void now;
-      record.lifecycle = {...t, settings: {...(t.settings || {}), startingLife: life, bracketLimit: limit, skipFirstDraw: skip}, revision: t.revision + 1};
+      const house = b.houseRules === undefined ? {} : typeof b.houseRules === "boolean" ? {houseRules: b.houseRules} : null;
+      if (house === null) throw new TableError(400, "House rules are on or off: true or false.");
+      const privacy = b.privacy === undefined ? {} : {privacy: lounge.privacyOf(b.privacy)};
+      if (privacy.privacy) record.privacy = privacy.privacy;
+      record.lifecycle = {...t, settings: {...(t.settings || {}), startingLife: life, bracketLimit: limit, skipFirstDraw: skip, passStack: pass, ...house, ...privacy}, revision: t.revision + 1};
       await save();
       return api.view(email);
+    },
+    /** "REPORT A WRONG CARD" (Rob's decision 2; card load step 5): a candidate this seat can see, in the game being played
+        or the table's last, said to play wrong, with the person's note. Kept with the table and handed over in that game's
+        record, which the triage loop reads (tools/playtest-triage.mjs); a wave reviews the card before it joins the
+        directory (step 6). The card is the one the engine shows this seat, so nobody reports a card they cannot name. */
+    async reportCard(email, {cardId, note} = {}, now) {
+      await load();
+      const seat = needSeat(email), seatId = seatName(seat);
+      if (record.playtest !== true) throw new TableError(409, "Only a playtest table seats candidates, so there is no candidate here to report.");
+      const id = record.lifecycle.phase === "playing" ? record.lifecycle.matchId : record.matches.at(-1);
+      if (!id) throw new TableError(409, "No game has been played at this table yet.");
+      const game = room && room.matchId === id ? room : await openRoom({storage, matchId: id, cards, candidates});
+      if (!game.seats.some((s) => s.seatId === seatId)) throw new TableError(403, "You did not have a seat in that game.");
+      const state = game.view(seatId).state;
+      const seen = [...state.players.flatMap((p) => Object.values(p.zones).flatMap((z) => z.cards)), ...(state.stack || [])];
+      const card = seen.find((c) => c && c.cardId === Number(cardId) && c.candidate === true && c.name);
+      if (!card) throw new TableError(404, "That is not a candidate you can see in this game.");
+      const reports = record.cardReports || [];
+      if (reports.length >= CARD_REPORTS) throw new TableError(409, `This table has taken ${CARD_REPORTS} reports; start another table to send more.`);
+      const report = {matchId: id, seatId, card: card.name, cardId: card.cardId, turn: state.turn, note: clean(note, 500), at: now};
+      record.cardReports = [...reports, report];
+      await save();
+      return report;
     },
     /** Your seat's mat: cosmetic, so it can change at any point, the game included, and everyone sees it. */
     async mat(email, mat) {
@@ -316,13 +442,25 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       return api.view(email);
     },
 
-    /** When the countdown has run out: launch the room with each seat's deck. Nothing happens early. */
+    /** The alarm's work: a dropped player's time running out, a game over in the room, Play again's deadline, and, when
+        the countdown has run out, the room launched with each seat's deck. Nothing happens early. */
     async tick(now, {storageForRoom = storage} = {}) {
       await load();
+      if (record.quit) return null;
       /* While the AI seats play on (the room's `continuing`), a leave waits: the alarm that plays on comes back for it. */
       const playingOn = record.lifecycle.phase === "playing" && (await api.currentRoom())?.continuing;
       for (const [seat, until] of Object.entries(record.away || {})) {
         if (until <= now && record.lifecycle.phase === "playing" && !playingOn) await leaveSeat(Number(seat), "timed-out", now);
+      }
+      /* A game that ended in the room itself -- the last opponent knocked out over a socket -- has told the table nothing:
+         it moves on to Play again here. */
+      if (record.lifecycle.phase === "playing" && !playingOn && (await api.currentRoom())?.status === "finished") await settle(now);
+      /* Play again's time is up: whoever has not answered has said No (the lifecycle's `rematch-deadline`), and the table
+         decides. */
+      if (record.lifecycle.phase === "rematch" && !record.closed && record.lifecycle.seats.some(unanswered) && now >= record.lifecycle.rematchAt + REMATCH_WINDOW) {
+        step({type: "rematch-deadline"}, now);
+        decideRematch(now);
+        await save();
       }
       const t = record.lifecycle;
       if (t.phase !== "countdown" || now < t.countdownAt) return null;
@@ -331,15 +469,13 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       const pod = {seats: t.seats.filter((s) => s.occupied).map((s) => ({
         seatId: seatName(s.seatId), name: s.name, pilot: s.kind === "ai" ? "house" : "human",
         /* An AI seat's setting; a table made before settings were, normal. */
-        ...(s.kind === "ai" ? {level: levelOf(s)} : {}),
+        ...(s.kind === "ai" ? {level: levelOf(s), ...(personaOf(s) ? {persona: personaOf(s)} : {})} : {}),
         commander: record.decks[s.seatId].commander, cards: record.decks[s.seatId].cards,
       })), startingLife: rulesOf().startingLife, ...(rulesOf().skipFirstDraw === false ? {skipFirstDraw: false} : {}),
       /* The table's beats (game/room/room.mjs): a step with nothing to do passes itself (item 11); once every person is
          out, the game ends there (Rob, 2026-10-06); a run of identical triggers may be let resolve with one decision (Rob,
          2026-10-09: "resolve all"); and a person's cast passes for them (Rob, 2026-10-09: "I don't want to have to click a
-         pop-up to resolve it"). The draw no longer waits for a click (Rob, 2026-10-09: "Draw phase should be resolved
-         automatically by drawing a card and progress to the next screen"): a game launched before that keeps its
-         `drawBeat` with its match and replays as it was played. And a person's turn ends only when they say so (Rob,
+         pop-up to resolve it"). And a person's turn ends only when they say so (Rob,
          2026-10-11: "passing the turn to the next player should always require player confirmation"): their end step is
          always asked; and a land tapped for mana may be untapped while its mana is unspent ("I should also be able to
          click the card to untap it again"). */
@@ -348,15 +484,50 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
          (Rob's playtest, 2026-10-15: a commander should be castable with what is on the board): new matches only, so a
          match launched before keeps its choices and its replay (rules/actions.mjs, `pooledTaps`). */
       pooledTaps: true,
+      preparedTaps: true,
+      resultRecords: true,
+      /* An {X} spell tapped for too, for each X the pool and the untapped sources pay together, so a person casts it from the
+         hand, choosing X, without tapping each land first (rules/actions.mjs, `xTaps`): new matches only. */
+      xTaps: true,
+      /* A spell with Phyrexian mana ({U/P}: {U} or 2 life, CR 107.4f) tapped for too, in each way its symbols can be paid, the
+         caster asked which (ROB-326, Rob's playtest 2026-10-29: Tezzeret's Gambit): new matches only (rules/actions.mjs, `phyrexianTaps`). */
+      phyrexianTaps: true,
       /* A person may yield the rest of an opponent's turn (Linear ROB-13, the Oct 16 handoff): new matches only, so one
-         launched before is asked as it was (room.mjs, `yieldTurn`). Not yet `passStack`: an opponent passed for over a spell
-         never sees it on the stack -- it arrives between two views, and the board voices and draws a spell from the stack
-         (crankmagic-audio.js, momentsFor) -- so the table asks for it once the board shows such a spell (ROB-23). */
-      yieldTurn: true};
+         launched before is asked as it was (room.mjs, `yieldTurn`). */
+      yieldTurn: true,
+      /* The draw step's draw waits for its player's Draw card (Linear ROB-102 and ROB-24; `drawBeat`, CR 504.1): the Oct 15
+         playtest's confirmed decisions reverse Oct 9's automatic draw ("label the pending draw action Draw card"). An AI
+         seat draws for itself. New matches only: a match launched between Oct 9 and now drew by itself and replays so. */
+      drawBeat: true,
+      /* And the stack passed for a person with no meaningful answer to what is on it (Linear ROB-102; ROB-13's `passStack`):
+         an opponent's spell they could not answer resolves without a Pass for each one -- the most-felt stop at a table of
+         three AIs. They see it came and went: the board calls out a spell cast and resolved between two views from the
+         view's events (crankmagic-board.js, calloutsFor, "CAST"), and the history keeps it. A person who holds an answer is
+         still asked. On unless the host turned it off (the table's rules); new matches only, so one launched before is asked
+         as it was. */
+      ...(rulesOf().passStack ? {passStack: true} : {}),
+      /* And Declare blockers made for a person with no creature that could block: none, the history saying why (room.mjs,
+         `blocksNone`; Rob's one-person, three-AI table, Oct 21) -- most of the AI seats' attacks asked a No blocks of him.
+         New matches only, so one launched before is asked as it was. */
+      blocksNone: true,
+      /* And Rob's fullscreen notes (Oct 21; room.mjs): a person's land in any step of their own turn (`landAnyStep`), a land
+         just played put back in the hand while nothing has happened since (`takeBackLand`), and a spell or ability aimed at
+         a person asked of them before it resolves (`askAimed`). New matches only, so one launched before plays as it did. */
+      landAnyStep: true, takeBackLand: true, askAimed: true,
+      /* r4: a new match keeps its undo house rule, so older matches retain their original choices. */
+      ...(rulesOf().houseRules === false ? {} : {houseRules: {undoLastPlay: true}, keepStepMana: true}),
+      /* Its AI seats take what a choice they may answer with none is for -- the land Evolving Wilds finds, the counters
+         proliferate adds -- where they took none (Linear ROB-164, 2026-10-19): new matches only, so one launched
+         before replays as it was played (room.mjs, `pilotPicks`). */
+      pilotPicks: true,
+      /* A playtest table seats the card compiler's candidates, labeled (Rob's decision 2; card load step 5): new matches only,
+         so one launched before replays with the cards it was dealt (room.mjs, `candidates`). */
+      ...(record.playtest === true ? {candidates: true} : {})};
       try {
-        room = await startRoom({storage: storageForRoom, matchId, cards, pod, seed: `${matchId}:${now}`, slice});
+        room = await startRoom({storage: storageForRoom, matchId, cards, candidates, pod, seed: `${matchId}:${now}`, slice});
         step({type: "engine-started", launchId: matchId, matchId}, now);
         record.matches.push(matchId);
+        record.startedAt = now;
       } catch (error) {
         step({type: "engine-failed", launchId: matchId, error: error instanceof RoomError ? error.message : "The rules engine did not start."}, now);
       }
@@ -385,14 +556,45 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       return api.view(email);
     },
 
-    /** A seat's last connection closed. While a game is on, their five minutes start. */
+    /* ---- after the game: Play again (Requests row 12, Linear ROB-167) ---- */
+
+    /** A person's answer once the game is over: Yes, another game, or No, which is leaving the table. It can change until
+        every person has answered; the answer that completes them decides (`decideRematch`), and the clock decides for
+        whoever is silent (`tick`). Answering is being here: a seat a closed socket marked away is back. A person whose No
+        released their seat gets the table without a seat in it (`yourSeat: null`), and is not at the table afterward. */
+    async rematch(email, accept, now) {
+      await load();
+      const seatId = needSeat(email), t = record.lifecycle, seat = t.seats[seatId];
+      if (typeof accept !== "boolean") throw new TableError(400, "Answer Play again with accept: true for another game, or false to leave the table.");
+      if (t.phase !== "rematch") throw new TableError(409, t.phase === "playing"
+        ? "The game is still being played, so there is no Play again to answer yet. Answer it once the game is over."
+        : record.matches.length
+          ? "There is no Play again to answer: this table's next game is already being set up. Use Ready in the lobby instead."
+          : "No game has been played at this table yet, so there is no Play again to answer. Use Ready in the lobby instead.");
+      if (record.closed) throw new TableError(409, `Play again has been decided. ${record.closed.reason}`);
+      if (!seat.occupied) throw new TableError(409, "You left that game, so the next one is not yours to answer. Ask the host to invite you again.");
+      if (!seat.connected) step({type: "reconnect", seatId}, now);
+      step({type: "rematch-vote", seatId, accept}, now);
+      decideRematch(now);
+      await save();
+      return api.view(email, {any: true});
+    },
+
+    /** A seat's last connection closed. While a game is on, their five minutes start. Outside a game a socket closing
+        says nothing: only a game opens one (`room`), and the lobby reads the table instead, so the socket of a game just
+        over closing as its player turns to Play again is not their leaving. Counted, it marked a seat disconnected that
+        nothing but a game could connect again, and the next game's countdown waited on it for good. */
     async dropped(seat, now) {
       await load();
+      if (record.lifecycle.phase !== "playing") return;
       const s = record.lifecycle.seats[seat];
       if (!s || !s.occupied || s.kind !== "human" || !s.connected) return;
       step({type: "disconnect", seatId: seat}, now);
       record.away = record.away || {};
-      if (record.lifecycle.phase === "playing") record.away[seat] = now + AWAY_LIMIT;
+      /* The five minutes are for the people waiting on them. A person whose only company is AI seats holds nobody up
+         (Linear ROB-170), so their game waits for them, with no clock, as it was: their Leave or Concede still ends it. */
+      const waitedOn = record.lifecycle.seats.some((x, i) => i !== seat && x.occupied && x.kind === "human");
+      if (record.lifecycle.phase === "playing" && waitedOn) record.away[seat] = now + AWAY_LIMIT;
       await save();
     },
     /** They came back in time: their seat is as they left it. */
@@ -405,13 +607,17 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       await save();
     },
 
-    /** When the object should next wake: the countdown's end, the first dropped player's time running out, or now, while
-        the AI seats play on in slices. */
+    /** When the object should next wake: the countdown's end, the first dropped player's time running out, now, while
+        the AI seats play on in slices or once the game has ended in the room, or Play again's deadline while a person
+        has yet to answer. */
     async nextAlarm(now = Date.now()) {
       await load();
+      if (record.quit) return null;
       const times = Object.values(record.away || {});
       if (record.lifecycle.phase === "countdown") times.push(record.lifecycle.countdownAt);
-      if (record.lifecycle.phase === "playing" && (await api.currentRoom())?.continuing) times.push(now);
+      const current = record.lifecycle.phase === "playing" ? await api.currentRoom() : null;
+      if (current && (current.continuing || current.status === "finished")) times.push(now);
+      if (record.lifecycle.phase === "rematch" && !record.closed && record.lifecycle.seats.some(unanswered)) times.push(record.lifecycle.rematchAt + REMATCH_WINDOW);
       /* The LLM seat being asked: its turn is the object's to take (cloud/game-room.mjs, agentTurns), at once. */
       if (record.lifecycle.phase === "playing" && llmWaiting(await api.currentRoom())) times.push(now);
       return times.length ? Math.min(...times) : null;
@@ -424,7 +630,7 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
     async currentRoom() {
       await load();
       if (record.lifecycle.phase !== "playing") return null;
-      if (!room || room.matchId !== record.lifecycle.matchId) room = await openRoom({storage, matchId: record.lifecycle.matchId, cards, slice});
+      if (!room || room.matchId !== record.lifecycle.matchId) room = await openRoom({storage, matchId: record.lifecycle.matchId, cards, candidates, slice});
       return room;
     },
 
@@ -432,9 +638,18 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
     async room(email) {
       await load();
       const seat = needSeat(email);
-      if (record.lifecycle.phase !== "playing") throw new TableError(409, "No game is being played at this table.");
-      if (!room || room.matchId !== record.lifecycle.matchId) room = await openRoom({storage, matchId: record.lifecycle.matchId, cards, slice});
+      if (record.lifecycle.phase !== "playing" || record.quit) throw new TableError(409, "No game is being played at this table.");
+      if (!room || room.matchId !== record.lifecycle.matchId) room = await openRoom({storage, matchId: record.lifecycle.matchId, cards, candidates, slice});
       return {room, seatId: seatName(seat)};
+    },
+
+    /** The room of the game being played, for someone watching it (lounge-contract §4): a spectator holds no seat. Public tables
+        to anyone signed in; private ones to their seats, the host and the admin. */
+    async watchRoom(who) {
+      await load();
+      if (!lounge.mayWatch(who)) throw new TableError(403, "This table is private. Ask the host to seat you or invite you.");
+      if (record.lifecycle.phase !== "playing" || record.quit) throw new TableError(409, "No game is being played at this table.");
+      return api.currentRoom();
     },
 
     /** THE COACH'S BRIEF (X13; game/room/coach-brief.mjs): the game as this person may see it, and the deck they brought --
@@ -458,37 +673,67 @@ export function tableOn(storage, {cards = basicCards, random = (n) => crypto.get
       await load();
       const seat = needSeat(email), id = matchId || record.matches.at(-1);
       if (!id || !record.matches.includes(id)) throw new TableError(404, "There is no such game at this table.");
-      const game = room && room.matchId === id ? room : await openRoom({storage, matchId: id, cards});
+      const game = room && room.matchId === id ? room : await openRoom({storage, matchId: id, cards, candidates});
       if (game.status !== "finished") throw new TableError(409, "A game's record is ready once the game is over.");
       const seatId = seatName(seat);
       if (!game.seats.some((s) => s.seatId === seatId)) throw new TableError(403, "You did not have a seat in that game.");
-      const mine = game.view(seatId), base = {schema: RECORD_SCHEMA, tableId: record.tableId, matchId: id, playtest: !!record.playtest, result: mine.result, departures: mine.departures, seats: game.seats, history: game.history, refusals: game.refusals};
+      const mine = game.view(seatId), base = {schema: RECORD_SCHEMA, tableId: record.tableId, matchId: id, playtest: !!record.playtest, result: mine.result, departures: mine.departures, seats: game.seats, history: game.history, refusals: game.refusals,
+        gameRecord: structuredClone(record.gameRecords?.[id]?.[seatId] ?? null), chat: await lounge.chatRecord()};
       if (!record.playtest) return {...base, kind: "seat", seatId, view: mine};
       const store = createMatchStore(storage, id), meta = await store.loadMatch();
-      return {...base, kind: "full", seed: meta.seed, pod: meta.pod, tape: await store.readTape(), journal: await store.readJournal()};
+      const cardReports = (record.cardReports || []).filter((r) => r.matchId === id);
+      return {...base, kind: "full", seed: meta.seed, pod: meta.pod, tape: await store.readTape(), journal: await store.readJournal(), ...(cardReports.length ? {cardReports} : {})};
     },
 
     /** The table as one person sees it: every seat's state, but only their own deck's cards. */
-    async view(email, {any = false} = {}) {
+    async view(email, {any = false, admin = false, watch = false} = {}) {
       await load();
       const mine = email === null ? null : seatOf(email);
-      if (!any && mine === null && !isHost(email)) throw new TableError(403, "You do not have a seat at this table.");
+      /* Someone with no seat sees a table only as a spectator (lounge-contract §4): the admin any table, anyone signed in a public one. */
+      const who = {email, admin: admin === true};
+      if (!any && mine === null && !isHost(email) && !(admin === true || (watch === true && lounge.mayWatch(who)))) throw new TableError(403, "You do not have a seat at this table.");
       const t = record.lifecycle;
-      return {
+      const base = {
         schema: TABLE_SCHEMA, tableId: record.tableId, phase: t.phase, revision: t.revision, playtest: !!record.playtest,
         youAreHost: isHost(email), yourSeat: mine,
         countdownAt: t.countdownAt, launchError: t.launchError, matchId: t.phase === "playing" ? t.matchId : null,
         blockers: countdownBlockers(t).map(({seatId, reason}) => ({seatId, reason})),
         rules: rulesOf(),
+        // The result is private to its human seat, including its own library source; never another player's source.
+        gameRecord: mine !== null && t.phase === "rematch" ? structuredClone(record.gameRecords?.[t.matchId]?.[seatName(mine)] ?? null) : null,
         away: Object.entries(record.away || {}).map(([seatId, until]) => ({seatId: Number(seatId), until})),
+        /* Play again (Requests row 12): while a finished game's players answer, the game it follows, until when, each
+           seat's answer, and -- once every person has answered and there is no next game -- that the table is over and
+           why. Null in every other phase. */
+        rematch: t.phase === "rematch" ? {
+          lastMatchId: t.matchId, deadline: t.rematchAt + REMATCH_WINDOW,
+          outcome: record.closed ? "closed" : "waiting", reason: record.closed ? record.closed.reason : null,
+          votes: t.seats.filter((s) => s.occupied).map((s) => ({seatId: s.seatId, vote: s.rematch === true ? "yes" : s.rematch === false ? "no" : "pending"})),
+        } : null,
         seats: t.seats.map((s) => ({
-          seatId: s.seatId, kind: s.kind, name: s.name, ...(s.kind === "ai" ? {level: levelOf(s)} : {}), occupied: s.occupied, connected: s.connected, ready: s.ready,
+          seatId: s.seatId, kind: s.kind, name: s.name, ...(s.kind === "ai" ? {level: levelOf(s), ...(personaOf(s) ? {persona: personaOf(s)} : {})} : {}), occupied: s.occupied, connected: s.connected, ready: s.ready,
           invited: s.invited, you: s.seatId === mine, mat: (record.mats || {})[s.seatId] || "felt",
           deck: record.decks[s.seatId] ? {name: record.decks[s.seatId].name, commander: record.decks[s.seatId].commander, bracket: record.decks[s.seatId].bracket ?? null} : null,
           ...(s.seatId === mine && record.decks[s.seatId] ? {cards: record.decks[s.seatId].cards.length, source: record.decks[s.seatId].source || null} : {}),
+          ...lounge.seatExtra(s),
         })),
       };
+      return {...base, ...(await lounge.viewExtra(who, {mine}))};
     },
   };
+  /* The lounge around the table (game/room/lounge.mjs): its seat operations, requests, chat and registry summary, over this
+     table's own record and storage. Built here, last, so it reads the record through the closure. */
+  lounge = loungeOn({
+    storage, rec: () => record, load, save, step, seatOf, isHost, api, settle, watching, aiMats: AI_MATS,
+    fail: (status, message) => {throw new TableError(status, message);},
+    latestRoom: async () => {
+      const current = await api.currentRoom();
+      if (current) return current;
+      const id = record.matches.at(-1);
+      if (!id) return null;
+      return room && room.matchId === id ? room : openRoom({storage, matchId: id, cards, candidates});
+    },
+  });
+  Object.assign(api, {lounge});
   return api;
 }
