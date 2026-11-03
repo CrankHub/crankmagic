@@ -56,7 +56,7 @@ mark a Linear issue Done.
 | G3 test cases | ROB-27 | `docs/uat/play-test-cases-2026-10.md` | Ready to start |
 | G4 Mobbin references | ROB-61 | `docs/design/references/mobbin-2026-10.md` | Ready, if the worker has Mobbin access |
 | G5 playtest harness run | | `docs/playtest-harness.md`'s outputs | Waits on Rob's four service tokens (ROB-11) |
-| G6 performance budgets | ROB-136 | `tests/budgets.mjs`, `docs/program/budgets.md` | Ready for a worker that can run Node and Chromium (Grok Build); a Grok Bot without code execution returns the budget table only; reviewed by Claude · Deck intelligence |
+| G6 performance budgets | ROB-136 | `tests/perf-budgets.mjs` (`tests/budgets.mjs` is the deck-cost suite), `docs/program/budgets.md` | Ready for a worker that can run Node and Chromium (Grok Build); a Grok Bot without code execution returns the budget table only; reviewed by Claude · Deck intelligence |
 | later | ROB-67 | per package | Crowded-board benchmarks, once the board's M1 is on main |
 
 Good next tasks for a package (any workstream may write them): a fixture of 200 real-world card lines for card
