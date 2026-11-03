@@ -360,14 +360,15 @@ const trust = trustOf(library, calibrate({scripts, library, scenarios, definitio
   ok(changed.size >= 3 && caught.length >= 1, `one that writes every sentence with a wrong number passes every check but its scenarios: ${changed.size} miscounted, caught in play: ${caught.map((r) => r.name).join(", ")}`);
   const capped = await heldOutSample({scripts, scenarios, definition: index.definition, oracle: ORACLE, library, trust, call: writer, examples: [], n: 3, maxCost: 0});
   ok(capped.tried === 0 && /cap/.test(capped.stopped), "the sample stops at its cap");
-  /* Every card the sample may take, asked of a writer that answers nothing (free, and refused at fidelity): never one the
-     library writes half an ability of -- Gemstone Caverns' "{T}: Add {C}." -- however the evenly spaced pick falls as the
-     directory grows (the library load's L1, 2026-10-22: sixteen more cards moved the pick off it). */
-  ok(handOf("Gemstone Caverns") !== undefined, "Gemstone Caverns is defined, a card the library writes half an ability of");
+  /* Every card the sample may take, asked of a writer that answers nothing (free, and refused at fidelity): Gemstone Caverns
+     is among them. The library once wrote half its ability, "{T}: Add {C}.", and the sample skipped the card (#830, which Rob
+     called an ignore); a paragraph is now one ability, so the card is sampled like any other, however the evenly spaced pick
+     falls as the directory grows (the library load's L1, 2026-10-22: sixteen more cards moved the pick off it). */
+  ok(handOf("Gemstone Caverns") !== undefined, "Gemstone Caverns is defined, a card whose paragraph the library writes whole");
   const asked = [];
   const silent = async (body) => { asked.push(JSON.parse(body.messages[0].content).card.name); return {answer: {abilitiesJson: "[]", notes: "", crFlags: []}, usage: {}}; };
   await heldOutSample({scripts, scenarios, definition: index.definition, oracle: ORACLE, library, trust, call: silent, examples: [], n: scripts.length, maxCost: 1});
-  ok(asked.length > 3 && !asked.includes("Gemstone Caverns"), `the whole pool asked (${asked.length} cards), Gemstone Caverns never among them`);
+  ok(asked.length > 3 && asked.includes("Gemstone Caverns"), `the whole pool asked (${asked.length} cards), Gemstone Caverns among them`);
 }
 
 console.log(`engine-compile: ${checks} checks passed — the loader's four checks held against ${scripts.length} hand definitions, every refusal at its stage, a card learned once for its text, and nothing spent without --yes.`);
