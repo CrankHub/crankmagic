@@ -59,6 +59,16 @@
  *   `blocksNone` a person attacked with no creature that could block any attacker on them is not asked to declare
  *                blockers: the declaration is empty (CR 509.1a), so there is no choice to make, and the room makes it, the
  *                history saying why. A person with a block they could make is asked as ever, yielding or not.
+ * And three of Rob's fullscreen notes (Oct 21), kept the same way:
+ *   `landAnyStep`  a person plays their land drop in any step of their own turn they hold priority in, the stack empty --
+ *                a house rule, not CR 305.1's main phase (rules/actions.mjs); the AI seats play by the book.
+ *   `takeBackLand` a person who played a land, and has done nothing since, may put it back in their hand and have their
+ *                land drop again ("Oh wait, I didn't mean to lay that land down"): the game put back exactly as it was
+ *                before the land (`landBack`, a copy taken as it was played), and asked while they may, as `untapMana` is.
+ *   `askAimed`   another player's spell or ability on top of the stack aimed at a person -- them, a permanent or spell of
+ *                theirs, a card in their graveyard -- is asked of them before it resolves, response or not, so they may
+ *                read what is being done to them (`passStack` passes it otherwise). And a person's way of playing may say
+ *                `askStack`, Skip my priority if no response possible turned off: asked whenever anything is on the stack.
  *
  * WHAT IT PLAYS. Only cards the `cards` resolver can define. A pod with any other card is refused before
  * anything is written, naming every card it cannot play (docs/decisions-2026-09-25.md, M4: "refused by name;
@@ -74,9 +84,10 @@
  */
 import {createState, addObject, shownName, shownFaceUp} from "../engine/state/index.mjs";
 import {beginGame, advance, awaitingChoice, resolveAwaiting} from "../engine/rules/turn.mjs";
-import {legalActions, applyAction, nothingToDo, whyNot, escapeWays, flashbackCost, tappersInWords, castTapPlans, tapWords} from "../engine/rules/actions.mjs";
+import {legalActions, applyAction, nothingToDo, whyNot, explainAbilityless, escapeWays, flashbackCost, tappersInWords, castTapPlans, tapWords, manaSources} from "../engine/rules/actions.mjs";
 import {paymentWords} from "../engine/rules/mana.mjs";
 import {beforeTap, tapTaken, untappable, untapTaken} from "../engine/rules/untap-mana.mjs";
+import {beforePlay, observePlay, finishPlay, mayUndoPlay, undoPlay} from "../engine/rules/undo-play.mjs";
 import {passPriority} from "../engine/rules/priority.mjs";
 import {gameOver, concede} from "../engine/rules/sba.mjs";
 import {beginMulligans} from "../engine/rules/mulligan.mjs";
@@ -90,10 +101,13 @@ import {createController} from "../engine/controller.mjs";
 import {createMatchStore} from "../engine/storage.mjs";
 import {housePilot, meetRequirements, manaColors} from "../engine/pilots/house-pilot.mjs";
 import {scoredPilot, SETTINGS} from "../engine/pilots/scored-pilot.mjs";
+import {personaOf, dispositionFor} from "../engine/pilots/roster.mjs";
+import {flagsOf, commanderClassOf} from "../engine/pilots/roles.mjs";
 import {agentPilot} from "../engine/pilots/agent-pilot.mjs";
-import {addToHistory} from "./history.mjs";
+import {addToHistory, pushLine} from "./history.mjs";
 import {tableEvent, eventsFor, keep, EVENTS_SCHEMA} from "./events.mjs";
 import {endingOf} from "./ending.mjs";
+import {describeDecision} from "./decision.mjs";
 
 export const ROOM_PROTOCOL = 1;
 export const ROOM_SCHEMA = "CrankRoom@1";
@@ -101,8 +115,21 @@ export const VIEW_SCHEMA = "CrankRoomView@1";
 const SEAT_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const MAX_CARDS = 250;           // a Commander deck is 100; this is only a bound on what a pod may carry
 const DRIVE_LIMIT = 100000;      // engine steps between two human decisions before the room calls it a hang
-const HISTORY_KEEP = 300;         // lines of the table's history kept with the room
-const HISTORY_VIEW = 120;         // the newest of them, in every view
+/* THE TABLE'S WHOLE HISTORY (Linear ROB-332; docs/ui-lane/history-and-targets-contract.md, section 3). The room keeps every line of the game,
+   numbered from 0 (`seq`, which is also the line's place: line n is the n-th the game said). A view carries only the newest
+   HISTORY_VIEW; older ones are asked for (`historyBefore`) and come a page at a time. What the room's own record holds is a tail,
+   between HISTORY_TAIL and HISTORY_TAIL + HISTORY_SEGMENT lines: whenever the tail is longer than that its oldest HISTORY_SEGMENT
+   lines are sealed into a key of their own (`room/<match>/history-NNNNN`), written once and never again, so the record is rewritten
+   at every move at a size that does not grow with the game. A draw or a quiet step grows only the newest line, never a sealed one. */
+export const HISTORY_VIEW = 40;       // the newest lines, in every view
+export const HISTORY_SEGMENT = 150;   // lines sealed into one key at a time
+export const HISTORY_TAIL = 150;      // lines at least kept in the record (at least HISTORY_VIEW)
+export const HISTORY_PAGE = 100, HISTORY_PAGE_MAX = 200;
+/* A history line as a view carries it (docs/ui-lane/history-and-targets-contract.md): the sentence, and the same as data when the
+   line has it. The room's own working fields (a draw's count, a quiet step's list) stay in the room. */
+const shownLine = ({turn, seq, text, mark, actor, source, targets, modes, cards}) => ({turn, seq, text,
+  ...(mark ? {mark} : {}), ...(actor !== undefined ? {actor} : {}), ...(source ? {source} : {}), ...(targets ? {targets} : {}),
+  ...(modes ? {modes} : {}), ...(cards ? {cards} : {})});
 const REFUSALS_SAID = 20;
 /** How a game that ended because every person was out says so (`endWhenNoPerson`). */
 export const NO_PERSON_REASON = "every person had left the game, so it ended there";         // refused pilot answers kept in full with the match's tally; the count itself is never trimmed
@@ -132,8 +159,11 @@ const manaValueOf = (cost) => (String(cost || "").match(/\{([^}]+)\}/g) || []).r
 export const factsFrom = (cards) => {
   /* Read once a name: a card's facts do not change in a match. */
   const known = new Map();
-  return (name) => (known.has(name) ? known.get(name) : known.set(name, factsOf(cards(name))).get(name));
+  return (name) => (known.has(name) ? known.get(name) : known.set(name, withRoles(name, factsOf(cards(name)))).get(name));
 };
+/* What a card does to a game (game/engine/pilots/roles.mjs): its role flags and, as a commander, its class -- public facts, as
+   a card's own text is, so the threat table and the urgency read them alike for every seat. */
+const withRoles = (name, facts) => (facts ? {...facts, flags: flagsOf(name), commanderClass: commanderClassOf(name)} : facts);
 const factsOf = (c) => {
   /* `x`: a cost with {X} (CR 107.3), so the house pilot taps everything before it casts. `subtypes`, and what each activated
      ability costs and does (`activated`), as the card says: L1 weighs an ability by them (scored-pilot.mjs). Its `colors`
@@ -162,7 +192,9 @@ function readPod(pod, cards) {
     const library = (Array.isArray(s.cards) ? s.cards : []).map(String);
     if (commander.length > 2 || commander.length + library.length > MAX_CARDS) throw new RoomError(400, `${seatId}'s deck is not one a table can hold.`);
     for (const name of [...commander, ...library]) if (!cards(name)) missing.add(name);
-    return {seatId, name: String(s.name || `Seat ${index + 1}`).slice(0, 60), pilot, ...(level ? {level} : {}), commander, cards: library};
+    /* An AI seat's persona (game/engine/pilots/roster.mjs): an id on the roster, or none; carried with the seat, replayed with it. */
+    const persona = level && personaOf(s.persona) ? s.persona : null;
+    return {seatId, name: String(s.name || `Seat ${index + 1}`).slice(0, 60), pilot, ...(level ? {level} : {}), ...(persona ? {persona} : {}), commander, cards: library};
   });
   if (missing.size) {
     const names = [...missing].sort();
@@ -292,6 +324,12 @@ export function offerDetails(state, seat, actions) {
     if (a.kind === "cast" && a.disguise) parts.push(faceDownWay(state.objects[a.objectId]?.abilities)?.rule === "morph" ? "face down for {3}, a 2/2 with no text" : "face down for {3}, a 2/2 with ward {2}");
     /* Suspended from the hand (CR 702.62a): its words ("Suspend 5--{W}"), and the mana that pays, when that is a choice. */
     if (a.kind === "suspend") parts.push(a.payWith !== undefined ? `${a.text ?? "suspend"}, paying ${paymentWords(a.payment)}` : a.text ?? "suspend");
+    /* Plotted from the hand (CR 702.170a): its words without their reminder ("Plot {1}{B}"), and the mana that pays, when that is
+       a choice. */
+    if (a.kind === "plot") {
+      const words = (a.text ?? "Plot").replace(/\s*\([^)]*\)\s*$/, "");
+      parts.push(a.payWith !== undefined ? `${words}, paying ${paymentWords(a.payment)}` : words);
+    }
     /* A counted target (script/bind.mjs): what is still to be picked ("up to two targets"), or the ones picked. */
     const aimed = (t) => (!t ? "" : Array.isArray(t) ? (t.length ? t.map(aimed).join(" and ") : "no target") : t.kind === "choose" ? countWords(t)
       : t.kind === "player" ? player(t.id) : t.kind === "ability" ? targetName(state, t) : object(t.id, plain));
@@ -325,7 +363,9 @@ export function offerDetails(state, seat, actions) {
     /* Tapped for as it is cast (the board's one click): the sources, or that the caster picks them. */
     if (a.autoTap) {
       const ways = castTapPlans(state, seat, a, 2);
-      parts.push(ways.length === 1 ? `tapping ${tapWords(state, ways[0])}` : "tapping what you choose");
+      /* A Phyrexian symbol paid in life says so (CR 107.4f): the one way there is, named; more than one, the caster chooses. */
+      parts.push(ways.length === 1 ? [ways[0].taps.length ? `tapping ${tapWords(state, ways[0])}` : null, ways[0].payment?.life > 0 ? `paying ${ways[0].payment.life} life` : null].filter(Boolean).join(", ")
+        : "tapping what you choose");
     }
     /* Convoke (CR 702.51a): creatures help pay, picked once it is taken. */
     if (a.convoke) parts.push("convoking, tapping creatures you choose");
@@ -405,6 +445,9 @@ function priorityChoice(id, actions, state = null, seat = null) {
     options: actions.map((a, index) => (a.kind === "resolve-all" ? {index, label: `Resolve all ${a.n}`, act: a.kind, count: a.n, detail: `${a.name} triggers`}
       /* A tap taken back, its mana unspent (`untapMana`). */
       : a.kind === "undo-mana" ? {index, label: `Untap ${a.name}`, act: a.kind, cardId: a.objectId, detail: "its mana unspent"}
+      /* A land put back in the hand, nothing since (`takeBackLand`). */
+      : a.kind === "undo-land" ? {index, label: `Return ${a.name} to your hand`, act: a.kind, cardId: a.objectId, detail: "your land drop back"}
+      : a.kind === "undo-play" ? {index, label: `Undo ${a.name}`, act: a.kind, cardId: a.objectId, detail: "the play and its mana back"}
       : {index, label: a.kind === "pass" ? "Pass priority" : (a.label || a.kind), act: a.kind, ...(a.objectId !== undefined ? {cardId: a.objectId} : {}),
         /* The pass that ends the seat's own turn: its end step, nothing on the stack (the board says "End turn"). */
         ...(a.kind === "pass" && state && seat === state.activePlayer && state.phase === "END_OF_TURN" && !state.stack.length ? {endsTurn: true} : {}),
@@ -427,6 +470,21 @@ const RUN_LEAST = 2;
 export const questionKey = (choice) => JSON.stringify([choice.title, choice.mode, choice.min ?? null, choice.max ?? null,
   (choice.options ?? []).map((o) => [o.label, o.cardId ?? null, o.detail ?? null])]);
 const runKey = (e) => (e && e.kind === "trigger" && e.stage === "waiting" ? JSON.stringify([e.playerId, e.cardId, e.name, e.abilityId, e.targets]) : null);
+/* AIMED AT A PERSON (`askAimed`): the top of the stack is another player's, and among its targets is this player, a
+   permanent they control, a spell of theirs, or a card in their graveyard or hand -- the same reading as a crime's (CR 700.13;
+   rules/stack.mjs, crimeCommitted), from the other side. */
+export function aimedAt(state, seat) {
+  const top = state.stack[state.stack.length - 1];
+  if (!top || top.playerId === seat) return false;
+  return (top.targets ?? []).flat().some((t) => {
+    if (t?.kind === "player") return t.id === seat;
+    const object = t?.kind === "object" ? state.objects[t.id] : undefined;
+    if (!object) return false;
+    if (object.zone === "battlefield") return deriving(state, () => controllerOf(state, t.id)) === seat;
+    if (object.zone === "stack") return object.controller === seat;
+    return ["graveyard", "hand"].includes(object.zone) && object.owner === seat;
+  });
+}
 export function triggerRun(stack) {
   const key = runKey(stack[stack.length - 1]);
   if (key === null) return null;
@@ -452,9 +510,12 @@ export function triggerRun(stack) {
  * WHAT ANSWERS FOR AN AI SEAT: L1 at its setting, handed its own deck list (which its player knows) and the match's seed
  * (easy's chance); without a setting, L0. Both see only the seat's projection. `picks`: the match's `pilotPicks`.
  */
-export function seatPilot({seat, cards, deck = [], level = null, seed = "", picks = false}) {
-  if (level === LLM) return agentPilot({seat, cards, deck, seed, picks});
-  return level ? scoredPilot({seat, cards, deck, setting: level, seed, picks}) : housePilot({seat, cards, picks});
+export function seatPilot({seat, cards, deck = [], level = null, persona = null, seed = "", picks = false}) {
+  /* A PERSONA'S OVERRIDES (roster.mjs `dispositionFor`): the pilot is made with them, so the seat plays its difficulty as that persona
+     would; a seat without one plays the plain difficulty, as every table has. */
+  const disposition = persona && level ? dispositionFor(level, persona) : null;
+  if (level === LLM) return agentPilot({seat, cards, deck, seed, picks, disposition});
+  return level ? scoredPilot({seat, cards, deck, setting: level, seed, picks, disposition}) : housePilot({seat, cards, picks});
 }
 /** The LLM seat's setting: L1, but its close calls are offered to the seat, for its model to answer (`consults`). */
 export const LLM = "llm";
@@ -462,6 +523,8 @@ export const LLM = "llm";
 function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity, candidates = () => null) {
   const store = createMatchStore(storage, matchId);
   const ROOM_KEY = `room/${matchId}`;
+  const LAND_KEY = `room/${matchId}/land-back`;
+  const PLAY_KEY = `room/${matchId}/last-play`;
   /* The cards this match plays: `cards`, and for a pod that says `candidates`, a candidate where `cards` has none, marked. */
   const withCandidates = (name) => cards(name) ?? ((c) => (c ? {...c, candidate: true} : null))(candidates(name));
   let seated = false;
@@ -483,10 +546,10 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
      the room, so a game played in slices or woken in between says the same; empty in a room saved before it was kept. */
   let outs = [];
   /* THE TABLE'S HISTORY (game/room/history.mjs): public lines only, the same for every seat, kept with the room. */
-  let history = [];
-  /* EVERY REFUSED PILOT ANSWER, COUNTED FOR THE WHOLE MATCH (the independent review of 2026-10-05, F-1). The history keeps
-     its newest HISTORY_KEEP lines, so a refusal said there early in a long game is gone by its end, and a count read off
-     the history is a count of the lines that survived -- a game of four house pilots runs from its first turn to its last
+  let history = [], sealed = 0;   /* the tail of the history, and how many segments of it are sealed in their own keys */
+  const historyKey = (i) => `${ROOM_KEY}/history-${String(i).padStart(5, "0")}`;
+  /* EVERY REFUSED PILOT ANSWER, COUNTED FOR THE WHOLE MATCH (the independent review of 2026-10-05, F-1). The history used to keep
+     only its newest 300 lines (it keeps the whole game now, ROB-332), and a count read off a trimmed history is a count of the lines that survived -- a game of four house pilots runs from its first turn to its last
      inside one call, far past 300 lines. This is the match's own tally, saved with the room and never trimmed: `total`,
      and the first REFUSALS_SAID of them in full. `since` is the journal sequence the tally began at: 0 for a match counted
      from its first event. A room saved before the tally existed counts from where it is reopened and says so, rather
@@ -512,6 +575,8 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
   let endAsks = false;
   /* The run of a person's taps for mana that may still be taken back (`untapMana`; rules/untap-mana.mjs), or null. */
   let untapMana = false, taken = null;
+  let undoLastPlay = false, playBack = null, playBackSaved = false;
+  let resultRecords = false;
   /* Each person's way of playing (`prefer`), by seat id: `stepByStep`, asked at every step of their own turn. */
   let prefs = {};
   /* Each seat's own turns so far, by seat id, and the game turn last counted (`at`); null in a room saved before they were
@@ -530,6 +595,11 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
   let passStack = false, heldBy = null, yieldable = false, yielding = {};
   /* Oct 21: Declare blockers made for a person with no creature that could block (`blocksNone`). */
   let blocksNone = false;
+  /* Oct 21 (Rob's fullscreen notes): a land in any step of a person's own turn (`landAnyStep`, in the engine's state); a land
+     put back in the hand while nothing has happened since (`takeBackLand`), with the game as it was before it (`landBack`:
+     {player, objectId, name, before, taken, after}, saved under its own key, LAND_KEY, as it is a whole game); and a person
+     asked about a spell or ability aimed at them (`askAimed`). */
+  let landAnyStep = false, takeBackLand = false, landBack = null, landBackSaved = false, askAimed = false;
   /* A yield holds for the turn it was made in (the game's turn number: an extra turn is a new one), while that turn's player
      is in the game. One left over from a turn gone holds nothing, and the next yield of that seat replaces it. */
   const holds = (seatId) => {
@@ -550,8 +620,7 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
   function quietly(phase) {
     const name = QUIET_STEP[phase] || String(phase).toLowerCase(), last = history[history.length - 1];
     if (last && last.mark === "quiet" && last.turn === state.turn) {last.steps = [...(last.steps || [last.text.replace(/: nothing to do$/, "")]), name]; last.text = `${last.steps.join(", ")}: nothing to do`; return;}
-    history.push({turn: state.turn, text: `${name}: nothing to do`, mark: "quiet", steps: [name]});
-    if (history.length > HISTORY_KEEP) history.splice(0, history.length - HISTORY_KEEP);
+    pushLine(history, {turn: state.turn, text: `${name}: nothing to do`, mark: "quiet", steps: [name]});
   }
   /* THE DECISION TAPE (M8): every input a person gives -- an answer, leaving, ending the game -- in order, numbered
      from the match's first. The journal is what the engine did; the tape is what people told it; with the seed the
@@ -564,23 +633,24 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
   let tableEvents = [], eventsMark = 0, eventsFloor = -1, nextSeq = 0, answering = null;
   const begin = () => {eventsMark = nextSeq;};
   const tape = (entry) => {unsaved.push({n: tapeN, turn: state ? state.turn : 0, ...entry}); tapeN += 1;};
-  const note = (text) => {history.push({turn: state ? state.turn : 0, text}); if (history.length > HISTORY_KEEP) history.splice(0, history.length - HISTORY_KEEP);};
+  const note = (text) => {pushLine(history, {turn: state ? state.turn : 0, text});};
   const finished = () => Boolean(ended) || Boolean(gameOver(state));
   /* What a seat's pilot is made with: public card facts, and its seat's own deck list, setting and the match's seed. */
   let matchSeed = "";
   /* And whether they take what a choice they may answer with none is for (`pilotPicks`), as the match was launched. */
   let pilotPicks = false;
-  const pilotMade = (seat) => makePilot({seat, cards: facts, deck: seats[seat].cards, level: seats[seat].level ?? null, seed: matchSeed, picks: pilotPicks});
+  const pilotMade = (seat) => makePilot({seat, cards: facts, deck: seats[seat].cards, level: seats[seat].level ?? null, persona: seats[seat].persona ?? null, seed: matchSeed, picks: pilotPicks});
   const pilotFor = (seat) => pilots[seat] || (pilots[seat] = pilotMade(seat));
   /* Whether the LLM seat asks for this decision (agent-pilot.mjs `consult`): never a seat that has left. */
   const consults = (seat, view, offer) => seats[seat].level === LLM && !leaving.includes(seat) && pilotFor(seat).consult?.(view, offer) === true;
 
   const write = (events) => {
+    observePlay(playBack, events);
     const names = seats.map((s) => s.name);
     for (const e of events) {
       const id = journal.write(e.kind, e.data);
       nextSeq = Number(id.slice("event:".length)) + 1;
-      addToHistory(history, e, names);
+      addToHistory(history, e, names, {keep: Infinity});
       const said = tableEvent(e, id);
       if (said) tableEvents.push(answering ? {...said, decisionId: answering} : said);
       if (said && said.kind === "lost") outs = [...outs, seats[said.player].seatId];
@@ -610,6 +680,11 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
   function drive() {
     continuing = false;
     for (let steps = 0; ; steps += 1) {
+      if (playBack && !playBack.pending) {
+        const previous = playBack;
+        playBack = finishPlay(state, playBack, rng.checkpoint());
+        if (!playBack && previous.autoPass) castBy = previous.player;
+      }
       if (finished()) {pendingSeat = null; pendingActions = null; driven = 0; return;}
       if (driven >= DRIVE_LIMIT) throw new RoomError(500, "The game stopped moving: the engine took too many steps without a decision. Nothing further was applied.");
       if (steps >= slice) {continuing = true; pendingSeat = null; pendingActions = null; return;}
@@ -670,7 +745,7 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       if (castBy !== null) {
         const caster = castBy;
         castBy = null;
-        if (caster === seat) {driven = 0; apply(seat, {kind: "pass"}, "cast"); continue;}
+        if (caster === seat && !mayUndoPlay(state, playBack, seat, rng.checkpoint())) {driven = 0; apply(seat, {kind: "pass"}, "cast"); continue;}
       }
       /* A seat that yielded the rest of this turn (`yieldTurn`) passes. Counted toward a hang as the room's own passes are:
          the yield was one decision, not one per pass. */
@@ -705,13 +780,20 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
          passed for while it may: tapped for the wrong mana, nothing they hold can be cast with it (rules/actions.mjs,
          nothingToDo), and that is when they would want the tap back. */
       const untaps = untappable(state, taken) ? taken.takes.map((t) => ({kind: "undo-mana", objectId: t.objectId, name: t.card})) : [];
+      /* A land just played, nothing since, may go back to the hand (`takeBackLand`) -- and, as with a tap, they are asked while
+         it may: "Next step" moves the game on and the land stays. */
+      const undo = mayUndoPlay(state, playBack, seat, rng.checkpoint()) ? [{kind: "undo-play", objectId: playBack.objectId, name: playBack.name}] : [];
+      const backs = !undo.length && landBack && landBack.player === seat && hashState(state) === landBack.after ? [{kind: "undo-land", objectId: landBack.objectId, name: landBack.name}] : [];
       /* One who cast holding priority (CR 117.3c) is asked when it comes back to them, nothing else to do or not (`passStack`). */
       const held = heldBy === seat;
       heldBy = null;
-      const asked = held || untaps.length > 0 || (seat === state.activePlayer && ((endAsks && state.phase === "END_OF_TURN") || prefs[seats[seat].seatId]?.stepByStep === true));
-      if (passEmpty && !asked && nothingToDo(state, seat, actions, {stack: passStack})) {apply(seat, actions.find((a) => a.kind === "pass"), "room"); continue;}
+      /* Something aimed at them on top of the stack (`askAimed`): asked, to read it, response or not. */
+      const aimed = askAimed && aimedAt(state, seat);
+      const asked = held || aimed || undo.length > 0 || untaps.length > 0 || backs.length > 0 || (seat === state.activePlayer && ((endAsks && state.phase === "END_OF_TURN") || prefs[seats[seat].seatId]?.stepByStep === true));
+      /* Skip my priority if no response possible, turned off (`askStack`, their way of playing): asked whenever anything is on the stack. */
+      if (passEmpty && !asked && nothingToDo(state, seat, actions, {stack: passStack && prefs[seats[seat].seatId]?.askStack !== true})) {apply(seat, actions.find((a) => a.kind === "pass"), "room"); continue;}
       const run = resolveAll ? triggerRun(state.stack) : null;
-      const offered = [...actions, ...(run ? [{kind: "resolve-all", key: run.key, n: run.n, name: run.name}] : []), ...untaps];
+      const offered = [...actions, ...(run ? [{kind: "resolve-all", key: run.key, n: run.n, name: run.name}] : []), ...untaps, ...backs, ...undo];
       controller.offer(priorityChoice(`priority:${state.turn}:${state.stepIndex}:${controller.revision}`, offered, state, seat));
       pendingSeat = seat; pendingActions = offered; driven = 0; return;
     }
@@ -749,6 +831,11 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
         apply(seat, action, "person", answer.hold === true);
       } else {
         step.acted = true; write(resolveAwaiting(state, answer.indices, answer.amounts, rng, answer));
+        if (playBack?.pending) {
+          const previous = playBack;
+          playBack = finishPlay(state, playBack, rng.checkpoint());
+          if (!playBack && previous.autoPass) castBy = previous.player;
+        }
         /* Asked in a run they let resolve: the answer goes for the same question in the rest of it. */
         const run = standing[seat];
         if (run?.asking) {
@@ -778,11 +865,18 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
     passEmpty = record.passEmpty === true; step = record.step || {key: null, quiet: false, acted: false}; prefs = record.prefs || {}; turnsOf = record.turnsOf || null;
     resolveAll = record.resolveAll === true; standing = record.standing || {}; endAsks = record.endAsks === true;
     untapMana = record.untapMana === true; taken = record.taken ?? null;
+    undoLastPlay = record.undoLastPlay === true; resultRecords = record.resultRecords === true;
+    playBack = undoLastPlay && record.playBack === true ? JSON.parse(await storage.get(PLAY_KEY) || "null") : null;
+    playBackSaved = playBack !== null;
     passAfterCast = record.passAfterCast === true; castBy = record.castBy ?? null;
     passStack = record.passStack === true; heldBy = record.heldBy ?? null; yieldable = record.yieldTurn === true; yielding = record.yielding || {};
     blocksNone = record.blocksNone === true;
+    landAnyStep = record.landAnyStep === true; askAimed = record.askAimed === true; takeBackLand = record.takeBackLand === true;
+    landBack = takeBackLand && record.landBack === true ? JSON.parse(await storage.get(LAND_KEY) || "null") : null;
+    landBackSaved = landBack !== null;
+    if (landBack) landBack.saved = true;
     tableEvents = record.events || []; eventsMark = record.eventsMark ?? 0; eventsFloor = record.eventsFloor ?? -1;
-    seats = record.seats; pendingSeat = record.pendingSeat; pendingActions = record.pendingActions; receipts = record.receipts || []; leaving = record.leaving || []; departures = record.departures || {}; ended = record.ended || null; outs = record.outs || []; history = record.history || [];
+    seats = record.seats; pendingSeat = record.pendingSeat; pendingActions = record.pendingActions; receipts = record.receipts || []; leaving = record.leaving || []; departures = record.departures || {}; ended = record.ended || null; outs = record.outs || []; sealed = record.historySealed || 0; history = (record.history || []).map((l, i) => (l.seq === undefined ? {...l, seq: sealed * HISTORY_SEGMENT + i} : l));
     refusals = record.refusals || {total: 0, since: point.sequence, first: []};
     continuing = record.continuing === true; driven = record.driven || 0; endWhenNoPerson = record.endWhenNoPerson === true;
     seated = record.candidates === true;
@@ -807,6 +901,9 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       const why = whyNot(state, seat, card.cardId, actions);
       if (why) card.why = why;
     }
+    /* And a permanent of its own that lost all its abilities (an Elk Oko made of a Food) says so, and whose doing it was: it
+       offers nothing, and the board says why (ROB-330, ROB-331). */
+    explainAbilityless(state, projected, seat, actions);
     return projected;
   }
   /* A person's input that failed part-way, undone (`restore`) and refused: the rules' refusal as they said it, and any other
@@ -820,6 +917,26 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
      Resolve all ("standing"), for one whose cast passes (`passAfterCast`, "cast"), or for one who yielded the turn
      ("yield"); `hold`, a person casting who holds priority. */
   function apply(seat, action, by = "person", hold = false) {
+    if (action.kind === "undo-play") {
+      const previous = playBack;
+      state = undoPlay(state, previous, seat, rng.checkpoint());
+      playBack = null; landBack = null; taken = null; castBy = null;
+      note(`${seats[seat].name}: ${previous.name} undone`);
+      return;
+    }
+    playBack = null;
+    /* The land put back (`takeBackLand`): the game exactly as it was before it was played -- the land in the hand, the land
+       drop unused, any taps before it still to be taken back -- checked first, as an untap is. */
+    if (action.kind === "undo-land") {
+      if (!landBack || landBack.player !== seat || hashState(state) !== landBack.after) throw new RoomError(422, "That land can't go back to your hand now: something has happened since you played it.", {refused: true});
+      step.acted = true;
+      state = landBack.before;
+      taken = landBack.taken ?? null;
+      landBack = null;
+      note(`${seats[seat].name} took back ${action.name}: it is in their hand again, and their land drop unused`);
+      return;
+    }
+    landBack = null;
     if (action.kind === "undo-mana") {
       step.acted = true;
       const back = untapTaken(state, taken, action.objectId);
@@ -848,16 +965,32 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       step.acted = true;
       /* A tap for mana, kept to be taken back while nothing else happens (`untapMana`): a person's only is ever offered. */
       const was = untapMana && action.kind === "activate-mana" ? {mark: beforeTap(state), run} : null;
+      /* A person's land, kept to be put back while nothing else happens (`takeBackLand`): the game as it was, and the land as
+         it now is on the battlefield. */
+      const before = takeBackLand && by === "person" && action.kind === "play-land" ? structuredClone(state) : null;
+      const play = undoLastPlay && by === "person" ? beforePlay(state, seat, action, rng.checkpoint(), run) : null;
+      if (play) {play.autoPass = passAfterCast && !hold && action.kind === "cast"; playBack = play;}
       const events = applyAction(state, seat, action);
       write(events);
+      if (playBack) playBack = finishPlay(state, playBack, rng.checkpoint());
       taken = was ? tapTaken(state, seat, action, was.mark, events, was.run) : null;
-      if (passAfterCast && by === "person" && !hold && (action.kind === "cast" || action.kind === "activate")) castBy = seat;
+      if (before) {
+        const there = new Set(before.zones.battlefield), id = state.zones.battlefield.find((x) => !there.has(x) && state.objects[x]?.controller === seat);
+        /* Not one that asked anything or put anything on the stack as it entered (a landfall trigger): that has happened since. */
+        if (id !== undefined && !state.awaiting && state.stack.length === before.stack.length) landBack = {player: seat, objectId: id, name: state.objects[id].card, before, taken: run, after: hashState(state)};
+      }
+      if (passAfterCast && by === "person" && !hold && !playBack && (action.kind === "cast" || action.kind === "activate")) castBy = seat;
       if (passStack && by === "person" && hold && (action.kind === "cast" || action.kind === "activate")) heldBy = seat;
     }
   }
 
   /* Everything since the last save, then the checkpoint, then the room's own record (which names it). */
   async function persist() {
+    if (playBack) {await storage.put(PLAY_KEY, JSON.stringify(playBack)); playBackSaved = true;}
+    else if (playBackSaved) {await storage.delete(PLAY_KEY); playBackSaved = false;}
+    /* The land that may go back (`landBack`): a whole game, so under its own key, written when there is one and gone when not. */
+    if (landBack && landBack.saved !== true) {await storage.put(LAND_KEY, JSON.stringify(landBack)); landBack.saved = true; landBackSaved = true;}
+    else if (!landBack && landBackSaved) {await storage.delete(LAND_KEY); landBackSaved = false;}
     const fresh = journal.events(saved);
     await store.appendEvents(fresh);
     saved += fresh.length;
@@ -866,17 +999,43 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
     const point = journal.checkpoint(state, rng.checkpoint());
     await store.saveCheckpoint(point);
     await store.pruneCheckpoints();
-    await storage.put(ROOM_KEY, JSON.stringify({schema: ROOM_SCHEMA, protocol: ROOM_PROTOCOL, matchId, seats, pendingSeat, pendingActions, sequence: point.sequence, controller: controller.checkpoint(), receipts, leaving, departures, ended, ...(outs.length ? {outs} : {}), history, refusals, ...(continuing ? {continuing, driven} : {}), ...(endWhenNoPerson ? {endWhenNoPerson} : {}), ...(passEmpty ? {passEmpty, step} : {}), ...(resolveAll ? {resolveAll, standing} : {}), ...(passAfterCast ? {passAfterCast, castBy} : {}), ...(endAsks ? {endAsks} : {}), ...(untapMana ? {untapMana, taken} : {}), ...(Object.keys(prefs).length ? {prefs} : {}), ...(turnsOf ? {turnsOf} : {}), ...(passStack ? {passStack, heldBy} : {}), ...(blocksNone ? {blocksNone} : {}), ...(yieldable ? {yieldTurn: true, yielding} : {}), ...(tableEvents.length ? {events: tableEvents, eventsMark, eventsFloor} : {}), ...(seated ? {candidates: true} : {}), ...(pilotPicks ? {pilotPicks: true} : {})}));
+    /* A tail grown past its length seals its oldest lines into a key of their own, once, before the record that names it. */
+    while (history.length >= HISTORY_TAIL + HISTORY_SEGMENT) {
+      await storage.put(historyKey(sealed), JSON.stringify(history.slice(0, HISTORY_SEGMENT)));
+      history.splice(0, HISTORY_SEGMENT);
+      sealed += 1;
+    }
+    await storage.put(ROOM_KEY, JSON.stringify({schema: ROOM_SCHEMA, protocol: ROOM_PROTOCOL, matchId, seats, pendingSeat, pendingActions, sequence: point.sequence, controller: controller.checkpoint(), receipts, leaving, departures, ended, ...(outs.length ? {outs} : {}), history, ...(sealed ? {historySealed: sealed} : {}), refusals, ...(continuing ? {continuing, driven} : {}), ...(endWhenNoPerson ? {endWhenNoPerson} : {}), ...(passEmpty ? {passEmpty, step} : {}), ...(resolveAll ? {resolveAll, standing} : {}), ...(passAfterCast ? {passAfterCast, castBy} : {}), ...(endAsks ? {endAsks} : {}), ...(untapMana ? {untapMana, taken} : {}), ...(undoLastPlay ? {undoLastPlay, playBack: playBack !== null} : {}), ...(resultRecords ? {resultRecords: true} : {}), ...(Object.keys(prefs).length ? {prefs} : {}), ...(turnsOf ? {turnsOf} : {}), ...(passStack ? {passStack, heldBy} : {}), ...(blocksNone ? {blocksNone} : {}), ...(landAnyStep ? {landAnyStep} : {}), ...(takeBackLand ? {takeBackLand, landBack: landBack !== null} : {}), ...(askAimed ? {askAimed} : {}), ...(yieldable ? {yieldTurn: true, yielding} : {}), ...(tableEvents.length ? {events: tableEvents, eventsMark, eventsFloor} : {}), ...(seated ? {candidates: true} : {}), ...(pilotPicks ? {pilotPicks: true} : {})}));
   }
 
   const api = {
     matchId,
-    get seats() {return seats.map(({seatId, name, pilot, level}) => ({seatId, name, pilot, ...(level ? {level} : {})}));},
+    get seats() {return seats.map(({seatId, name, pilot, level, persona}) => ({seatId, name, pilot, ...(level ? {level} : {}), ...(persona ? {persona} : {})}));},
     get status() {return finished() ? "finished" : "playing";},
     get revision() {return controller.revision;},
     get waitingOn() {return pendingSeat === null ? null : seats[pendingSeat].seatId;},
     /** Every line of the table's history the room keeps (a view shows the newest): public, the same for every seat. */
     get history() {return history.map(({turn, text, mark}) => ({turn, text, ...(mark ? {mark} : {})}));},
+    /**
+     * THE LINES BEFORE ONE (ROB-332, "load earlier"): up to `limit` (default HISTORY_PAGE, at most HISTORY_PAGE_MAX) of the history's
+     * lines whose `seq` is below `before` -- the oldest line a client holds, or no `before` for the newest -- oldest first, and `first`,
+     * the `seq` the game's lines begin at. The same for every seat and a spectator: history is public, nothing in it depends on who asks.
+     * A sealed segment is read from storage as it is wanted; the tail is the room's own.
+     */
+    async historyBefore({before, limit} = {}) {
+      const total = sealed * HISTORY_SEGMENT + history.length;
+      if (before !== undefined && before !== null && !(Number.isInteger(before) && before >= 0)) throw new RoomError(400, "Ask for the lines before a line number: a whole number, 0 or more.");
+      if (limit !== undefined && limit !== null && !Number.isInteger(limit)) throw new RoomError(400, "Ask for a whole number of lines.");
+      const end = Math.min(before ?? total, total), many = limit >= 1 ? Math.min(limit, HISTORY_PAGE_MAX) : HISTORY_PAGE, start = Math.max(0, end - many);
+      /* What is read is fixed before anything is awaited: the tail as it is now, and which segments hold the rest. */
+      const tailFrom = sealed * HISTORY_SEGMENT, tail = history.slice(Math.max(0, start - tailFrom), Math.max(0, end - tailFrom)), sealedNow = sealed;
+      const lines = [];
+      for (let i = Math.floor(start / HISTORY_SEGMENT); i < sealedNow && i * HISTORY_SEGMENT < end; i += 1) {
+        const segment = JSON.parse(await storage.get(historyKey(i)) || "[]");
+        lines.push(...segment.slice(Math.max(0, start - i * HISTORY_SEGMENT), Math.max(0, end - i * HISTORY_SEGMENT)));
+      }
+      return {before: end, first: 0, lines: [...lines, ...tail].map(shownLine)};
+    },
     /** The match's tally of refused pilot answers, whatever the history still holds: `{total, since, first}`. */
     get refusals() {return structuredClone(refusals);},
     /** True when a slice ran out with nobody asked: `resume` plays on. */
@@ -896,18 +1055,27 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       const beats = {...(pod && pod.drawBeat === true ? {drawBeat: true} : {}), ...(pod && pod.passEmpty === true ? {passEmpty: true} : {}),
         ...(pod && pod.endWhenNoPerson === true ? {endWhenNoPerson: true} : {}), ...(pod && pod.resolveAll === true ? {resolveAll: true} : {}),
         ...(pod && pod.passAfterCast === true ? {passAfterCast: true} : {}), ...(pod && pod.endAsks === true ? {endAsks: true} : {}),
-        ...(pod && pod.untapMana === true ? {untapMana: true} : {}),
+        ...(pod && pod.untapMana === true ? {untapMana: true} : {}), ...(pod?.resultRecords === true ? {resultRecords: true} : {}),
+        ...((pod?.houseRules?.undoLastPlay === true || pod?.undoLastPlay === true) ? {houseRules: {undoLastPlay: true}} : {}),
         /* And whether its AI seats take what a choice they may answer with none is for (`pilotPicks`), kept the same way. */
         ...(pod && pod.pilotPicks === true ? {pilotPicks: true} : {}),
         ...(pod && pod.passStack === true ? {passStack: true} : {}), ...(pod && pod.yieldTurn === true ? {yieldTurn: true} : {}),
-        ...(pod && pod.blocksNone === true ? {blocksNone: true} : {})};
-      passEmpty = beats.passEmpty === true; endWhenNoPerson = beats.endWhenNoPerson === true; resolveAll = beats.resolveAll === true; passAfterCast = beats.passAfterCast === true; endAsks = beats.endAsks === true; untapMana = beats.untapMana === true;
+        ...(pod && pod.blocksNone === true ? {blocksNone: true} : {}),
+        ...(pod && pod.keepStepMana === true ? {keepStepMana: true} : {}),
+        ...(pod && pod.landAnyStep === true ? {landAnyStep: true} : {}), ...(pod && pod.takeBackLand === true ? {takeBackLand: true} : {}),
+        ...(pod && pod.askAimed === true ? {askAimed: true} : {})};
+      passEmpty = beats.passEmpty === true; endWhenNoPerson = beats.endWhenNoPerson === true; resolveAll = beats.resolveAll === true; passAfterCast = beats.passAfterCast === true; endAsks = beats.endAsks === true; untapMana = beats.untapMana === true; undoLastPlay = beats.houseRules?.undoLastPlay === true; resultRecords = beats.resultRecords === true;
       passStack = beats.passStack === true; yieldable = beats.yieldTurn === true; blocksNone = beats.blocksNone === true;
+      landAnyStep = beats.landAnyStep === true; takeBackLand = beats.takeBackLand === true; askAimed = beats.askAimed === true;
+      /* The people at the table, by seat, who may play a land in any step of their own turn (`landAnyStep`). */
+      const anyStep = landAnyStep ? {landAnyStep: seats.flatMap((s, seat) => (s.pilot === "house" ? [] : [seat]))} : {};
+      /* And the people whose mana made in their upkeep or draw step stays for the turn (`keepStepMana`, rules/turn.mjs; Rob, 2026-10-28): a house rule, for people. */
+      const keepMana = beats.keepStepMana === true ? {keepStepMana: seats.flatMap((s, seat) => (s.pilot !== "house" ? [seat] : []))} : {};
       /* And whether a cast tapped for tops up floating mana and taps a source for all it makes (`pooledTaps`, rules/actions.mjs):
          a match launched before it lacks the key, and so offers what it offered then. */
-      const pooled = {...(pod && pod.pooledTaps === true ? {pooledTaps: true} : {}), ...(pod && pod.xTaps === true ? {xTaps: true} : {})};
+      const pooled = {...(pod && pod.pooledTaps === true ? {pooledTaps: true} : {}), ...(pod && pod.xTaps === true ? {xTaps: true} : {}), ...(pod?.preparedTaps === true ? {preparedTaps: true} : {}), ...(pod?.phyrexianTaps === true ? {phyrexianTaps: true} : {})};
       pilotPicks = beats.pilotPicks === true;
-      try {state = createState({matchId, seed, players: seats.map((s) => ({name: s.name})), ...rules, ...(beats.drawBeat ? {drawBeat: true} : {}), ...pooled});}
+      try {state = createState({matchId, seed, players: seats.map((s) => ({name: s.name})), ...rules, ...(beats.drawBeat ? {drawBeat: true} : {}), ...pooled, ...anyStep, ...keepMana});}
       catch (error) {throw new RoomError(400, error.message);}
       seats.forEach((s, seat) => {
         for (const name of s.commander) addObject(state, {...look(name), card: name, owner: seat, controller: seat, commander: true}, "command", seat);
@@ -936,19 +1104,32 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       if (seat < 0) throw new RoomError(403, "That seat is not at this table.");
       const mine = pendingSeat === seat && controller.pending;
       const over = ended ? {winner: null, reason: ended.why === "no-person" ? NO_PERSON_REASON : "ended early"} : gameOver(state);
+      const canUndo = Boolean(mine && mayUndoPlay(state, playBack, seat, rng.checkpoint()));
+      const projected = whyNotFor(projectFor(state, seat), seat, mine ? controller.pending : null);
+      if (canUndo) {
+        for (const player of projected.players) for (const zone of Object.values(player.zones ?? {}))
+          for (const card of zone.cards ?? []) if (card.cardId === playBack.objectId) card.undoable = true;
+        for (const entry of projected.stack) if (entry.cardId === playBack.objectId || entry.objectId === playBack.objectId) entry.undoable = true;
+      }
       return {
         schema: VIEW_SCHEMA, protocol: ROOM_PROTOCOL, matchId, seatId, seat,
         revision: controller.revision,
         status: over ? "finished" : "playing",
+        ...(resultRecords ? {resultRecordExpected: true} : {}),
         result: over ? {winner: over.winner === null ? null : seats[over.winner].seatId, reason: over.reason, ...(ended ? {endedBy: ended.by} : {}),
           /* And how it ended, as data (ending.mjs; Linear ROB-166): who lost and why, beside the words, which stay as they were. */
           ending: endingOf({over, ended, seats, players: state.players, departures, outs})} : null,
         departures: structuredClone(departures),
         seats: api.seats,
         waitingOn: pendingSeat === null ? null : seats[pendingSeat].seatId,
-        decision: mine ? combatWords(state, structuredClone(controller.pending)) : null,
-        state: whyNotFor(projectFor(state, seat), seat, mine ? controller.pending : null),
-        history: history.slice(-HISTORY_VIEW).map(({turn, text, mark}) => ({turn, text, ...(mark ? {mark} : {})})),
+        decision: mine ? describeDecision(state, combatWords(state, structuredClone(controller.pending)), pendingActions, projected) : null,
+        state: projected,
+        /* What this seat's permanents could tap for (actions.mjs, manaSources): the board's Mana Pool. */
+        manaSources: deriving(state, () => manaSources(state, seat)),
+        ...(canUndo ? {canUndo: true, undoablePlay: {cardId: playBack.objectId, name: playBack.name, kind: playBack.kind}} : {}),
+        history: history.slice(-HISTORY_VIEW).map(shownLine),
+        /* Where the game's lines begin: older ones than the view's are asked for (`historyBefore`; the socket's {type: "history"}). */
+        historyFirst: 0,
         /* What happened, as this seat may know it (events.mjs): the change this view shows -- or, asked with `after` (the last
            event id the seat has), everything since; `eventsReset` when that is older than the room keeps. */
         ...((said) => ({eventsSchema: EVENTS_SCHEMA, events: said.events, ...(said.reset ? {eventsReset: true} : {})}))(
@@ -958,10 +1139,40 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
         ...(api.continuing ? {continuing: true} : {}),
         /* This seat's own way of playing, as the room holds it (prefer). */
         ...(prefs[seatId]?.stepByStep === true ? {stepByStep: true} : {}),
+        /* And whether they are asked whenever anything is on the stack (`askStack`: Skip my priority if no response possible, off). */
+        ...(prefs[seatId]?.askStack === true ? {askStack: true} : {}),
         /* Its yield (`yieldTurn`), its own and no one else's: on, or one it may start now. */
         ...(holds(seatId) ? {yielding: true} : mayYield(seat) ? {mayYield: true} : {}),
         /* Which of its own turns this is, when the turn is this seat's (the board says "your 2nd"). */
         ...(turnsOf && state.activePlayer === seat && turnsOf[seatId] ? {yourTurn: turnsOf[seatId]} : {}),
+      };
+    },
+
+    /**
+     * WHAT A SPECTATOR MAY SEE (the lounge's Watch, docs/ui-lane/lounge-contract.md §4): the game as nobody in it sees it. Built
+     * from the public projection alone (projection.mjs, viewer null: no hand, no library, a count each) and listed field by
+     * field, so a field added to a seat's view later is not a field a watcher gets by accident: no decision, no mana
+     * sources, no undo, no way of playing, and the events with no card a seat was told in secret.
+     */
+    watch({after} = {}) {
+      const over = ended ? {winner: null, reason: ended.why === "no-person" ? NO_PERSON_REASON : "ended early"} : gameOver(state);
+      return {
+        schema: VIEW_SCHEMA, protocol: ROOM_PROTOCOL, matchId, seatId: null, seat: null, spectator: true,
+        revision: controller.revision,
+        status: over ? "finished" : "playing",
+        result: over ? {winner: over.winner === null ? null : seats[over.winner].seatId, reason: over.reason, ...(ended ? {endedBy: ended.by} : {}),
+          ending: endingOf({over, ended, seats, players: state.players, departures, outs})} : null,
+        departures: structuredClone(departures),
+        seats: api.seats,
+        waitingOn: pendingSeat === null ? null : seats[pendingSeat].seatId,
+        decision: null,
+        state: projectFor(state, null),
+        manaSources: [],
+        history: history.slice(-HISTORY_VIEW).map(shownLine),
+        historyFirst: 0,
+        ...((said) => ({eventsSchema: EVENTS_SCHEMA, events: said.events, ...(said.reset ? {eventsReset: true} : {})}))(
+          eventsFor(tableEvents, null, {...(after !== undefined && after !== null ? {after, floor: eventsFloor} : {from: `event:${eventsMark}`}), knows: () => false})),
+        ...(api.continuing ? {continuing: true} : {}),
       };
     },
 
@@ -1015,16 +1226,19 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
      * have a step with nothing to do pass itself. On the tape, as a leave is, so a replay asks where the game asked; the
      * same as it was, it changes nothing and is not taped. It takes effect from the next step on.
      */
-    async prefer(seatId, {stepByStep} = {}) {
+    /* And `askStack` (Oct 21): Skip my priority if no response possible, turned off -- asked whenever anything is on the
+       stack. Left out, it stays as it was, so a tape entry from before it, or a board that does not send it, changes nothing. */
+    async prefer(seatId, {stepByStep, askStack} = {}) {
       const seat = seatIndex(seatId);
       if (seat < 0) throw new RoomError(403, "That seat is not at this table.");
       if (seats[seat].pilot === "house") throw new RoomError(409, "An AI seat has no way of playing to set.");
       if (finished()) throw new RoomError(409, "This game is over.");
-      const on = stepByStep === true;
-      if ((prefs[seatId]?.stepByStep === true) === on) return api;
+      const on = stepByStep === true, was = prefs[seatId] || {};
+      const ask = typeof askStack === "boolean" ? askStack : was.askStack === true;
+      if ((was.stepByStep === true) === on && (was.askStack === true) === ask) return api;
       notWhileContinuing("Your way of playing can be changed");
-      prefs = {...prefs, [seatId]: {stepByStep: on}};
-      tape({kind: "prefer", seat: seatId, stepByStep: on});
+      prefs = {...prefs, [seatId]: {stepByStep: on, ...(ask ? {askStack: true} : {})}};
+      tape({kind: "prefer", seat: seatId, stepByStep: on, ...(typeof askStack === "boolean" ? {askStack: ask} : {})});
       await persist();
       return api;
     },
@@ -1120,6 +1334,23 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
     },
 
     /**
+     * WHAT THE SEAT'S PILOT WORKED OUT for the decision it is being asked (the Veteran's brief reads it; game/room/agent-brief.mjs):
+     * the table's threats, what is urgent on it, the creatures kept home, its top plans as this decision's own option indices, and the
+     * seat's own persona. Read-only: it answers nothing and changes nothing. Null for a pilot that does not explain.
+     */
+    analysis(seatId) {
+      const seat = seatIndex(seatId);
+      if (seat < 0 || seats[seat].pilot !== "house") throw new RoomError(403, "That is not an AI seat at this table.");
+      if (pendingSeat !== seat || !controller.pending) throw new RoomError(409, "That seat is not being asked anything.");
+      const pilot = pilotFor(seat);
+      if (typeof pilot.explain !== "function") return null;
+      const seen = projectFor(state, seat);
+      const explained = pilot.explain(seen, pendingActions ? {actions: pendingActions} : {choice: awaitingChoice(state)});
+      const p = personaOf(seats[seat].persona);
+      return {...explained, persona: p ? {name: p.name, blurb: p.blurb, ...p.disposition} : null};
+    },
+
+    /**
      * A draft of the seat's answer, checked whole and changing nothing (Linear ROB-75): `{ok, open, reasons}`. A draft of
      * blocks is told every reason the rules would refuse it for (rules/combat.mjs, `blockers.check`, what an answer is
      * refused by too); any other question, the first, as its answer would be. Nothing is kept, sent to another seat, taped
@@ -1132,10 +1363,9 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       const pending = controller.pending;
       if (finished() || pendingSeat !== seat || !pending || pending.id !== choiceId)
         return {ok: false, open: false, reasons: ["That question is no longer open. Answer the one your view shows now."]};
-      const reasons = state.awaiting?.kind === "declare-blockers"
-        ? deriving(state, () => blockers.check(state, state.awaiting, indices)).reasons
-        : [controller.check({choiceId, indices})].filter(Boolean);
-      return {ok: reasons.length === 0, open: true, reasons};
+      const checked = state.awaiting?.kind === "declare-blockers" ? deriving(state, () => blockers.check(state, state.awaiting, indices)) : null;
+      const reasons = checked ? checked.reasons : [controller.check({choiceId, indices})].filter(Boolean);
+      return {ok: reasons.length === 0, open: true, reasons, ...(checked?.byAttacker?.length ? {byAttacker: checked.byAttacker} : {})};
     },
     async act(seatId, request) {
       const seat = seatIndex(seatId);

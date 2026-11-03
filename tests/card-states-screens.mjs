@@ -8,8 +8,8 @@
  *      lists the deck's group -- no Bench copies unless asked.
  *   3. The card panel's Status chips count the card's records by their status, as labels, not links; Change status
  *      and Change assignment sit at the end of the lines.
- *   4. The Table view's piles are places, and Ready to add names a waiting copy Loading.
- *   5. How a deck comes together climbs the ownership words, then the uses.
+ *   4. The Table view's piles are places, and Planned Changes (once Ready to add) names a waiting copy Owned - Final.
+ *   5. About Deck Building climbs the ownership words, then the uses.
  *
  * Needs Playwright and Chromium; GEOMETRY_REQUIRED=1 (CI) turns a missing browser into a failure.
  */
@@ -43,17 +43,17 @@ try {
   /* 1. The hundred. */
   const lines = await page.$$eval(".cm-deck-cards li", (ls) => ls.map((li) => ({card: li.querySelector(".cm-card-name")?.dataset.card, pill: li.querySelector(".cm-deck-flags .cm-pill")?.textContent.trim(), note: li.querySelector(".cm-deck-flags .cm-badge")?.textContent.trim() || ""})).filter((x) => x.card));
   eq(lines.length, ds.rows.length, `the hundred lists every record of ${deck.name}'s view (${ds.rows.length})`);
-  const bad = lines.filter((l) => !["Final", "Substitute", "Loading", "Reserved", "Upgrade"].includes(l.pill));
-  eq(bad.slice(0, 3), [], "every line wears a deck use: Final, Substitute, Loading, Reserved or Upgrade");
+  const bad = lines.filter((l) => !["Final", "Substitute", "Reserved", "Upgrade"].includes(l.pill));
+  eq(bad.slice(0, 3), [], "every line wears a deck use: Final, Substitute, Reserved or Upgrade");
   const tally = (list) => list.reduce((m, x) => ({...m, [x]: (m[x] || 0) + 1}), {});
   eq(tally(lines.map((l) => l.pill)), tally(ds.rows.map(({st: x}) => M.stateLabel(x))), "and each word as often as the model's deckStatus says");
   const parts = Object.fromEntries(await page.$$eval(".cm-deck-cards h3.cm-deck-part", (hs) => hs.map((h) => [h.childNodes[0].textContent.trim(), Number(h.querySelector("small").textContent.replace(/,/g, ""))])));
   eq(parts["In the deck"], ds.deckTotal, `In the deck is the Deck total, Final + Substitute (${ds.deckTotal})`);
-  eq([parts.Loading || 0, parts.Reserved || 0, parts.Upgrades || 0], [ds.loading, ds.reserved.total, ds.upgrade], "Loading, Reserved and Upgrades count what the model counts");
+  eq([parts.Loading || 0, parts.Reserved || 0, parts.Upgrades || 0], [0, ds.loading + ds.substituteLoading + ds.reserved.total, ds.upgrade], "Reserved (the owned cards waiting to be boxed, and the seats still to get) and Upgrades count what the model counts, and there is no Loading part (Rob, 2026-11-01)");
   const readD = M.stateReader(st, DECK), name = (id) => st.cards[id]?.name || id, deckName = (id) => (st.decks.find((d) => d.id === id)?.name.match(/^(D\d+)\b/) || [])[1] || "";
   const notes = tally(ds.rows.map(({st: x}) => M.stateNote(x, name, deckName)).filter(Boolean));
   eq(tally(lines.map((l) => l.note).filter(Boolean)), notes, "and each line's note is the model's, word for word");
-  ok(/^Playable: the box holds 100: Final \d+ \+ Substitute \d+/.test(await page.locator(".cm-deck-playable").innerText()), `the hundred says why the deck plays: "${await page.locator(".cm-deck-playable").innerText()}"`);
+  ok(/^Boxed: the box holds 100: Final \d+ \+ Substitute \d+/.test(await page.locator(".cm-deck-playable").innerText()), `the hundred says why the deck plays: "${await page.locator(".cm-deck-playable").innerText()}"`);
   /* And a deck with Upgrades lists them in their own part, each naming what it would replace or asking. */
   {
     const UP = [...st.decks].filter((d) => !d.archived).sort((a, b) => M.deckStatus(st, b).upgrade - M.deckStatus(st, a).upgrade)[0], up = M.deckStatus(st, UP);
@@ -68,13 +68,16 @@ try {
 
   /* 2. The Library scoped to the same deck: the same deckStatus on its tiles, and no Bench copy unless asked. */
   await page.goto(`${base}/index.html#cards?deck=${encodeURIComponent(DECK)}`);
-  await page.locator(".cm-kpi").first().waitFor({timeout: 30000});
-  const tiles = Object.fromEntries(await page.$$eval(".cm-kpi", (ks) => ks.map((k) => [k.querySelector("span").textContent.trim(), Number(k.querySelector("strong").textContent.replace(/,/g, ""))])));
-  eq([tiles.Final, tiles.Substitute, tiles.Reserved, tiles.Upgrade, tiles.Loading, tiles.Bench], [ds.final, ds.substitute, ds.reserved.total, ds.upgrade, ds.loading, 0], "the Library scoped to the deck counts what the hundred counts, and no Bench");
-  ok((await page.locator(".cm-kpi-caption").innerText()).startsWith(`Deck total ${ds.deckTotal} = Final ${ds.final} + Substitute ${ds.substitute} · Group total ${ds.groupTotal}`), "its caption states the Deck total and the Group total");
-  await page.locator("#cm-bench-too").check();
-  await page.waitForFunction(() => Number(document.querySelectorAll(".cm-kpi")[5]?.querySelector("strong")?.textContent.replace(/,/g, "")) > 0);
-  ok(true, "ticking Show Bench cards that could go in brings the Bench back beside the deck's cards");
+  await page.locator(".cm-band-group").waitFor({timeout: 30000});
+  const chipsOf = async () => { await page.locator("[data-action=group-menu]").click(); const c = Object.fromEntries(await page.$$eval(".cm-show-chip[data-show]", (cs) => cs.map((x) => [x.dataset.show, Number(x.querySelector("b").textContent.replace(/,/g, ""))]))); await page.keyboard.press("Escape"); return c; };
+  const tiles = await chipsOf();
+  eq([tiles.boxed || 0, tiles.reservedAll || 0, tiles.upgrade || 0, tiles.bench || 0], [ds.final + ds.substitute, ds.loading + ds.substituteLoading + ds.reserved.total, ds.upgrade, 0], "the Library scoped to the deck counts what the hundred counts (Boxed, Reserved, Upgrade), and no Bench");
+  eq(tiles.all, ds.groupTotal, `and All is the Group total (${ds.groupTotal})`);
+  await page.locator("[data-action=group-menu]").click();
+  ok((await page.locator(".cm-row-menu .cm-band-eq").innerText()).startsWith(`Deck total ${ds.deckTotal} = Final ${ds.final} + Substitute ${ds.substitute} · Group total ${ds.groupTotal}`), "its menu states the Deck total and the Group total");
+  await page.locator("[data-action=band-bench]").click();
+  await page.waitForFunction(() => document.querySelector("#cm-roster-table .cm-table"));
+  ok((await chipsOf()).bench > 0, "pressing + Bench cards that could go in brings the Bench back beside the deck's cards");
 
   /* 3. The card panel, for the card on this deck's list whose records fall in the most different states. */
   const recsOf = (id) => M.records(st).filter((r) => r.cardId === id).map((r) => ({r, s: M.stateReader(st)(r)}));
@@ -104,20 +107,21 @@ try {
   for (const {r, s} of all) { const k = M.placeLabel(s); if (k !== "Bench") pileWant[k] = (pileWant[k] || 0) + (r.quantity || 1); }
   ok(Object.keys(piles).every((k) => k === "Bench" || k in pileWant), `the breakout's piles are places (${Object.keys(piles).join(", ")})`);
   eq(Object.fromEntries(Object.keys(pileWant).map((k) => [k, piles[k]])), pileWant, "each counting what the model puts there");
-  eq(await page.$$eval("[name=ttStatus] option", (os) => os.map((o) => o.textContent)), ["Any status", "Own (any)", "Final", "Loading", "Substitute", "Bench", "Ordered", "To buy", "Watch"], "and its Status dropdown offers the same words");
+  eq(await page.$$eval("[name=ttStatus] option", (os) => os.map((o) => o.textContent)), ["Any status", "Own (any)", "Final", "Reserved", "Substitute", "Bench", "To Buy · Ordered", "To buy", "Watch"], "and its Status dropdown offers the same words");
 
-  /* 5. Ready to add: a copy waiting on the Bench wears "Loading", with where to find it. */
+  /* 5. Planned Changes (once Ready to add; Rob, C5): a copy waiting on the Bench is an add, "Owned - Final", with where
+     it is when that is another deck -- not the old pills. */
   const PULL = st.decks.find((d) => !d.archived && waitingIn(d.id).some((l) => l.location?.kind !== "deck"))?.id;
   ok(PULL, "some deck has a copy waiting on the Bench, so the check below can fail");
   await page.goto(`${base}/index.html#pull?deck=${encodeURIComponent(PULL)}`);
-  await page.waitForTimeout(1500);
-  const pullPills = await page.$$eval(".cm-pill", (ps) => ps.map((p) => p.textContent.trim()).filter((t) => /^(Bench|To add|Loading)\b/.test(t)));
-  ok(pullPills.some((t) => /^Loading · /.test(t)) && !pullPills.some((t) => /^(To add|Bench) · /.test(t)), `Ready to add names each waiting copy "Loading", then where it is: ${pullPills.slice(0, 3).join(" | ")}`);
+  await page.locator(".cm-plan-side.is-in .cm-plan-role").first().waitFor({timeout: 30000});
+  const pullRoles = await page.$$eval(".cm-plan-side.is-in .cm-plan-role", (ps) => ps.map((p) => p.textContent.trim()));
+  ok(pullRoles.includes("Owned - Final") && !(await page.$$eval(".cm-plan .cm-pill", (ps) => ps.length)), `Planned Changes names each waiting copy "Owned - Final": ${[...new Set(pullRoles)].join(" | ")}`);
 
   /* 6. The ladder. */
   await page.goto(`${base}/index.html#how`);
-  await page.locator(".cm-how-ladder li").first().waitFor({timeout: 30000});
-  eq(await page.$$eval(".cm-how-ladder li strong", (s) => s.map((x) => x.textContent)), ["Watch", "To buy", "Ordered", "Own", "Upgrade", "Reserved", "Substitute", "Final"], "How a deck comes together climbs the ownership words, then the uses that bring a card into a deck");
+  await page.locator("#cm-how-ladder li").first().waitFor({timeout: 30000});
+  eq(await page.$$eval("#cm-how-ladder li strong", (s) => s.map((x) => x.textContent)), ["Watch", "To buy", "To Buy · Ordered", "Own", "Upgrade", "Reserved", "Substitute", "Final"], "About Deck Building (still at #how) climbs the ownership words, then the uses that bring a card into a deck, Loading among them (ABT-3)");
   await context.close();
 } finally {
   await close();

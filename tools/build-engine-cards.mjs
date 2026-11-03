@@ -20,7 +20,8 @@
  *   support.json  the ledger. Every card starts `unsupported`, which is the honest state on the
  *                 day the engine plays nothing, and each row gains the constructs it needs as the
  *                 compiler and the hand-authored definitions land (§3.2.6 — unsupported is loud,
- *                 never a no-op).
+ *                 never a no-op). A row's status is the card directory's (ROB-331): written here
+ *                 by `ledgerRows`, kept current by game/tools/engine-definitions.mjs --write.
  *
  * THIS FIXES THE POOL COUNT, which §6 phase 0.3 asks it to: everything downstream — the go-live
  * vocabulary, the verified share Rob accepts at G4 — is a fraction of the number this writes.
@@ -38,6 +39,7 @@ import {createInterface} from "node:readline";
 import {resolve, dirname, join} from "node:path";
 import {fileURLToPath} from "node:url";
 import {tmpdir} from "node:os";
+import {catalogProblem, paperOracleIds} from "./catalog-rule.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const arg = (name, fallback) => {
@@ -101,6 +103,8 @@ async function main() {
     process.stderr.write("using the cached bulk file\n");
   }
 
+  /* The catalog rule (tools/catalog-rule.mjs, ROB-213): Commander-legal paper cards only, no Alchemy and no A- rebalances. */
+  const paper = await paperOracleIds({cacheDir: join(tmpdir(), "crankmagic-catalog-rule")});
   const cards = [], tokens = [];
   let seen = 0, notLegal = 0;
   const lines = createInterface({input: createReadStream(CACHE).pipe(createGunzip()), crlfDelay: Infinity});
@@ -112,9 +116,9 @@ async function main() {
     if (!card || !card.oracle_id) continue;
     seen += 1;
     if (isToken(card)) { tokens.push(trim(card)); continue; }
-    /* Commander legality is the pool. `restricted` is not a Commander status; banned and
+    /* Commander legality is the pool, and paper (catalog-rule.mjs). `restricted` is not a Commander status; banned and
        not_legal are both out, and a card missing the field is out rather than assumed in. */
-    if (card.legalities?.commander !== "legal") { notLegal += 1; continue; }
+    if (catalogProblem(card, paper)) { notLegal += 1; continue; }
     cards.push(trim(card));
   }
 
@@ -142,7 +146,9 @@ async function main() {
     legend: {unsupported: "no definition, or a definition naming a construct the engine lacks",
       compiled: "definition produced by the compiler, not yet proven against a scenario",
       verified: "definition with a passing scenario test"},
-    cards: cards.map((c) => ({id: c.id, name: c.name, status: "unsupported", needs: []})),
+    /* Each row starts `unsupported` and takes the status of the definition the card directory holds for it (ROB-331: the ledger
+       had stood all `unsupported` while the table played 6,000 of them); game/tools/engine-definitions.mjs keeps it so. */
+    cards: (await import("../game/tools/engine-definitions.mjs")).ledgerRows(cards.map((c) => ({id: c.id, name: c.name, status: "unsupported", needs: []}))),
   });
 
   if (process.argv.indexOf("--keep-cache") < 0) rmSync(CACHE, {force: true});
@@ -152,8 +158,8 @@ async function main() {
     `\nengine card data written to ${OUT}\n`
     + `  oracle.json   ${String(cards.length).padStart(6)} Commander-legal cards   ${mb(oracleBytes)}\n`
     + `  tokens.json   ${String(tokens.length).padStart(6)} tokens and emblems      ${mb(tokenBytes)}\n`
-    + `  support.json  ${String(cards.length).padStart(6)} rows, all unsupported    ${mb(supportBytes)}\n`
-    + `  read ${seen} oracle entries; ${notLegal} are not Commander-legal\n`);
+    + `  support.json  ${String(cards.length).padStart(6)} rows, as the card directory has them ${mb(supportBytes)}\n`
+    + `  read ${seen} oracle entries; ${notLegal} are not Commander-legal paper cards\n`);
 }
 
 await main();

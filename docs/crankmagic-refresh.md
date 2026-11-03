@@ -49,12 +49,14 @@ EDHREC are public and free; the only cost is politeness (100 ms between requests
 5. build-card-records.mjs --refresh   the record set's prices, legality, text and images
 6. commander-strategies.mjs      what each commander offers, from the refreshed terms
 7. build-precons.mjs             every Commander precon from MTGJSON, its names held to the new universe
-8. data-manifest.mjs, data-inventory.mjs   what the files now are
-9. asset-versions.mjs --update   so browsers actually fetch what changed
-10. runtests.sh                   every suite (the README says how many), several of which read these files directly
+8. the derived files, each rebuilt from what steps 5 and 6 refreshed:
+   build-advise-cards.mjs --write, build-commander-index.mjs, build-pilot-roles.mjs, reprice-variants.mjs
+9. data-manifest.mjs, data-inventory.mjs   what the files now are
+10. asset-versions.mjs --update  so browsers actually fetch what changed
+11. runtests.sh                   every suite (the README says how many), several of which read these files directly
 ```
 
-`node tools/refresh.mjs` is 1–9 in that order with the proof at the end; `--plan` prints
+`node tools/refresh.mjs` is 1–10 in that order with the proof at the end; `--plan` prints
 them, `--check` runs only the proofs.
 
 **1 before 2** because the flavor-name table is checked against the universe: a
@@ -69,7 +71,13 @@ graph rebake is the long one.
 **5 and 6 after 3** because the record set takes the graph's card block and the
 strategies read the graph's terms.
 
-**8 is not optional.** Every data file is fetched with a `?v=` and served from the
+**8 after 5 and 6** because each derived file is built from what they refreshed: the advisor's cards and the
+variants' prices from `data/cards.json`, the commander index and the pilots' roles from the graph and the
+strategies. Without it the proof fails `advisor`, `deck-autocreate`, `generators`, `pilot-roles` and `data-integrity`.
+
+**9 after 8** so the manifest and the inventory see every file.
+
+**10 is not optional.** Every data file is fetched with a `?v=` and served from the
 browser cache. A changed file behind an unchanged version is a browser running last
 month's data indefinitely with nothing on screen to say so. `tests/asset-versions.mjs`
 refuses to record a changed file whose version has not moved, which is the guard
@@ -102,18 +110,58 @@ node tools/commander-strategies.mjs
 # 7. the precons, held to the refreshed universe
 node tools/build-precons.mjs
 
-# 8. what the files now are
+# 8. the derived files, from the refreshed data
+node tools/build-advise-cards.mjs --write
+node tools/build-commander-index.mjs
+node tools/build-pilot-roles.mjs
+node tools/reprice-variants.mjs
+
+# 9. what the files now are
 node tools/data-manifest.mjs && node tools/data-inventory.mjs
 
-# 9. bump every ?v= for the files that changed, in every page that names them,
-#    then record the new hashes (tools/refresh.mjs does the bumps for you)
+# 10. bump every ?v= for the files that changed, in every page that names them,
+#     then record the new hashes (tools/refresh.mjs does the bumps for you)
 node tests/asset-versions.mjs --update
 
-# 10. prove it
+# 11. prove it
 bash runtests.sh -q
 ```
 
 Or, all of it in order with the proof: `node tools/refresh.mjs`.
+
+### The derived files (in the runner's plan since 2026-10-30)
+
+Four more files are derived from the data files, each by its own generator. The proof fails five suites until they
+are rebuilt (found on the 2026-10-29 refresh, PR 948), so `tools/refresh.mjs` runs them as step 8, marked `derived`
+in its plan (three are artifacts outside the schema registry, and the commander index is a registered data file; each tool vouches for its own file and names it):
+
+| Generator | Writes | Red without it |
+|---|---|---|
+| `node tools/build-advise-cards.mjs --write` | `cloud/advise-cards.mjs` | `advisor` |
+| `node tools/build-commander-index.mjs` | `data/commander-index.json` | `deck-autocreate`, `generators` |
+| `node tools/build-pilot-roles.mjs` | `game/engine/pilots/roles-data.mjs` (the engine lane's tree; say so in the PR) | `pilot-roles` |
+| `node tools/reprice-variants.mjs` | `data/archive/variants.json` | `data-integrity` |
+
+`data/commander-index.json` is served, so it is in the schema registry (`commander-index@1`, stamped `compiledAt` with the date of the data it is compiled from, so `--check` stays exact) and therefore in the manifest, which `tests/data-manifest.mjs` requires of every URL the asset map serves. Its URL lives in the asset map (`commanderIndex` in `crankmagic-assets.js`,
+and the worker's on-demand list), which `crankmagic-newdeck.js` reads, so the runner's bumper finds it and moves its
+`?v=` with the rest. Before 2026-10-30 the URL was hard-coded inside newdeck, the bumper reported 0 references, and
+the cascade moved for nothing.
+
+What else the 2026-10-29 refresh taught:
+
+- **A card the catalog rule drops shrinks the universe on purpose.** The guard stops the run. Commit the universe
+  alone, say so in the PR, and re-run the runner from that baseline; the guard stays as it is.
+- **Prices move, and a price-sensitive assertion can flip.** `crankmagic-lobby` pinned that a bracket-fitted deck
+  costs no more than the unfitted one; Rob removed that clause (the bracket keeps decks in one weight class).
+  Re-price the variants, and ask before changing any other assertion.
+- **The Tests job on a ready PR can be canceled at its 60-minute limit** (it was, 23:23 to 00:23 UTC). Then the gate
+  is a full local run (`node tools/run-suites.mjs -q`, about 75 minutes on four cores; start it detached, with its
+  output to a file, so a container restart cannot take it) accounted against a clean `origin/main`. Fifteen board and
+  browser suites fail the same way on main in a cloud container (PR 948 lists them); nothing else may.
+- **The Menu's graph row reads the graph's `amplifiersAt`** (when it was last re-classified), falling back to
+  `generatedAt` (the corpus bake), and says "not loaded yet" until a page loads the graph (Discover, the Lab, New deck,
+  the Play draft). Only the Neo4j ingest moves `generatedAt`, and only it adds a card to the corpus (86 commanders are
+  missing from `graph.json`, ROB-214; "Name Sticker" Goblin is still in the graph and the engine's tables).
 
 ### Bumping versions
 
@@ -169,6 +217,12 @@ this order and to the registry).
 - **Never rewrite `data/deck-ratings.json` without re-running the sweep.** A score
   is a claim about a protocol and an exact list; carrying one forward onto a
   different list is the one dishonesty this codebase is built to prevent.
+- **Never put a card in the catalog that is not a Commander-legal paper card** (Rob,
+  2026-10-29; `tools/catalog-rule.mjs`). Scryfall's Commander legality must be "legal",
+  the name must not begin "A-" (an Arena rebalance), and the card must have a paper
+  printing. A bulk row's `digital` flag is not that test: it describes one printing.
+  `tests/catalog-rule.mjs` holds the loaders and the committed catalogs to it. A refresh
+  that drops a card for this reason is a shrink on purpose; say so in the pull request.
 - **Never bump a version without changing the file, or change a file without
   bumping.** The first wastes everybody's cache; the second poisons it.
 
