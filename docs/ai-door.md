@@ -41,8 +41,8 @@ rule groups and nothing else, and that they are the list. The Worker keeps no co
 - **The configuration is two things, neither of them a list.** `CLOUDFLARE_ACCOUNT_ID` is a Worker variable, already on
   staging. `ACCESS_API_TOKEN` is a Worker secret Rob installs; it is never in this repository or in a release's
   variables. The token needs two account permissions: *Access: Organizations, Identity Providers, and Groups: Edit*
-  (read the groups, and write an invitation into one) and *Access: Apps and Policies: Edit* (read each invitation
-  policy, and add the group to it once if it is missing).
+  (read the groups, and write an invitation into one) and *Access: Apps and Policies: Read* (confirm each application
+  has an Allow policy including the group). The Worker never writes a policy, and no policy id is configured.
 
 Other parts of the door:
 
@@ -69,16 +69,24 @@ Other parts of the door:
 ### Rob's steps before the release that carries ROB-440
 
 Nothing in the Worker is a list any more, so these are the whole migration. All are dashboard steps except the secret.
+Rob set Access to this end state on 2026-11-04.
 
-1. **Create the three rule groups**, if they are not there: Zero Trust › Access › Rule groups › Add a group, named
-   exactly *Admin*, *Game Theory Insiders* and *CrankMagic Invitees*, each including people by **Emails**.
-2. **Move the people in.** Rob's address into Admin. Today's AI roster (`SELECT email FROM ai_allowlist` on
-   `crankmagic-staging`) into Game Theory Insiders. Every address now written directly in the two "Invited" policies into
-   CrankMagic Invitees.
-3. **Make each "Invited" policy include the three groups**, and remove the addresses written in it directly. (The Worker
-   adds a group to a policy itself the first time an invitation needs it, but the policies should be clean before then.)
-4. **Install the token:** `wrangler secret put ACCESS_API_TOKEN` on `crankmagic-staging` (and later `crankmagic`), with
+1. **Three rule groups**, by these exact names, each including people by **Emails**: *Admin* (Rob), *Game Theory
+   Insiders* (today's AI roster, `SELECT email FROM ai_allowlist` on `crankmagic-staging`), and *CrankMagic Invitees*
+   (everyone else invited; the earlier invitees group, renamed).
+2. **Four reusable policies:** *Admin* (Allow, the Admin group) and *Insiders* (Allow, Game Theory Insiders), each on
+   "CrankMagic accounts", "CrankMagic staging" and the AI application; *Invitees* (Allow, CrankMagic Invitees) on the
+   accounts and staging applications only, so the AI application admits Admin and Insiders alone; and *Session checks*
+   (Service Auth), unchanged. No policy names an address.
+3. **Install the token:** `wrangler secret put ACCESS_API_TOKEN` on `crankmagic-staging` (and later `crankmagic`), with
    the two permissions above. The old `ACCESS_INVITE_TOKEN` secret is no longer read and can be deleted after.
+4. **The release branch's configuration:** `ACCESS_INVITE_POLICY_ID` is no longer read or released. The next staging
+   release, built by `tools/release-pages.mjs`, drops it from `wrangler.jsonc` on `release/cloud-staging`, so the
+   deleted policy id it still names there does no harm meanwhile. `ACCESS_INVITE_APP_IDS` stays: it lists the two
+   applications an invitation must reach.
+
+An invitation checks, before writing anything, that each application in `ACCESS_INVITE_APP_IDS` has an Allow policy
+including the invitee's group. If one does not, it is refused, naming the application, and nothing changes.
 
 ## Open to everyone signed in (Rob, 2026-10-14; the sign-in half still holds, the spending half is superseded above)
 

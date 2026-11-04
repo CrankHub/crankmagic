@@ -6,7 +6,8 @@
  *   Cached   a minute; a write by this Worker drops it; an API failure falls back to the last listing for ten minutes, and
  *            past that nobody is an insider (fail closed) while OWNER_EMAIL still answers.
  *   Written  an invitation writes the address into its group (Invitees, or Insiders for an insider), never into a policy;
- *            each configured application's policy is confirmed to include the group, and is given it once if it does not;
+ *            each configured application must first have an Allow policy including the group (Rob's Nov 4 Access: reusable
+ *            "Admin", "Insiders" and "Invitees" policies), or nothing is written; the Worker writes no policy, ever;
  *            one invitation, both sign-ins, read back; idempotent; a refusal names what already holds.
  *
  * Everything is the fake in tests/helpers/fake-access.mjs. Nothing here has been run against real Cloudflare.
@@ -30,8 +31,8 @@ const stmt = (sql, args = []) => ({bind: (...v) => stmt(sql, v), first: async ()
 const db = {prepare: (s) => stmt(s)};
 const locks = () => raw.prepare("SELECT count(*) AS n FROM access_invite_locks").get().n;
 
-const APPS = [{id: "aaaaaaaa-0000-0000-0000-000000000001", name: "CrankMagic staging", domain: "staging.crankmagic.com", policy: "bbbbbbbb-0000-0000-0000-000000000001"},
-  {id: "aaaaaaaa-0000-0000-0000-000000000002", name: "CrankMagic accounts", domain: "crankmagic.com/api/*", policy: "bbbbbbbb-0000-0000-0000-000000000002"}];
+const APPS = [{id: "aaaaaaaa-0000-0000-0000-000000000001", name: "CrankMagic staging", domain: "staging.crankmagic.com"},
+  {id: "aaaaaaaa-0000-0000-0000-000000000002", name: "CrankMagic accounts", domain: "crankmagic.com/api/*"}];
 const access = fakeAccess({apps: APPS, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["ann@example.com"], [NAMES.invitees]: ["gus@example.com"]}});
 const env = accessVars(APPS);
 const fetchImpl = async (url, init) => (await access.fetch(url, init)) ?? assert.fail(`no network in this suite: ${url}`);
@@ -110,54 +111,54 @@ eq((await roster(env, {fetchImpl: wf})).insiders.map((x) => x.email), ["ann@exam
 w.group(NAMES.insiders).include.pop(); forgetGroups();
 eq(locks(), 0, "no lock is left behind");
 
-/* 4. AN INVITATION: into the group, never into a policy; both sign-ins confirm. */
-eq(inviteTargets(env), APPS.map((a) => ({app: a.id, policy: a.policy})), "the applications and their policies, read in pairs");
-eq([inviteTargets({...env, ACCESS_INVITE_POLICY_ID: APPS[0].policy}), inviteTargets({...env, ACCESS_INVITE_APP_IDS: "not-a-uuid," + APPS[1].id})], [[], []], "lists of different lengths, or a malformed id, configure nothing");
-eq([accessReady(env), accessReady({...env, ACCESS_API_TOKEN: ""}), accessReady({...env, CLOUDFLARE_ACCOUNT_ID: "x"})], [true, false, false], "admission needs the token, the account and the applications");
+/* 4. AN INVITATION: into the group, never into a policy; both sign-ins confirmed first. */
+eq(inviteTargets(env), APPS.map((a) => ({app: a.id})), "the applications an invitation reaches");
+eq(inviteTargets({...env, ACCESS_INVITE_APP_IDS: "not-a-uuid," + APPS[1].id}), [], "a malformed id configures nothing");
+eq([accessReady(env), accessReady({...env, ACCESS_API_TOKEN: ""}), accessReady({...env, CLOUDFLARE_ACCOUNT_ID: "x"}), accessReady({...env, ACCESS_INVITE_APP_IDS: ""})], [true, false, false, false], "admission needs the token, the account and the applications");
 const deps = (group) => ({now, fetchImpl: wf, fail, group});
-const policyWrites = () => w.writes.filter((x) => x.kind === "policy").length;
 const done = await admitAddress(db, env, "gen@example.com", deps("general"));
 eq(w.members(NAMES.invitees), ["gus@example.com", "gen@example.com"], "a General invitee is written into CrankMagic Invitees");
-eq(done.map((x) => [x.domain, x.added]), [["staging.crankmagic.com", true], ["crankmagic.com/api/*", true]], "and each application confirms it");
-eq(APPS.map((a) => w.policy(a.policy).include), APPS.map(() => [{email: {email: "rob@example.com"}}, {group: {id: w.groupId(NAMES.invitees)}}]),
-  "each policy is given the group once, beside what it held; no address is written into a policy");
-eq(APPS.map((a) => [w.policy(a.policy).require, w.policy(a.policy).session_duration]), APPS.map(() => [[{login_method: {id: "existing-provider"}}], "24h"]), "a policy keeps its other rules");
+eq(done.map((x) => [x.domain, x.added]), [["staging.crankmagic.com", true], ["crankmagic.com/api/*", true]], "and each application confirms it lets that group sign in");
+eq(w.writes.map((x) => x.kind), ["group", "group", "group"], "only groups were ever written (the roster's two, the invitation's one): never a policy");
+eq(w.policyFor(NAMES.invitees).include, [{group: {id: w.groupId(NAMES.invitees)}}], "the Invitees policy is as Rob left it: its group, and no address");
 await admitAddress(db, env, "ins@example.com", deps("insider"));
 eq([w.members(NAMES.insiders).includes("ins@example.com"), w.members(NAMES.invitees).includes("ins@example.com")], [true, false], "an Insider invitee is written into Game Theory Insiders only");
+eq(w.policyFor(NAMES.invitees).include, [{group: {id: w.groupId(NAMES.invitees)}}], "and the Invitees policy never gains the Insiders group");
 eq(await groupOf("ins@example.com", env, db, {fetchImpl: wf}), "insider", "so the Worker reads them as an insider, with no table written");
 eq(raw.prepare("SELECT count(*) AS n FROM ai_allowlist WHERE email = 'ins@example.com'").get().n, 0, "ai_allowlist is not written");
 const before = w.writes.length;
 const again = await admitAddress(db, env, "ins@example.com", deps("insider"));
 eq([w.writes.length, again.every((x) => x.added === false)], [before, true], "admitting again reads and writes nothing (idempotent)");
-eq(policyWrites(), 4, "each policy was given each group once: two groups, two policies");
+eq(w.calls.filter((c) => !c.startsWith("GET ")), w.calls.filter((c) => c.startsWith("PUT /groups/")), "every call that was not a read wrote a group");
 
-/* A policy refused at the second application: the group holds, the first sign-in is named, a retry finishes the rest. */
-const half = fakeAccess({apps: APPS, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["ann@example.com"], [NAMES.invitees]: ["gus@example.com"]}});
-const hf = async (u, i) => (await half.fetch(u, i)) ?? assert.fail(u);
-forgetGroups();
-half.refuse = (path, init) => init.method === "PUT" && path.endsWith(APPS[1].policy);
-await rejects(() => admitAddress(db, env, "half@example.com", {now, fetchImpl: hf, fail, group: "general"}), (e) => e.status === 502 && /Already admitted: staging\.crankmagic\.com\./.test(e.message), "the second sign-in refused: the refusal names the first");
-half.refuse = null;
-const retried = await admitAddress(db, env, "half@example.com", {now, fetchImpl: hf, fail, group: "general"});
-eq([retried.map((x) => x.added), half.members(NAMES.invitees)], [[false, false], ["gus@example.com", "half@example.com"]], "sending again finishes it, and the address is in the group once");
-
-/* Configuration that must refuse, writing nothing. */
+/* An application that does not let the group sign in: refused before anything is written, naming the application. */
 const writesBefore = w.writes.length;
+w.detach(APPS[1].id, NAMES.insiders);
+await rejects(() => admitAddress(db, env, "late@example.com", deps("insider")), (e) => e.status === 503 && /crankmagic\.com\/api\/\*.*no Allow policy that includes the "Game Theory Insiders" rule group/.test(e.message), "production with no policy for Insiders: refused, naming it and the group");
+eq(w.members(NAMES.insiders).includes("late@example.com"), false, "and the address was not written");
+eq((await admitAddress(db, env, "fine@example.com", deps("general"))).length, 2, "a General invitation, whose group both applications admit, still goes");
+/* A Service Auth policy that names the group lets no person in, and a policy that cannot be read admits nothing. */
+const svc = fakeAccess({apps: [{...APPS[0], admits: []}], groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["ann@example.com"], [NAMES.invitees]: ["gus@example.com"]}});
+svc.app(APPS[0].id).policies.push({id: "policy-gone"});
+const checksPolicy = svc.app(APPS[0].id).policies[0].id;
+svc.policy(checksPolicy).include.push({group: {id: svc.groupId(NAMES.invitees)}});
+forgetGroups();
+await rejects(() => admitAddress(db, accessVars([APPS[0]]), "svc@example.com", {now, fetchImpl: async (u, i) => svc.fetch(u, i), fail, group: "general"}), (e) => e.status === 503 && /no Allow policy/.test(e.message), "a Service Auth policy naming the group, and a policy that is gone, admit no one");
 await rejects(() => admitAddress(db, {...env, ACCESS_API_TOKEN: ""}, "late@example.com", deps("general")), (e) => e.status === 503 && /not configured/.test(e.message), "no token: not configured");
-w.policy(APPS[0].policy).app_count = 3;
-await rejects(() => admitAddress(db, env, "wide@example.com", deps("general")), (e) => e.status === 503 && /reusable and attached only/.test(e.message), "a policy attached to an application outside the configured ones is refused");
-w.policy(APPS[0].policy).app_count = 1;
 w.removeGroup(NAMES.invitees);
 forgetGroups();
 await rejects(() => admitAddress(db, env, "nogroup@example.com", deps("general")), (e) => e.status === 503 && /no single rule group named "CrankMagic Invitees"/.test(e.message), "no Invitees group: refused, naming the group to create");
-eq(w.writes.length, writesBefore, "and none of them wrote anything: every application and policy is checked before the group is written");
-eq(locks(), 0, "no lock is left behind");
+eq(w.writes.length, writesBefore + 1, "of all those, only the General invitation that could go wrote anything");
 
-/* One reusable policy shared by both applications is allowed when the configuration names it for both. */
-const one = "cccccccc-0000-0000-0000-000000000001", shared = APPS.map((a) => ({...a, policy: one}));
-const s = fakeAccess({apps: shared, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["ann@example.com"], [NAMES.invitees]: ["gus@example.com"]}});
+/* A refused group write: nothing admitted, no email, and the same invitation again finishes it. */
+const half = fakeAccess({apps: APPS, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["ann@example.com"], [NAMES.invitees]: ["gus@example.com"]}});
+const hf = async (u, i) => (await half.fetch(u, i)) ?? assert.fail(u);
 forgetGroups();
-const sharedDone = await admitAddress(db, accessVars(shared), "both@example.com", {now, fetchImpl: async (u, i) => s.fetch(u, i), fail, group: "general"});
-eq([sharedDone.length, s.policy(one).app_count, s.writes.filter((x) => x.kind === "policy").length], [2, 2, 1], "one policy for both applications: both confirm, and it is given the group once");
+half.refuse = (path, init) => init.method === "PUT";
+await rejects(() => admitAddress(db, env, "half@example.com", {now, fetchImpl: hf, fail, group: "general"}), (e) => e.status === 502 && /did not admit this address/.test(e.message), "Access refusing the write: the refusal says the address was not admitted");
+half.refuse = null;
+const retried = await admitAddress(db, env, "half@example.com", {now, fetchImpl: hf, fail, group: "general"});
+eq([retried.map((x) => x.added), half.members(NAMES.invitees)], [[true, true], ["gus@example.com", "half@example.com"]], "sending again finishes it, and the address is in the group once");
+eq(locks(), 0, "no lock is left behind");
 
 console.log(`access-invite-groups: ${checks} checks passed — the three Access rule groups are the only list: read, cached, fail closed, written by invitation and roster, never a policy address or a table row`);

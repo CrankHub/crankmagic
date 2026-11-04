@@ -69,9 +69,8 @@ eq((await svc.list(reviewer,'library')).items.length,0,'revoked library disappea
 failMail=true;const mail=await svc.emailDeck(owner,{id,email:'friend@example.com'},'https://example.com');eq(mail.status,'failed','delivery failure reported');failMail=false;eq((await svc.delivery(owner,mail.id)).status,'sent','retry delivers');const count=sent.length;await svc.delivery(owner,mail.id);eq(sent.length,count,'sent messages not resent');await rejects(()=>svc.delivery(stranger,mail.id),404);
 /* ROB-320 (Rob, 2026-10-30): anyone signed in may invite now, so a stranger reaches the same configuration check the owner does (it was a 403 before). Who may grant AI, and the five-person cap, are tests/invite-settings.mjs. */await rejects(()=>svc.invite(stranger,{name:'New',email:'new@example.com'},'https://example.com'),503);await rejects(()=>svc.invite(owner,{name:'New',email:'new@example.com'},'https://example.com'),503);
 /* Cloudflare Access's three rule groups (ROB-440): the owner's invitation goes into Game Theory Insiders, never into a policy. */
-const policyId='11111111-1111-1111-1111-111111111111',appId='00000000-0000-0000-0000-000000000000',APP1=[{id:appId,policy:policyId}];
+const appId='00000000-0000-0000-0000-000000000000',APP1=[{id:appId}];
 const access=fakeAccess({apps:APP1,groups:{[NAMES.admin]:['owner@example.com'],[NAMES.insiders]:['seed@example.com'],[NAMES.invitees]:['seed@example.com']}});
-Object.assign(access.policy(policyId),{include:[{group:{id:'existing-group'}}],exclude:[{email:{email:'blocked@example.com'}}],session_duration:'12h'});
 const accessEnv={...env,SHARING_ENABLED:'on',...accessVars(APP1),INVITE_CAP:'99'/* these checks are about admission; the cap is tests/invitations.mjs */};
 let failAccess=false;
 const accessFetch=async(url,args)=>{
@@ -82,15 +81,13 @@ const accessFetch=async(url,args)=>{
 const insiders=()=>access.members(NAMES.insiders).filter(e=>e!=='seed@example.com');
 const ready=sharing(db,accessEnv,{now,fetchImpl:accessFetch});
 eq((await ready.invite(owner,{name:'New Player',email:'new@example.com'},'https://example.com')).status,'sent','invitation after admission');
-eq([insiders(),access.policy(policyId).include],[['new@example.com'],[{group:{id:'existing-group'}},{group:{id:access.groupId(NAMES.insiders)}}]],'the address is in the group; the policy gained only the group, and keeps the group it had');
-eq([access.policy(policyId).require,access.policy(policyId).exclude,access.policy(policyId).session_duration],[[{login_method:{id:'existing-provider'}}],[{email:{email:'blocked@example.com'}}],'12h'],'invitation preserves policy restrictions');
+eq([insiders(),access.policyFor(NAMES.insiders).include,access.writes.map(w=>w.kind)],[['new@example.com'],[{group:{id:access.groupId(NAMES.insiders)}}],['group']],'the address is in the group; the Insiders policy is as Rob left it, and no policy is written');
 const writesAfterFirst=access.writes.length;
-await ready.invite(owner,{name:'New Player',email:'new@example.com'},'https://example.com');eq(access.writes.length,writesAfterFirst,'retry writes no group and no policy');
+await ready.invite(owner,{name:'New Player',email:'new@example.com'},'https://example.com');eq(access.writes.length,writesAfterFirst,'retry writes nothing');
 const sentBeforeFailure=sent.length;failAccess=true;
 await rejects(()=>ready.invite(owner,{name:'Rejected',email:'rejected@example.com'},'https://example.com'),502);failAccess=false;
 eq(sent.length,sentBeforeFailure,'Access failure sends no invitation');
 eq(raw.prepare('SELECT count(*) AS n FROM access_invite_locks').get().n,0,'failed admission releases its lock');
-access.policy(policyId).app_count=2;await rejects(()=>ready.invite(owner,{name:'Wrong app',email:'wrong@example.com'},'https://example.com'),503);access.policy(policyId).app_count=1;
 /* Two invitations at once: the second finds the group's lease held and is refused; sent again, it keeps both. */
 let releaseAccess;const held=new Promise(r=>releaseAccess=r);access.hold=(path)=>/^\/groups\/[\w-]+$/.test(path)?held:null;
 const firstInvite=ready.invite(owner,{name:'Concurrent One',email:'one@example.com'},'https://example.com');
@@ -184,34 +181,31 @@ await assert.rejects(()=>cached.read(visibleId,reviewer),/checksum/);checks++;
    email goes, the email is HTML with a text twin, and Admin › General reports the setup as yes or no. */
 {
   const {inviteTargets}=await import('../cloud/access-invites.mjs');
-  const apps=['aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000002'],policies=['bbbbbbbb-0000-0000-0000-000000000001','bbbbbbbb-0000-0000-0000-000000000002'];
-  eq(inviteTargets({ACCESS_INVITE_APP_IDS:apps.join(', '),ACCESS_INVITE_POLICY_ID:policies.join(',')}),[{app:apps[0],policy:policies[0]},{app:apps[1],policy:policies[1]}],'the two lists are read in pairs');
-  eq(inviteTargets({ACCESS_INVITE_APP_IDS:apps.join(','),ACCESS_INVITE_POLICY_ID:policies[0]}),[],'lists of different lengths configure nothing');
-  eq(inviteTargets({ACCESS_INVITE_APP_IDS:'not-a-uuid',ACCESS_INVITE_POLICY_ID:policies[0]}),[],'a malformed id configures nothing');
+  const apps=['aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000002'];
+  eq(inviteTargets({ACCESS_INVITE_APP_IDS:apps.join(', ')}),[{app:apps[0]},{app:apps[1]}],'the applications an invitation reaches, in order');
+  eq(inviteTargets({ACCESS_INVITE_APP_IDS:'not-a-uuid,'+apps[1]}),[],'a malformed id configures nothing');
   const names=['CrankMagic staging','CrankMagic Accounts'],domains=['staging.crankmagic.com','crankmagic.com/api/*'];
-  const APP2=apps.map((id,i)=>({id,name:names[i],domain:domains[i],policy:policies[i]}));
+  const APP2=apps.map((id,i)=>({id,name:names[i],domain:domains[i]}));
   const two=fakeAccess({apps:APP2,groups:{[NAMES.admin]:['owner@example.com'],[NAMES.insiders]:['seed@example.com'],[NAMES.invitees]:['seed@example.com']}});
-  let refuse=null;const mail=[];
+  let refuse=false;const mail=[];
   const fetch2=async(url,args)=>{
     if(url==='https://api.resend.com/emails'){const body=JSON.parse(args.body);mail.push(body);return Response.json({id:crypto.randomUUID()});}
-    two.refuse=refuse===null?null:(path,init)=>init.method==='PUT'&&path.endsWith('/policies/'+policies[refuse]);
-    return (await two.fetch(url,args))??assert.fail('only the configured applications, policies and groups are called: '+url);
+    two.refuse=refuse?(path,init)=>init.method==='PUT':null;
+    return (await two.fetch(url,args))??assert.fail('only the configured applications, their policies and the groups are called: '+url);
   };
-  const policyWrites=()=>two.writes.filter(w=>w.kind==='policy').map(w=>policies.indexOf(w.id));
   const env2={...accessEnv,...accessVars(APP2),INVITE_LINK_ORIGIN:'https://crankmagic.com',AI_EVERYONE:'on'};
   const both=sharing(db,env2,{now,fetchImpl:fetch2});
-  refuse=1;
-  await assert.rejects(()=>both.invite(owner,{name:'Half Way',email:'half@example.com'},'https://staging.example'),e=>e instanceof ShareError&&e.status===502&&/Already admitted: staging\.crankmagic\.com\./.test(e.message));checks++;
-  eq(mail.length,0,'production refused: no email goes, and the refusal names what was already admitted');
-  refuse=null;
+  refuse=true;
+  await assert.rejects(()=>both.invite(owner,{name:'Half Way',email:'half@example.com'},'https://staging.example'),e=>e instanceof ShareError&&e.status===502&&/did not admit this address/.test(e.message));checks++;
+  eq(mail.length,0,'Access refusing the write: no email goes');
+  refuse=false;
   const r=await both.invite(owner,{name:'Half Way',email:'half@example.com'},'https://staging.example');
-  eq(r.status,'sent','sent once both confirm');
-  eq(r.access,[{app:apps[0],name:names[0],domain:domains[0],added:false},{app:apps[1],name:names[1],domain:domains[1],added:false}],'each application confirms the address; it was already in the group from the refused try');
-  eq([two.members(NAMES.insiders),policies.map(id=>two.policy(id).include.some(x=>x.group?.id===two.groupId(NAMES.insiders)))],[['seed@example.com','half@example.com'],[true,true]],'the address is in the group once, and both policies include the group');
-  eq(policyWrites(),[0,1],'each policy is given the group once');
+  eq(r.status,'sent','sent once the address is in');
+  eq(r.access,[{app:apps[0],name:names[0],domain:domains[0],added:true},{app:apps[1],name:names[1],domain:domains[1],added:true}],'staging and production each confirm they let the group sign in');
+  eq([two.members(NAMES.insiders),two.writes.map(w=>w.kind)],[['seed@example.com','half@example.com'],['group']],'the address is in the group once, and only the group was written');
   const writesBefore=two.writes.length;
   await both.invite(owner,{name:'Half Way',email:'half@example.com'},'https://staging.example');
-  eq(two.writes.length,writesBefore,'sending again reads both policies and writes neither');
+  eq(two.writes.length,writesBefore,'sending again reads both applications and writes nothing');
   const m=mail[0];
   eq([m.subject,m.from],['You are invited to CrankMagic','CrankMagic <invite@crankmagic.com>'],'the invitation subject and sender');
   ok2(m.html.includes('Hi Half Way,')&&m.html.includes('href="https://crankmagic.com/api/auth/login?to=%23welcome"')&&/^<!doctype html>/.test(m.html),'the email is HTML, with the name and the production sign-in link');

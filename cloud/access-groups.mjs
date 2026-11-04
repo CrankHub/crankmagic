@@ -14,8 +14,8 @@
  *
  * Configured by two things, neither of them a list: CLOUDFLARE_ACCOUNT_ID (a Worker variable) and ACCESS_API_TOKEN (a Worker
  * secret Rob installs; never in this repository). The token needs "Access: Organizations, Identity Providers, and Groups:
- * Edit" (read the groups; write an invitation into one) and "Access: Apps and Policies: Edit" (cloud/access-invites.mjs reads
- * each invitation policy, and adds the group to it once if it is missing). Without both, the Worker reads no group.
+ * Edit" (read the groups; write an invitation into one) and "Access: Apps and Policies: Read" (cloud/access-invites.mjs checks
+ * that each application's policies admit the group; it never writes a policy). Without both, invitations are refused.
  *
  * Plain fetch, no library. Nothing here returns the token, and no error carries a group's rules.
  */
