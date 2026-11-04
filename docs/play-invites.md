@@ -6,15 +6,22 @@
 > holds below is the first sentence's other half: a link does not add anyone to the Access list *by being opened*; the invitation does,
 > at Create game or in Settings, five people at most per inviter.
 
+> **The list is three Cloudflare Access rule groups, and nothing else (ROB-440; Rob, 2026-11-03).** *Admin* (Rob: everything),
+> *Game Theory Insiders* (the app and every AI feature) and *CrankMagic Invitees* (the app only). An invitation writes the address
+> into CrankMagic Invitees, or into Game Theory Insiders when the owner invites an Insider; never into a policy, and never into a
+> table of the Worker's own. Each application's "Invited" policy includes the groups. `docs/ai-door.md`, "Three access groups",
+> has how the Worker reads them and Rob's steps before the release that carries this.
+
 Rob, 2026-09-26 (`docs/decisions-2026-09-25.md`, M5): **Play is for the accounts' invite list.** A table's link
 seats someone only if the address they sign in with is on that list, and **the link never adds anyone to it.**
 Someone who is not on it is **refused with instructions**: they are told to ask Rob to add them.
 
 ## How it works
 
-- The list is the **Invited** policy of the Cloudflare Access application **"CrankMagic accounts"**
-  (`crankmagic.com/api/*`). Adding someone is Rob's: add their email address to that policy
-  (`docs/plan-account-cloud.md`).
+- The list is the three Cloudflare Access **rule groups** (above), which the **Invited** policy of each Access application
+  includes: **"CrankMagic accounts"** (`crankmagic.com/api/*`) and **"CrankMagic staging"**. Adding someone is an invitation
+  (Admin › Share, or a seat at Create game), which writes them into a group and confirms each application admits it; or Rob
+  adds them to a group in the dashboard. Nobody is added to a policy by address.
 - A table's link is `https://crankmagic.com/#table/<id>/<code>`. Opening it calls `/api/tables/<id>/join`, which
   Access guards. Someone signed out is asked to sign in; someone whose address is not on the list is stopped by
   Access, which shows its block page.
@@ -46,25 +53,24 @@ Access application, "CrankMagic staging", admits Rob and the session's service t
 
 ### Rob's steps
 
-1. **One list for both applications (recommended).**
-   - Zero Trust → **Access controls** → **Policies** → the **Rule groups** tab → **Add a group**: name it
-     "CrankMagic invitees", and include each person by **Emails**.
-   - In production's "CrankMagic accounts" Invited policy, include the group (the **Rule groups** selector) in place
-     of its list of addresses.
-   - On staging's application, add an Allow policy, "Invited", that includes the same group.
+1. **One list for both applications: the rule groups.**
+   - Zero Trust → **Access controls** → **Policies** → the **Rule groups** tab: the three groups, *Admin*, *Game Theory
+     Insiders* and *CrankMagic Invitees*, each including people by **Emails** (`docs/ai-door.md` has the full steps).
+   - Production's "CrankMagic accounts" Invited policy and staging's "Invited" policy each include the three groups (the
+     **Rule groups** selector), and no address of their own.
 
-   Then an address added once is on both, and removed once is off both. Without a group, each address goes into
-   both policies, and comes out of both.
+   Then an address added once is on both, and removed once is off both. The Worker adds a group to a policy itself the
+   first time an invitation needs it, and it reads the groups with `ACCESS_API_TOKEN`, a Worker secret Rob installs.
 2. **Staging's block page:** do as above for production, with `https://staging.crankmagic.com/not-invited.html`.
 3. **Check the list below**, then send each person `https://staging.crankmagic.com/`, and a table's link when there's a
    game. They sign in with Google, or with the one-time code Access emails them.
-4. **Taking someone off:** remove them from the group.
+4. **Taking someone off:** remove them from their group.
 
 ### Before the first invite
 
 | Item | State | Whose |
 | --- | --- | --- |
-| Staging admits the invitees (the group, above) | not set | Rob |
+| Staging admits the invitees (the groups, above), and `ACCESS_API_TOKEN` is installed | not set | Rob |
 | Staging's block page sends refusals to `not-invited.html` | not set | Rob |
 | Monitoring: the Worker's 5xx and sync-conflict lines in Workers Logs; the weekly check (`tools/ops-week.mjs`) | built | done |
 | Monitoring: the two alerts and their email (`docs/ops.md`) | not set | Rob |

@@ -7,14 +7,19 @@ import {fileURLToPath} from 'node:url';
 const {Miniflare,convertV4MiniflareOptions}=await import(process.env.MINIFLARE_MODULE||'miniflare');
 const root=new URL('../../',import.meta.url);
 const app='00000000-0000-0000-0000-000000000000',policyId='11111111-1111-1111-1111-111111111111';
+/* The three Access rule groups (ROB-440): the invitation is written into CrankMagic Invitees, and the policy is given that group. */
+const invitees='22222222-2222-2222-2222-222222222222';
 const initial=()=>({id:policyId,reusable:true,app_count:1,name:'Invited',decision:'allow',include:[{group:{id:'preserved'}}],exclude:[],require:[]});
-let policy=initial(),scenario='success',requests=[];
+const groupsAt=()=>[{id:'33333333-3333-3333-3333-333333333333',name:'Admin',include:[{email:{email:'rob@example.com'}}]},
+  {id:'44444444-4444-4444-4444-444444444444',name:'Game Theory Insiders',include:[{email:{email:'ann@example.com'}}]},
+  {id:invitees,name:'CrankMagic Invitees',include:[{email:{email:'gus@example.com'}}],exclude:[],require:[]}];
+let policy=initial(),groups=groupsAt(),scenario='success',requests=[];
 const entry=`import {admitAddress} from '../../cloud/access-invites.mjs';
 import {sendMail} from '../../cloud/mail.mjs';
 export default {async fetch(request){
  let lease;
  const db={prepare(sql){return {bind(...args){return {async first(){if(sql.startsWith('INSERT')){lease={holder:args[1],expires_at:args[2]};return lease;}return lease;},async run(){lease=null;}};}};}};
- const env={ACCESS_INVITE_TOKEN:'test-only',RESEND_API_KEY:'test-only',ACCESS_INVITE_APP_IDS:'${app}',ACCESS_INVITE_POLICY_ID:'${policyId}',CLOUDFLARE_ACCOUNT_ID:'00000000000000000000000000000000'};
+ const env={ACCESS_API_TOKEN:'test-only',RESEND_API_KEY:'test-only',ACCESS_INVITE_APP_IDS:'${app}',ACCESS_INVITE_POLICY_ID:'${policyId}',CLOUDFLARE_ACCOUNT_ID:'00000000000000000000000000000000'};
  try {
   await admitAddress(db,env,'invitee@example.com',{now:()=>new Date().toISOString(),fetchImpl:fetch,fail(message,status){throw Object.assign(new Error(message),{status});}});
   const result=await sendMail(env,{id:'runtime-test',recipient:'invitee@example.com',subject:'Runtime test',text:'Synthetic fixture'},fetch);
@@ -23,7 +28,7 @@ export default {async fetch(request){
 }};`;
 const options={compatibilityDate:process.env.WORKER_RUNTIME_DATE||'2026-09-30',modules:[
  {type:'ESModule',path:fileURLToPath(new URL('tests/uat/sharing-runtime-worker.mjs',root)),contents:entry},
- ...['cloud/access-invites.mjs','cloud/mail.mjs'].map(p=>({type:'ESModule',path:fileURLToPath(new URL(p,root)),contents:readFileSync(new URL(p,root),'utf8')}))
+ ...['cloud/access-invites.mjs','cloud/access-groups.mjs','cloud/mail.mjs'].map(p=>({type:'ESModule',path:fileURLToPath(new URL(p,root)),contents:readFileSync(new URL(p,root),'utf8')}))
 ],outboundService:async request=>{
  const url=new URL(request.url);requests.push({host:url.hostname,path:url.pathname,method:request.method});
  assert.equal(request.headers.get('authorization'),'Bearer test-only','synthetic credential retained only for intended host');
@@ -31,6 +36,12 @@ const options={compatibilityDate:process.env.WORKER_RUNTIME_DATE||'2026-09-30',m
    return new Response('Do not follow',{status:302,headers:{location:'https://unexpected.example/credential-trap'}});
  if(url.hostname==='api.cloudflare.com'){
   if(url.pathname.endsWith('/apps/'+app))return Response.json({success:true,result:{policies:[{id:policyId}]}});
+  if(url.pathname.endsWith('/access/groups'))return Response.json({success:true,result:groups,result_info:{page:1,total_pages:1}});
+  if(url.pathname.endsWith('/groups/'+invitees)){
+   const at=groups.findIndex(g=>g.id===invitees);
+   if(request.method==='PUT')groups[at]={...groups[at],...await request.json(),id:invitees};
+   return Response.json({success:true,result:groups[at]});
+  }
   assert.ok(url.pathname.endsWith('/policies/'+policyId));
   if(request.method==='PUT')policy={...policy,...await request.json()};
   return Response.json({success:true,result:policy});
@@ -41,7 +52,7 @@ const options={compatibilityDate:process.env.WORKER_RUNTIME_DATE||'2026-09-30',m
 const mf=new Miniflare(convertV4MiniflareOptions?convertV4MiniflareOptions(options):options);
 try{
  for(scenario of ['success','access-redirect','mail-redirect']){
-  policy=initial();requests=[];
+  policy=initial();groups=groupsAt();requests=[];
   const response=await mf.dispatchFetch('http://localhost/'+scenario),body=await response.json();
   assert.equal(response.status,scenario==='success'?200:502,scenario+' status');
   assert.equal(body.lockReleased,true,scenario+' releases admission lock');
@@ -49,7 +60,8 @@ try{
   assert.equal(requests.some(r=>r.host==='unexpected.example'),false,'redirect destination never reached');
   if(scenario==='success'){
    assert.equal(body.result.messageId,'runtime-message');
-   assert.deepEqual(policy.include,[{group:{id:'preserved'}},{email:{email:'invitee@example.com'}}]);
+   assert.deepEqual(groups.find(g=>g.id===invitees).include,[{email:{email:'gus@example.com'}},{email:{email:'invitee@example.com'}}]);
+   assert.deepEqual(policy.include,[{group:{id:'preserved'}},{group:{id:invitees}}],'the policy gains the group, never the address');
    assert.equal(requests.filter(r=>r.host==='api.resend.com').length,1);
   }else if(scenario==='access-redirect')assert.equal(requests.some(r=>r.host==='api.resend.com'),false,'failed admission sends no mail');
   console.log('PASS native Workers '+scenario);
@@ -59,7 +71,7 @@ try{
 // Native bindings must reuse only immutable projections across requests, never permission results.
 const projectionEntry=`import {sharing} from '../../cloud/sharing.mjs';
 export default {async fetch(request,env){try{return Response.json(await sharing(env.DB,{}).read('native-share',{id:2,email:'reader@example.com'}));}catch(e){return Response.json({error:e.message},{status:e.status||500});}}};`;
-const projectionFiles=['cloud/sharing.mjs','cloud/library.mjs','cloud/advise-cards.mjs','cloud/mail.mjs','cloud/access-invites.mjs','collection-model.js','collection-exchange.js'];
+const projectionFiles=['cloud/sharing.mjs','cloud/library.mjs','cloud/advise-cards.mjs','cloud/mail.mjs','cloud/access-invites.mjs','cloud/access-groups.mjs','cloud/access.mjs','cloud/invite-email.mjs','cloud/invitations.mjs','collection-model.js','collection-exchange.js'];
 const projectionOptions={compatibilityDate:process.env.WORKER_RUNTIME_DATE||'2026-09-30',d1Databases:['DB'],modules:[
  {type:'ESModule',path:fileURLToPath(new URL('tests/uat/sharing-projection-worker.mjs',root)),contents:projectionEntry},
  ...projectionFiles.map(p=>({type:'ESModule',path:fileURLToPath(new URL(p,root)),contents:readFileSync(new URL(p,root),'utf8')}))

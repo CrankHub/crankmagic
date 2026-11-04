@@ -23,6 +23,7 @@ import path from "node:path";
 import {openBrowser, ROOT} from "./uat/browser-runner.mjs";
 import {social} from "../cloud/sharing.mjs";
 import {createLibrary} from "../cloud/library.mjs";
+import {fakeAccess, accessVars, NAMES} from "./helpers/fake-access.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec("PRAGMA foreign_keys=ON");
 for (const f of ["0001_accounts", "0002_ai", "0003_sharing", "0004_mail_retries", "0005_access_invites", "0011_invitations"]) db.exec(readFileSync(path.join(ROOT, "cloud/migrations", f + ".sql"), "utf8"));
@@ -30,23 +31,23 @@ const st = (sql, args = []) => ({bind: (...a) => st(sql, a), first: async () => 
 const D = {prepare: (s) => st(s), batch: async (a) => {db.exec("BEGIN"); try {const out = a.map((x) => x.sync()); db.exec("COMMIT"); return out;} catch (e) {db.exec("ROLLBACK"); throw e;}}};
 const lib = createLibrary(D), rob = await lib.user("rob@example.com"), friend = await lib.user("friend@example.com");
 
-/* Two Access applications, each with its reusable Invited policy, as staging and production have. */
+/* Two Access applications, each with its reusable Invited policy, as staging and production have, and the three rule groups
+   (ROB-440): an invitation writes the address into CrankMagic Invitees, and each policy includes that group. */
 const apps = ["aaaaaaaa-0000-4000-8000-000000000001", "aaaaaaaa-0000-4000-8000-000000000002"], policies = ["bbbbbbbb-0000-4000-8000-000000000001", "bbbbbbbb-0000-4000-8000-000000000002"];
 const names = ["CrankMagic staging", "CrankMagic Accounts"], domains = ["staging.crankmagic.com", "crankmagic.com/api/*"];
-const policy = policies.map((id) => ({id, reusable: true, app_count: 1, name: "Invited", decision: "allow", include: [{email: {email: "rob@example.com"}}]}));
+const APPS = apps.map((id, i) => ({id, name: names[i], domain: domains[i], policy: policies[i]}));
+const access = fakeAccess({apps: APPS, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["seed@example.com"], [NAMES.invitees]: ["seed@example.com"]}});
 const mail = [];
 let refuse = null;
 const fetchImpl = async (url, args) => {
   if (url === "https://api.resend.com/emails") {mail.push(JSON.parse(args.body)); return Response.json({id: "mail-" + mail.length});}
-  const a = apps.findIndex((x) => url.endsWith("/apps/" + x));
-  if (a >= 0) return Response.json({success: true, result: {name: names[a], domain: domains[a], policies: [{id: policies[a]}]}});
-  const i = policies.findIndex((x) => url.endsWith("/policies/" + x));
-  if (i < 0) throw Error("unexpected call " + url);
-  if (args.method === "PUT") {if (refuse === i) return Response.json({success: false}, {status: 403}); policy[i] = {...policy[i], ...JSON.parse(args.body)};}
-  return Response.json({success: true, result: policy[i]});
+  access.refuse = refuse === null ? null : (p, init) => init.method === "PUT" && p.endsWith("/policies/" + policies[refuse]);
+  const answered = await access.fetch(url, args);
+  if (!answered) throw Error("unexpected call " + url);
+  return answered;
 };
-const env = {DB: D, INVITE_ADMIN_ID: String(rob.id), RESEND_API_KEY: "test-only", SHARING_ENABLED: "on", ACCESS_INVITE_TOKEN: "test-only",
-  ACCESS_INVITE_APP_IDS: apps.join(","), ACCESS_INVITE_POLICY_ID: policies.join(","), CLOUDFLARE_ACCOUNT_ID: "0".repeat(32), INVITE_LINK_ORIGIN: "https://crankmagic.com", AI_EVERYONE: "on"};
+const env = {DB: D, INVITE_ADMIN_ID: String(rob.id), RESEND_API_KEY: "test-only", SHARING_ENABLED: "on", ...accessVars(APPS),
+  INVITE_LINK_ORIGIN: "https://crankmagic.com", AI_EVERYONE: "on"};
 
 let checks = 0;
 const ok = (c, m) => {assert.ok(c, m); checks += 1;};
@@ -147,7 +148,9 @@ try {
     const [nl, ni] = [await box(page, "#cm-dialog .cm-admin-form label:nth-of-type(1)"), await box(page, "#cm-dialog [name=name]")];
     ok(ni.t > nl.t, "each field sits under its label");
     eq(await dialog.locator(".cm-admin-form .cm-form-footer button").evaluateAll((els) => els.map((el) => el.textContent.trim())), ["Cancel", "Send"], "with Cancel and Send");
-    /* refused by production's Access: nothing is emailed, and the window says what holds */
+    /* refused by production's Access: nothing is emailed, and the window says what holds. (Production's policy is made not to
+       include the group yet, as before the first invitation, so its one write is the one refused.) */
+    access.policy(policies[1]).include = [{email: {email: "rob@example.com"}}];
     refuse = 1;
     await name.fill("Sam Player"); await email.fill("sam@example.com");
     await dialog.getByRole("button", {name: "Send", exact: true}).click();
@@ -164,7 +167,9 @@ try {
     eq(await confirmation.locator("[data-admin-share]").count(), 0, "after a send the Share window is gone");
     eq((await confirmation.locator("[data-invite-confirmation]").textContent()).trim(), "Your email has been successfully sent", "and the dialog says the email was sent");
     eq(await confirmation.locator(".cm-form-footer button").evaluateAll((els) => els.map((el) => el.textContent.trim())), ["Confirm"], "with one Confirm button");
-    eq(policy.map((p) => p.include.some((r) => r.email?.email === "sam@example.com")), [true, true], "the address is on staging's and production's policies");
+    eq([access.members(NAMES.insiders).includes("sam@example.com"), policies.map((id) => access.policy(id).include.some((r) => r.group?.id === access.groupId(NAMES.insiders))),
+      policies.map((id) => access.policy(id).include.some((r) => r.email?.email === "sam@example.com"))], [true, [true, true], [false, false]],
+      "the owner's invitation (Game Theory Insider by default) puts the address in that rule group, which staging's and production's policies both include; no policy holds the address");
     eq(mail.length, 1, "one email");
     await shot(page, "share-sent-1400");
     ok(mail[0].html.includes("Hi Sam Player,") && mail[0].html.includes("https://crankmagic.com/api/auth/login?to=%23welcome") && mail[0].text.includes("Hi Sam Player,"), "an HTML invitation with its text twin and the sign-in link");
