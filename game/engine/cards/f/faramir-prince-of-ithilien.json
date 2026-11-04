@@ -1,0 +1,85 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Faramir, Prince of Ithilien",
+    "oracleId": "8a8c7c20-beb7-4352-99ea-7f64a30b9f52",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Noble"
+    ],
+    "manaCost": "{2}{W}{U}",
+    "colors": [
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "U",
+      "W"
+    ],
+    "power": 3,
+    "toughness": 3
+  },
+  "oracleText": "At the beginning of your end step, choose an opponent. At the beginning of that player's next end step, you draw a card if they didn't attack you that turn. Otherwise, create three 1/1 white Human Soldier creature tokens.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "At the beginning of your end step, choose an opponent. At the beginning of that player's next end step, you draw a card if they didn't attack you that turn. Otherwise, create three 1/1 white Human Soldier creature tokens.",
+      "trigger": {
+        "on": "end step"
+      },
+      "effects": [
+        {
+          "effect": "choosePlayer"
+        },
+        {
+          "effect": "delayedTrigger",
+          "at": "end step",
+          "player": "the chosen player",
+          "text": "At the beginning of that player's next end step, you draw a card if they didn't attack you that turn. Otherwise, create three 1/1 white Human Soldier creature tokens.",
+          "effects": [
+            {
+              "effect": "branch",
+              "if": {
+                "activePlayerAttackedYou": false
+              },
+              "then": [
+                {
+                  "effect": "draw",
+                  "count": 1
+                }
+              ],
+              "otherwise": [
+                {
+                  "effect": "createToken",
+                  "count": 3,
+                  "token": {
+                    "name": "Human Soldier",
+                    "types": [
+                      "Creature"
+                    ],
+                    "subtypes": [
+                      "Human",
+                      "Soldier"
+                    ],
+                    "colors": [
+                      "W"
+                    ],
+                    "power": 1,
+                    "toughness": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

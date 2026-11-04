@@ -1,0 +1,816 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Jeskai Devotee",
+  "fixtures": {
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}"
+    },
+    "Smoke Zap": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "Smoke Zap deals 1 damage to target player.",
+        "targets": [
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "amount": 1,
+            "targets": {
+              "target": 0
+            },
+            "who": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Flurry: the second spell he casts this turn makes it a 3/3; the first leaves it a 2/2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rock",
+            "Rock"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Jeskai Devotee",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Jeskai Devotee",
+                "power": 3,
+                "toughness": 3
+              }
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Jeskai Devotee",
+            "power": 3,
+            "toughness": 3
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "One spell only: still a 2/2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rock"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Jeskai Devotee",
+            "power": 2,
+            "toughness": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "A third spell is no second: it stays a 3/3, not a 4/4",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rock",
+            "Rock",
+            "Rock"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Jeskai Devotee",
+            "power": 3,
+            "toughness": 3
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Your second spell, not anybody's: Maya casts two in a row on his turn (her second, a spell of hers) and Devotee stays a 2/2; his own second is a 3/3",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rock",
+            "Rock"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zap",
+            "Smoke Zap"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Smoke Zap",
+          "seat": 1,
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Smoke Zap",
+          "seat": 1,
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 3
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Jeskai Devotee",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "life": 38
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Jeskai Devotee",
+            "power": 3,
+            "toughness": 3
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Until end of turn: a 2/2 again on Maya's turn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rock",
+            "Rock"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rock"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Jeskai Devotee",
+                "power": 3,
+                "toughness": 3
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Jeskai Devotee",
+            "power": 2,
+            "toughness": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "{1}: Add U (one of {U}, {R} or {W}), the {1} from a Wastes -- three ways offered, then none for the rest of the turn though the pool holds mana for it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 3
+            }
+          ]
+        },
+        {
+          "tap": "Jeskai Devotee",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "pool": {
+                "U": 1,
+                "C": 0
+              }
+            },
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "U": 1
+          }
+        },
+        {
+          "seat": 0,
+          "tapped": "Jeskai Devotee",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "{1}: Add R (one of {U}, {R} or {W}), the {1} from a Wastes -- three ways offered, then none for the rest of the turn though the pool holds mana for it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 3
+            }
+          ]
+        },
+        {
+          "tap": "Jeskai Devotee",
+          "mana": {
+            "R": 1
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "pool": {
+                "R": 1,
+                "C": 0
+              }
+            },
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "R": 1
+          }
+        },
+        {
+          "seat": 0,
+          "tapped": "Jeskai Devotee",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "{1}: Add W (one of {U}, {R} or {W}), the {1} from a Wastes -- three ways offered, then none for the rest of the turn though the pool holds mana for it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 3
+            }
+          ]
+        },
+        {
+          "tap": "Jeskai Devotee",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "pool": {
+                "W": 1,
+                "C": 0
+              }
+            },
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "W": 1
+          }
+        },
+        {
+          "seat": 0,
+          "tapped": "Jeskai Devotee",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "The {1} must be paid: with no mana the ability is not offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "U": 0,
+            "R": 0,
+            "W": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Once each turn, not once ever: on his next turn it makes mana again (and it needs no tapping)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jeskai Devotee",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Jeskai Devotee",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Jeskai Devotee"
+              },
+              "count": 3
+            }
+          ]
+        },
+        {
+          "tap": "Jeskai Devotee",
+          "mana": {
+            "W": 1
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "W": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Jeskai Devotee"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Jeskai Devotee"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Jeskai Devotee"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Jeskai Devotee",
+            "Mountain",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -104,17 +104,22 @@ const countedTarget = (spec) => Boolean(spec) && typeof spec === "object" && spe
    `selector`), which ones asked once the cast is taken, as the creatures it taps are. */
 const FLASHBACK_ATOMS = ["mana", "payLife", "tapCreature", "discard", "behold", "sacrifice"];
 /* BEHOLD (CR 701.4a): "behold an Elf", "behold three Elementals" -- what may be beheld, a selector, and how many (1 or more),
-   in an additional cost or a flashback cost (rules/actions.mjs, beholdChoices). Never optional, and one to a card: its cast
-   asks one question of it. */
+   in an additional cost or a flashback cost (rules/actions.mjs, beholdChoices). Optional only in a spell's own additional cost
+   (below), and one to a card: its cast asks one question of it. */
 /* "BEHOLD A GOBLIN AND EXILE IT" (Champion of the Weird; CR 701.4a, 601.2h): `exile: true`, what is beheld exiled as the cost is
    paid -- in a plain additional cost alone (`exiles`), linked to the permanent the spell becomes (CR 607.2q; rules/actions.mjs,
    rules/stack.mjs). */
+/* "AS AN ADDITIONAL COST TO CAST THIS SPELL, YOU MAY BEHOLD A DRAGON" (Dispelling Exhale; CR 701.4a, 601.2b): `optional: true`, in
+   a spell's own additional cost alone (`exiles`, as an exile is) -- the cast without it and the cast with it, as a kicker's are
+   (rules/actions.mjs, additionalVariants), read by "if a Dragon was beheld" (`cast.additionalPaid`, script/condition.mjs). */
 function beholdProblems(atom, {exiles = false} = {}) {
   if (atom?.atom !== "behold") return [];
-  let fits = Boolean(atom.selector) && typeof atom.selector === "object" && (atom.count === undefined || (Number.isInteger(atom.count) && atom.count >= 1)) && atom.optional === undefined;
+  /* `exiles` says it is a spell's own additional cost, the one place a behold may exile or be optional. */
+  let fits = Boolean(atom.selector) && typeof atom.selector === "object" && (atom.count === undefined || (Number.isInteger(atom.count) && atom.count >= 1))
+    && (atom.optional === undefined || (exiles && atom.optional === true));
   try { if (fits) compileSelector({...atom.selector, what: "card"}); } catch { fits = false; }
   const exile = atom.exile === undefined || (exiles && atom.exile === true);
-  return [...(fits ? [] : ["behold: what may be beheld (a selector) and how many, 1 or more, never optional"]),
+  return [...(fits ? [] : ["behold: what may be beheld (a selector) and how many, 1 or more; optional only in a spell's own additional cost (`optional: true`)"]),
     ...(exile ? [] : ["behold: exile is true (behold and exile it), in a spell's own additional cost and nowhere else"])];
 }
 /* Life paid as a number (CR 119.4): only an activated ability's cost counts it as it is paid (rules/actions.mjs, costPayment;
@@ -1376,6 +1381,21 @@ export function compileScript(script) {
       keywords.push("Flashback");
       return;
     }
+    /* HARMONIZE [COST] (Tarkir: Dragonstorm; Roamer's Routine): "you may cast this card from your graveyard for its harmonize cost.
+       You may tap an untapped creature you control to reduce that cost by {X}, where X is its power. Then exile this spell" --
+       flashback's cast and exile, so its static ability (`rule: "flashback"`, `harmonize: true`), the cost mana alone; the tap is an
+       offer of the cast for each creature that could be tapped (rules/actions.mjs, castOffers: a cost reduction, CR 601.2f, that
+       takes generic mana only). An instant or a sorcery, as flashback's. */
+    if (ability.kind === "keyword" && String(ability.keyword).toLowerCase() === "harmonize") {
+      const cost = Array.isArray(ability.cost) ? ability.cost : [];
+      let paid = null;
+      try { paid = parseManaCost(cost[0]?.cost ?? ""); } catch { /* refused below */ }
+      if (cost.length !== 1 || cost[0]?.atom !== "mana" || !paid || !paid.symbols.length || paid.variable > 0) problems.push(`${ability.text}: a harmonize cost is mana, and nothing else`);
+      if (!(identity.types ?? []).some((t) => t === "Instant" || t === "Sorcery")) problems.push(`${ability.text}: harmonize on a card that is not an instant or sorcery`);
+      abilities.push({id, kind: "static", rule: "flashback", harmonize: true, text: ability.text, cost: structuredClone(cost), affects: {what: "card", self: true}});
+      keywords.push("Harmonize");
+      return;
+    }
     /* EMBALM [COST] (CR 702.128a; Anointer Priest): "[Cost], Exile this card from your graveyard: Create a token that's a copy
        of this card, except it's white, it has no mana cost, and it's a Zombie in addition to its other types. Activate only as
        a sorcery" -- an activated ability of the card in its owner's graveyard (rules/actions.mjs offers it there), "this card"
@@ -1825,8 +1845,9 @@ export function compileScript(script) {
         /* "As an additional cost to cast this spell, blight 1" (CR 701.68a): a whole number of -1/-1 counters, 1 or more. */
         if (atom?.atom === "blight" && !(Number.isInteger(atom.count ?? 1) && (atom.count ?? 1) >= 1)) problems.push("blight: an additional cost of 1 or more -1/-1 counters");
         /* "You may blight 1" (Cinder Strike): an optional additional cost, read by "if this spell's additional cost was paid"
-           (script/condition.mjs, `cast.additionalPaid`). A blight's alone, yet. */
-        if (atom?.optional !== undefined && !(atom.optional === true && atom.atom === "blight")) problems.push(`${atom?.atom ?? "an additional cost"}: only a blight may be an optional additional cost yet`);
+           (script/condition.mjs, `cast.additionalPaid`). A blight's or a behold's alone, yet (Dispelling Exhale's "you may behold a
+           Dragon"). */
+        if (atom?.optional !== undefined && !(atom.optional === true && (atom.atom === "blight" || atom.atom === "behold"))) problems.push(`${atom?.atom ?? "an additional cost"}: only a blight or a behold may be an optional additional cost yet`);
       }
       /* MODES CHOSEN AS IT IS CAST (CR 700.2, 601.2b): a spell whose one effect is a modal -- its modes, and their targets,
          are chosen as it is cast (rules/actions.mjs), never as it resolves, whether its modes name targets or not (Austere

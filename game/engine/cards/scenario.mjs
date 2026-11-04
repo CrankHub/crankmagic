@@ -209,6 +209,12 @@ export function runScenario(scenario, cards, fixtures = {}) {
     found = found.filter((a) => (a.waterbend ?? false) === (step.waterbend ?? false));
     /* A gift promised (CR 702.174a): `gift`, the seat of the opponent chosen; without it, the cast that promises none. */
     found = found.filter((a) => (a.gift ?? null) === (step.gift ?? null));
+    /* An optional behold (Dispelling Exhale; CR 701.4a, 601.2b): `behold: true` takes the cast that beholds -- what, a question
+       once it is taken, answered by the next step's `choose` -- and `behold: false` the one that does not. */
+    if (step.behold !== undefined) found = found.filter((a) => ((a.behold ?? 0) > 0) === step.behold);
+    /* Harmonize (Roamer's Routine): `harmonize: "<creature>"` takes the cast that taps that creature to take its power off the cost;
+       `harmonize: false` the cast that taps none. */
+    if (step.harmonize !== undefined) found = found.filter((a) => (step.harmonize === false ? a.harmonize === undefined : a.harmonize !== undefined && state.objects[a.harmonize].card === step.harmonize));
     /* Cast face down with disguise (CR 702.168a), or turned face up for its disguise cost (702.168d): `disguise: true`;
        without it, the card cast as itself, or turned face up for its mana cost. */
     found = found.filter((a) => (a.disguise ?? false) === (step.disguise ?? false));

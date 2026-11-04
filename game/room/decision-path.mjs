@@ -49,6 +49,7 @@ export function decisionPath(state, choice, option, action, script) {
     else [].concat(ids).forEach((id,i)=>card(`cost:${kind}:${i}`,id,kind));
   }
   if(action?.extraMana)add('extra-mana',action.extraMana,action.extraMana,'mana');
+  if(action?.harmonize!==undefined)card('cost:harmonize:0',action.harmonize,'harmonize');
   if(action?.produce!==undefined)add('produce',action.produce,paymentWords({mana:action.mana || {},life:0}),'mana');
   if(action?.payWith!==undefined)add('payment',action.payWith,paymentWords(action.payment || {mana:{},life:0}),'mana');
   // Cost questions carry their exact tap plan. Source identity and output are separate layers.

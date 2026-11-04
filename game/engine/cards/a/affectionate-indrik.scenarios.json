@@ -1,0 +1,973 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Affectionate Indrik",
+  "fixtures": {
+    "Ally Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Foe Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Foe Brute": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{3}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Foe Giant": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Giant"
+      ],
+      "manaCost": "{4}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 5,
+      "toughness": 5
+    },
+    "Foe Wall": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Wall"
+      ],
+      "manaCost": "{1}{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 0,
+      "toughness": 4
+    },
+    "Smite": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Fights Maya's 2/2: the Bear dies, Indrik lives",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Foe Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Foe Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Affectionate Indrik",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Fights a 5/5: it takes 4 and lives, Indrik takes 5 and dies",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Giant"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Foe Giant"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Giant"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fights a 4/4: both die",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Brute"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Foe Brute"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Foe Brute"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fights a 0/4: it takes 4 and dies, Indrik takes nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Wall"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Foe Wall"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Foe Wall"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Affectionate Indrik",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "\"You may\": declined, nothing fights -- the 4/4 stays and so does Indrik",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Brute"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Foe Brute"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Brute"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Affectionate Indrik",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "Nothing to aim at but his own 2/2: no trigger, nothing asked, the Bear is safe",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Ally Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Affectionate Indrik",
+            "Ally Bear",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "The question lists only creatures he does not control (Maya's Bear and Trey's Giant, not his own Bear); Trey's Giant it is",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Ally Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Bear"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Giant"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Foe Bear",
+                  "Foe Giant"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Foe Giant"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Giant"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Ally Bear",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "seats": 3
+    },
+    {
+      "name": "Indrik destroyed in response to the trigger: the fight does nothing, Maya's Bear is unhurt",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik",
+            "Smite"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Foe Bear"
+          ]
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Smite",
+          "targets": [
+            {
+              "card": "Affectionate Indrik"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "cards": [
+                "Smite",
+                "Affectionate Indrik"
+              ]
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Foe Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Affectionate Indrik"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Affectionate Indrik"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Affectionate Indrik"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Affectionate Indrik",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

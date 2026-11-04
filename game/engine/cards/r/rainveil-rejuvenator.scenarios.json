@@ -1,0 +1,513 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Rainveil Rejuvenator",
+  "fixtures": {
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}"
+    },
+    "Surge": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Target creature gets +3/+3 until end of turn.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "pump",
+            "targets": {
+              "target": 0
+            },
+            "power": 3,
+            "toughness": 3
+          }
+        ]
+      }
+    },
+    "Run Dry": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "Mill eighteen cards.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "mill",
+            "count": 18
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "It enters: mills three -- the top three cards, library down to 17 -- and, cast this turn, it is summoning sick (CR 302.6)",
+      "library": [
+        "Rock",
+        "Island",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rainveil Rejuvenator"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rainveil Rejuvenator"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Rainveil Rejuvenator"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Forest",
+            "Island",
+            "Rock"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 17
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Rainveil Rejuvenator",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 20
+        }
+      ]
+    },
+    {
+      "name": "\"You may\": declined, nothing is milled",
+      "library": [
+        "Rock",
+        "Island",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rainveil Rejuvenator"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rainveil Rejuvenator"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Rainveil Rejuvenator",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Only two cards left in the library: both are milled, no more, and nobody loses for it",
+      "library": [
+        "Rock",
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rainveil Rejuvenator",
+            "Run Dry"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Run Dry"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "library",
+              "count": 2
+            },
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "count": 19
+            }
+          ]
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Rainveil Rejuvenator"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "count": 21
+        },
+        {
+          "seat": 0,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "{T}: {G} equal to its power -- a 2/4 adds {G}{G}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rainveil Rejuvenator"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Rainveil Rejuvenator"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 2
+          }
+        },
+        {
+          "seat": 0,
+          "tapped": "Rainveil Rejuvenator"
+        },
+        {
+          "offers": {
+            "kind": "activate-mana",
+            "card": "Rainveil Rejuvenator"
+          },
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "Its power is read as it taps: pumped +3/+3 it adds {G}{G}{G}{G}{G}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rainveil Rejuvenator",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Surge"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Surge",
+          "targets": [
+            {
+              "card": "Rainveil Rejuvenator"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Rainveil Rejuvenator",
+                "power": 5,
+                "toughness": 7
+              }
+            }
+          ]
+        },
+        {
+          "tap": "Rainveil Rejuvenator"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Beside a Forest: {G} from the land and {G}{G} from it, three in all",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rainveil Rejuvenator",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Rainveil Rejuvenator"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rainveil Rejuvenator"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Rainveil Rejuvenator"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Rainveil Rejuvenator"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Forest",
+            "Rainveil Rejuvenator",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

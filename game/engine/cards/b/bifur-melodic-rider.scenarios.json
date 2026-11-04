@@ -1,0 +1,490 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Bifur, Melodic Rider",
+  "fixtures": {
+    "Smoke Relic": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{2}"
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Enters with an enduring story: it triggers twice, a counter on Thorin and a counter on Bifur",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Thorin Oakenshield",
+            "Smoke Relic",
+            "Smoke Relic",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Mountain",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bifur, Melodic Rider"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Bifur, Melodic Rider"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "choose": [
+            "Thorin Oakenshield"
+          ]
+        },
+        {
+          "choose": [
+            "Bifur, Melodic Rider"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Thorin Oakenshield",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bifur, Melodic Rider",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bifur, Melodic Rider",
+            "power": 5,
+            "toughness": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "Each trigger has its own target: both counters on Thorin (and the hybrid {R/W}{R/W} paid with Plains and Mountain)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Thorin Oakenshield",
+            "Smoke Relic",
+            "Smoke Relic",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Plains",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bifur, Melodic Rider"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Bifur, Melodic Rider"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "choose": [
+            "Thorin Oakenshield"
+          ]
+        },
+        {
+          "choose": [
+            "Thorin Oakenshield"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Thorin Oakenshield",
+            "counter": "+1/+1",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bifur, Melodic Rider",
+            "counter": "+1/+1",
+            "count": 0
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Attacks with an enduring story: it triggers twice too",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Thorin Oakenshield",
+            "Smoke Relic",
+            "Smoke Relic",
+            "Bifur, Melodic Rider"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bifur, Melodic Rider"
+          ]
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "choose": [
+            "Bifur, Melodic Rider"
+          ]
+        },
+        {
+          "choose": [
+            "Thorin Oakenshield"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bifur, Melodic Rider",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Thorin Oakenshield",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "With no enduring story (Bifur and one artifact are two story things, not three) it attacks and triggers once: one counter",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Relic",
+            "Bifur, Melodic Rider"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bifur, Melodic Rider"
+          ]
+        },
+        {
+          "choose": [
+            "Bifur, Melodic Rider"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bifur, Melodic Rider",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Another Dwarf's trigger triggers again while he has the story: Priest of Ancient Lore (a Dwarf) gains 2 life and draws 2, Elvish Visionary (an Elf) only draws 1",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Thorin Oakenshield",
+            "Smoke Relic",
+            "Smoke Relic",
+            "Bifur, Melodic Rider",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Priest of Ancient Lore",
+            "Elvish Visionary"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Priest of Ancient Lore"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "life": 42
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Elvish Visionary",
+                "Wastes",
+                "Wastes"
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Elvish Visionary"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 42
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Without the story the Dwarf triggers once: 1 life and one card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Relic",
+            "Bifur, Melodic Rider",
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Priest of Ancient Lore"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Priest of Ancient Lore"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    }
+  ]
+}

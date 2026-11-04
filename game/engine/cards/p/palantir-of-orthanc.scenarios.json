@@ -1,0 +1,582 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Palantír of Orthanc",
+  "fixtures": {
+    "Smoke Two": {
+      "types": [
+        "Creature"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Five": {
+      "types": [
+        "Creature"
+      ],
+      "manaCost": "{4}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 5,
+      "toughness": 5
+    }
+  },
+  "scenarios": [
+    {
+      "name": "End step: an influence counter and scry 2, then the opponent lets its controller draw: a card, no mill, no life lost",
+      "library": [
+        "Smoke Five",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Palantír of Orthanc"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Five",
+                  "Smoke Two"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Let it draw a card",
+                  "Don't: it mills X cards and you lose life equal to their total mana value"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Let it draw a card"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Palantír of Orthanc",
+            "counter": "influence",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Five"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "The opponent refuses: Rob mills one card (X is the one counter) and the opponent loses its mana value, 5, with no card drawn",
+      "library": [
+        "Smoke Five",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Palantír of Orthanc"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Five",
+                  "Smoke Two"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Let it draw a card",
+                  "Don't: it mills X cards and you lose life equal to their total mana value"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't: it mills X cards and you lose life equal to their total mana value"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Palantír of Orthanc",
+            "counter": "influence",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Five"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "life": 35
+        }
+      ]
+    },
+    {
+      "name": "X grows with the counters: refused twice, the second end step mills two cards and costs the total mana value of both (2 + 5)",
+      "library": [
+        "Smoke Five",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Five",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Palantír of Orthanc"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Five",
+                  "Smoke Two"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Let it draw a card",
+                  "Don't: it mills X cards and you lose life equal to their total mana value"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't: it mills X cards and you lose life equal to their total mana value"
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Two",
+                  "Smoke Five"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Let it draw a card",
+                  "Don't: it mills X cards and you lose life equal to their total mana value"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't: it mills X cards and you lose life equal to their total mana value"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Palantír of Orthanc",
+            "counter": "influence",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Two"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 16
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Five",
+            "Smoke Two",
+            "Smoke Five"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 28
+        }
+      ]
+    },
+    {
+      "name": "Three players (the first player draws on turn 1): the targeted opponent alone is asked and alone loses the life (Trey, not Maya)",
+      "seats": 3,
+      "library": [
+        "Smoke Two",
+        "Smoke Five",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two",
+        "Smoke Two"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Palantír of Orthanc"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "choose": [
+            "Trey"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Five",
+                  "Smoke Two"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2,
+                "options": [
+                  "Let it draw a card",
+                  "Don't: it mills X cards and you lose life equal to their total mana value"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't: it mills X cards and you lose life equal to their total mana value"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Palantír of Orthanc",
+            "counter": "influence",
+            "count": 1
+          }
+        },
+        {
+          "seat": 2,
+          "life": 35
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Two"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Five"
+          ]
+        }
+      ]
+    }
+  ]
+}

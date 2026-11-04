@@ -1,0 +1,92 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dispelling Exhale",
+    "oracleId": "dd3a4b64-0987-4e9b-a18d-c54365438857",
+    "types": [
+      "Instant"
+    ],
+    "subtypes": [],
+    "manaCost": "{1}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "As an additional cost to cast this spell, you may behold a Dragon. (You may choose a Dragon you control or reveal a Dragon card from your hand.)\nCounter target spell unless its controller pays {2}. If a Dragon was beheld, counter that spell unless its controller pays {4} instead.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "As an additional cost to cast this spell, you may behold a Dragon. (You may choose a Dragon you control or reveal a Dragon card from your hand.)\nCounter target spell unless its controller pays {2}. If a Dragon was beheld, counter that spell unless its controller pays {4} instead.",
+      "additionalCost": [
+        {
+          "atom": "behold",
+          "selector": {
+            "subtypes": [
+              "Dragon"
+            ]
+          },
+          "optional": true
+        }
+      ],
+      "targets": [
+        {
+          "what": "spell"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "branch",
+          "if": {
+            "cast": {
+              "additionalPaid": true
+            }
+          },
+          "then": [
+            {
+              "effect": "unlessPays",
+              "who": {
+                "controllerOf": {
+                  "target": 0
+                }
+              },
+              "amount": 4,
+              "effects": [
+                {
+                  "effect": "counterSpell",
+                  "spells": {
+                    "target": 0
+                  }
+                }
+              ]
+            }
+          ],
+          "otherwise": [
+            {
+              "effect": "unlessPays",
+              "who": {
+                "controllerOf": {
+                  "target": 0
+                }
+              },
+              "amount": 2,
+              "effects": [
+                {
+                  "effect": "counterSpell",
+                  "spells": {
+                    "target": 0
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

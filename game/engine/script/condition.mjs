@@ -164,6 +164,9 @@ const CONDITION_KEYS = ["present", "atLeast", "atMost", "handEmpty", "notTheirTu
   "noGreaterPower", "wasCast", "firstEndStep",
   /* Battle Angels of Tyr's "if that player has more cards in hand / controls more lands / has more life than each other player". */
   "thatPlayerMost",
+  /* Master Table column AL load: Faramir, Prince of Ithilien's "if they didn't attack you that turn", asked at the end step of that
+     player's turn -- the player whose turn it is. */
+  "activePlayerAttackedYou",
   /* Gift's "if the gift was promised" (CR 702.174b). */
   "giftPromised",
   /* Offspring's "if its offspring cost was paid" (CR 702.175a; wave 4c). */
@@ -460,6 +463,11 @@ export function conditionHolds(state, condition, {controller, source = null, abo
   /* "As long as you have an enduring story" (Storied, CR 702.195b), or "unless you have one": the player's designation
      (keywords/designations.mjs). */
   if (condition.enduringStory !== undefined && (state.players[controller]?.enduringStory === true) !== condition.enduringStory) return false;
+  /* "If they didn't attack you that turn" (Faramir, Prince of Ithilien): the player whose turn it is has declared a creature attacking
+     the controller this turn -- the player, not a planeswalker of theirs (CR 506.3: attacking one is not attacking its controller).
+     Kept as each player declares attackers (rules/combat.mjs, `attackedPlayers`), from none as their turn begins (rules/turn.mjs). */
+  if (condition.activePlayerAttackedYou !== undefined
+    && (state.players[state.activePlayer]?.attackedPlayers ?? []).includes(controller) !== condition.activePlayerAttackedYou) return false;
   /* "Unless you have the city's blessing" (Wayward Swordtooth; CR 702.131c): its controller's designation, or theirs this
      moment by a permanent's ascend (keywords/designations.mjs). */
   if (condition.citysBlessing !== undefined && hasCitysBlessing(state, controller) !== condition.citysBlessing) return false;
@@ -615,6 +623,7 @@ export function conditionProblems(condition) {
   if ("yourTurn" in condition && condition.yourTurn !== true) problems.push("yourTurn is true");
   if ("yourMainPhase" in condition && condition.yourMainPhase !== true) problems.push("yourMainPhase is true");
   if ("enduringStory" in condition && typeof condition.enduringStory !== "boolean") problems.push("enduringStory is true or false");
+  if ("activePlayerAttackedYou" in condition && typeof condition.activePlayerAttackedYou !== "boolean") problems.push("activePlayerAttackedYou is true or false: whether the player whose turn it is attacked the controller this turn");
   if ("citysBlessing" in condition && typeof condition.citysBlessing !== "boolean") problems.push("citysBlessing is true or false");
   if ("saddled" in condition && typeof condition.saddled !== "boolean") problems.push("saddled is true or false");
   if ("lifeAboveAnotherOpponent" in condition && condition.lifeAboveAnotherOpponent !== "that player") problems.push("lifeAboveAnotherOpponent is \"that player\": the player the trigger is about");

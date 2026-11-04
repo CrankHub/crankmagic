@@ -1,0 +1,93 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Lasyd Prowler",
+    "oracleId": "f780d6f6-540b-4773-8a48-e56e95c2d39e",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Snake",
+      "Ranger"
+    ],
+    "manaCost": "{2}{G}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 5,
+    "toughness": 5
+  },
+  "oracleText": "When this creature enters, you may mill cards equal to the number of lands you control.\nRenew — {1}{G}, Exile this card from your graveyard: Put X +1/+1 counters on target creature, where X is the number of land cards in your graveyard. Activate only as a sorcery.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When this creature enters, you may mill cards equal to the number of lands you control.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "mill",
+          "count": {
+            "count": {
+              "what": "permanent",
+              "types": [
+                "Land"
+              ],
+              "controller": "you"
+            }
+          }
+        }
+      ],
+      "optional": true
+    },
+    {
+      "kind": "activated",
+      "text": "Renew — {1}{G}, Exile this card from your graveyard: Put X +1/+1 counters on target creature, where X is the number of land cards in your graveyard. Activate only as a sorcery.",
+      "zone": "graveyard",
+      "timing": "sorcery",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}{G}"
+        },
+        {
+          "atom": "exileFromGraveyard",
+          "self": true
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": {
+            "target": 0
+          },
+          "counter": "+1/+1",
+          "count": {
+            "count": {
+              "what": "card",
+              "zone": "graveyard",
+              "controller": "you",
+              "types": [
+                "Land"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

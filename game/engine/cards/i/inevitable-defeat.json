@@ -1,0 +1,71 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Inevitable Defeat",
+    "oracleId": "d68439b5-7011-4b1d-a7da-14ef0f4d9994",
+    "types": [
+      "Instant"
+    ],
+    "subtypes": [],
+    "manaCost": "{1}{R}{W}{B}",
+    "colors": [
+      "B",
+      "R",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "R",
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "This spell can't be countered.\nExile target nonland permanent. Its controller loses 3 life and you gain 3 life.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "This spell can't be countered.",
+      "rule": "cant-be-countered",
+      "affects": {
+        "what": "spell",
+        "self": true
+      }
+    },
+    {
+      "kind": "spell",
+      "text": "Exile target nonland permanent. Its controller loses 3 life and you gain 3 life.",
+      "targets": [
+        {
+          "what": "permanent",
+          "nonTypes": [
+            "Land"
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "effect": "moveZone",
+          "targets": {
+            "target": 0
+          },
+          "to": "exile"
+        },
+        {
+          "effect": "loseLife",
+          "who": {
+            "controllerOf": {
+              "target": 0
+            }
+          },
+          "amount": 3
+        },
+        {
+          "effect": "gainLife",
+          "amount": 3
+        }
+      ]
+    }
+  ]
+}

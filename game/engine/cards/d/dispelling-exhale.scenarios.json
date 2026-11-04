@@ -1,0 +1,767 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Dispelling Exhale",
+  "fixtures": {
+    "Gift": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "You gain 1 life.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "gainLife",
+            "amount": 1
+          }
+        ]
+      }
+    },
+    "Smoke Dragon": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Dragon"
+      ],
+      "manaCost": "{4}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "A Dragon to behold: two casts are offered, with and without -- and with none, only the plain one",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dispelling Exhale",
+                "seat": 0
+              },
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "No Dragon in play or in hand: only the cast without the behold is offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dispelling Exhale",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Beholding the Dragon he controls: counter it unless Maya pays {4}, and with two spare lands she cannot -- her spell is countered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "cast": "Dispelling Exhale",
+          "seat": 0,
+          "targets": [
+            {
+              "card": "Gift"
+            }
+          ],
+          "behold": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Dragon"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't pay"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't pay"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Smoke Dragon",
+            "Island",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Beholding, Maya with four spare lands may pay {4}: she does, and her spell resolves",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "cast": "Dispelling Exhale",
+          "seat": 0,
+          "targets": [
+            {
+              "card": "Gift"
+            }
+          ],
+          "behold": true
+        },
+        {
+          "choose": [
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Pay {4}"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 41
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Gift"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Not beholding although a Dragon is there: counter it unless Maya pays {2}, and with two spare lands she can -- she pays and her spell resolves",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "cast": "Dispelling Exhale",
+          "seat": 0,
+          "targets": [
+            {
+              "card": "Gift"
+            }
+          ],
+          "behold": false
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Pay {2}"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 41
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Smoke Dragon",
+            "Island",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Not beholding, Maya with one spare land cannot pay {2}: countered, the Dragon never asked about",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "cast": "Dispelling Exhale",
+          "seat": 0,
+          "targets": [
+            {
+              "card": "Gift"
+            }
+          ],
+          "behold": false
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Don't pay"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Reveals a Dragon card from his hand: it stays in his hand, is shown to Maya, and the counter costs {4}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dispelling Exhale",
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Gift",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 0
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "cast": "Dispelling Exhale",
+          "seat": 0,
+          "targets": [
+            {
+              "card": "Gift"
+            }
+          ],
+          "behold": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Dragon (reveal it from your hand)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Smoke Dragon (reveal it from your hand)"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Don't pay"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Dragon"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Gift"
+          ]
+        },
+        {
+          "event": "GameEventCardRevealed",
+          "where": {
+            "player": {
+              "playerId": 0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

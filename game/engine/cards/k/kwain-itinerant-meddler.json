@@ -1,0 +1,78 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Kwain, Itinerant Meddler",
+    "oracleId": "ce6a85b5-e249-4582-a6be-ce200da5fd53",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Rabbit",
+      "Wizard"
+    ],
+    "manaCost": "{W}{U}",
+    "colors": [
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "U",
+      "W"
+    ],
+    "power": 1,
+    "toughness": 3
+  },
+  "oracleText": "{T}: Each player may draw a card, then each player who drew a card this way gains 1 life.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "{T}: Each player may draw a card, then each player who drew a card this way gains 1 life.",
+      "cost": [
+        {
+          "atom": "{T}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "repeatFor",
+          "each": "player",
+          "effects": [
+            {
+              "effect": "modal",
+              "chooser": "that player",
+              "title": "Kwain, Itinerant Meddler: you may draw a card.",
+              "modes": [
+                {
+                  "text": "Draw a card",
+                  "effects": [
+                    {
+                      "effect": "draw",
+                      "who": "that player",
+                      "count": 1,
+                      "remember": true
+                    },
+                    {
+                      "effect": "gainLife",
+                      "who": "that player",
+                      "amount": {
+                        "rememberedCount": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "text": "Don't",
+                  "effects": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

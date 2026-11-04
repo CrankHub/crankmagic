@@ -1,0 +1,74 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Jeskai Devotee",
+    "oracleId": "6dcdd313-6df7-4d44-a4cb-0346a4fdb4e1",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Orc",
+      "Monk"
+    ],
+    "manaCost": "{1}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R",
+      "U",
+      "W"
+    ],
+    "power": 2,
+    "toughness": 2
+  },
+  "oracleText": "Flurry — Whenever you cast your second spell each turn, this creature gets +1/+1 until end of turn.\n{1}: Add {U}, {R}, or {W}. Activate only once each turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Flurry — Whenever you cast your second spell each turn, this creature gets +1/+1 until end of turn.",
+      "trigger": {
+        "on": "spell cast",
+        "caster": "you",
+        "nthThisTurn": 2
+      },
+      "effects": [
+        {
+          "effect": "pump",
+          "targets": "self",
+          "power": 1,
+          "toughness": 1
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{1}: Add {U}, {R}, or {W}. Activate only once each turn.",
+      "mana": true,
+      "limit": 1,
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "addMana",
+          "choice": [
+            {
+              "U": 1
+            },
+            {
+              "R": 1
+            },
+            {
+              "W": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

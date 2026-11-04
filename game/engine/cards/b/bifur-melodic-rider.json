@@ -1,0 +1,104 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Bifur, Melodic Rider",
+    "oracleId": "b8d563e4-e2bc-4e8b-8841-6655beff9138",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Dwarf",
+      "Bard"
+    ],
+    "manaCost": "{4}{R/W}{R/W}",
+    "colors": [
+      "R",
+      "W"
+    ],
+    "colorIdentity": [
+      "R",
+      "W"
+    ],
+    "power": 4,
+    "toughness": 5
+  },
+  "oracleText": "Storied (If you control three or more artifacts, legendaries, and/or Sagas, you have an enduring story for the rest of the game.)\nWhenever Bifur enters or attacks, put a +1/+1 counter on target creature.\nAs long as you have an enduring story, if a triggered ability of a Dwarf you control triggers, that ability triggers an additional time.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Storied (If you control three or more artifacts, legendaries, and/or Sagas, you have an enduring story for the rest of the game.)",
+      "keyword": "storied"
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Bifur enters or attacks, put a +1/+1 counter on target creature.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": {
+            "target": 0
+          },
+          "counter": "+1/+1",
+          "count": 1
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Bifur enters or attacks, put a +1/+1 counter on target creature.",
+      "trigger": {
+        "on": "attacks",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": {
+            "target": 0
+          },
+          "counter": "+1/+1",
+          "count": 1
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "As long as you have an enduring story, if a triggered ability of a Dwarf you control triggers, that ability triggers an additional time.",
+      "rule": "triggers-again",
+      "affects": {
+        "what": "permanent",
+        "controller": "you",
+        "subtypes": [
+          "Dwarf"
+        ]
+      },
+      "condition": {
+        "enduringStory": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Palantír of Orthanc",
+    "oracleId": "7798a4d9-1c1d-48e6-b9a2-ecd6aec1efa7",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "At the beginning of your end step, put an influence counter on Palantír of Orthanc and scry 2. Then target opponent may have you draw a card. If that player doesn't, you mill X cards, where X is the number of influence counters on Palantír of Orthanc, and that player loses life equal to the total mana value of those cards.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "At the beginning of your end step, put an influence counter on Palantír of Orthanc and scry 2. Then target opponent may have you draw a card. If that player doesn't, you mill X cards, where X is the number of influence counters on Palantír of Orthanc, and that player loses life equal to the total mana value of those cards.",
+      "trigger": {
+        "on": "end step"
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": "self",
+          "counter": "influence",
+          "count": 1
+        },
+        {
+          "effect": "scry",
+          "count": 2
+        },
+        {
+          "effect": "modal",
+          "chooser": {
+            "target": 0
+          },
+          "title": "Have the Palantír's controller draw a card?",
+          "modes": [
+            {
+              "text": "Let it draw a card",
+              "effects": [
+                {
+                  "effect": "draw",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "text": "Don't: it mills X cards and you lose life equal to their total mana value",
+              "effects": [
+                {
+                  "effect": "mill",
+                  "count": {
+                    "countersOn": "self",
+                    "counter": "influence"
+                  },
+                  "remember": true
+                },
+                {
+                  "effect": "loseLife",
+                  "who": {
+                    "target": 0
+                  },
+                  "amount": {
+                    "totalManaValue": "remembered"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "targets": [
+        {
+          "what": "player",
+          "who": "opponent"
+        }
+      ]
+    }
+  ]
+}
