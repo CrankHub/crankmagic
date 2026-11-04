@@ -104,6 +104,10 @@ await rejects(() => setMember(db, {}, "insiders", "eve@example.com", true, {now,
 eq(w.group(NAMES.insiders).require, [], "a write keeps the group's other rules as they were");
 const r = await roster(env, {fetchImpl: wf});
 eq([r.insiders, r.invitees, r.missing], [[{email: "ann@example.com"}], [{email: "gus@example.com"}], []], "the roster is the groups, read fresh");
+await groupOf("ann@example.com", env, db, {fetchImpl: wf});
+w.group(NAMES.insiders).include.push({email: {email: "dash@example.com"}});
+eq((await roster(env, {fetchImpl: wf})).insiders.map((x) => x.email), ["ann@example.com", "dash@example.com"], "a change made in the dashboard shows in the owner's roster at once: it is read fresh, never from the cache");
+w.group(NAMES.insiders).include.pop(); forgetGroups();
 eq(locks(), 0, "no lock is left behind");
 
 /* 4. AN INVITATION: into the group, never into a policy; both sign-ins confirm. */
