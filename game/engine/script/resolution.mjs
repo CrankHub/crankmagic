@@ -407,6 +407,9 @@ function carryOn(state, outcome, rng) {
      its controller chose" (Selective Obliteration) -- each player's own, for a selector's `onlyChosenColor` (script/filter.mjs). */
   if (!Array.isArray(outcome) && typeof outcome.chosenColor === "string" && Number.isInteger(outcome.colorChooser))
     state.resolving.context.chosenColors = {...(state.resolving.context.chosenColors ?? {}), [outcome.colorChooser]: outcome.chosenColor};
+  /* "Choose an opponent": the player, for the effects after it ("the chosen player", script/bind.mjs; a delayed trigger's
+     `player`, effects/permanents.mjs). */
+  if (!Array.isArray(outcome) && Number.isInteger(outcome.chosenPlayer)) state.resolving.context.chosenPlayer = outcome.chosenPlayer;
   /* "You may pay {X}" (Halo Forager; CR 107.3f): the X its payer chose and paid, for what follows -- "when you do, ... with
      mana value X". */
   if (!Array.isArray(outcome) && Number.isInteger(outcome.paidX)) state.resolving.context.x = outcome.paidX;

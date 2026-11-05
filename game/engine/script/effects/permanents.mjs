@@ -1259,6 +1259,13 @@ export function immediateTrigger(state, params, context) {
 export function delayedTrigger(state, params, context) {
   if (!state.delayedTriggers) state.delayedTriggers = [];
   const waits = Boolean(params.on);
+  /* "At the beginning of that player's next end step" for the opponent a "choose an opponent" chose (Faramir, Prince of Ithilien):
+     `player: "the chosen player"`, read now (CR 603.7c) -- none chosen, or gone from the game (CR 800.4a), and it waits for no one:
+     it never triggers. */
+  if (params.player === "the chosen player") {
+    const chosen = context.chosenPlayer;
+    params = {...params, player: Number.isInteger(chosen) && !state.players[chosen]?.lost ? chosen : -1};
+  }
   /* "That creature": the object, now; gone already, and the trigger waits on nothing (CR 603.7a's example). */
   const watch = waits && params.watch !== undefined ? ((bindEffect({targets: params.watch}, context).targets ?? [])[0] ?? null) : undefined;
   state.delayedTriggers.push({
