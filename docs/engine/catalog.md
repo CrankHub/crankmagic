@@ -7,7 +7,7 @@ distinct list of actions, triggers, effects, actions, options, etc. that can be 
 rules"). The keyword actions and abilities are the Comprehensive Rules' own list (701, 702); the effects, triggers,
 static abilities, replacement effects and costs are every one used by the 33,821 cards Forge implements.
 
-**The most-played 80% of Commander cards:** 3,238 cards; 1,990 defined and playable today; 2,916 with every
+**The most-played 80% of Commander cards:** 3,238 cards; 1,993 defined and playable today; 2,916 with every
 mechanic built, so only their definitions are left to write.
 
 **Status:** *built* the engine does it; *partial* some forms; *named* in the engine's vocabulary, not built; *missing* not
@@ -18,7 +18,7 @@ many most-played cards need it among other missing things; **Alone** how many it
 
 | Section | Entries | Built | Partial | Named | Missing |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Keyword abilities (CR 702) | 194 | 86 | 0 | 12 | 96 |
+| Keyword abilities (CR 702) | 194 | 86 | 0 | 13 | 95 |
 | Keyword actions (CR 701) | 70 | 22 | 5 | 1 | 42 |
 | Effects | 192 | 79 | 2 | 1 | 110 |
 | Triggers | 138 | 26 | 4 | 1 | 107 |
@@ -163,7 +163,7 @@ The things that alone hold back the most of the most-played cards.
 | 702.91 | Battle Cry | — | missing | 1 | 13 | 1 | 1 |
 | 702.58 | Graft | — | missing | 1 | 13 | 1 | 1 |
 | 702.173 | Freerunning | Freerunning | built | 1 | 12 | 0 | 0 |
-| 702.180 | Harmonize | — | missing | 1 | 12 | 1 | 1 |
+| 702.180 | Harmonize | — | named | 1 | 12 | 1 | 1 |
 | 702.156 | Ravenous | — | missing | 1 | 12 | 1 | 1 |
 | 702.137 | Spectacle | Spectacle | built | 1 | 11 | 0 | 0 |
 | 702.76 | Prowl | Prowl | built | 1 | 10 | 0 | 0 |
