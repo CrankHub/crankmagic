@@ -1,0 +1,937 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Kwain, Itinerant Meddler",
+  "fixtures": {
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}"
+    },
+    "Deep Dive": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "Target player mills twenty cards.",
+        "targets": [
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "mill",
+            "count": 20,
+            "who": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Rob draws, Maya declines: only Rob gains 1 life",
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "tapped": "Kwain, Itinerant Meddler"
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Maya draws, Rob declines: only Maya gains 1 life",
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 41
+        }
+      ]
+    },
+    {
+      "name": "Both draw: each gains 1",
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 41
+        }
+      ]
+    },
+    {
+      "name": "Neither draws: no cards, no life",
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 20
+        }
+      ]
+    },
+    {
+      "name": "Four players, each deciding for themself in turn order: Maya and Sam draw, Rob and Trey decline -- only those two gain 1",
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 3,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "life": 41
+        },
+        {
+          "seat": 2,
+          "life": 40
+        },
+        {
+          "seat": 3,
+          "life": 41
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 3,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        }
+      ],
+      "seats": 4
+    },
+    {
+      "name": "Four players, three draw: Rob, Trey and Sam gain 1, Maya (who declined) does not",
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 3,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 2,
+          "life": 41
+        },
+        {
+          "seat": 3,
+          "life": 41
+        }
+      ],
+      "seats": 4
+    },
+    {
+      "name": "A player with an empty library may say yes, draws nothing and so gains nothing -- Rob, who drew, does",
+      "seats": 3,
+      "library": [
+        "Island",
+        "Rock",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Deep Dive"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Deep Dive",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "zone": "library",
+              "count": 0
+            }
+          ]
+        },
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2,
+                "options": [
+                  "Don't",
+                  "Draw a card"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Island",
+            "Rock"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 2,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "{T}: tapped for it, no second use until it untaps",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Kwain, Itinerant Meddler"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Kwain, Itinerant Meddler"
+        }
+      ]
+    },
+    {
+      "name": "Cast this turn it is summoning sick: {T} is not offered (CR 302.6)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Kwain, Itinerant Meddler"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Island",
+            "Kwain, Itinerant Meddler",
+            "Plains"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kwain, Itinerant Meddler"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Kwain, Itinerant Meddler"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Kwain, Itinerant Meddler"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Island",
+            "Kwain, Itinerant Meddler",
+            "Plains"
+          ]
+        }
+      ]
+    }
+  ]
+}

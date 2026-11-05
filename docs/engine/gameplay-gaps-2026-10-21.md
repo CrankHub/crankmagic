@@ -104,6 +104,10 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | Vinebred Brawler, Safewright Cavalry | Must-be-blocked and one-blocker rules proved by suites, never yet at a real table | #830 |
 | Sphinx of the Second Sun | A judgment call on CR 103.8a | #724 |
 | Land drops | A person may play a land in any step of their own turn: a house rule Rob chose, not a gap | `5e9167fa` |
+| Bifur, Melodic Rider | **An ignore.** Storied is awarded at the state-based check (`designations.mjs`), so when Bifur himself completes his story as he enters, his "enters" ability triggers once; his own static would double it at a table. With the story already won, it doubles (proved). | Master Table load, 2026-11-04 |
+| Ravening Warg, Nighthowl Pursuer, and the other ferocious attack triggers written with `condition` | **An ignore.** The condition is asked again as the trigger resolves, but ferocious is a trigger condition, not an intervening "if" (CR 603.4): the 4-power creature removed in response should not stop the effect. Wargling is written with `while` and does it right; the older cards were not changed. | Master Table load, 2026-11-04 |
+| Kwain, Itinerant Meddler | **An ignore.** Each player decides, draws, then gains, in turn order, rather than all draw and then all gain; the outcome differs only if something reads the game between two players' draws. | Master Table load, 2026-11-04 |
+| Lasyd Prowler's Renew (and 893 definitions) | Offered once its mana is floated by hand, not from untapped lands: the census's advisory class `ACTIVATION_ONLY_WHEN_FLOATED` (ROB-339, ROB-354). Not fixed by the load. | Master Table load, 2026-11-04 |
 
 ## 5. Choices the engine makes for the player
 

@@ -1,0 +1,112 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dusyut Earthcarver",
+    "oracleId": "387b12b1-d8f5-487b-972f-5303b23eed5a",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elephant",
+      "Druid"
+    ],
+    "manaCost": "{5}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 4,
+    "toughness": 4
+  },
+  "oracleText": "Reach\nWhen this creature enters, it endures 3. (Put three +1/+1 counters on it or create a 3/3 white Spirit creature token.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Reach",
+      "keyword": "reach"
+    },
+    {
+      "kind": "triggered",
+      "text": "When this creature enters, it endures 3. (Put three +1/+1 counters on it or create a 3/3 white Spirit creature token.)",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "branch",
+          "if": {
+            "present": {
+              "self": true
+            }
+          },
+          "otherwise": [
+            {
+              "effect": "createToken",
+              "count": 1,
+              "token": {
+                "name": "Spirit",
+                "types": [
+                  "Creature"
+                ],
+                "subtypes": [
+                  "Spirit"
+                ],
+                "colors": [
+                  "W"
+                ],
+                "power": 3,
+                "toughness": 3
+              }
+            }
+          ],
+          "then": [
+            {
+              "effect": "modal",
+              "title": "Endure 3",
+              "modes": [
+                {
+                  "text": "Put three +1/+1 counters on it",
+                  "effects": [
+                    {
+                      "effect": "putCounter",
+                      "targets": "self",
+                      "counter": "+1/+1",
+                      "count": 3
+                    }
+                  ]
+                },
+                {
+                  "text": "Create a 3/3 white Spirit creature token",
+                  "effects": [
+                    {
+                      "effect": "createToken",
+                      "count": 1,
+                      "token": {
+                        "name": "Spirit",
+                        "types": [
+                          "Creature"
+                        ],
+                        "subtypes": [
+                          "Spirit"
+                        ],
+                        "colors": [
+                          "W"
+                        ],
+                        "power": 3,
+                        "toughness": 3
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

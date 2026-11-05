@@ -83,6 +83,8 @@ export const TOP_25 = Object.freeze([
  * have made "is this built" answer yes to something no caller can use.
  */
 export const NEEDS_A_DECISION = Object.freeze(["mergePermanent", "ringTempts", "dig", "scry", "surveil", "discard", "modal", "chooseCard", "proliferate", "sacrifice", "populate", "amass", "unlessPays", "copySpell", "chooseType", "chooseColor", "play", "changeTargets", "empowerJace", "twoPiles", "chooseSource", "vote",
+  /* "Choose an opponent" (Faramir, Prince of Ithilien; Master Table column AL load): which, unless there is only one. */
+  "choosePlayer",
   /* Connive (CR 701.50): which permanent connives next, and what its controller discards. */
   "connive",
   /* Explore (CR 701.44): whether the revealed nonland card goes to the graveyard. */

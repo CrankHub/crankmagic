@@ -105,7 +105,10 @@ function castCost(state, player, id, tax, free = false, instead = null, extra = 
   /* A colored reduction an additional cost of life bought ("{-W}", Defiler of Faith; CR 601.2f): takes that color's mana off the
      cost, if it has any -- "this effect reduces only the amount of white mana you pay" -- and adds nothing. */
   const lessColors = (String(extra ?? "").match(/\{-[WUBRG]\}/g) ?? []).map((token) => token[2]);
-  const cost = parseManaCost((free ? "" : instead ?? state.objects[id].manaCost ?? "") + String(extra ?? "").replace(/\{-[WUBRG]\}/g, ""));
+  /* And harmonize's tap ("{-N}", castOffers; CR 601.2f): N generic mana off the cost, N the power of the creature tapped for it -- a
+     cost reduction like any (counted with the others below), never more than the generic mana there is. */
+  const harmonized = (String(extra ?? "").match(/\{-\d+\}/g) ?? []).reduce((n, token) => n + Number(token.slice(2, -1)), 0);
+  const cost = parseManaCost((free ? "" : instead ?? state.objects[id].manaCost ?? "") + String(extra ?? "").replace(/\{-[WUBRG]\}/g, "").replace(/\{-\d+\}/g, ""));
   for (const color of lessColors) {
     const at = cost.symbols.findIndex((symbol) => symbol.kind === "colored" && symbol.color === color);
     if (at >= 0) { cost.symbols.splice(at, 1); cost.colored[color] -= 1; }
@@ -113,7 +116,7 @@ function castCost(state, player, id, tax, free = false, instead = null, extra = 
   /* Increases first, then reductions (CR 601.2f): Thalia's {1} more and a Medallion's {1} less cancel out. A cast without
      paying its mana cost still pays an increase (CR 118.9d). */
   cost.generic += costIncrease(state, player, id, targets);
-  let reduction = costReduction(state, player, id, targets);
+  let reduction = costReduction(state, player, id, targets) + harmonized;
   const fromPrinted = Math.min(cost.generic, reduction);
   cost.generic -= fromPrinted;
   reduction -= fromPrinted;
@@ -159,7 +162,9 @@ export function flashbackCost(state, player, id) {
   if (!cost) return null;
   const tap = cost.find((a) => a.atom === "tapCreature");
   const sacrifice = cost.find((a) => a.atom === "sacrifice");
+  /* HARMONIZE (Roamer's Routine): flashback's cost, and a creature that may be tapped to take its power off it (castOffers). */
   return {mana: cost.find((a) => a.atom === "mana")?.cost ?? "", life: cost.filter((a) => a.atom === "payLife").reduce((n, a) => n + (a.amount ?? 0), 0),
+    ...(own?.harmonize === true ? {harmonize: true} : {}),
     ...(cost.some((a) => FLASHBACK_EXTRA.includes(a.atom)) ? {extra: cost.filter((a) => FLASHBACK_EXTRA.includes(a.atom))} : {}), ...(tap ? {tap: {count: tap.count ?? 1, selector: tap.selector ?? {}}} : {}),
     ...(sacrifice ? {sacrifice: {count: sacrifice.count ?? 1, selector: sacrifice.selector ?? {}}} : {})};
 }
@@ -735,6 +740,13 @@ function additionalVariants(costs) {
        times its own cast, that many times its mana added (`replicated`, the copies its trigger makes). */
     if (atom?.atom === "replicate") {
       variants = variants.flatMap((v) => Array.from({length: MULTIKICK_MOST + 1}, (_, k) => ({...v, mana: v.mana + (atom.cost ?? "").repeat(k), replicated: k})));
+      continue;
+    }
+    /* "YOU MAY BEHOLD A DRAGON" (CR 701.4a, 601.2b; Dispelling Exhale): an optional additional cost, once -- the cast without it,
+       and with it (the atom kept, so what is beheld is asked once that cast is taken, and it is offered only while there is
+       something to behold: beholdChoices below). Paid, "if this spell's additional cost was paid" (`cast.additionalPaid`). */
+    if (atom?.atom === "behold" && atom.optional === true) {
+      variants = variants.flatMap((v) => [v, {...v, atoms: [...v.atoms, atom]}]);
       continue;
     }
     /* GIFT (CR 702.174a; Dawn's Truce, wave 4b): "as an additional cost to cast this spell, you may choose an opponent" -- the
@@ -1890,6 +1902,13 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
   let variants = additionalVariants([...(object.spell?.additionalCost ?? []), ...(way?.extra ?? []), ...(back?.extra ?? []), ...(permit?.ability.additionalCost ?? [])]);
   for (const grant of lifeForLess(state, player, id))
     variants = variants.flatMap((v) => [v, {...v, life: (v.life ?? 0) + grant.life, mana: v.mana + grant.less.replace(/\{([WUBRG])\}/g, "{-$1}")}]);
+  /* HARMONIZE (Roamer's Routine): the cast from the graveyard for its cost, and for each untapped creature its caster controls that
+     has power, the cast that taps it to take that power off the cost's generic mana (`{-N}`, castCost; CR 601.2f). Which creature
+     is the caster's choice, so each is an offer of its own, as a sacrifice's are -- never one taken for them. */
+  if (back?.harmonize) {
+    const tappers = flashbackTappers(state, player, {}).filter((c) => (characteristicsOf(state, c).power ?? 0) > 0);
+    variants = variants.flatMap((v) => [v, ...tappers.map((c) => ({...v, mana: v.mana + `{-${characteristicsOf(state, c).power}}`, harmonize: c}))]);
+  }
   for (const variant of variants) {
   /* Creatures tapped as an additional cost (tapAnyAtom): asked once the cast is taken, and paid from the pool -- never tapped
      for, which taps creatures too (a mana creature), the two questions about the same creatures. */
@@ -2015,6 +2034,8 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
         ...(payWays && !convoke ? {payWays: true} : {}),
         ...(convoke === true ? {convoke: true} : {}), ...(convoke === "delve" ? {delve: true} : {}), ...(variant.mana ? {extraMana: variant.mana} : {}), ...(extraLife ? {extraLife} : {}), ...(variant.kicked ? {kicked: variant.kicked} : {}),
         ...(variant.replicated ? {replicated: variant.replicated} : {}), ...(gift !== undefined ? {gift} : {}), ...(variant.offspring ? {offspring: true} : {}),
+        /* The creature a harmonize cast taps (variants above), named on the offer. */
+        ...(variant.harmonize !== undefined ? {harmonize: variant.harmonize, costNames: [state.objects[variant.harmonize].card]} : {}),
         ...(tapsAny ? {tapAny: true} : {}), ...(sacrificesAny ? {sacrificeAny: true} : {}), ...(beholds ? {behold: beholds.count ?? 1} : {}),
         /* Escalated (CR 702.120a): how many modes beyond the first, and how many creatures that taps. */
         ...(variant.escalate ? {escalate: variant.escalate} : {}), ...(variant.escalateTap ? {escalateTap: variant.escalateTap.count} : {}),
@@ -2570,6 +2591,8 @@ const sameAction = (a, b) => a.kind === b.kind
   && (a.replicated ?? 0) === (b.replicated ?? 0)
   /* And a gift promised, to that opponent (CR 702.174a): another cost, and another player given it. */
   && (a.gift ?? null) === (b.gift ?? null)
+  /* And a harmonize cast that taps one creature another than one that taps another, though they take the same power off. */
+  && (a.harmonize ?? null) === (b.harmonize ?? null)
   /* And its offspring cost paid (CR 702.175a): another cost, and a token copy as it enters. */
   && (a.offspring === true) === (b.offspring === true)
   /* And escalated for that many modes beyond the first, tapping that many creatures (CR 702.120a): another cost. Which
@@ -2624,7 +2647,10 @@ export function offerSpecs(state, player, action) {
      to X targets" (Crackle with Power). */
   const context = {controller: player, source: action.objectId, chosenTargets: action.targets ?? [], ...(Number.isInteger(action.x) ? {x: action.x} : {})};
   if (action.kind === "cast") {
-    const specs = object.spell?.modal && Array.isArray(action.modes) ? modalScript(object.spell.modal, action.modes).targets : object.spell?.targets ?? [];
+    /* A gift promised changes what it targets (Consumed by Greed's second target; Dewdrop Cure's "up to three" for "up to two";
+       CR 601.2c, 702.174a): the promised cast's own, as aimsFor takes them (castOffers) -- a counted one is asked here. */
+    const spell = action.gift !== undefined && object.spell?.promised ? object.spell.promised : object.spell;
+    const specs = spell?.modal && Array.isArray(action.modes) ? modalScript(spell.modal, action.modes).targets : spell?.targets ?? [];
     /* A total divided among "any number of target creatures" (Monstrous Onslaught; CR 601.2d): each target gets at least 1,
        so there are no more of them than the total -- and at least one, unless there is nothing to divide. */
     const divided = dividedOf(object);
@@ -3010,6 +3036,9 @@ function performOffered(state, player, action, during) {
     /* A flashback cost's creatures, as its caster picked them. */
     /* Or an alternative cost's (Sephara, Sky's Blade), the same way. */
     const tapping = (back?.tap ?? way?.tap) && !during ? flashbackTapped(state, player, action, back?.tap ?? way.tap, back?.tap ? "for its flashback" : "for it") : [];
+    /* And the creature a harmonize cast taps, as its offer named it: an offer is made only for an untapped creature of the caster's,
+       and one that is stale or forged is no legal action (perform), so it is tapped as the rest of the cost is paid. */
+    const harmonizing = action.harmonize !== undefined && !during ? [action.harmonize] : [];
     /* And the permanents it sacrifices (flashbackSacrificed). */
     const sacrificing = back?.sacrifice && !during ? flashbackSacrificed(state, player, action, back.sacrifice) : [];
     /* And "tap any number of untapped creatures you control", as its caster picked them (tapAnyPicked). */
@@ -3126,6 +3155,10 @@ function performOffered(state, player, action, during) {
       /* The Phyrexian mana symbols of its cost paid with life, two life each (CR 107.4f): compleated reads it as the permanent
          enters (CR 702.150a; rules/replacement.mjs). */
       ...(payment.life > 0 ? {phyrexianLife: payment.life / 2} : {})};
+    /* Harmonize's tap is no additional cost (Roamer's Routine): its `{-N}` mana is no additional cost's (castCost), so a harmonize
+       cast that pays nothing else is not one whose additional cost was paid. */
+    if (action.harmonize !== undefined && extraPaid.every(([kind]) => kind === "returnToHand") && !action.extraMana.replace(/\{-\d+\}/g, "") && !action.extraLife && !(action.escalate > 0) && !beholding.length)
+      delete entry.cast.additionalPaid;
     /* Kicked that many times (multikicker, CR 702.33c): the permanent it becomes knows it as it enters (rules/stack.mjs). */
     if (action.kicked) entry.kicked = action.kicked;
     /* Its gift promised (CR 702.174k), to the opponent chosen as it was cast: the spell's, a copy's (CR 707.10), and the
@@ -3225,7 +3258,7 @@ function performOffered(state, player, action, during) {
     for (const id of [...exiling, ...othersExiling, ...(delve?.ids ?? [])]) if (state.objects[id]) moveOne(state, id, "exile", events, {owner: state.objects[id].owner});
     /* And a flashback cost's creatures, tapped; and a convoke's (CR 702.51c: they convoked it), for no mana; and the creatures
        an additional cost or escalate taps. */
-    for (const id of [...tapping, ...escalating, ...(convoke?.ids ?? []), ...tappedAny]) {
+    for (const id of [...tapping, ...harmonizing, ...escalating, ...(convoke?.ids ?? []), ...tappedAny]) {
       state.objects[id].tapped = true;
       events.push(event("GameEventCardTapped", state, {card: cardRef(state, id), tapped: true}));
     }

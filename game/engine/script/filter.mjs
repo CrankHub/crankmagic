@@ -218,7 +218,13 @@ function assertGrammar(selector) {
   if (selector.sharesCreatureType !== undefined) compileSelector({...selector.sharesCreatureType, what: "permanent"});
   if (selector.multicolored !== undefined && selector.multicolored !== true) throw new Error("A selector's multicolored is true: two or more colors");
   if (selector.monocolored !== undefined && selector.monocolored !== true) throw new Error("A selector's monocolored is true: exactly one color");
-  if (selector.sharesColor !== undefined && selector.sharesColor !== "self") throw new Error("A selector's sharesColor is \"self\": a color of its source's");
+  /* A color of its source's ("self"), or of a permanent a selector describes ("a card that shares a color with a legendary creature
+     you control", Ringsight): held to the same grammar as what a creature type is shared with. */
+  if (selector.sharesColor !== undefined && selector.sharesColor !== "self") {
+    if (!selector.sharesColor || typeof selector.sharesColor !== "object" || Array.isArray(selector.sharesColor))
+      throw new Error("A selector's sharesColor is \"self\" (a color of its source's) or a selector of permanents: a color of one of theirs");
+    compileSelector({...selector.sharesColor, what: "permanent"});
+  }
   if (selector.sharesCreatureTypeWithCommander !== undefined && selector.sharesCreatureTypeWithCommander !== true)
     throw new Error("A selector's sharesCreatureTypeWithCommander is true: a creature type of a commander of yours");
   /* A mana value's most may be an amount counted (Betor): one of the amount grammar's (script/amount.mjs). */
@@ -403,6 +409,13 @@ export function compileSelector(selector) {
       const source = context.source !== null && context.source !== undefined && state.objects[context.source] ? colorsOf(state, context.source) : [];
       const own = state.objects[id]?.zone === "battlefield" ? colorsOf(state, id) : (state.objects[id]?.colors ?? []);
       if (!own.some((color) => source.includes(color))) return false;
+    }
+    /* "A card that shares a color with a legendary creature you control" (Ringsight; CR 105.1, 105.4): at least one color in common
+       with at least one permanent the selector describes, theirs as the layers now make them (a colorless one shares none). */
+    if (selector.sharesColor && selector.sharesColor !== "self") {
+      const own = state.objects[id]?.zone === "battlefield" ? colorsOf(state, id) : (state.objects[id]?.colors ?? []);
+      const others = selectMatching(state, {what: "permanent", ...selector.sharesColor}, context);
+      if (!others.some((other) => colorsOf(state, other).some((color) => own.includes(color)))) return false;
     }
     if (selector.colors) {
       const current = colorsOf(state, id);

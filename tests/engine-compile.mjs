@@ -338,7 +338,11 @@ const trust = trustOf(library, calibrate({scripts, library, scenarios, definitio
     return {answer: {...a, abilitiesJson: JSON.stringify(list.slice(1))}, usage: {}};
   };
   const bad = await heldOutSample({scripts, scenarios, definition: index.definition, oracle: ORACLE, library, trust, call: wrong, examples: [], n: 3});
-  ok(bad.passed < 3 && bad.results.filter((r) => r.outcome === "failed").every((r) => /^fidelity: /.test(r.why)), "a writer that leaves a sentence out fails, at fidelity");
+  /* The sample is every n-th card of the simple ones by name, so it moves as cards are defined (the Master Table load of 2026-11-04 moved it
+     onto Ratonhnhaké꞉ton, whose hexproof sentence another ability also mentions: the omission is then caught when its scenarios play, not at
+     fidelity). What the check holds is that no wrong answer passes, and that fidelity itself refuses an omission for at least one card. */
+  ok(bad.passed < 3 && bad.results.every((r) => r.outcome === "failed") && bad.results.some((r) => /^fidelity: /.test(r.why)),
+    `a writer that leaves a sentence out fails: no card passes, and fidelity refuses it for at least one (${bad.results.map((r) => `${r.name}: ${r.why}`).join("; ")})`);
   /* A sentence left out beside a keyword it mentions is still unclaimed: Gandalf the White's Flash does not claim "You may
      cast legendary spells and artifact spells as though they had flash" (Rob's lists P2, 2026-10-24, sampled it). */
   const gandalf = handOf("Gandalf the White");

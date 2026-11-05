@@ -112,9 +112,13 @@ const beholdOffer = (s, name) => casts(s, name).find((a) => a.behold);
   const elf = {atom: "behold", selector: {subtypes: ["Elf"]}};
   eq(problems(script(["Creature"], [extra([elf])])), [], "a creature's \"behold an Elf\": built");
   eq(problems(script(["Creature"], [extra([{atom: "oneOf", options: [[elf], [{atom: "mana", cost: "{2}"}]]}])])), [], "\"behold an Elf or pay {2}\": built");
-  for (const [atom, why] of [[{atom: "behold"}, "no selector"], [{...elf, count: 0}, "no cards"], [{...elf, optional: true}, "optional"], [{...elf, selector: {flavor: 1}}, "a selector the grammar has not"]])
+  for (const [atom, why] of [[{atom: "behold"}, "no selector"], [{...elf, count: 0}, "no cards"], [{...elf, selector: {flavor: 1}}, "a selector the grammar has not"]])
     ok(problems(script(["Creature"], [extra([atom])])).some((p) => /behold:/.test(p)), `refused: ${why}`);
   ok(problems(script(["Creature"], [extra([{atom: "oneOf", options: [[{atom: "behold"}], [{atom: "mana", cost: "{2}"}]]}])])).some((p) => /behold:/.test(p)), "refused in a choice too");
+  /* "You may behold a Dragon" (Dispelling Exhale; Master Table load): optional in a spell's own additional cost, never in a choice of
+     costs, and (below) never in a flashback cost. */
+  eq(problems(script(["Creature"], [extra([{...elf, optional: true}])])), [], "\"you may behold an Elf\" as a spell's own additional cost: built");
+  ok(problems(script(["Creature"], [extra([{atom: "oneOf", options: [[{...elf, optional: true}], [{atom: "mana", cost: "{2}"}]]}])])).some((p) => /behold:/.test(p)), "an optional behold in a choice: refused");
   ok(problems(script(["Creature"], [extra([elf, {...elf, selector: {subtypes: ["Goblin"]}}])])).some((p) => /one behold to a card/.test(p)), "two beholds: refused");
   const sorcery = {kind: "spell", text: "Draw a card.", targets: [], effects: [{effect: "draw", count: 1}]};
   const fb = (cost) => ({kind: "keyword", text: "Flashback", keyword: "flashback", cost});

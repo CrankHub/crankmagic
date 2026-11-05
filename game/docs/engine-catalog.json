@@ -9,7 +9,7 @@
  },
  "top": {
   "cards": 3238,
-  "defined": 1990,
+  "defined": 1993,
   "provisional": 0,
   "everyRule": 2916
  },
@@ -18,8 +18,8 @@
    "tally": {
     "built": 86,
     "partial": 0,
-    "named": 12,
-    "missing": 96
+    "named": 13,
+    "missing": 95
    },
    "entries": [
     {
@@ -1311,7 +1311,7 @@
      "rule": "702.180",
      "name": "Harmonize",
      "engine": null,
-     "status": "missing",
+     "status": "named",
      "forge": "Harmonize",
      "top": 1,
      "all": 12,

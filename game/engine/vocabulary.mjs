@@ -95,6 +95,8 @@ export const PRIMITIVES = Object.freeze({
     "modal", "sequence", "repeatFor", "branch", "delayedTrigger", "immediateTrigger", "counterSpell",
     "copySpell", "addTurn", "chooseCard", "chooseType", "chooseColor", "genericChoice", "twoPiles", "connive",
     "investigate", "cleanup", "addPhase", "changeTargets", "chooseSource", "vote",
+    /* Master Table column AL load: "choose an opponent" (Faramir, Prince of Ithilien), a player chosen as it resolves, not targeted. */
+    "choosePlayer",
   ]),
 });
 
@@ -261,6 +263,9 @@ const BEYOND_TIER0 = ["shroud", "ward", "forestwalk",
   "dredge",
   /* Card load w4d L1: mobilize (CR 702.181; Voice of Victory), a triggered ability as it attacks (cards/index.mjs). */
   "mobilize",
+  /* Master Table column AL load: harmonize (Roamer's Routine), flashback's cast and exile with a creature that may be tapped to
+     take its power off the cost's generic mana (cards/index.mjs, rules/actions.mjs). */
+  "harmonize",
   /* Wave 4d, L6: kicker (CR 702.33a; Tear Asunder), an optional additional cost paid once at most, and what the spell does then
      (cards/index.mjs, rules/actions.mjs, rules/stack.mjs). */
   "kicker",
