@@ -5,7 +5,8 @@
  * it was sent and answers as the Messages API does -- so nothing here spends, and nothing here needs a key.
  *
  *   Shut     each of Rob's four decisions is a gate that is closed while unset: the AI Access application, the
- *            allowlist, the key, the caps. A library sign-in never opens it, unless the door is open to everyone
+ *            group (since ROB-440 the Cloudflare Access rule groups, the only list: tests/helpers/fake-access.mjs stands in
+ *            for their API), the key, the caps. A library sign-in never opens it, unless the door is open to everyone
  *            signed in (AI_EVERYONE, Rob 2026-10-14); a service token never does.
  *   Sent     only what the request carries, bounded; the key rides only in the provider's header, never back out.
  *   Spent    every call is logged -- who, what, the model that answered, tokens, cost, outcome -- and the caps
@@ -17,6 +18,8 @@ import {readFileSync} from "node:fs";
 import {DatabaseSync} from "node:sqlite";
 import {handle} from "../cloud/worker.mjs";
 import {forgetKeys} from "../cloud/access.mjs";
+import {forgetGroups} from "../cloud/access-groups.mjs";
+import {fakeAccess, accessVars, NAMES} from "./helpers/fake-access.mjs";
 import {costMicros, grounded, readRequest, pilotBody, DEFAULT_MODEL, MODELS, PRICES} from "../cloud/ai.mjs";
 
 let checks = 0;
@@ -25,7 +28,7 @@ const eq = (a, b, message) => {assert.deepEqual(a, b, message); checks++;};
 
 function d1() {
   const db = new DatabaseSync(":memory:");
-  for (const f of ["0001_accounts.sql", "0002_ai.sql"]) db.exec(readFileSync(new URL(`../cloud/migrations/${f}`, import.meta.url), "utf8"));
+  for (const f of ["0001_accounts.sql", "0002_ai.sql", "0005_access_invites.sql"]) db.exec(readFileSync(new URL(`../cloud/migrations/${f}`, import.meta.url), "utf8"));
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     first: async () => db.prepare(sql).get(...args) ?? null,
@@ -50,7 +53,11 @@ async function token({aud = AI_AUD, email = "rob@example.com", ...more} = {}) {
 const KEY = "sk-test-not-a-real-key";
 let sent = [], answer = null;
 const reply = (explanation, {model = DEFAULT_MODEL, usage = {input_tokens: 900, output_tokens: 300}, stop = "end_turn"} = {}) => ({status: 200, json: {id: "msg_1", type: "message", model, stop_reason: stop, content: [{type: "text", text: JSON.stringify({explanation})}], usage}});
+/* The Access rule groups (ROB-440): Admin, Game Theory Insiders and CrankMagic Invitees, the only list of who may spend. */
+const access = fakeAccess({groups: {[NAMES.admin]: ["admin@example.com"], [NAMES.insiders]: ["keep@example.com"], [NAMES.invitees]: ["guest@example.com"]}});
 const fetchImpl = async (url, init = {}) => {
+  const viaAccess = await access.fetch(url, init);
+  if (viaAccess) return viaAccess;
   if (url === `https://${TEAM}/cdn-cgi/access/certs`) return new Response(JSON.stringify({keys: [jwk]}));
   if (url === "https://api.anthropic.com/v1/messages") {
     sent.push({headers: init.headers, body: JSON.parse(init.body)});
@@ -61,7 +68,7 @@ const fetchImpl = async (url, init = {}) => {
 };
 
 const DB = d1();
-const OPEN = {DB, ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD, AI_ACCESS_AUD: AI_AUD, ANTHROPIC_API_KEY: KEY, AI_CAP_PERSON_CENTS: "25", AI_CAP_TOTAL_CENTS: "100"};
+const OPEN = {DB, ...accessVars(), ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD, AI_ACCESS_AUD: AI_AUD, ANTHROPIC_API_KEY: KEY, AI_CAP_PERSON_CENTS: "25", AI_CAP_TOTAL_CENTS: "100"};
 const DECK = {deck: {name: "Krenko Goblins", commanders: ["Krenko, Mob Boss"], cards: ["Krenko, Mob Boss", "Goblin Chieftain", "Skirk Prospector", "Mountain"]},
   score: {total: 6.5, of: 10, label: "Closes the game"}, measures: [{name: "Win turn", value: "10.8", note: "turn 8 is full marks"}],
   strongest: [{name: "Goblin Chieftain", note: "lands on turn 4 in 81% of games"}], weakest: [{name: "Skirk Prospector", note: "rarely cast"}]};
@@ -74,8 +81,9 @@ async function call({env = OPEN, jwt, body = DECK, path = "/api/ai/explain", met
   return {status: response.status, text, json: text ? JSON.parse(text) : null};
 }
 const calls = () => DB.raw.prepare("SELECT email, feature, model, input_tokens, output_tokens, cost_micros, outcome FROM ai_calls ORDER BY rowid").all().map((r) => ({...r}));
-const allow = (email) => DB.raw.prepare("INSERT INTO ai_allowlist (email, added_at, note) VALUES (?, ?, ?)").run(email, "2026-09-26T00:00:00Z", "test");
-forgetKeys();
+/* On the roster: in the "Game Theory Insiders" rule group, as the dashboard would put them there. */
+const allow = (email) => {access.group(NAMES.insiders).include.push({email: {email}}); forgetGroups();};
+forgetKeys(); forgetGroups();
 
 /* SHUT: each gate closed while unset, in order, and nothing sent to the provider. */
 const {AI_ACCESS_AUD: _a, ...noAud} = OPEN;
@@ -119,6 +127,13 @@ answer = reply("[[Mountain]] is there.");
 eq((await call({env: EVERYONE, jwt: await token({aud: AUD})})).status, 200, "with it on, an insider at the app's own sign-in is answered");
 eq((await call({env: OWNED, jwt: await owner()})).status, 200, "the owner, named by OWNER_EMAIL in any case and on no list, is answered");
 eq(calls().map((c) => [c.email, c.outcome]), [["rob@example.com", "ok"], ["owner@example.com", "ok"]], "each call logged under the person, on the same caps");
+/* THE GROUPS ARE THE ONLY LIST (ROB-440): the Admin group is the owner, and a row in the old table is no one's pass. */
+eq((await call({env: OPEN, jwt: await token({email: "admin@example.com"})})).status, 200, "a person in the Admin rule group is the owner, with no OWNER_EMAIL set");
+DB.raw.prepare("INSERT INTO ai_allowlist (email, added_at, note) VALUES ('row@example.com', '2026-09-26T00:00:00Z', 'the roster of before')").run();
+eq((await call({env: EVERYONE, jwt: await token({email: "row@example.com"})})).status, 403, "with the groups configured, a row in ai_allowlist spends nothing: the table is not a second list");
+const {ACCESS_API_TOKEN: _t, ...noGroups} = EVERYONE;
+eq((await call({env: noGroups, jwt: await token({email: "row@example.com"})})).status, 200, "with no Access API configured, the old table still answers: the migration path, until Rob installs the secret");
+eq([(await call({env: noGroups, jwt: await token({email: "keep@example.com"})})).status, (await call({env: noGroups, jwt: await token({email: "guest@example.com"})})).status], [403, 403], "and there the groups grant nothing, since they cannot be read");
 const library = async (path, env, jwt) => (await handle(new Request(`https://crankmagic.test${path}`, {headers: {"cf-access-jwt-assertion": jwt ?? await stranger(AUD)}}), env, {fetchImpl, now: clock})).json();
 eq([(await library("/api/ai-advise", {...EVERYONE, AI_ADVISE: "on"})).open, (await library("/api/ai-advise", {...OPEN, AI_ADVISE: "on"})).open], [false, false], "the deck page never offers the advisor to General Access, with AI_EVERYONE on or off");
 eq((await library("/api/ai-advise", {...EVERYONE, AI_ADVISE: "on"}, await token({aud: AUD}))).open, true, "and offers it to an insider");
@@ -154,15 +169,17 @@ const admin = async (method, jwt, env, body) => {
 eq([(await admin("GET", await token({aud: AUD}), OWNED)).status, (await admin("GET", await stranger(AUD), OWNED)).status, (await admin("GET", await owner(AUD), OPEN)).status], [403, 403, 403], "an insider, General Access, and anyone with no OWNER_EMAIL set: none may read the roster");
 ok(/owner can manage/.test((await admin("GET", await stranger(AUD), OWNED)).json.error), "and the refusal says who may");
 const roster = await admin("GET", await owner(AUD), OWNED);
-eq([roster.status, roster.json.insiders.map((r) => r.email)], [200, ["rob@example.com"]], "the owner reads the roster");
+eq([roster.status, roster.json.insiders.map((r) => r.email), roster.json.invitees.map((r) => r.email), roster.json.source], [200, ["keep@example.com", "rob@example.com"], ["guest@example.com"], "cloudflare-access"], "the owner reads the roster: the two rule groups themselves");
 eq((await admin("PUT", await owner(AUD), OWNED, {email: "New@Example.com", group: "insider", note: "tester"})).json, {email: "new@example.com", group: "insider"}, "the owner adds a person, lower-cased");
-eq((await me(await stranger(AUD))).group, "insider", "who is now an insider");
+eq([(await me(await stranger(AUD))).group, access.members(NAMES.insiders).includes("new@example.com")], ["insider", true], "who is now an insider, in the Game Theory Insiders rule group itself");
 eq((await call({jwt: await stranger()})).status, 200, "and is answered at the door");
 eq((await admin("PUT", await owner(AUD), OWNED, {email: "new@example.com", group: "general"})).json.group, "general", "the owner takes them off");
 eq([(await me(await stranger(AUD))).group, (await call({jwt: await stranger()})).status], ["general", 403], "and they are general again, refused at the door");
+eq([access.members(NAMES.insiders).includes("new@example.com"), access.members(NAMES.invitees).includes("new@example.com")], [false, true], "out of Game Theory Insiders and into CrankMagic Invitees: made general, they keep the app");
+eq((await admin("PUT", await owner(AUD), {...OWNED, ACCESS_API_TOKEN: ""}, {email: "y@example.com", group: "insider"})).status, 503, "a copy with no Access API token changes nothing, and says so");
 eq([(await admin("PUT", await owner(AUD), OWNED, {email: "nobody", group: "insider"})).status, (await admin("PUT", await owner(AUD), OWNED, {email: "x@example.com", group: "owner"})).status], [400, 400], "a bad address, or a group the roster cannot give, is refused");
 eq((await admin("PUT", await token({aud: AUD}), OWNED, {email: "x@example.com", group: "insider"})).status, 403, "an insider cannot add anyone");
-eq((await admin("GET", await owner(AUD), OWNED)).json.insiders.length, 1, "and the roster is as it was");
+eq((await admin("GET", await owner(AUD), OWNED)).json.insiders.length, 2, "and the roster is as it was");
 DB.raw.prepare("DELETE FROM ai_calls").run();
 sent = [];
 

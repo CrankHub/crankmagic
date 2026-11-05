@@ -7,6 +7,8 @@
  *
  * Plain WebCrypto, no library: the Worker has none, and neither does the repository.
  */
+import {groupsConfigured, ruleGroups} from "./access-groups.mjs";
+
 const enc = new TextEncoder(), dec = new TextDecoder();
 const bytes = (b64url) => {
   let s = b64url.replace(/-/g, "+").replace(/_/g, "/");
@@ -97,21 +99,38 @@ export async function verifyAccess(request, env, deps = {}) {
     the same token always the same identity, two tokens two, never a person's address, and the client id not repeated. */
 /* THE THREE ACCESS GROUPS (Rob, 2026-10-26: "a user group authorized for everything in CrankHub ... Game Theory Insiders.
  * The second user group will be General Access. General Access will never be able to run or cause token costs ... The
- * third user group is me, and I would have access to absolutely everything, including all game logs").
+ * third user group is me, and I would have access to absolutely everything, including all game logs"). Since 2026-11-03
+ * (ROB-440) the Cloudflare Access rule groups are the only list of who is in each (cloud/access-groups.mjs):
  *
- *   owner     one address, OWNER_EMAIL, a Worker variable set in the dashboard and never written in this repository
- *   insider   a Game Theory Insider: a row in ai_allowlist, which is the Insiders roster (the owner keeps it, below)
- *   general   everyone else Access admits: the library, decks, Play against the rules-only AI, never a cent spent
+ *   owner     in the "Admin" rule group; or the one address in OWNER_EMAIL, a Worker variable set in the dashboard and never
+ *             written in this repository, kept as the fallback that needs no API call
+ *   insider   in the "Game Theory Insiders" rule group
+ *   general   everyone else Access admits ("CrankMagic Invitees"): the library, decks, Play against the rules-only AI, never
+ *             a cent spent
+ *
+ * Where this copy has no Access API configured (ACCESS_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: a local run, or a release before
+ * Rob installs the secret), the old roster table ai_allowlist still answers "insider". That is the migration path only: once
+ * the groups are configured the table is never read, and nothing writes it any more. When the groups cannot be read, nobody
+ * is an insider (fail closed); the owner by OWNER_EMAIL still is.
  *
  * The group is read here and nowhere else, so every spending route asks the same question (cloud/ai.mjs `allowed`), and
  * the browser is told its group (/api/me) only to hide what it may not press: the Worker is the gate.
+ * `deps.fetchImpl` stands in for the network in a suite.
  */
 export const GROUPS = Object.freeze(["owner", "insider", "general"]);
-export async function groupOf(email, env, db) {
+export async function groupOf(email, env, db, deps = {}) {
   const who = typeof email === "string" ? email.trim().toLowerCase() : "";
   if (!who.includes("@")) return "general";
   const owner = String(env?.OWNER_EMAIL || "").trim().toLowerCase();
   if (owner && who === owner) return "owner";
+  if (groupsConfigured(env)) {
+    let groups;
+    try {groups = await ruleGroups(env, {fetchImpl: deps.fetchImpl || fetch});}
+    catch (error) {console.warn(`groupOf: the Access groups could not be read, so no one is an insider until they can: ${error.message}`); return "general";}
+    if (groups.admin?.members.has(who)) return "owner";
+    if (groups.insiders?.members.has(who)) return "insider";
+    return "general";
+  }
   if (db && (await db.prepare("SELECT 1 AS yes FROM ai_allowlist WHERE email = ?").bind(who).first())) return "insider";
   return "general";
 }

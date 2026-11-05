@@ -274,7 +274,7 @@ export class GameTable extends GameRoom {
   }
 
   /** Whether this address is CrankMagic's owner, the admin (cloud/access.mjs, groupOf). */
-  async isAdmin(email) {return (await groupOf(email, this.env, null)) === "owner";}
+  async isAdmin(email) {return (await groupOf(email, this.env, null, {fetchImpl: this.fetchImpl ?? fetch})) === "owner";}
   /** How many sockets are watching (lounge-contract §4): a number only. */
   watchers() {try {return this.ctx.getWebSockets().filter((s) => this.ctx.getTags(s)[0] === "watch").length;} catch {return 0;}}
 
@@ -472,7 +472,7 @@ export class GameTable extends GameRoom {
   async pilotOpen(email) {
     if (this.env?.AI_PILOT !== "on") return "The AI seat on Claude is not switched on here.";
     try {settings(this.env, await storedModel(this.env.DB));} catch (error) {return error.message;}
-    if (!this.env.DB || !(await createAi(this.env.DB, {owner: this.env.OWNER_EMAIL}).allowed(email))) return "That account is not on CrankMagic's list for AI features.";
+    if (!this.env.DB || !(await createAi(this.env.DB, {owner: this.env.OWNER_EMAIL, env: this.env, fetchImpl: this.fetchImpl ?? fetch}).allowed(email))) return "That account is not on CrankMagic's list for AI features.";
     return null;
   }
 
@@ -487,7 +487,7 @@ export class GameTable extends GameRoom {
     if (spent + pilotWorst(brief, config.model) > cap) return null;
     /* The call log on the table's clock, as the countdown and the away clocks are: a suite's fixed clock logs its calls,
        and reads the day's caps, in its own day. */
-    const ai = createAi(this.env.DB, {now: () => new Date(this.now()).toISOString()});
+    const ai = createAi(this.env.DB, {now: () => new Date(this.now()).toISOString(), env: this.env, fetchImpl: this.fetchImpl ?? fetch});
     let asked;
     try {asked = await pilot({ai, who: {email: host}, brief, config, fetchImpl: this.fetchImpl ?? fetch});}
     catch (error) {if (error instanceof Closed) return null; throw error;}
