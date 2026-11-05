@@ -3157,7 +3157,7 @@ function performOffered(state, player, action, during) {
       ...(payment.life > 0 ? {phyrexianLife: payment.life / 2} : {})};
     /* Harmonize's tap is no additional cost (Roamer's Routine): its `{-N}` mana is no additional cost's (castCost), so a harmonize
        cast that pays nothing else is not one whose additional cost was paid. */
-    if (action.harmonize !== undefined && !extraPaid.some(([kind]) => kind !== "returnToHand") && !action.extraMana.replace(/\{-\d+\}/g, "") && !action.extraLife && !(action.escalate > 0) && !beholding.length)
+    if (action.harmonize !== undefined && extraPaid.every(([kind]) => kind === "returnToHand") && !action.extraMana.replace(/\{-\d+\}/g, "") && !action.extraLife && !(action.escalate > 0) && !beholding.length)
       delete entry.cast.additionalPaid;
     /* Kicked that many times (multikicker, CR 702.33c): the permanent it becomes knows it as it enters (rules/stack.mjs). */
     if (action.kicked) entry.kicked = action.kicked;
