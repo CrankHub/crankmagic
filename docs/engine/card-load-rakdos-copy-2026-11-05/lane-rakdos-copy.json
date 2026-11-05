@@ -1,0 +1,365 @@
+{
+  "schema": "library-load-lane@1",
+  "lane": "Rob's Rakdos copy and legends Commander list, 2026-11-04",
+  "source": {
+    "list": "pasted by Rob 2026-11-04, not added to the spreadsheet",
+    "distinct": 82,
+    "copies": 99
+  },
+  "cards": [
+    {
+      "name": "Arcane Signet",
+      "copies": 1
+    },
+    {
+      "name": "Banshee of the Dread Choir",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Bedevil",
+      "copies": 1
+    },
+    {
+      "name": "Blade of Selves",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Blasphemous Act",
+      "copies": 1
+    },
+    {
+      "name": "Blood Crypt",
+      "copies": 1
+    },
+    {
+      "name": "Bojuka Bog",
+      "copies": 1
+    },
+    {
+      "name": "Bolt Bend",
+      "copies": 1
+    },
+    {
+      "name": "Braids, Arisen Nightmare",
+      "copies": 1
+    },
+    {
+      "name": "Cabal Coffers",
+      "copies": 1
+    },
+    {
+      "name": "Castle Locthwain",
+      "copies": 1
+    },
+    {
+      "name": "Chaos Warp",
+      "copies": 1
+    },
+    {
+      "name": "Come Back Wrong",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Command Tower",
+      "copies": 1
+    },
+    {
+      "name": "Cursed Mirror",
+      "copies": 1
+    },
+    {
+      "name": "Dalek Squadron",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Dark Privilege",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Dark Ritual",
+      "copies": 1
+    },
+    {
+      "name": "Deadly Rollick",
+      "copies": 1
+    },
+    {
+      "name": "Deflecting Swat",
+      "copies": 1
+    },
+    {
+      "name": "Delina, Wild Mage",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Determined Iteration",
+      "copies": 1
+    },
+    {
+      "name": "Dragonskull Summit",
+      "copies": 1
+    },
+    {
+      "name": "Electroduplicate",
+      "copies": 1
+    },
+    {
+      "name": "Elturel Survivors",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Etali, Primal Storm",
+      "copies": 1
+    },
+    {
+      "name": "Feldon of the Third Path",
+      "copies": 1
+    },
+    {
+      "name": "Firbolg Flutist",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Flameshadow Conjuring",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Foreboding Ruins",
+      "copies": 1
+    },
+    {
+      "name": "Goblin Bombardment",
+      "copies": 1
+    },
+    {
+      "name": "Goldlust Triad",
+      "copies": 1
+    },
+    {
+      "name": "Grave Pact",
+      "copies": 1
+    },
+    {
+      "name": "Haunted Ridge",
+      "copies": 1
+    },
+    {
+      "name": "Helm of the Host",
+      "copies": 1
+    },
+    {
+      "name": "Heroes' Podium",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Impact Tremors",
+      "copies": 1
+    },
+    {
+      "name": "Jaxis, the Troublemaker",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Kiki-Jiki, Mirror Breaker",
+      "copies": 1
+    },
+    {
+      "name": "Lightning Greaves",
+      "copies": 1
+    },
+    {
+      "name": "Luxury Suite",
+      "copies": 1
+    },
+    {
+      "name": "Maze of Ith",
+      "copies": 1
+    },
+    {
+      "name": "Mimic Vat",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Mirage Phalanx",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Mirkwood Bats",
+      "copies": 1
+    },
+    {
+      "name": "Mirror Box",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Mirror March",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Molten Duplication",
+      "copies": 1
+    },
+    {
+      "name": "Morbid Opportunist",
+      "copies": 1
+    },
+    {
+      "name": "Mordor on the March",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Mountain",
+      "copies": 10
+    },
+    {
+      "name": "Nadier's Nightblade",
+      "copies": 1
+    },
+    {
+      "name": "Orthion, Hero of Lavabrink",
+      "copies": 1
+    },
+    {
+      "name": "Phyrexian Tower",
+      "copies": 1
+    },
+    {
+      "name": "Pitiless Plunderer",
+      "copies": 1
+    },
+    {
+      "name": "Rakdos Carnarium",
+      "copies": 1
+    },
+    {
+      "name": "Rakdos Charm",
+      "copies": 1
+    },
+    {
+      "name": "Rakdos Signet",
+      "copies": 1
+    },
+    {
+      "name": "Raphael, Tough Turtle",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Redirect Lightning",
+      "copies": 1
+    },
+    {
+      "name": "Rionya, Fire Dancer",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Rising of the Day",
+      "copies": 1
+    },
+    {
+      "name": "Rogue's Passage",
+      "copies": 1
+    },
+    {
+      "name": "Shared Animosity",
+      "copies": 1
+    },
+    {
+      "name": "Shizo, Death's Storehouse",
+      "copies": 1
+    },
+    {
+      "name": "Shredder, Shadow Master",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Smoldering Marsh",
+      "copies": 1
+    },
+    {
+      "name": "Sol Ring",
+      "copies": 1
+    },
+    {
+      "name": "Solemn Simulacrum",
+      "copies": 1
+    },
+    {
+      "name": "Swamp",
+      "copies": 9
+    },
+    {
+      "name": "Talisman of Indulgence",
+      "copies": 1
+    },
+    {
+      "name": "Temple of the False God",
+      "copies": 1
+    },
+    {
+      "name": "Terminate",
+      "copies": 1
+    },
+    {
+      "name": "The Master, Multiplied",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Tiamat's Fanatics",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Urabrask's Forge",
+      "copies": 1,
+      "loadedHere": true
+    },
+    {
+      "name": "Vandalblast",
+      "copies": 1
+    },
+    {
+      "name": "Viscera Seer",
+      "copies": 1
+    },
+    {
+      "name": "War Room",
+      "copies": 1
+    },
+    {
+      "name": "Whip of Erebos",
+      "copies": 1
+    },
+    {
+      "name": "Éomer, Marshal of Rohan",
+      "copies": 1,
+      "loadedHere": true
+    }
+  ],
+  "leftOut": [
+    {
+      "name": "Deadpool, Trading Card",
+      "copies": 1,
+      "reason": "Rob, 2026-11-05: Deadpool leave out"
+    }
+  ]
+}

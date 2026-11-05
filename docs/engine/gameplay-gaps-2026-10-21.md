@@ -108,6 +108,10 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | Ravening Warg, Nighthowl Pursuer, and the other ferocious attack triggers written with `condition` | **An ignore.** The condition is asked again as the trigger resolves, but ferocious is a trigger condition, not an intervening "if" (CR 603.4): the 4-power creature removed in response should not stop the effect. Wargling is written with `while` and does it right; the older cards were not changed. | Master Table load, 2026-11-04 |
 | Kwain, Itinerant Meddler | **An ignore.** Each player decides, draws, then gains, in turn order, rather than all draw and then all gain; the outcome differs only if something reads the game between two players' draws. | Master Table load, 2026-11-04 |
 | Lasyd Prowler's Renew (and 893 definitions) | Offered once its mana is floated by hand, not from untapped lands: the census's advisory class `ACTIVATION_ONLY_WHEN_FLOATED` (ROB-339, ROB-354). Not fixed by the load. | Master Table load, 2026-11-04 |
+| Deadpool, Trading Card | **An ignore, Rob's call.** Left out of the Rakdos copy deck load: not defined, so a table refuses it by name. | Rakdos copy deck load, 2026-11-05 |
+| Jaxis, the Troublemaker's blitz (and every alternative cost) | Offered only once its mana is floated by hand, not from untapped lands (the row above, #628, #657): the blitz cast of Jaxis is proved with `{1}{R}` tapped into the pool; the plain cast is offered from the lands. | Rakdos copy deck load, 2026-11-05 |
+| Flameshadow Conjuring (and Molten Echoes) | **An ignore.** If the creature that entered is gone before the trigger resolves and its controller pays {R}, no token is made; a table copies it from last known information. The engine also asks a forced "Don't pay" when no {R} is available. | Rakdos copy deck load, 2026-11-05 |
+| Mirror March, and coin flips in general | **An ignore.** The coin is flipped without a call (the odds are the same, CR 705); nothing modifies a flip (Krark's Thumb) or watches for one ("whenever you win a coin flip") yet. | Rakdos copy deck load, 2026-11-05 |
 
 ## 5. Choices the engine makes for the player
 
@@ -176,7 +180,7 @@ Plumb the Forbidden, never plots (Blacksnag Buzzard), never attacks planeswalker
 | The spell's own cast trigger | Nulldrifter |
 | "Counted, not proven" in the catalog | The Lord of Pain, Decree of Pain, Dismantling Wave |
 | Megamorph; decayed; a "discard X cards" cost | Jadar (decayed); others not named |
-| Remembered objects (the most-played construct missing: 62 cards), entered/died this turn, ChoosePlayer, Discover, Imprint, Cascade, "your life total", Wither, FlipCoin | counts in `docs/engine/catalog.md` and `coverage.md`; library blockers: RememberObjects 66, RememberChanged 51, MayPlay 30 |
+| Remembered objects (the most-played construct missing: 62 cards), entered/died this turn, ChoosePlayer (built 2026-11-04), Discover, Imprint (Mimic Vat's, 2026-11-05), Cascade, "your life total", Wither, FlipCoin (built 2026-11-05: `flipCoin`, no call and no modifier yet) | counts in `docs/engine/catalog.md` and `coverage.md`; library blockers: RememberObjects 66, RememberChanged 51, MayPlay 30 |
 | Costs that tap, sacrifice or exile N of a type | Captivating Vampire, Kellogg, Piper of the Swarm, Sephara, Shimmer Dragon, Lathril, Grim Hireling, Drivnod |
 | "Pay {N}; if you do" | Hellkite Charger, Dawn of Hope, Hashaton |
 | Granted triggers and abilities | Dionus, Clavileño, Power Fist, Zombie Master, Svyelun, The Odd Acorn Gang, Bello, Ygra |

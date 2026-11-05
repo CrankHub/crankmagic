@@ -650,8 +650,11 @@ Tier 0 (the seven decks), grouped, with the Forge ruler in parentheses only to s
   control, made first if you control none; the live-game plan of 2026-10-04), `becomeMonarch` ("you become the monarch",
   CR 725: a designation of the game, one player's at a time, with two triggered abilities of the game's own; Train E,
   2026-10-12), `rollDie` ("roll a d20", CR 706: one die of a number of sides, its result from the game's random stream and
-  counted by what follows; Ancient Copper Dragon, wave 4c, 2026-10-12).
-- Permanents: `createToken`, `copyPermanent`, `becomeCopy`, `earthbend` (added in M4 phase 3, batch 65), `animate`, `animateAll`, `attach`, `gainControl`, `setState` (transform,
+  counted by what follows; Ancient Copper Dragon, wave 4c, 2026-10-12; a die may carry rows, "1-14 | ... 15-20 | ...", each result in exactly one
+  row and a row that "may roll again" asking first, the Rakdos copy deck of 2026-11-05 for Delina, Wild Mage), `flipCoin` ("flip a coin", "flip a
+  coin until you lose a flip", CR 705: from the game's random stream, the call a table makes not changing the odds so none asked, the flips won
+  counted by what follows as flipsWon; Mirror March, 2026-11-05).
+- Permanents: `createToken`, `copyPermanent`, `becomeCopy`, `pair` (soulbond, CR 702.95: the source creature and another of its controller's paired, ended by itself as either leaves, stops being a creature or changes control; Mirage Phalanx, 2026-11-05), `earthbend` (added in M4 phase 3, batch 65), `animate`, `animateAll`, `attach`, `gainControl`, `setState` (transform,
   flip), `phaseOut`, `exchangeControl` (control of two permanents exchanged, CR 701.12b: both still there and controlled by
   different players, or nothing happens; Train D, 2026-10-12), `incubate` (an Incubator token, a double-faced token that
   transforms for {2} into a 0/0 Phyrexian artifact creature, entering with N +1/+1 counters, CR 701.53, 111.10i; Train E,

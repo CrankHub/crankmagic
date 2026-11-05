@@ -97,7 +97,10 @@ export function runScenario(scenario, cards, fixtures = {}) {
   const state = createState({matchId: "scenario", seed: scenario.name, players: names.map((name) => ({name})),
     ...(scenario.skipFirstDraw === false ? {skipFirstDraw: false} : {}), ...(scenario.pooledTaps === true ? {pooledTaps: true} : {}),
     ...(scenario.xTaps === true ? {xTaps: true} : {}), ...(scenario.phyrexianTaps === true ? {phyrexianTaps: true} : {}), ...(Number.isInteger(scenario.startingLife) ? {startingLife: scenario.startingLife} : {})});
-  const rng = createRng(scenario.name);
+  /* `rolls`: the results of the dice and the coins this game throws, in order, pinned -- a die's result as it is (1 to its sides),
+     a flip of a coin as 1 to win it and 2 to lose it. Past the last, the game's own stream (rng.mjs, roll). */
+  const base = createRng(scenario.name), pinned = [...(scenario.rolls ?? [])];
+  const rng = pinned.length ? Object.assign(Object.create(base), {roll: (sides) => (pinned.length ? pinned.shift() : base.roll(sides))}) : base;
   const record = (list) => { events.push(...(list ?? [])); return list; };
 
   const define = (name) => {
@@ -257,8 +260,9 @@ export function runScenario(scenario, cards, fixtures = {}) {
 
   /* A permanent on a seat's battlefield, as that seat sees it: by its name -- a face-down one of theirs by the card it is,
      which they may look at (CR 708.5), and any face-down one as "A face-down permanent". */
-  const onField = (seat, name) => projectFor(state, seat).players[seat].zones.Battlefield.cards
-    .find((c) => c.name === name || (c.faceDown && (c.faceDownName === name || name === "A face-down permanent")));
+  /* `token`: true for the token of that name, false for the card -- when a copy shares its name (Mirror Box's count). */
+  const onField = (seat, name, token) => projectFor(state, seat).players[seat].zones.Battlefield.cards
+    .find((c) => (c.name === name || (c.faceDown && (c.faceDownName === name || name === "A face-down permanent"))) && (token === undefined || (c.token === true) === token));
   function check(expect) {
     for (const e of expect ?? []) {
       if (e.zone !== undefined) {
@@ -303,7 +307,7 @@ export function runScenario(scenario, cards, fixtures = {}) {
         if (size !== e.stack) fail(`the stack holds ${size}, not ${e.stack}`);
         passed.push(`the stack holds ${e.stack}`);
       } else if (e.tapped !== undefined) {
-        const card = onField(e.seat, e.tapped);
+        const card = onField(e.seat, e.tapped, e.token);
         if (!card || card.tapped !== (e.is !== false)) fail(`${e.tapped} is ${card ? (card.tapped ? "tapped" : "untapped") : "not on the battlefield"}`);
         passed.push(`${e.tapped} ${e.is === false ? "untapped" : "tapped"}`);
       } else if (e.pool !== undefined) {
@@ -343,7 +347,7 @@ export function runScenario(scenario, cards, fixtures = {}) {
         passed.push(`asks ${names[state.awaiting.player]}: ${(e.asks.options ?? []).join(", ")}`);
       } else if (e.keywords !== undefined) {
         /* A permanent's current keywords, as its controller's view shows them. */
-        const card = onField(e.seat, e.keywords.card);
+        const card = onField(e.seat, e.keywords.card, e.keywords.token);
         if (!card) fail(`${e.keywords.card} is not on ${names[e.seat]}'s battlefield`);
         for (const k of e.keywords.has ?? []) if (!card.keywords.includes(k)) fail(`${e.keywords.card} lacks ${k}`);
         for (const k of e.keywords.lacks ?? []) if (card.keywords.includes(k)) fail(`${e.keywords.card} has ${k}`);
@@ -357,7 +361,7 @@ export function runScenario(scenario, cards, fixtures = {}) {
         passed.push(`${e.counters.card}: ${e.counters.count} ${e.counters.counter}`);
       } else if (e.stats !== undefined) {
         /* A creature's current power and toughness, as its controller's view shows them (layer 7). */
-        const card = onField(e.seat, e.stats.card);
+        const card = onField(e.seat, e.stats.card, e.stats.token);
         if (!card) fail(`${e.stats.card} is not on ${names[e.seat]}'s battlefield`);
         if (card.power !== e.stats.power || card.toughness !== e.stats.toughness) fail(`${e.stats.card} is ${card.power}/${card.toughness}, not ${e.stats.power}/${e.stats.toughness}`);
         passed.push(`${e.stats.card}: ${e.stats.power}/${e.stats.toughness}`);
