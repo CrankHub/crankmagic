@@ -1,0 +1,565 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "The Master, Multiplied",
+  "fixtures": {
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Token Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "token": true
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Shatter": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target artifact.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Artifact"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "A nontoken pair of one legendary name is still held to the legend rule beside The Master: one is kept",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied",
+            "Smoke Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Two creature tokens of one legendary name beside The Master both stay: the legend rule does not apply to them",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Smoke Token Legend",
+            "Smoke Token Legend"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied",
+            "Smoke Token Legend",
+            "Smoke Token Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Without The Master the same two tokens are held to the rule: one is kept",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear",
+            "Smoke Token Legend",
+            "Smoke Token Legend"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Smoke Bear",
+            "Smoke Token Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Only the tokens he controls: Maya's pair of legendary tokens is held to the rule (one kept) while Rob's two stay",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Smoke Token Legend",
+            "Smoke Token Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Token Legend",
+            "Smoke Token Legend"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied",
+            "Smoke Token Legend",
+            "Smoke Token Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "Smoke Token Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kiki-Jiki's hasty copy is not sacrificed at the end step: a triggered ability of Rob's can't make him sacrifice his creature token",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Kiki-Jiki, Mirror Breaker",
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kiki-Jiki, Mirror Breaker",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "UPKEEP"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied",
+            "Kiki-Jiki, Mirror Breaker",
+            "Smoke Bear",
+            "Smoke Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Without The Master it is: the copy is sacrificed at the beginning of the next end step",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kiki-Jiki, Mirror Breaker",
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kiki-Jiki, Mirror Breaker",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "UPKEEP"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Kiki-Jiki, Mirror Breaker",
+            "Smoke Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Nor is a Splinter Twin copy exiled at the end step",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Smoke Bear",
+            "Mountain",
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Splinter Twin"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Splinter Twin",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Smoke Bear"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "UPKEEP"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied",
+            "Smoke Bear",
+            "Smoke Bear",
+            "Splinter Twin",
+            "Mountain",
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A spell still makes him sacrifice a token: Maya's Diabolic Edict, and Rob chooses the token over The Master",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Smoke Token Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Diabolic Edict"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Swamp",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Diabolic Edict",
+          "seat": 1,
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Smoke Token Legend"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "And so does a triggered ability of Maya's: her Archon of Cruelty enters, and Rob sacrifices the token",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Master, Multiplied",
+            "Smoke Token Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Archon of Cruelty"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Swamp",
+          "seat": 1
+        },
+        {
+          "tap": "Swamp",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Archon of Cruelty",
+          "seat": 1
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Rob"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Smoke Token Legend"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Master, Multiplied"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 37
+        }
+      ]
+    },
+    {
+      "name": "Cast offered from untapped lands with an empty pool (and its myriad is the keyword)",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Master, Multiplied"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "The Master, Multiplied",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

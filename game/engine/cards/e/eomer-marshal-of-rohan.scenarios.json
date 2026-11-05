@@ -1,0 +1,472 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Éomer, Marshal of Rohan",
+  "fixtures": {
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Hero": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Bruiser": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{3}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Smoke Brute": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{3}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Smoke Kill": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Another attacking legendary creature of yours dies (blocked by Maya's 4/4): untap all your creatures, then an additional combat -- Eomer attacks again",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bruiser"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Smoke Bruiser",
+              "Smoke Legend"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            },
+            {
+              "seat": 1,
+              "life": 36
+            },
+            {
+              "seat": 0,
+              "tapped": "Éomer, Marshal of Rohan",
+              "is": true
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Éomer, Marshal of Rohan",
+              "is": false
+            }
+          ]
+        },
+        {
+          "attack": [
+            "Éomer, Marshal of Rohan"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 32
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Two legendary creatures die at once: one trigger for them both, and so one additional combat",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Legend",
+            "Smoke Hero"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bruiser",
+            "Smoke Brute"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Smoke Legend",
+            "Smoke Hero"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Smoke Bruiser",
+              "Smoke Legend"
+            ],
+            [
+              "Smoke Brute",
+              "Smoke Hero"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Legend",
+            "Smoke Hero"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Not attacking: a legendary creature of yours dying at the instant speed Maya gives it does nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Legend"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Legend",
+            "Smoke Kill"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attacking but not legendary: Smoke Bear dies blocked and nothing triggers",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bruiser"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Smoke Bruiser",
+              "Smoke Bear"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Other: Eomer dying himself (blocked) is not another creature's death",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bruiser"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Smoke Bruiser",
+              "Éomer, Marshal of Rohan"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Smoke Bear",
+              "is": true
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Éomer, Marshal of Rohan"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Éomer, Marshal of Rohan"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Éomer, Marshal of Rohan",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

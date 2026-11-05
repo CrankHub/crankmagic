@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 695 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 696 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1635,6 +1635,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-precons-e` - `tests/engine-precons-e.mjs`: the precon load, lane E (Wretched Ranks, 2026-10-25) -- Kalitas's death replacement for each opponent at a table of three, an opponent's Kalitas, Kalitas beside Liesa (the game goes on), Josu Vess's kicked read off the permanent, a sacrifice remembered for every player (Syphon Flesh), what the schema refuses of each new key, and the deck's 40 cards through their scenarios.
 - `engine-deck-load-1027` - `tests/engine-deck-load-1027.mjs`: the card load of Rob's Orzhov deck (2026-10-27), the 25 cards the engine lacked -- every card of the list playable and the 25 through their scenarios, the choice of Agadeem's Awakening held to a different mana value for each card (refused with what to do), monocolored, the Blood token and the decayed Zombie, and what the schema refuses of the new key.
 - `engine-master-al-load` - `tests/engine-master-al-load.mjs`: the card load of Rob's Master Table, column AL (2026-11-04) -- all 595 cards (920 copies) with a number above 0 in it playable, the 15 the engine lacked through their scenarios, an optional "you may behold a Dragon" held to a spell's own additional cost, harmonize held to mana alone on an instant or sorcery and the creature an offer taps the one tapped, a color shared with a permanent a selector describes, "choose an opponent" (asked of two or more, nobody asked of one, a chosen player who left waits for no turn), and "if they didn't attack you" held to true or false.
+- `engine-rakdos-copy-load` - `tests/engine-rakdos-copy-load.mjs`: the card load of Rob's Rakdos copy and legends list (2026-11-05) -- all 81 cards of it but Deadpool (left out, by name) playable, the 23 the engine lacked through their scenarios, blitz held to a mana cost without X on a creature, the legend rule turned off for a controller's permanents (Mirror Box) or creature tokens (The Master, Multiplied) and a trigger's sacrifice or exile of those tokens stopped (and a spell's not), a coin flipped until a flip is lost and counted by flipsWon, a die's rows covering every result once with a row that must or may roll again, half a life total rounded up, soulbond pairs made, kept and ended by themselves (control, type, leaving), "the lands defending player controls", and "attacking as it died"
 
 ## Design and execution record
 

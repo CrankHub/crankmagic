@@ -1,0 +1,66 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "The Master, Multiplied",
+    "oracleId": "0741e5b5-35c8-4f4d-b49f-c53e960240b9",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Time",
+      "Lord",
+      "Rogue"
+    ],
+    "manaCost": "{4}{B}{R}",
+    "colors": [
+      "B",
+      "R"
+    ],
+    "colorIdentity": [
+      "B",
+      "R"
+    ],
+    "power": 4,
+    "toughness": 3
+  },
+  "oracleText": "Myriad\nThe \"legend rule\" doesn't apply to creature tokens you control.\nTriggered abilities you control can't cause you to sacrifice or exile creature tokens you control.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Myriad",
+      "keyword": "myriad"
+    },
+    {
+      "kind": "static",
+      "text": "The \"legend rule\" doesn't apply to creature tokens you control.",
+      "rule": "legend-rule-off",
+      "affects": {
+        "types": [
+          "Creature"
+        ],
+        "token": true,
+        "controller": "you"
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Triggered abilities you control can't cause you to sacrifice or exile creature tokens you control.",
+      "rule": "triggers-cant-remove",
+      "affects": {
+        "types": [
+          "Creature"
+        ],
+        "token": true,
+        "controller": "you"
+      },
+      "how": [
+        "sacrifice",
+        "exile"
+      ]
+    }
+  ]
+}

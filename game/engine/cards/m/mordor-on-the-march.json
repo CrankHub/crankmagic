@@ -1,0 +1,64 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Mordor on the March",
+    "oracleId": "60fa9f5f-2360-4d5e-b291-1318803e3c9f",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}{B}{R}",
+    "colors": [
+      "B",
+      "R"
+    ],
+    "colorIdentity": [
+      "B",
+      "R"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Exile a creature card from your graveyard. Create a token that's a copy of it. It gains haste until end of turn. Exile it at the beginning of the next end step.\nStorm (When you cast this spell, copy it for each spell cast before it this turn.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Exile a creature card from your graveyard. Create a token that's a copy of it. It gains haste until end of turn. Exile it at the beginning of the next end step.",
+      "targets": [],
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "graveyard",
+          "selector": {
+            "types": [
+              "Creature"
+            ]
+          },
+          "count": 1,
+          "to": "stay",
+          "remember": true
+        },
+        {
+          "effect": "moveZone",
+          "targets": "remembered",
+          "to": "exile",
+          "remember": true
+        },
+        {
+          "effect": "copyPermanent",
+          "targets": "remembered",
+          "gainsUntilEndOfTurn": [
+            "Haste"
+          ],
+          "atEndStep": "exile"
+        }
+      ]
+    },
+    {
+      "kind": "keyword",
+      "text": "Storm (When you cast this spell, copy it for each spell cast before it this turn.)",
+      "keyword": "storm"
+    }
+  ]
+}

@@ -1,0 +1,534 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Mirror March",
+  "fixtures": {
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Zero": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Priest": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "abilities": [
+        {
+          "id": "p0",
+          "kind": "triggered",
+          "text": "When this creature enters, you gain 3 life.",
+          "trigger": {
+            "on": "enters",
+            "who": "self"
+          },
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 3
+            }
+          ]
+        }
+      ]
+    },
+    "Smoke Token": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "token": true
+    },
+    "Smoke Kill": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Cantrip": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "You gain 1 life.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "gainLife",
+            "amount": 1
+          }
+        ]
+      }
+    },
+    "Smoke Steal": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Gain control of target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "gainControl",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Win, win, lose: two token copies (the loss makes none), both with haste, exiled at the beginning of the next end step",
+      "rolls": [
+        1,
+        1,
+        2
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zero"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Zero"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Mirror March",
+                "Smoke Zero",
+                "Smoke Zero",
+                "Smoke Zero"
+              ]
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Smoke Zero",
+                "has": [
+                  "Haste"
+                ],
+                "token": true
+              }
+            },
+            {
+              "event": "GameEventCoinFlipped",
+              "where": {
+                "won": true
+              }
+            },
+            {
+              "event": "GameEventCoinFlipped",
+              "where": {
+                "won": false
+              }
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "UPKEEP"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror March",
+            "Smoke Zero"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lose at once: no token, and the creature is just as it was",
+      "rolls": [
+        2
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zero"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Zero"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror March",
+            "Smoke Zero"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Win, lose: one token",
+      "rolls": [
+        1,
+        2
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zero"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Zero"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror March",
+            "Smoke Zero",
+            "Smoke Zero"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Four wins before the loss: four tokens -- the flips go on until one is lost",
+      "rolls": [
+        1,
+        1,
+        1,
+        1,
+        2
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zero"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Zero"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror March",
+            "Smoke Zero",
+            "Smoke Zero",
+            "Smoke Zero",
+            "Smoke Zero",
+            "Smoke Zero"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A token entering is no nontoken creature: the tokens do not flip for more (the third and fourth results go unused)",
+      "rolls": [
+        1,
+        2,
+        1,
+        2
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zero"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Zero"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror March",
+            "Smoke Zero",
+            "Smoke Zero"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Only creatures you control: Maya's creature entering flips nothing",
+      "rolls": [
+        1,
+        2
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Smoke Zero"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "cast": "Smoke Zero",
+          "seat": 1
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror March"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "Smoke Zero"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Mirror March"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Mirror March",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

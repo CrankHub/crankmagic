@@ -478,13 +478,37 @@ export function rollDie(state, params, context, rng = null) {
   if (!rng) throw new Error("A die roll needs the game's random stream");
   /* A die of no number of sides is no die: nothing rolled (the schema refuses a script that says one, script/schema.mjs). */
   if (!(Number.isInteger(params.sides) && params.sides >= 2)) return [];
-  const result = rng.int(params.sides) + 1;
+  const result = rng.roll(params.sides);
   context.rolled = result;
   /* "Choose 1, 2, or 3 at random" (Tibalt's Trickery; card load w4d L1): `atRandom`, a number chosen at random -- no die is
      rolled (CR 706.1), so nothing that watches a roll sees it -- read after it as a die's result is ({dieRolled: true}). */
   if (params.atRandom === true) return [event("GameEventNumberChosen", state, {player: {playerId: context.controller, name: state.players[context.controller]?.name}, of: params.sides, result})];
   return [event("GameEventDieRolled", state, {player: {playerId: context.controller, name: state.players[context.controller]?.name}, sides: params.sides, result})];
 }
+
+/**
+ * `flipCoin` -- "flip a coin" and "flip a coin until you lose a flip" (Mirror March; CR 705): its controller flips a coin
+ * `count` times (one, unsaid), or until a flip is lost (`until: "lose"`), each flip won or lost with the same odds -- from the
+ * game's random stream (rng.mjs), as a die is, never chosen: the call a table makes does not change them, so none is asked.
+ * Each flip is said to everyone. How many were won is what follows reads (`{flipsWon: true}`, script/amount.mjs). Nothing yet
+ * modifies a flip or watches for one ("whenever you win a coin flip", CR 705.3's results changed).
+ */
+export function flipCoin(state, params, context, rng = null) {
+  if (!rng) throw new Error("A coin flip needs the game's random stream");
+  const events = [], player = {playerId: context.controller, name: state.players[context.controller]?.name};
+  const flips = params.until === "lose" ? FLIP_LIMIT : Math.max(1, Number.isInteger(params.count) ? params.count : 1);
+  let won = 0;
+  for (let n = 0; n < flips; n += 1) {
+    const win = rng.roll(2) === 1;
+    events.push(event("GameEventCoinFlipped", state, {player, won: win}));
+    if (win) won += 1;
+    else if (params.until === "lose") break;
+  }
+  context.flipsWon = won;
+  return events;
+}
+/* The most flips "until you lose a flip" makes: a coin never lands one way a thousand times. */
+const FLIP_LIMIT = 1000;
 
 /**
  * THE MONARCH (CR 725): a designation of the game's, not of any card -- none until an effect makes a player the monarch

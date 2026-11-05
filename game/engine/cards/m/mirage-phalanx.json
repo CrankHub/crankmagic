@@ -1,0 +1,80 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Mirage Phalanx",
+    "oracleId": "d18dfca7-2947-4308-a9ef-501e1b4843f4",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Soldier"
+    ],
+    "manaCost": "{4}{R}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R"
+    ],
+    "power": 4,
+    "toughness": 4
+  },
+  "oracleText": "Soulbond (You may pair this creature with another unpaired creature when either enters. They remain paired for as long as you control both of them.)\nAs long as Mirage Phalanx is paired with another creature, each of those creatures has \"At the beginning of combat on your turn, create a token that's a copy of this creature, except it has haste and loses soulbond. Exile it at end of combat.\"",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Soulbond (You may pair this creature with another unpaired creature when either enters. They remain paired for as long as you control both of them.)",
+      "keyword": "soulbond"
+    },
+    {
+      "kind": "static",
+      "text": "As long as Mirage Phalanx is paired with another creature, each of those creatures has \"At the beginning of combat on your turn, create a token that's a copy of this creature, except it has haste and loses soulbond. Exile it at end of combat.\"",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "pairedWithSource": true
+      },
+      "apply": {
+        "addAbilities": [
+          {
+            "kind": "triggered",
+            "text": "At the beginning of combat on your turn, create a token that's a copy of this creature, except it has haste and loses soulbond. Exile it at end of combat.",
+            "trigger": {
+              "on": "step",
+              "step": "COMBAT_BEGIN"
+            },
+            "effects": [
+              {
+                "effect": "copyPermanent",
+                "targets": "self",
+                "remember": true,
+                "except": {
+                  "addKeywords": [
+                    "Haste"
+                  ],
+                  "removeKeywords": [
+                    "Soulbond"
+                  ]
+                }
+              },
+              {
+                "effect": "delayedTrigger",
+                "at": "end of combat",
+                "text": "Exile it at end of combat.",
+                "effects": [
+                  {
+                    "effect": "moveZone",
+                    "targets": "remembered",
+                    "to": "exile"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

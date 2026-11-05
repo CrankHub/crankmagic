@@ -65,6 +65,8 @@ const COMPOSERS = {
   /* What follows not paying, and -- "if they do" (Divert Disaster) -- what follows paying. */
   unlessPays: (effect) => [...(effect.effects ?? []), ...(Array.isArray(effect.whenPaid) ? effect.whenPaid : [])],
   delayedTrigger: (effect) => effect.effects ?? [],
+  /* "1-14 | ... 15-20 | ..." (Delina, Wild Mage; CR 706.2): what each row of a rolled die does. */
+  rollDie: (effect) => (Array.isArray(effect.rows) ? effect.rows : []).flatMap((row) => (Array.isArray(row?.effects) ? row.effects : [])),
   /* A reflexive trigger (batch 72): what it does. */
   immediateTrigger: (effect) => effect.effects ?? [],
 };
@@ -143,6 +145,26 @@ function checkEffect(effect, path, errors) {
   /* "Roll a d20" (CR 706.1; effects/resources.mjs): a die of `sides` sides, a whole number 2 or more. */
   if (name === "rollDie" && !(Number.isInteger(effect.sides) && effect.sides >= 2))
     errors.push({path: `${path}.sides`, message: "A die rolled says how many sides it has: sides, a whole number 2 or more (a d20 is 20)"});
+  /* "1-14 | ... 15-20 | ... You may roll again" (Delina, Wild Mage; CR 706.2): `rows`, what each result does, together every result of
+     the die exactly once; a row that sends the roll round again says so (`again`: "may" or "must"). */
+  if (name === "rollDie" && effect.rows !== undefined) {
+    const rows = Array.isArray(effect.rows) ? effect.rows : null;
+    if (!rows || !rows.length) errors.push({path: `${path}.rows`, message: "A die's rows are a list of {from, to, effects}"});
+    else {
+      const seen = new Set();
+      rows.forEach((row, r) => {
+        if (!(Number.isInteger(row?.from) && Number.isInteger(row?.to) && row.from >= 1 && row.to >= row.from && row.to <= (effect.sides ?? 0)))
+          errors.push({path: `${path}.rows[${r}]`, message: "A row says the results it covers: from and to, whole numbers within the die's sides"});
+        else for (let n = row.from; n <= row.to; n += 1) { if (seen.has(n)) errors.push({path: `${path}.rows[${r}]`, message: `Result ${n} is in two rows`}); seen.add(n); }
+        if (!Array.isArray(row?.effects)) errors.push({path: `${path}.rows[${r}].effects`, message: "A row's effects are a list (empty when the row does nothing)"});
+        if (row?.again !== undefined && !["may", "must"].includes(row.again)) errors.push({path: `${path}.rows[${r}].again`, message: "A row that rolls again says \"may\" or \"must\""});
+      });
+      for (let n = 1; n <= (effect.sides ?? 0); n += 1) if (!seen.has(n)) { errors.push({path: `${path}.rows`, message: `Result ${n} is in no row: the rows cover every result of the die`}); break; }
+    }
+  }
+  /* "Flip a coin until you lose a flip" (Mirror March; CR 705; effects/resources.mjs): once, `count` times, or until a flip is lost. */
+  if (name === "flipCoin" && (effect.count !== undefined || effect.until !== undefined) && !((effect.count === undefined || (Number.isInteger(effect.count) && effect.count >= 1)) && (effect.until === undefined || effect.until === "lose")))
+    errors.push({path, message: "A coin is flipped once, `count` times (a whole number, 1 or more), or `until` \"lose\" -- a flip lost"});
   /* "You become the monarch", "its controller becomes the monarch" (CR 725.3; effects/resources.mjs): one player -- its
      controller ("you", or unsaid), a target player, or the controller of what the trigger is about. */
   if (name === "becomeMonarch" && effect.who !== undefined && !["you", "that card's controller"].includes(effect.who) && !Number.isInteger(effect.who?.target))
@@ -403,7 +425,8 @@ function checkEffect(effect, path, errors) {
   const children = COMPOSERS[name];
   if (!children) return;
   const nested = children(effect);
-  if (nested.length === 0) errors.push({path, message: `${name} composes other effects and has none`});
+  /* A die with no rows is the plain die of before (Ancient Copper Dragon): it composes nothing, and need not. */
+  if (nested.length === 0 && !(name === "rollDie" && effect.rows === undefined)) errors.push({path, message: `${name} composes other effects and has none`});
   nested.forEach((child, index) => checkEffect(child, `${path}.effects[${index}]`, errors));
 }
 

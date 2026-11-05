@@ -1,0 +1,735 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Mimic Vat",
+  "fixtures": {
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Zero": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Priest": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "abilities": [
+        {
+          "id": "p0",
+          "kind": "triggered",
+          "text": "When this creature enters, you gain 3 life.",
+          "trigger": {
+            "on": "enters",
+            "who": "self"
+          },
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 3
+            }
+          ]
+        }
+      ]
+    },
+    "Smoke Token": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "token": true
+    },
+    "Smoke Kill": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Cantrip": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "You gain 1 life.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "gainLife",
+            "amount": 1
+          }
+        ]
+      }
+    },
+    "Smoke Steal": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Gain control of target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "gainControl",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "A nontoken creature dies -- Maya's Smoke Bear: Yes, it is exiled (her card, out of her graveyard)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "No: it stays in the graveyard, nothing exiled",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A creature token dies: not a nontoken creature, nothing triggers",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Token"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Token"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "A second creature dies and is exiled: the first goes back to its owner's graveyard (Maya's), the second is the only card exiled",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat",
+            "Smoke Zero"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill",
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Zero"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": [
+            "Smoke Zero"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Kill",
+            "Smoke Kill"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A second creature dies and is not exiled (No): the first stays exiled with the Vat",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat",
+            "Smoke Zero"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill",
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Zero"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Zero",
+            "Smoke Kill",
+            "Smoke Kill"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "{3}, {T}: a token copy of the exiled card, with haste, exiled at the beginning of the next end step -- the card stays exiled",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Kill",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Mimic Vat"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Mimic Vat",
+                "Smoke Bear",
+                "Wastes",
+                "Wastes",
+                "Wastes"
+              ]
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Smoke Bear",
+                "has": [
+                  "Haste"
+                ],
+                "token": true
+              }
+            },
+            {
+              "seat": 1,
+              "zone": "exile",
+              "cards": [
+                "Smoke Bear"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Mimic Vat",
+              "is": true
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "UPKEEP"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mimic Vat",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": [
+            "Smoke Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Nothing exiled with it: the ability makes nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mimic Vat",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Mimic Vat"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mimic Vat",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Mimic Vat"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Mimic Vat",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
