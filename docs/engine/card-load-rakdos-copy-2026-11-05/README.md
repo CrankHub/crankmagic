@@ -100,4 +100,22 @@ of the 1,233 most-played cards no table plays. Nothing in it has been run.
 
 ## Proof
 
-<!-- PROOF -->
+- `node --stack-size=4000 game/tools/batch/check-cards.mjs`: 6,468 definitions, 11,295 scenarios, 0 failed.
+- `node tools/library-engine-index.mjs --check-lane docs/engine/card-load-rakdos-copy-2026-11-05/lane-rakdos-copy.json`: 81 of 81 final.
+- `tests/engine-rakdos-copy-load.mjs`: 693 checks (the 23 cards' scenarios, and every new rule held directly: refusals, boundaries, the
+  pairing's ends, the stream, the history lines).
+- `python game/tools/batch/breaks.py game/tools/batch/breaks-rakdos-copy-load.py`: 88 breaks, one or more per engine change, all caught,
+  `missed: []`. Four older breaks (`breaks-wave4c-k3.py`, `breaks-train-e-g1.py`) were re-anchored where this load moved the text they
+  stand on; each is caught again, and `engine-breaks-anchors` shows the same 75 stale anchors main's tree has, none of them new.
+- The interaction census (`game/tools/interaction-census.mjs --card`): no findings for 12 of the 13 cards written or promoted here;
+  Mimic Vat's `{3}, {T}` carries the advisory `ACTIVATION_ONLY_WHEN_FLOATED` (offered once its mana is floated by hand, the known gap), and
+  Blade of Selves' Equip {4} the same. The worker's ten were censused by it too.
+- In-memory mutation (flip one number or boolean of a card, run its own scenarios) of the eleven cards written by hand here: every flip is
+  caught but four, each equivalent: Delina's token trigger `yours` (a token exists only in its controller's turn), Shredder's
+  `rememberedCount: true` (the key's value is not read), Éomer's `batch` (`limit: 1` already makes two deaths one trigger).
+- The broad run of the engine, card, table, sentence and room suites found and fixed four regressions the focused suites had not:
+  a test's `int`-only random stand-in (`rollDie` still rolls with it), `half: "up"` no longer refused by `engine-counted-amounts`, the
+  life-gain candidate `card-waves` picks (it now needs a numeric amount), and Elturel's keyword text being a sentence of the card.
+- Regenerated from the definitions: `definitions.mjs`, the support ledger, `candidates.json`/`.mjs` (128 candidates), `coverage.md`, the
+  engine catalog, the pilots' `roles-data.mjs`, `data/manifest.json`, `docs/data-inventory.md`. PR 998's CI run found these stale for its
+  15 cards (pilot-roles, data-manifest, generators), so they are regenerated here before the push.

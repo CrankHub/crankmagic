@@ -58,7 +58,7 @@ const pick = (test) => {
   }
 };
 const flier = pick((c) => c.abilities.length === 1 && c.abilities[0].keyword === "flying" && /Creature/.test(byName.get(c.name).type));
-const lifer = pick((c) => c.abilities.some((a) => a.kind === "triggered" && JSON.stringify(a.effects).includes("\"gainLife\"")) && /Creature/.test(byName.get(c.name).type));
+const lifer = pick((c) => c.abilities.some((a) => a.kind === "triggered" && /"gainLife","amount":\d+/.test(JSON.stringify(a.effects))) && /Creature/.test(byName.get(c.name).type));
 {
   const draft = draftScenarios(scriptOf(flier, byName.get(flier.name)), definition);
   const expect = draft.scenarios[0].expect;

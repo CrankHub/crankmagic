@@ -64,11 +64,11 @@ export function beginResolution(state, effects, context = {}, rng = null) {
       ...(context.targetsChosen ? {targetsChosen: context.targetsChosen} : {}),
       /* And the division its caster announced, target by target (CR 601.2d; effects/resources.mjs, damageHits' `divided`). */
       ...(context.division ? {division: context.division} : {}),
-      /* How many times its ability resolved before this one this turn (rules/stack.mjs; script/condition.mjs, firstResolution). */
-      ...(context.resolvedBefore !== undefined ? {resolvedBefore: context.resolvedBefore} : {}),
       /* A triggered ability resolving (rules/stack.mjs): "triggered abilities you control can't cause you to sacrifice or exile
          ..." (rules/statics.mjs, triggerRemovalBlocked). */
-      ...(context.triggered === true ? {triggered: true} : {})},
+      ...(context.triggered === true ? {triggered: true} : {}),
+      /* How many times its ability resolved before this one this turn (rules/stack.mjs; script/condition.mjs, firstResolution). */
+      ...(context.resolvedBefore !== undefined ? {resolvedBefore: context.resolvedBefore} : {})},
     events: [],
   };
   return runResolution(state, rng);

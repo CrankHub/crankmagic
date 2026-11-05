@@ -1,6 +1,6 @@
 {
  "schema": "manifest@1",
- "generatedAt": "2026-11-05T15:53:13.958Z",
+ "generatedAt": "2026-11-05T16:28:59.117Z",
  "generator": "tools/data-manifest.mjs",
  "count": 27,
  "files": [

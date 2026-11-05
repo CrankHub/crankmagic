@@ -2,6 +2,44 @@
   "schema": "CrankCardScenarios@1",
   "card": "Shredder, Shadow Master",
   "fixtures": {
+    "Smoke Fling": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Target creature you control deals damage equal to its power to target player.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you"
+          },
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "from": {
+              "target": 0
+            },
+            "who": {
+              "target": 1
+            },
+            "amount": {
+              "powerOf": {
+                "target": 0
+              }
+            }
+          }
+        ]
+      }
+    },
     "Smoke Bear": {
       "types": [
         "Creature"
@@ -260,6 +298,12 @@
         {
           "seat": 2,
           "life": 17
+        },
+        {
+          "event": "GameEventCardChangeZone",
+          "where": {
+            "sacrificed": true
+          }
         }
       ]
     },
@@ -484,6 +528,130 @@
         {
           "seat": 2,
           "life": 17
+        }
+      ]
+    },
+    {
+      "name": "Damage Shredder deals that is not combat damage (a Smoke Fling at Maya) costs her 5 and no more: half of her life only on combat damage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Fling"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Fling",
+          "targets": [
+            {
+              "card": "Shredder, Shadow Master"
+            },
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 35
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Killed with its attack trigger on the stack, the token copy is still made, from what Shredder last was, attacking Trey",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ],
+          "at": "Maya"
+        },
+        {
+          "pass": 1
+        },
+        {
+          "cast": "Smoke Kill",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "Shredder, Shadow Master"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Shredder, Shadow Master"
+              ]
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Shredder, Shadow Master",
+                "power": 5,
+                "toughness": 5,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "cards": [
+                "Shredder, Shadow Master"
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Shredder, Shadow Master"
+          ]
         }
       ]
     },

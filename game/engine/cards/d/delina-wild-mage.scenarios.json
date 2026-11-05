@@ -2,6 +2,44 @@
   "schema": "CrankCardScenarios@1",
   "card": "Delina, Wild Mage",
   "fixtures": {
+    "Smoke Fling": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Target creature you control deals damage equal to its power to target player.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you"
+          },
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "from": {
+              "target": 0
+            },
+            "who": {
+              "target": 1
+            },
+            "amount": {
+              "powerOf": {
+                "target": 0
+              }
+            }
+          }
+        ]
+      }
+    },
     "Smoke Bear": {
       "types": [
         "Creature"
@@ -361,7 +399,7 @@
       ]
     },
     {
-      "name": "A 15 makes a token and offers another roll: Stop rolling keeps the one",
+      "name": "A 15 makes a token and offers another roll: Stop rolling keeps the one -- as the first row makes it: tapped, attacking, not legendary, exiled at end of combat",
       "rolls": [
         15,
         3
@@ -413,18 +451,67 @@
           "choose": [
             "Stop rolling"
           ]
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Delina, Wild Mage",
+                "Delina, Wild Mage"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Delina, Wild Mage",
+              "token": true,
+              "is": true
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 34
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "resolve": true
         }
       ],
       "expect": [
         {
           "seat": 0,
           "controls": [
-            "Delina, Wild Mage",
             "Delina, Wild Mage"
           ]
         },
         {
-          "stack": 0
+          "seat": 1,
+          "life": 34
         }
       ]
     },

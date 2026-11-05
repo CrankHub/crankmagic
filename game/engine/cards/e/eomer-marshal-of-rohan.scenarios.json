@@ -432,6 +432,95 @@
       ]
     },
     {
+      "name": "Once each turn: a legendary creature dying in the additional combat triggers nothing more",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Éomer, Marshal of Rohan",
+            "Smoke Legend",
+            "Smoke Hero"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bruiser",
+            "Smoke Brute"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Smoke Legend"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Smoke Bruiser",
+              "Smoke Legend"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Smoke Hero"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Smoke Brute",
+              "Smoke Hero"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Legend",
+            "Smoke Hero"
+          ]
+        }
+      ]
+    },
+    {
       "name": "Offered from untapped lands with an empty pool",
       "pooledTaps": true,
       "setup": [

@@ -478,7 +478,8 @@ export function rollDie(state, params, context, rng = null) {
   if (!rng) throw new Error("A die roll needs the game's random stream");
   /* A die of no number of sides is no die: nothing rolled (the schema refuses a script that says one, script/schema.mjs). */
   if (!(Number.isInteger(params.sides) && params.sides >= 2)) return [];
-  const result = rng.roll(params.sides);
+  /* A stream that is only `int` (a test's stand-in) rolls as it always did: a face of the die is one more than a draw. */
+  const result = typeof rng.roll === "function" ? rng.roll(params.sides) : rng.int(params.sides) + 1;
   context.rolled = result;
   /* "Choose 1, 2, or 3 at random" (Tibalt's Trickery; card load w4d L1): `atRandom`, a number chosen at random -- no die is
      rolled (CR 706.1), so nothing that watches a roll sees it -- read after it as a die's result is ({dieRolled: true}). */
