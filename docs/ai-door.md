@@ -75,9 +75,9 @@ Rob set Access to this end state on 2026-11-04.
    Insiders* (today's AI roster, `SELECT email FROM ai_allowlist` on `crankmagic-staging`), and *CrankMagic Invitees*
    (everyone else invited; the earlier invitees group, renamed).
 2. **Four reusable policies:** *Admin* (Allow, the Admin group) and *Insiders* (Allow, Game Theory Insiders), each on
-   "CrankMagic accounts", "CrankMagic staging" and the AI application; *Invitees* (Allow, CrankMagic Invitees) on the
-   accounts and staging applications only, so the AI application admits Admin and Insiders alone; and *Session checks*
-   (Service Auth), unchanged. No policy names an address.
+   "CrankMagic accounts" and "CrankMagic staging"; *Invitees* (Allow, CrankMagic Invitees) on the same two; and
+   *Session checks* (Service Auth), unchanged. No policy names an address. There is no AI application: the AI door
+   takes each app's own sign-in, and the group decides who may spend (below).
 3. **Install the token:** `wrangler secret put ACCESS_API_TOKEN` on `crankmagic-staging` (and later `crankmagic`), with
    the two permissions above. The old `ACCESS_INVITE_TOKEN` secret is no longer read and can be deleted after.
 4. **The release branch's configuration:** `ACCESS_INVITE_POLICY_ID` is no longer read or released. The next staging
@@ -94,14 +94,13 @@ Rob: *"I want the AI door open on staging and production for anyone that can sig
 who can access, I'm fine with those I want everyone I add to be able to use the AI features)."*
 
 - **The switch** is `AI_EVERYONE` (`ai.everyone` in a release profile). On, the door takes the app's own sign-in
-  (`ACCESS_AUD`) as well as an AI application's. Off, only the AI application's. Who may spend is the group either way
+  (`ACCESS_AUD`) as well as `AI_ACCESS_AUD`'s. Off, only `AI_ACCESS_AUD`'s. Since ROB-440 both releases set
+  `AI_ACCESS_AUD` to their app's own sign-in, so the two are the same. Who may spend is the group either way
   (above). The key, the caps, the model and each
   feature's own switch are unchanged.
-- **Staging:** on (`cloud-staging`), and its key is set. **One step is Rob's:** Access still puts
-  `staging.crankmagic.com/api/ai/*` behind "CrankMagic AI (staging)", whose policy is the three AI testers, so anyone
-  else is stopped at Cloudflare before the Worker sees them. Delete that application (Zero Trust › Access ›
-  Applications), so that `/api/ai/*` falls under staging's own sign-in; or give its policy the same people as
-  staging's. The door takes either sign-in.
+- **Staging:** on (`cloud-staging`), and its key is set. "CrankMagic AI (staging)" is gone from Access (seen
+  2026-11-08), so `/api/ai/*` is under staging's own sign-in, and `AI_ACCESS_AUD` names that application ("CrankMagic
+  staging") since ROB-440, as production's names "CrankMagic accounts".
 - **Production:** on in `cloud-production`, with no AI application of its own: `/api/ai/*` is under "CrankMagic
   accounts" (`crankmagic.com/api/*`), whose policy is the invite list. Staging's caps, model and features: 300¢ in any
   24 hours for everyone together, the Coach's 150¢ inside it, 25¢ a game for an AI on Claude, and the deck advisor, on
@@ -118,7 +117,8 @@ who can access, I'm fine with those I want everyone I add to be able to use the 
 
 ## Where it stood (2026-10-09)
 
-A dated snapshot. Gate 2 has since become the Game Theory Insiders rule group (above).
+A dated snapshot. Gate 2 has since become the Game Theory Insiders rule group, and gate 1 each app's own sign-in, the
+AI application gone (above).
 
 | Gate | Staging | Production |
 | --- | --- | --- |
@@ -155,7 +155,7 @@ key in place.
 
 ## What the door does once it is open
 
-- **Who:** a person signed in through the AI application (step 1) who is the owner or a Game Theory Insider (step 2). The
+- **Who:** a person signed in through `AI_ACCESS_AUD`'s application (step 1) who is the owner or a Game Theory Insider (step 2). The
   same per-person rate limit as the library applies.
 - **What is sent:** only what the request carries. That is the deck's name, its commander(s), its card names (at most
   120), the score and up to 12 of its measures, and up to five strongest and five weakest cards, each with a short
@@ -199,7 +199,7 @@ before production's door opens.
 
 ## The Coach (X13), through the same door
 
-`POST /api/ai/coach` with `{tableId, question}`. The gates are the same as explain's: the AI application, the
+`POST /api/ai/coach` with `{tableId, question}`. The gates are the same as explain's: the sign-in, the
 group, the key, the caps and the model. Then the Coach has its own switch, `AI_COACH`, because it sends a person's
 hand and board, which the privacy page must name before the Coach is offered.
 - **The brief** is built by the table (`game/room/coach-brief.mjs`, `GET /table/brief`, which only the Worker's AI door
