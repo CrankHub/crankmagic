@@ -4,7 +4,8 @@
  *
  *   group     the owner's invitation is Game Theory Insider unless they choose General; anyone else's is General, and a
  *             non-owner who asks for Insider is refused (403) with the way out
- *   policy    each group is written to its own policy; Insider also gets an ai_allowlist row (the Worker's AI gate)
+ *   group     each is written into its Access rule group (ROB-440): General into CrankMagic Invitees, Insider into Game Theory
+ *             Insiders, which is the Worker's AI gate itself; no policy holds an address and no table row is written
  *   record    a row (who, whom, when, group) is written BEFORE the admission; no admission without a row
  *   retry     admission failing after the row leaves it 'pending', sends nothing, and the same invitation again finishes it
  *             with no second slot
@@ -15,6 +16,7 @@ import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
 import {inviteAddress, vetInvitees, INVITE_CAP, capOf} from "../cloud/invitations.mjs";
 import {groupOf} from "../cloud/access.mjs";
+import {fakeAccess, accessVars, NAMES} from "./helpers/fake-access.mjs";
 
 let checks = 0;
 const eq = (a, b, m) => {assert.deepEqual(a, b, m); checks += 1;};
@@ -35,39 +37,32 @@ const db = {prepare: (s) => stmt(s)};
 const user = (email) => {raw.prepare("INSERT INTO users (email, created_at, seen_at) VALUES (?, 't', 't')").run(email); return {id: raw.prepare("SELECT id FROM users WHERE email = ?").get(email).id, email};};
 const OWNER = user("rob@example.com"), MAYA = user("maya@example.com"), SAM = user("sam@example.com");
 
-const APP = "aaaaaaaa-0000-0000-0000-000000000001", GEN = "cccccccc-0000-0000-0000-000000000001", INS = "dddddddd-0000-0000-0000-000000000001";
-const env = {OWNER_EMAIL: "rob@example.com", ACCESS_INVITE_TOKEN: "test-only", CLOUDFLARE_ACCOUNT_ID: "0".repeat(32), ACCESS_INVITE_APP_IDS: APP,
-  ACCESS_INVITE_POLICY_ID_GENERAL: GEN, ACCESS_INVITE_POLICY_ID_INSIDER: INS};
-const policies = new Map([GEN, INS].map((id) => [id, {id, reusable: true, app_count: 1, decision: "allow", name: id, include: [{email: {email: "owner-seed@example.com"}}]}]));
-let failWrites = false, calls = [];
-const fetchImpl = async (url, args) => {
-  calls.push(`${args.method} ${url.split("/access/")[1]}`);
-  if (url.endsWith(`/apps/${APP}`)) return Response.json({success: true, result: {name: "CrankMagic", domain: "crankmagic.com", policies: [{id: GEN}, {id: INS}]}});
-  const id = [GEN, INS].find((p) => url.endsWith(`/policies/${p}`));
-  assert.ok(id, "only the two group policies are called");
-  if (args.method === "PUT") {
-    if (failWrites) return Response.json({success: false}, {status: 403});
-    policies.set(id, {...policies.get(id), ...JSON.parse(args.body)});
-  }
-  return Response.json({success: true, result: policies.get(id)});
-};
-const onPolicy = (id) => policies.get(id).include.filter((r) => r.email).map((r) => r.email.email);
+const APPS = [{id: "aaaaaaaa-0000-0000-0000-000000000001", name: "CrankMagic", domain: "crankmagic.com", policy: "bbbbbbbb-0000-0000-0000-000000000001"}];
+const access = fakeAccess({apps: APPS, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["seed@example.com"], [NAMES.invitees]: ["seed@example.com"]}});
+const env = {OWNER_EMAIL: "rob@example.com", ...accessVars(APPS)};
+const fetchImpl = async (url, args) => (await access.fetch(url, args)) ?? assert.fail(`no network here: ${url}`);
+let calls = access.calls;
+const failWrites = (on) => {access.refuse = on ? (path, init) => init.method === "PUT" : null;};
+/* "On the policy" is now "in the rule group": INS is Game Theory Insiders, GEN CrankMagic Invitees. */
+const INS = NAMES.insiders, GEN = NAMES.invitees;
+const onPolicy = (name) => access.members(name);
 const fail = (message, status = 400) => {const e = new Error(message); e.status = status; throw e;};
 let clock = Date.parse("2026-10-31T12:00:00Z");
 const now = () => new Date(clock += 1000).toISOString();
 const invite = (inviter, to, extra = {}) => inviteAddress(db, env, {inviter, to, name: extra.name ?? to.split("@")[0], source: "settings", now, fetchImpl, fail, ...extra});
 const rows = () => raw.prepare("SELECT invitee_email AS to_, inviter_email AS by, grp, source, status, table_id AS tableId FROM invitations ORDER BY created_at").all();
-const insiders = () => raw.prepare("SELECT email FROM ai_allowlist ORDER BY email").all().map((r) => r.email);
+const insiders = () => access.members(NAMES.insiders).filter((e) => e !== "seed@example.com").sort();
+const asked = (email) => groupOf(email, env, db, {fetchImpl});
 
 /* 1. The default group is the inviter's: the owner's guests are Insiders, everyone else's are General. */
 eq([capOf({}), capOf({INVITE_CAP: "8"}), capOf({INVITE_CAP: "0"}), capOf({INVITE_CAP: "x"}), INVITE_CAP], [5, 8, 5, 5, 5], "the cap is 5, and INVITE_CAP overrides it with a positive integer only");
 const a = await invite(OWNER, "ann@example.com");
 eq([a.group, a.created, a.access.map((x) => x.added)], ["insider", true, [true]], "the owner's invitation defaults to Game Theory Insider");
-eq([onPolicy(INS).includes("ann@example.com"), onPolicy(GEN).includes("ann@example.com"), insiders()], [true, false, ["ann@example.com"]], "on the Insider policy only, and in the AI roster");
-eq(await groupOf("ann@example.com", env, db), "insider", "so the Worker's own gate reads her as an Insider");
+eq([onPolicy(INS).includes("ann@example.com"), onPolicy(GEN).includes("ann@example.com"), insiders()], [true, false, ["ann@example.com"]], "in Game Theory Insiders only, the AI roster itself");
+eq(await asked("ann@example.com"), "insider", "so the Worker's own gate reads her as an Insider");
 const b = await invite(MAYA, "bob@example.com");
-eq([b.group, onPolicy(GEN).includes("bob@example.com"), onPolicy(INS).includes("bob@example.com"), insiders()], ["general", true, false, ["ann@example.com"]], "anyone else's is General: the General policy, no AI roster row");
-eq(await groupOf("bob@example.com", env, db), "general", "and the Worker reads him as General");
+eq([b.group, onPolicy(GEN).includes("bob@example.com"), onPolicy(INS).includes("bob@example.com"), insiders()], ["general", true, false, ["ann@example.com"]], "anyone else's is General: CrankMagic Invitees, not Game Theory Insiders");
+eq(await asked("bob@example.com"), "general", "and the Worker reads him as General");
 const c = await invite(OWNER, "cy@example.com", {group: "general"});
 eq([c.group, onPolicy(GEN).includes("cy@example.com"), insiders().includes("cy@example.com")], ["general", true, false], "the owner may choose General");
 
@@ -86,9 +81,9 @@ eq(rows().find((r) => r.to_ === "gil@example.com").tableId, "tablealpha1", "a ga
 eq({...raw.prepare("SELECT status, invited_by FROM account_invitations WHERE email = 'gil@example.com'").get()}, {status: "admitted", invited_by: MAYA.id}, "and the older invitation list (names, Admin) is kept alongside");
 
 /* 4. Idempotence: the same person again spends nothing and writes nothing. */
-calls = [];
+calls.length = 0;
 const again = await invite(MAYA, "bob@example.com");
-eq([again.already, again.created, calls], [true, false, []], "inviting an admitted person again reads nothing and writes nothing");
+eq([again.already, again.created, calls.filter((c) => !c.startsWith("GET /groups?"))], [true, false, []], "inviting an admitted person again reads no application, policy or group, and writes nothing (only the group listing, to know the inviter)");
 const other = await invite(SAM, "bob@example.com");
 eq([other.already, rows().filter((r) => r.to_ === "bob@example.com").length, raw.prepare("SELECT count(*) AS n FROM invitations WHERE inviter_id = ?").get(SAM.id).n], [true, 1, 0], "a second inviter spends no slot on someone already invited");
 const reg = await invite(MAYA, "sam@example.com");
@@ -104,18 +99,18 @@ const upReg = await invite(OWNER, "sam@example.com", {group: "insider"});
 eq([upReg.group, insiders().includes("sam@example.com"), rows().find((r) => r.to_ === "sam@example.com")?.grp], ["insider", true, "insider"], "and an existing account can be made an Insider");
 
 /* 6. Admission failing after the row: pending, no AI, the same invitation again finishes it, one slot. */
-failWrites = true;
+failWrites(true);
 const before = raw.prepare("SELECT count(*) AS n FROM invitations WHERE inviter_id = ?").get(OWNER.id).n;
 await refuses(invite(OWNER, "eve@example.com"), 502, /did not admit.*Your invitation is saved.*send the same invitation again/s, "admission failing says the invitation is saved and to send it again");
-failWrites = false;
+failWrites(false);
 eq(rows().find((r) => r.to_ === "eve@example.com").status, "pending", "the row stays pending");
-eq([insiders().includes("eve@example.com"), onPolicy(INS).includes("eve@example.com"), await groupOf("eve@example.com", env, db)], [false, false, "general"], "and she has no AI and is on no policy");
+eq([insiders().includes("eve@example.com"), onPolicy(INS).includes("eve@example.com"), await asked("eve@example.com")], [false, false, "general"], "and she has no AI and is in no group");
 const resumed = await invite(OWNER, "eve@example.com");
 eq([resumed.created, resumed.group, rows().find((r) => r.to_ === "eve@example.com").status, insiders().includes("eve@example.com")], [false, "insider", "admitted", true], "sending it again finishes it as the same row, still an Insider");
 eq(raw.prepare("SELECT count(*) AS n FROM invitations WHERE inviter_id = ?").get(OWNER.id).n, before + 1, "and the retry used no second slot");
-failWrites = true;
+failWrites(true);
 await invite(MAYA, "flo@example.com").catch(() => null);
-failWrites = false;
+failWrites(false);
 const resumedByOther = await invite(SAM, "flo@example.com");
 eq([resumedByOther.group, rows().find((r) => r.to_ === "flo@example.com").by, rows().find((r) => r.to_ === "flo@example.com").status], ["general", "maya@example.com", "admitted"], "someone else's pending invitation is finished under its first inviter and group");
 
@@ -134,7 +129,7 @@ eq((await invite(OWNER, "sixth@example.com")).created, true, "INVITE_CAP raises 
 delete env.INVITE_CAP;
 
 /* 8. A game's guests are vetted whole, before anything exists: the plan costs nothing and refuses nothing half. */
-const vet = (inviter, people) => vetInvitees(db, env, {inviter, people, fail});
+const vet = (inviter, people) => vetInvitees(db, env, {inviter, people, fail, fetchImpl});
 const GUY = user("guy@example.com");
 const planned = await vet(GUY, [{to: "maya@example.com"}, {to: "new1@example.com"}, {to: "bob@example.com"}, {to: "new2@example.com", group: "general"}]);
 eq(planned.map((p) => [p.to, p.group, p.isNew]), [["maya@example.com", "general", false], ["new1@example.com", "general", true], ["bob@example.com", "insider", false], ["new2@example.com", "general", true]], "the plan says who is a new account, and the group each is in or would get (Bob was made an Insider above)");
@@ -148,8 +143,8 @@ await refuses(vet(GUY, [{to: "guy@example.com"}]), 400, /your own address/, "so 
 await refuses(vet(GUY, [{to: "nonsense"}]), 400, /valid email/, "and a malformed address");
 
 /* 9. A copy that cannot admit anyone fills nothing: the configuration is checked before a row is written. */
-const unconfigured = {...env, ACCESS_INVITE_POLICY_ID_INSIDER: "nonsense", INVITE_CAP: "99"};
-await refuses(inviteAddress(db, unconfigured, {inviter: OWNER, to: "nocfg@example.com", name: "No Cfg", source: "settings", now, fetchImpl, fail}), 503, /Access invitation permissions.*Nothing was sent/s, "an Insider invitation with no usable Insider policy is refused before any row");
+const unconfigured = {...env, ACCESS_API_TOKEN: "", INVITE_CAP: "99"};
+await refuses(inviteAddress(db, unconfigured, {inviter: OWNER, to: "nocfg@example.com", name: "No Cfg", source: "settings", now, fetchImpl, fail}), 503, /Access invitation permissions.*Nothing was sent/s, "an invitation where this copy has no Access API token is refused before any row");
 eq(rows().some((r) => r.to_ === "nocfg@example.com"), false, "and no row was written");
 
 console.log(`invitations: ${checks} checks passed`);

@@ -8,42 +8,94 @@ sentences (the design is `docs/ai-agents.md` §4). The code is `cloud/ai.mjs`, t
 row M6) is a gate that is closed while it is unset. None of them has a default that spends money. The browser does
 not offer the feature yet.
 
-## Three access groups (Rob, 2026-10-26)
+## Three access groups (Rob, 2026-10-26), and Cloudflare holds the only list (ROB-440, 2026-11-03)
 
 Rob: *"a user group authorized for everything in CrankHub. We'll call them Game Theory Insiders. The second user group
 will be General Access. General Access will never be able to run or cause token costs ... The third user group is me,
-and I would have access to absolutely everything."* `cloud/access.mjs` `groupOf(email, env, db)` answers one of three,
-and every spending route asks it through `createAi(...).allowed` (`cloud/ai.mjs`):
+and I would have access to absolutely everything."* On 2026-11-03 he decided that Cloudflare Access holds exactly three
+rule groups and nothing else, and that they are the list. The Worker keeps no copy of who is in them.
 
-| Group | Who | At the door |
-| --- | --- | --- |
-| `owner` | The one address in `OWNER_EMAIL`, a Worker variable set in the dashboard (staging and production each), never written in this repository; matched in any letter case | Everything, and `/api/admin/*` |
-| `insider` | A row in `ai_allowlist`, which is now **the Insiders roster** | Explain, the Coach, the advisor, an AI on Claude at a table, the meter |
-| `general` | Everyone else Access admits | Refused at every one of those, with the switch `AI_EVERYONE` on or off; the library, decks, the generator and Play against the rules-only AI are theirs |
+| Cloudflare Access rule group | Who | `groupOf` | At the door |
+| --- | --- | --- | --- |
+| **Admin** | Rob's address | `owner` | Everything, and `/api/admin/*` |
+| **Game Theory Insiders** | The people Rob gives AI | `insider` | Explain, the Coach, the advisor, an AI on Claude at a table, the meter |
+| **CrankMagic Invitees** | Everyone else invited | `general` | Refused at every one of those, with the switch `AI_EVERYONE` on or off; the library, decks, the generator and Play against the rules-only AI are theirs |
 
-- **`AI_EVERYONE` now widens the sign-in only** (the app's own Access application opens the AI door, so an insider needs
+`cloud/access.mjs` `groupOf(email, env, db)` answers one of the three, and every spending route asks it through
+`createAi(...).allowed` (`cloud/ai.mjs`). How it reads the groups is `cloud/access-groups.mjs`:
+
+- **By name, in one listing** of the account's Access groups (`GET /accounts/{account}/access/groups`), in any letter
+  case. A person is in a group when one of its include rules is an email rule naming them and no exclude rule does. Other
+  rule kinds (a domain, an identity provider's group) are Access's to enforce at sign-in and grant nothing in the Worker.
+  A group that is missing, or two groups with the same name, grant nothing until Rob fixes them.
+- **Cached for a minute** in each Worker isolate, and dropped as soon as the Worker itself writes a group. So a change
+  made in the dashboard reaches the Worker within a minute.
+- **Fail closed.** If the API cannot be read, the last listing read in the past ten minutes still answers. Past that,
+  nobody is an insider until it can be read again.
+- **`OWNER_EMAIL` stays as the owner's fallback.** It is a Worker variable set in the dashboard, never written in this
+  repository, matched in any letter case, and it needs no API call.
+- **`ai_allowlist` is the migration path only.** Where a copy has no Access API configured (a local run, or a release
+  before Rob installs the token), the old table still answers `insider`. Once the token is installed it is never read,
+  and nothing writes it any more. Its rows are not copied anywhere: Rob adds those people to Game Theory Insiders himself
+  (below).
+- **The configuration is two things, neither of them a list.** `CLOUDFLARE_ACCOUNT_ID` is a Worker variable, already on
+  staging. `ACCESS_API_TOKEN` is a Worker secret Rob installs; it is never in this repository or in a release's
+  variables. The token needs two account permissions: *Access: Organizations, Identity Providers, and Groups: Edit*
+  (read the groups, and write an invitation into one) and *Access: Apps and Policies: Read* (confirm each application
+  has an Allow policy including the group). The Worker never writes a policy, and no policy id is configured.
+
+Other parts of the door:
+
+- **`AI_EVERYONE` widens the sign-in only** (the app's own Access application opens the AI door, so an insider needs
   no second sign-in). It no longer makes everyone signed in an insider: that was Rob's 2026-10-14 word, and his
-  2026-10-26 word supersedes it. Staging and production keep it on, and only the roster and the owner spend.
-- **The roster is the owner's:** `GET /api/admin/groups` lists it; `PUT /api/admin/groups` with
-  `{"email": "...", "group": "insider" | "general", "note": "..."}` adds a person or takes them off (a person is general by
-  being on no list). Anyone else gets 403 saying only the owner may. The `wrangler d1 execute` commands below still work
-  and write the same table.
+  2026-10-26 word supersedes it. Staging and production keep it on, and only Insiders and the owner spend.
+- **The roster is the groups themselves.** `GET /api/admin/groups` reads Game Theory Insiders and CrankMagic Invitees
+  fresh from Cloudflare. `PUT /api/admin/groups` with `{"email": "...", "group": "insider" | "general"}` puts the person
+  in Game Theory Insiders, or takes them out of it and puts them in CrankMagic Invitees, so a person made general keeps
+  the app. Each write is read back. The Admin group is never written by the Worker. Anyone but the owner gets 403 saying
+  only the owner may. A copy with no `ACCESS_API_TOKEN` answers 503 and changes nothing. So the Admin panel's roster and
+  Cloudflare cannot disagree: there is one list, and the panel reads and writes it.
 - **`/api/me` carries `group`**, so the browser can hide the controls a group may not press (the Workshop lane's
   Settings card and the deck page's AI button; the Play lane's lobby already follows `/api/ai-seat`). The Worker is the
   gate either way.
-- **Proof:** `node tests/ai-door.mjs` (General Access refused with the switch on or off, by either sign-in; an insider
-  answered at the app's own sign-in; the owner answered on no list and refused when `OWNER_EMAIL` is unset; `/api/me`'s
-  group; the roster read and set by the owner alone), `node tests/agent-seat-table.mjs` (a host not on the roster refused
-  with the switch on; the owner seats an AI on Claude), `node tests/cloud-worker.mjs` (`/api/me` says general).
+- **Proof:** `node tests/access-invite-groups.mjs` (the groups read by name, email rules only, cached, fail closed; the old
+  table ignored once the groups are configured; the roster's writes read back; an invitation written into its group, never
+  into a policy), `node tests/ai-door.mjs` (General Access refused with the switch on or off, by either sign-in; an insider
+  answered at the app's own sign-in; the Admin group and `OWNER_EMAIL` each the owner; the old table's row refused with
+  the groups configured and answered only without them; `/api/me`'s group; the roster read and set by the owner alone, in
+  the groups), `node tests/agent-seat-table.mjs`, `node tests/cloud-worker.mjs` (`/api/me` says general). Every Access
+  call in them is the stand-in `tests/helpers/fake-access.mjs`; none of this has been run against real Cloudflare.
+
+### Rob's steps before the release that carries ROB-440
+
+Nothing in the Worker is a list any more, so these are the whole migration. All are dashboard steps except the secret.
+Rob set Access to this end state on 2026-11-04.
+
+1. **Three rule groups**, by these exact names, each including people by **Emails**: *Admin* (Rob), *Game Theory
+   Insiders* (today's AI roster, `SELECT email FROM ai_allowlist` on `crankmagic-staging`), and *CrankMagic Invitees*
+   (everyone else invited; the earlier invitees group, renamed).
+2. **Four reusable policies:** *Admin* (Allow, the Admin group) and *Insiders* (Allow, Game Theory Insiders), each on
+   "CrankMagic accounts", "CrankMagic staging" and the AI application; *Invitees* (Allow, CrankMagic Invitees) on the
+   accounts and staging applications only, so the AI application admits Admin and Insiders alone; and *Session checks*
+   (Service Auth), unchanged. No policy names an address.
+3. **Install the token:** `wrangler secret put ACCESS_API_TOKEN` on `crankmagic-staging` (and later `crankmagic`), with
+   the two permissions above. The old `ACCESS_INVITE_TOKEN` secret is no longer read and can be deleted after.
+4. **The release branch's configuration:** `ACCESS_INVITE_POLICY_ID` is no longer read or released. The next staging
+   release, built by `tools/release-pages.mjs`, drops it from `wrangler.jsonc` on `release/cloud-staging`, so the
+   deleted policy id it still names there does no harm meanwhile. `ACCESS_INVITE_APP_IDS` stays: it lists the two
+   applications an invitation must reach.
+
+An invitation checks, before writing anything, that each application in `ACCESS_INVITE_APP_IDS` has an Allow policy
+including the invitee's group. If one does not, it is refused, naming the application, and nothing changes.
 
 ## Open to everyone signed in (Rob, 2026-10-14; the sign-in half still holds, the spending half is superseded above)
 
 Rob: *"I want the AI door open on staging and production for anyone that can sign in (e.g. given I am manually adding
 who can access, I'm fine with those I want everyone I add to be able to use the AI features)."*
 
-- **The switch** is `AI_EVERYONE` (`ai.everyone` in a release profile). On, the allowlist is everyone Access lets in,
-  so the invite list is the one list Rob keeps, and the door takes the app's own sign-in (`ACCESS_AUD`) as well as an
-  AI application's. Off, the allowlist and the AI application hold as before. The key, the caps, the model and each
+- **The switch** is `AI_EVERYONE` (`ai.everyone` in a release profile). On, the door takes the app's own sign-in
+  (`ACCESS_AUD`) as well as an AI application's. Off, only the AI application's. Who may spend is the group either way
+  (above). The key, the caps, the model and each
   feature's own switch are unchanged.
 - **Staging:** on (`cloud-staging`), and its key is set. **One step is Rob's:** Access still puts
   `staging.crankmagic.com/api/ai/*` behind "CrankMagic AI (staging)", whose policy is the three AI testers, so anyone
@@ -65,6 +117,8 @@ who can access, I'm fine with those I want everyone I add to be able to use the 
   standby do not). Breaks: `tools/ai-everyone-breaks.py`, 13, each caught.
 
 ## Where it stood (2026-10-09)
+
+A dated snapshot. Gate 2 has since become the Game Theory Insiders rule group (above).
 
 | Gate | Staging | Production |
 | --- | --- | --- |
@@ -89,7 +143,7 @@ in a response or in the log.
 | # | Gate | What to do | Until then |
 | --- | --- | --- | --- |
 | 1 | **Its own Access application** | In Cloudflare Zero Trust, add an application for `crankmagic.com/api/ai/*`. Use **Google only**, never the emailed one-time code, and passkey MFA if the plan offers it. Its policy is the people allowed to use AI. Copy the application's **AUD tag**. | 503, "AI features are not switched on here yet." A library sign-in never opens it, because its token is for another application. |
-| 2 | **The allowlist** | Add each person with `wrangler d1 execute crankmagic --remote --command "INSERT INTO ai_allowlist (email, added_at, note) VALUES ('name@example.com', datetime('now'), 'why')"`. To remove someone, run `DELETE FROM ai_allowlist WHERE email = '…'`. Staging uses the `crankmagic-staging` database. | 403, "not on CrankMagic's list for AI features" |
+| 2 | **The group** | Add each person to the **Game Theory Insiders** rule group (Zero Trust › Access › Rule groups), or have the owner do it from the Admin panel (`PUT /api/admin/groups`). To remove someone, take them out of it. | 403, "not on CrankMagic's list for AI features" |
 | 3 | **The key** | Run `wrangler secret put ANTHROPIC_API_KEY` for the Worker, pasting the key only into the terminal's prompt. Set the key's own monthly limit in the Anthropic console too. | 503, "not switched on here yet" |
 | 4 | **The spend caps** | Choose two numbers, in US cents over any 24 hours: **one person's** cap (`AI_CAP_PERSON_CENTS`) and **everyone's** together (`AI_CAP_TOTAL_CENTS`). One cap only is the same number for both. For scale, one explanation costs about a tenth of a cent on Claude Haiku 5.5 (about 1¢ on Sonnet 5.5). `AI_MODEL` is Haiku 5.5 unset, and may be Haiku 5.5 or Sonnet 5.5 only. | 503, "no spend cap set, so they stay off" |
 | 5 | **The privacy wording** | Approve or edit the draft below. It goes on `privacy.html` before the app offers any AI feature. | The app shows nothing AI |
@@ -101,7 +155,7 @@ key in place.
 
 ## What the door does once it is open
 
-- **Who:** a person signed in through the AI application (step 1) whose email is on the allowlist (step 2). The
+- **Who:** a person signed in through the AI application (step 1) who is the owner or a Game Theory Insider (step 2). The
   same per-person rate limit as the library applies.
 - **What is sent:** only what the request carries. That is the deck's name, its commander(s), its card names (at most
   120), the score and up to 12 of its measures, and up to five strongest and five weakest cards, each with a short
@@ -139,14 +193,14 @@ It is the "AI features" section of `privacy.html`:
 > you ask for it (an AI player, when a table's host seats one). Questions about them go to admin@crankmagic.com.
 
 Rob approved it as written. `DELETE /api/account` deletes the person's `ai_calls` rows with the rest of the
-account (`cloud/library.mjs`, `forget`; proved in `tests/cloud-worker.mjs`). The allowlist row stays, because the
+account (`cloud/library.mjs`, `forget`; proved in `tests/cloud-worker.mjs`). Their rule group stays, because the
 list is Rob's. The training sentence stands on the terms of Anthropic's commercial API; it is worth reading again
 before production's door opens.
 
 ## The Coach (X13), through the same door
 
 `POST /api/ai/coach` with `{tableId, question}`. The gates are the same as explain's: the AI application, the
-allowlist, the key, the caps and the model. Then the Coach has its own switch, `AI_COACH`, because it sends a person's
+group, the key, the caps and the model. Then the Coach has its own switch, `AI_COACH`, because it sends a person's
 hand and board, which the privacy page must name before the Coach is offered.
 - **The brief** is built by the table (`game/room/coach-brief.mjs`, `GET /table/brief`, which only the Worker's AI door
   asks for). It comes from the asking seat's own view, never from anything the browser sends.
@@ -188,7 +242,7 @@ It is in the "AI features" section of `privacy.html`, and the staging profile ha
 
 Rob, 2026-10-10: *"Use Haiku 5.5. 0.25 per game is good"* and *"I do want to deliver on L0 as part of the LLM AI seat
 capability"*. A host may seat **An AI · Claude** on New table where the door would let them spend on it: its own switch,
-`AI_PILOT`, the door's key, caps and model set, and the host on the allowlist (`GET /api/ai-seat` says whether to offer
+`AI_PILOT`, the door's key, caps and model set, and the host an insider or the owner (`GET /api/ai-seat` says whether to offer
 it; the table's object checks again as it seats one, and refuses otherwise).
 - **The seat** plays L1 at Normal (`game/engine/pilots/scored-pilot.mjs`), except at its close calls. A close call is
   the spells it would cast, or an attack, when L1's two best plans score within a point of each other
@@ -222,7 +276,7 @@ it; the table's object checks again as it seats one, and refuses otherwise).
 
 The plan's AI-4: *"AI suggestions to update a deck ... from an agent that lets a very low-cost model be very good at
 advising seasoned players."* **Ask the AI advisor** is under a deck's More menu where the door would answer the person:
-its own switch, `AI_ADVISE`, the door's key, caps and model set, and the person on the allowlist (`GET /api/ai-advise`
+its own switch, `AI_ADVISE`, the door's key, caps and model set, and the person an insider or the owner (`GET /api/ai-advise`
 says whether to offer it).
 - **The page sends the deck's id and the person's goal** (at most 300 characters), nothing more (`crankmagic-advisor.js`).
 - **The Worker builds the brief** from the person's latest version in the cloud (`cloud/advise.mjs`): the deck, its

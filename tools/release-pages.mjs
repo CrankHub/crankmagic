@@ -149,12 +149,14 @@ export const PROFILES = {
     /* Open to everyone signed in since 2026-10-14 (Rob, as for production): the door takes staging's own sign-in too. */
     ai: {aud: "d3e7b5812c81536cb707c64cca2196e1ee7854cbca6791f4d7bd2ef4b649f6db", everyone: true, capTotalCents: 300, model: "claude-haiku-5-5", coach: true, coachCapCents: 150, pilot: true, pilotGameCents: 25, advise: true},
     cloud: {database: {name: "crankmagic-staging", id: "b7f806ec-c9e8-4265-9f23-7d9705db9a26"}, limits: {ip: "2001", person: "2002"}, access: {team: "crankmagic.cloudflareaccess.com", aud: "213cb6b10352e5ed5525d6337f355cd5190dec402e86debd30971d3bd5bda1f5"}},
-    /* Admin › Share admits an invitee to staging AND production (Rob, 2026-10-26), each application through its own
-       reusable "Invited" policy, in pairs: "CrankMagic staging" (staging.crankmagic.com) and "CrankMagic Accounts"
-       (crankmagic.com/api/*). The email's link signs them in at production. */
+    /* Admin › Share admits an invitee to staging AND production (Rob, 2026-10-26): "CrankMagic staging"
+       (staging.crankmagic.com) and "CrankMagic Accounts" (crankmagic.com/api/*). The email's link signs them in at production.
+       Since ROB-440 the address goes into a Cloudflare Access rule group (CrankMagic Invitees, or Game Theory Insiders), and the
+       Worker only confirms each application has an Allow policy including that group (Rob's reusable Admin, Insiders and
+       Invitees policies, Nov 4). It reads and writes the groups with ACCESS_API_TOKEN, a secret Rob installs on the Worker,
+       never a variable here; no policy id is configured. */
     sharing: {adminId: "1", accountId: "02e7ae6d703281008f546c63378c6ddb",
       accessAppIds: "16fef6e1-0437-4bbd-b7fe-a81419dc09fa,23915d70-d40d-4f6f-9170-d43b3bf412d8",
-      accessPolicyId: "8b802602-b991-4986-b8a1-d2c16b3cf5c3,c59874d0-8ba7-4e99-ab80-2e11de62cfa8",
       linkOrigin: "https://crankmagic.com"}, // Staging only; secret tokens are deployed separately.
   },
 };
@@ -202,14 +204,9 @@ export const LIMITS_PER_MINUTE = Object.freeze({ip: 240, person: 120});
 /* Workers Logs for a cloud release (M3): the Worker's own lines, and never the platform's per-request one. */
 export const OBSERVABILITY = {enabled: true, head_sampling_rate: 1, logs: {enabled: true, invocation_logs: false}};
 
-/* The Access policy of each group an invitation can put someone in (ROB-320, docs/program/rob-320-invitations-contract.md §6):
-   comma lists the same length and order as ACCESS_INVITE_APP_IDS, one reusable policy per application. A profile that names neither
-   keeps today's single ACCESS_INVITE_POLICY_ID for both groups. The ids are Rob's to supply from the Cloudflare dashboard (General: no
-   AI; Game Theory Insider: AI); none is written in this repository, and nothing here has been checked against real Cloudflare. */
-const groupPolicies = (sharing) => ({
-  ...(sharing.accessPolicyIdGeneral ? {ACCESS_INVITE_POLICY_ID_GENERAL: sharing.accessPolicyIdGeneral} : {}),
-  ...(sharing.accessPolicyIdInsider ? {ACCESS_INVITE_POLICY_ID_INSIDER: sharing.accessPolicyIdInsider} : {}),
-});
+/* ROB-320's per-group Access policies (ACCESS_INVITE_POLICY_ID_GENERAL / _INSIDER) and the per-application ACCESS_INVITE_POLICY_ID
+   are retired by ROB-440: an invitation is written into a Cloudflare Access rule group, and the Worker never writes a policy, so a
+   release passes no policy id at all. */
 export const HOST_FILES = {
   cloudflare: ({date, origin, profile}) => ({
     "wrangler.jsonc": JSON.stringify({
@@ -222,7 +219,7 @@ export const HOST_FILES = {
       preview_urls: false,
       ...(profile.cloud ? {
         d1_databases: [{binding: "DB", database_name: profile.cloud.database.name, database_id: profile.cloud.database.id, migrations_dir: "cloud/migrations"}],
-        vars: {...(profile.sharing ? {SHARING_ENABLED: "on", INVITE_ADMIN_ID: profile.sharing.adminId, CLOUDFLARE_ACCOUNT_ID: profile.sharing.accountId, ACCESS_INVITE_APP_IDS: profile.sharing.accessAppIds, ACCESS_INVITE_POLICY_ID: profile.sharing.accessPolicyId, ...groupPolicies(profile.sharing), ...(profile.sharing.linkOrigin ? {INVITE_LINK_ORIGIN: profile.sharing.linkOrigin} : {})} : {}), ACCESS_TEAM_DOMAIN: profile.cloud.access.team, ACCESS_AUD: profile.cloud.access.aud, ...(profile.tables?.playtest ? {PLAYTEST_TABLES: "on"} : {}), ...(profile.serviceSeats ? {SERVICE_SEATS: "on"} : {}), ...(profile.tables?.closed ? {PLAY_TABLES_CLOSED: "on"} : {}), ...aiVars(profile)},
+        vars: {...(profile.sharing ? {SHARING_ENABLED: "on", INVITE_ADMIN_ID: profile.sharing.adminId, CLOUDFLARE_ACCOUNT_ID: profile.sharing.accountId, ACCESS_INVITE_APP_IDS: profile.sharing.accessAppIds, ...(profile.sharing.linkOrigin ? {INVITE_LINK_ORIGIN: profile.sharing.linkOrigin} : {})} : {}), ACCESS_TEAM_DOMAIN: profile.cloud.access.team, ACCESS_AUD: profile.cloud.access.aud, ...(profile.tables?.playtest ? {PLAYTEST_TABLES: "on"} : {}), ...(profile.serviceSeats ? {SERVICE_SEATS: "on"} : {}), ...(profile.tables?.closed ? {PLAY_TABLES_CLOSED: "on"} : {}), ...aiVars(profile)},
         ratelimits: [
           {name: "LIMIT_IP", namespace_id: profile.cloud.limits.ip, simple: {limit: LIMITS_PER_MINUTE.ip, period: 60}},
           {name: "LIMIT_PERSON", namespace_id: profile.cloud.limits.person, simple: {limit: LIMITS_PER_MINUTE.person, period: 60}},
