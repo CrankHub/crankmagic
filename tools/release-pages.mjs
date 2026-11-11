@@ -136,8 +136,9 @@ export const PROFILES = {
     /* A session's automated checks sit at its tables as the Access service token Rob made for them (cloud/access.mjs,
        SERVICE_SEATS; staging's "Session checks" policy, 2026-10-06). Never in production. */
     serviceSeats: true,
-    /* THE AI DOOR, open on staging (Rob, 2026-10-09; docs/ai-door.md). Its own Access application, "CrankMagic AI
-       (staging)" on staging.crankmagic.com/api/ai/*, Google sign-in only, its policy the people allowed; and one
+    /* THE AI DOOR, open on staging (Rob, 2026-10-09; docs/ai-door.md). No AI application of its own since ROB-440
+       (Rob, 2026-11-10): the account has none, so the door takes staging's own sign-in, as production's takes its
+       accounts sign-in, and who may spend is the "Admin" and "Game Theory Insiders" rule groups. And one
        spend cap for everyone together, 300 US cents in any 24 hours. The door also takes a cap per person, and Rob
        wants none, so it is the same number, which never stops anyone before the total does. The model is Claude
        Haiku 5.5 ("change the model use to Haiku explicitly"). The key is a Worker secret Rob
@@ -147,7 +148,7 @@ export const PROFILES = {
        (AI-2), each game capped at 25 cents, and the deck advisor (AI-4) are on too: Rob approved what privacy.html says
        each sends on 2026-10-12. */
     /* Open to everyone signed in since 2026-10-14 (Rob, as for production): the door takes staging's own sign-in too. */
-    ai: {aud: "d3e7b5812c81536cb707c64cca2196e1ee7854cbca6791f4d7bd2ef4b649f6db", everyone: true, capTotalCents: 300, model: "claude-haiku-5-5", coach: true, coachCapCents: 150, pilot: true, pilotGameCents: 25, advise: true},
+    ai: {aud: "213cb6b10352e5ed5525d6337f355cd5190dec402e86debd30971d3bd5bda1f5", everyone: true, capTotalCents: 300, model: "claude-haiku-5-5", coach: true, coachCapCents: 150, pilot: true, pilotGameCents: 25, advise: true},
     cloud: {database: {name: "crankmagic-staging", id: "b7f806ec-c9e8-4265-9f23-7d9705db9a26"}, limits: {ip: "2001", person: "2002"}, access: {team: "crankmagic.cloudflareaccess.com", aud: "213cb6b10352e5ed5525d6337f355cd5190dec402e86debd30971d3bd5bda1f5"}},
     /* Admin › Share admits an invitee to staging AND production (Rob, 2026-10-26): "CrankMagic staging"
        (staging.crankmagic.com) and "CrankMagic Accounts" (crankmagic.com/api/*). The email's link signs them in at production.

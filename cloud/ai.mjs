@@ -8,12 +8,13 @@
  * THE DOOR IS SHUT UNTIL ROB OPENS IT. Each of his four M6 decisions is a gate, and a gate with nothing set is
  * closed -- never a default that spends:
  *
- *   1. its own Access application   AI_ACCESS_AUD: the token must be for the AI application, which Rob sets to
- *                                   Google only (never the emailed code), with passkey MFA if the plan offers it
+ *   1. the sign-in                  AI_ACCESS_AUD: the token must be for that Access application. Since ROB-440 there
+ *                                   is no AI application of its own: staging and production each name their app's own
+ *                                   sign-in (Rob, 2026-11-10), and the group below decides who may spend
  *   2. the group                    the owner or a Game Theory Insider (cloud/access.mjs `groupOf`): since ROB-440 the
  *                                   Cloudflare Access rule groups "Admin" and "Game Theory Insiders" are the list,
  *                                   and the Worker keeps no copy. AI_EVERYONE on (Rob, 2026-10-14) widens the sign-in
- *                                   only: the door takes the app's own sign-in as well as the AI application's
+ *                                   only: the door takes ACCESS_AUD's sign-in as well as AI_ACCESS_AUD's
  *   3. the key                      ANTHROPIC_API_KEY, a Worker secret Rob enters with `wrangler secret put`; it
  *                                   never appears in chat, in this repository, in a response or in the log
  *   4. the spend caps               AI_CAP_PERSON_CENTS and AI_CAP_TOTAL_CENTS, over a rolling 24 hours, read from
