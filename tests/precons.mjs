@@ -186,7 +186,8 @@ try {
     eq(hundred.head, ["View deck cards", "Export deck list", "Buy the Precon"], "The hundred's head: View deck cards, Export deck list, and Buy the Precon beside them");
     ok(hundred.rows > 50 && hundred.toBuy === 0, `and no card of its ${hundred.rows} rows says To buy: the precon brings them`);
     ok(/buy the precon for the \d+ cards you do not own/.test(await page.locator("#cm-sec-cards .cm-deck-playable").innerText()), "and the playable line says to buy the precon for the cards not owned");
-    /* Save: one question, two buttons, and the deck is saved. */
+    /* Save: one question, two buttons, and the deck is saved. A refusal is an error notice (role alert): since 2026-10-26
+       (cc4d2230) a receipt that carries Undo stays until it is dismissed, so an earlier commit's receipt may still be showing. */
     await page.getByRole("tab", {name: /^Overview/}).click();
     await page.locator(".cm-deck-hero").getByRole("button", {name: "Save", exact: true}).click();
     await page.locator("#cm-dialog[open] .cm-precon-save").waitFor({timeout: 10000});
@@ -194,7 +195,7 @@ try {
     eq([dlg.title, dlg.buttons.filter((t) => t !== "Close")], ["Confirm save deck to your decks?", ["Cancel", "Confirm Changes"]], "Save asks one question, Confirm save deck to your decks?, with Cancel and Confirm Changes");
     ok(!/reserved|buy list|Scryfall|planned|owned/i.test(dlg.text), `and nothing else: ${dlg.text}`);
     await page.locator("#cm-dialog[open]").getByRole("button", {name: "Confirm Changes"}).click();
-    const after = await page.waitForFunction(() => {const d = globalThis.__cm.state.decks.find((x) => x.id === "deck:fracture"); const n = document.querySelector("#cm-notice"); return d.status === "final" ? "final" : (n && !n.hidden && n.textContent.trim()) ? "refused: " + n.textContent.trim() : null;}, null, {timeout: 15000}).then((h) => h.jsonValue());
+    const after = await page.waitForFunction(() => {const d = globalThis.__cm.state.decks.find((x) => x.id === "deck:fracture"); const n = document.querySelector("#cm-notice"); return d.status === "final" ? "final" : (n && !n.hidden && n.classList.contains("error") && n.textContent.trim()) ? "refused: " + n.textContent.trim() : null;}, null, {timeout: 15000}).then((h) => h.jsonValue());
     eq(after, "final", "Confirm Changes saves the deck, as Finalize did");
     await page.waitForFunction(() => /Saved .* to your decks/.test(document.querySelector("#cm-notice")?.textContent || ""), null, {timeout: 10000});
     ok(true, "and says it was saved to your decks, not finalized");

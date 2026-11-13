@@ -4253,6 +4253,9 @@ button.cm-vitals{cursor:pointer}
 #matrix-v2 :is(.v-button,input,select,textarea):focus-visible{outline:var(--focus-width) solid var(--color-aether);outline-offset:var(--focus-offset)}
 #matrix-v2 [aria-invalid=true]:is(input,select,textarea){border-color:var(--color-required)}
 @media(pointer:coarse){#matrix-v2 .v-button.primary{min-height:var(--control-height-lg)}}
+/* A ROW IS ONE HEIGHT (ROB-245). The touch primary is 44px (r4, control-height-lg) and its neighbors were left at 40, so every
+   row with a primary read 44/40/40 on a phone: the buttons beside a touch primary take its height. */
+@media(pointer:coarse){#matrix-v2 :is(.cm-actions,.cm-toolbar,.cm-batch-bar,.cm-shop-bar):has(>.v-button.primary)>.v-button{min-height:var(--control-height-lg)}}
 
 /* r4 AccountMenu: one native popover shared by rail, landing and board. */
 #cm-user-menu.cm-account-menu{width:min(320px,calc(100vw - 16px));min-width:0;box-sizing:border-box;padding:8px;border:1px solid var(--color-field-line);border-radius:12px;background:var(--color-raised);color:var(--color-ink);max-height:calc(100dvh - 24px);overscroll-behavior:contain}
