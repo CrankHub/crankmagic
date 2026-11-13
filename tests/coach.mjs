@@ -317,6 +317,10 @@ try {
   for (const mode of ["full", "table", "focus"]) {
     await page.locator('[data-action="board-camera"]').click();
     await page.locator(`[data-action="board-view"][data-view="${mode}"]`).click();
+    /* A drawer keeps its scroll per view (crankmagic-board.js, drawerPositions), so after a view change the open Coach may be
+       further down its drawer: a person scrolls the drawer to it, and so does the suite. The game itself never scrolls. */
+    await page.locator("#cm-board-coach").evaluate((el) => el.scrollIntoView({block: "end"}));
+    eq(await page.evaluate(() => [scrollY, document.scrollingElement.scrollTop]), [0, 0], `${mode}: reaching the Coach scrolls its drawer, not the game`);
     if (!(await page.locator(".cm-coach-questions").evaluate((d) => d.open))) await page.click(".cm-coach-questions > summary");
     const layout = await page.evaluate(() => {
       const coach = document.getElementById("cm-board-coach"), button = coach.querySelector('[data-action="board-coach-ask"]');
@@ -329,11 +333,16 @@ try {
     });
     eq(layout, {reserved: true, hit: true}, `${mode}: Coach keeps to the right drawer and its prompts receive the pointer`);
   }
-  await page.locator('.cm-board-hand .cm-bcard').first().click({button:"right"});
+  await page.locator('.cm-stage-hand .cm-bcard').first().click({button:"right"});
   await page.locator('#cm-card-menu [data-action=board-card-menu-view]').click();
-  ok(await page.locator('#cm-board-coach').isHidden() && await page.locator('#cm-card-inspector').isVisible(), "card inspection replaces the optional Coach in the shared auxiliary space");
-  await page.locator('.cm-board-coach-open').click();
-  ok(await page.locator('#cm-board-coach').isVisible() && await page.locator('#cm-card-inspector').count() === 0, "reopening Coach replaces inspection without covering it");
+  /* Inspection has its own pane beside the right drawer, and the Coach is a module of that drawer (245f9e62, 2026-10-23, and r4): the two stand
+     side by side, neither covering the other, where inspection once took the Coach's place. */
+  await page.locator('#cm-card-inspector').waitFor({timeout: 10000});
+  const beside = await page.evaluate(() => {const c = document.getElementById("cm-board-coach").getBoundingClientRect(), i = document.getElementById("cm-card-inspector").getBoundingClientRect();
+    return {coach: c.width > 0 && c.height > 0, inspector: i.width > 0 && i.height > 0, apart: c.right <= i.left + 1 || i.right <= c.left + 1, onScreen: i.right <= innerWidth + 1 && c.left >= 0};});
+  eq(beside, {coach: true, inspector: true, apart: true, onScreen: true}, "card inspection opens beside the Coach's drawer: both show, and neither covers the other");
+  await page.locator('#cm-card-inspector [data-action=board-inspect-close]').click();
+  ok(await page.locator('#cm-board-coach').isVisible() && await page.locator('#cm-card-inspector').count() === 0, "closing inspection leaves the Coach where it was");
   await context.close();
 } finally {
   await close();
