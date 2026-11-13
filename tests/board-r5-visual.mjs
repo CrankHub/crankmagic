@@ -69,7 +69,9 @@ const m=await page.evaluate(()=>{
     seatCards,tabs,ctl,
     corners:qa(".cm-stage-corner").map(c=>({w:R(c).w,h:R(c).h,bg:cs(c,"backgroundColor"),shadow:cs(c,"boxShadow"),border:cs(c,"borderTopWidth"),cursor:cs(c,"cursor"),opacity:cs(c,"opacity")})),
     railOx:cs(rail,"overflowX"),sideOx:cs(side,"overflowX"),railXover:rail.scrollWidth>rail.clientWidth,sideXover:side.scrollWidth>side.clientWidth,
-    decision:dec&&{ox:cs(dec,"overflowX"),fits:dec.scrollHeight<=dec.clientHeight+1,h:dec.clientHeight},
+    /* The decision is the body of the Actions module since r4 (113c4283): the box that could show a bar is the module's body. */
+    decision:dec&&(body=>({ox:cs(dec,"overflowX"),fits:dec.scrollHeight<=dec.clientHeight+1,h:dec.clientHeight,module:!!body,
+      bodyFits:!!body&&body.scrollHeight<=body.clientHeight+1,wide:dec.scrollWidth>dec.clientWidth+1||(!!body&&body.scrollWidth>body.clientWidth+1)}))(dec.closest(".cm-module-body")),
     heading:q('.cm-stage-rail .cm-stage-module[data-module="actions"]>header h3')?.textContent.replace(/[▾▸▴◂]/g,"").trim(),
     actions:qa(".cm-stage-actions .v-button").map(b=>({h:R(b).h,fs:parseFloat(cs(b,"fontSize"))}))
   };
@@ -112,7 +114,7 @@ for(const t of m.tabs){
 /* 7. */
 eq([m.railOx,m.sideOx],["hidden","hidden"],"neither drawer scrolls sideways");
 eq([m.railXover,m.sideXover],[false,false],"and neither has anything wider than itself");
-ok(m.decision&&m.decision.ox==="hidden"&&m.decision.fits,"the Actions body has no vertical bar while its content fits");
+ok(m.decision&&m.decision.module&&m.decision.fits&&m.decision.bodyFits&&!m.decision.wide,`the Actions body has no vertical bar while its content fits, and nothing in it runs wider than it (${JSON.stringify(m.decision)})`);
 eq(m.heading,"Actions","the first section is called Actions");
 /* 9. */
 ok(m.actions.length>=1&&m.actions.every(b=>b.h<=43&&b.fs>=15),`the action buttons are 42px high with 15px type (${m.actions.map(b=>Math.round(b.h)+"/"+b.fs).join(", ")})`);
