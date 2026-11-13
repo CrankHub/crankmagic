@@ -18,5 +18,5 @@ BREAKS = [
     ("the table's AI seat ignores the switch", ROOM, 'createAi(this.env.DB, {everyone: everyone(this.env)}).allowed(email)', 'createAi(this.env.DB).allowed(email)'),
     ("a release never sets the switch", RELEASE, '  ...(profile.ai.everyone ? {AI_EVERYONE: "on"} : {}),\n', ''),
     ("production's door for the allowlist only", RELEASE, 'ai: {aud: PRODUCTION.cloud.access.aud, everyone: true,', 'ai: {aud: PRODUCTION.cloud.access.aud,'),
-    ("staging's door for the allowlist only", RELEASE, 'ai: {aud: "d3e7b5812c81536cb707c64cca2196e1ee7854cbca6791f4d7bd2ef4b649f6db", everyone: true,', 'ai: {aud: "d3e7b5812c81536cb707c64cca2196e1ee7854cbca6791f4d7bd2ef4b649f6db",'),
+    ("staging's door for the allowlist only", RELEASE, 'ai: {aud: "213cb6b10352e5ed5525d6337f355cd5190dec402e86debd30971d3bd5bda1f5", everyone: true,', 'ai: {aud: "213cb6b10352e5ed5525d6337f355cd5190dec402e86debd30971d3bd5bda1f5",'),
 ]
