@@ -113,7 +113,7 @@ who can access, I'm fine with those I want everyone I add to be able to use the 
   sign-in opens the door only with it on; a token for any other application still refused; the advisor's offer and
   the meter follow it; a service token never let in), `node tests/agent-seat-table.mjs` (a host not on the list seats an AI on Claude only with it
   on), `node tests/release-pages.mjs` (staging and production's Play release set it; the pages release and the
-  standby do not). Breaks: `tools/ai-everyone-breaks.py`, 13, each caught.
+  standby do not). Breaks: `tools/ai-everyone-breaks.py`, 7 (13 when written, each caught; six were retired on 2026-11-13 with the `everyone` option the access groups removed, 9d8120b7).
 
 ## Where it stood (2026-10-09)
 
