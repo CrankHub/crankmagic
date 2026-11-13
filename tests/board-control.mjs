@@ -79,6 +79,21 @@ async function point(page,selector){
     facts=await probe();wheels++;
     assert.ok(facts.ancestors[w.index]&&Math.abs(facts.ancestors[w.index].scrollTop-w.from)>0.5,`${selector}: native wheel must move its real scroll viewport (${JSON.stringify(facts)})`);
   }
+  /* Since 2026-10-28 (8b3b6fcd) a drawer lies over the stage and moves nothing, so in 3D an open drawer can lie over the end
+     of a mat. A person collapses it by its tab; so does the suite, with a real press on a tab that takes the pointer, once per
+     drawer. Anything else over the point is still a hard failure. */
+  for(const [drawer,tab] of [[".cm-stage-rail.is-open","[data-action=board-stage-rail]"],[".cm-stage-side.is-open","[data-action=board-stage-side]"]]){
+    if(facts.points.every(p=>p.ok))break;
+    const under=await el.evaluate((el,drawer)=>{const r=el.getBoundingClientRect(),d=document.querySelector(`#cm-board > ${drawer}`);
+      return !!d&&[[.5,.5],[.25,.25],[.75,.75]].some(([fx,fy])=>d.contains(document.elementFromPoint(r.left+r.width*fx,r.top+r.height*fy)));},drawer);
+    if(!under)continue;
+    const at=await page.locator(tab).evaluate(t=>{const r=t.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return {x,y,ok:t.contains(document.elementFromPoint(x,y))&&t.getAttribute("aria-expanded")==="true"};});
+    assert.ok(at.ok,`${selector}: the drawer over it has a tab that takes the pointer (${JSON.stringify(at)})`);
+    await page.mouse.click(at.x,at.y);
+    await page.waitForFunction(drawer=>!document.querySelector(`#cm-board > ${drawer}`),drawer,{timeout:3000});
+    facts=await probe();
+    console.log(`Control: ${selector} lay under ${drawer}; collapsed by its tab`);
+  }
   assert.ok(facts.points.every(p=>p.ok),`${selector}: all three native points must be uncovered after ${wheels} permitted wheel inputs (${JSON.stringify(facts)})`);
   if(wheels)console.log(`Control native scroll: ${selector}; ${wheels} wheel inputs; ${JSON.stringify(facts.rect)}`);
   return {x:facts.points[0].x,y:facts.points[0].y};
