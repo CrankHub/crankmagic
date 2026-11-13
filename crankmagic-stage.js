@@ -309,8 +309,8 @@
      is now laid out `k` times larger -- its content zoomed by k (crankmagic-stage.css, --mat-zoom) -- and its matrix
      shrinks it back by k, so it is painted with k times the pixels a side. k is the most the camera magnifies the mat
      (the longest edge of its drawn quad over its own length) times the Graphics resolution (150% by default), rounded
-     up, from 2 to 4; the browser already paints for the screen's own pixel density. A mat the perspective has shrunk well
-     below its own size (the opponents' at rest) stays at 1: painting it larger only to shrink it would lose detail. */
+     up, from 2 to 4; the browser already paints for the screen's own pixel density. A mat drawn no larger than itself
+     (the opponents' at rest) stays at 1: painting it larger only to shrink it would lose detail. */
   /* How much a mat is magnified on screen: above 1 it is nearer than its layout size, below 1 the perspective has shrunk it. */
   function magnification(r){
     const q=r.quad,edge=(a,b)=>Math.hypot(q[b]-q[a],q[b+1]-q[a+1]);
@@ -324,11 +324,7 @@
   }
   function sharpness(r){
     const mag=magnification(r);
-    /* A mat drawn near its own size is still set down by the perspective matrix, and a 1x picture warped that way is soft: your
-       own mat at rest (drawn at about 97% of its layout) kept 61% of its cards' fine detail on a graphics card and under the 60%
-       floor where the browser draws in software (ROB-379). From 90% of its size up it is painted at 2 or more (96% measured);
-       a mat the perspective has shrunk further (the opponents' at rest) stays at 1, where more pixels would only be thrown away. */
-    return mag<=.9?1:clamp(Math.ceil(mag*resNow()/100-.05),2,4);
+    return mag<=1.05?1:clamp(Math.ceil(mag*resNow()/100-.05),2,4);
   }
   /* k changes only once the camera has settled: laying a mat out again mid-motion would cost the motion its frames. */
   function position(el,r) {

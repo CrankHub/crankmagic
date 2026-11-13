@@ -358,8 +358,8 @@
       "sha": "452b42d06574a803"
     },
     "crankmagic-stage.js": {
-      "version": 48,
-      "sha": "d9c72cd9c175ca75"
+      "version": 47,
+      "sha": "98a927e3ac912295"
     },
     "crankmagic-strategies.js": {
       "version": 4,
@@ -367,7 +367,7 @@
     },
     "crankmagic-sw.js": {
       "version": 754,
-      "sha": "911cadd57fb16114"
+      "sha": "c9ceb69f898a9727"
     },
     "crankmagic-table.js": {
       "version": 59,
