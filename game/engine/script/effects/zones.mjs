@@ -26,7 +26,7 @@ import {lastKnown} from "../../rules/layers.mjs";
 import {keywordsOf, controllerOf, abilitiesOf} from "../../rules/layers.mjs";
 import {selectMatching, compileSelector, matchesSelector, shareCreatureType} from "../filter.mjs";
 import {applyReplacements, enteringModifications, placeReplacedCounters, regenerated} from "../../rules/replacement.mjs";
-import {cantBeCountered, entersUntapped, enteringCountersPlaced, drawsInstead, cantBeSacrificed, drawForbidden, emptyDrawWins, drawsMore} from "../../rules/statics.mjs";
+import {cantBeCountered, entersUntapped, enteringCountersPlaced, drawsInstead, cantBeSacrificed, drawForbidden, emptyDrawWins, drawsMore, triggerRemovalBlocked} from "../../rules/statics.mjs";
 import {winGame} from "./resources.mjs";
 import {runFollowUps} from "./index.mjs";
 import {amountOf} from "../amount.mjs";
@@ -317,6 +317,9 @@ export function sacrificeOne(state, id, events) {
   const object = state.objects[id];
   /* "Can't be sacrificed" (Alexios; rules/statics.mjs): told to, nothing happens to it. */
   if (!object || cantBeSacrificed(state, id)) return null;
+  /* "Triggered abilities you control can't cause you to sacrifice ... creature tokens you control" (The Master, Multiplied;
+     rules/statics.mjs, triggerRemovalBlocked): a trigger's sacrifice of one does nothing to it. */
+  if (triggerRemovalBlocked(state, id, "sacrifice")) return null;
   const sacrificer = object.controller;
   const before = events.length;
   const moved = moveOne(state, id, "graveyard", events, {owner: object.owner});
@@ -428,6 +431,8 @@ export function moveZone(state, params, context, rng = null) {
     /* "Sacrifice it" (`sacrifice: true`): to its owner's graveyard, as a sacrifice. */
     /* A commander whose owner chose the command zone instead (CR 903.9b; effects/asking.mjs, commanderHome). */
     const to = (params.commanderHome ?? []).includes(id) ? "command" : params.to ?? "graveyard";
+    /* "... can't cause you to ... exile creature tokens you control" (The Master, Multiplied): a trigger's exile of one does nothing. */
+    if (to === "exile" && state.objects[id]?.zone === "battlefield" && triggerRemovalBlocked(state, id, "exile")) continue;
     if (state.objects[id]?.zone === "battlefield") leftBy.set(id, controllerOf(state, id));
     const before = params.remember && state.objects[id]?.zone === "battlefield" ? lastKnown(state, id) : null;
     /* "Look at the top two cards of your library and exile them face down" (Flameshape; `faceDown`, into exile only): cards
@@ -637,6 +642,8 @@ export function moveZoneAll(state, params, context, rng = null) {
   const exchanged = params.exchange === true ? [...(state.zones[params.to]?.[context.controller] ?? [])] : [];
   for (const id of [...matched]) {
     const controller = state.objects[id]?.zone === "battlefield" ? controllerOf(state, id) : null;
+    /* "... can't cause you to ... exile creature tokens you control" (The Master, Multiplied): a trigger's exile of one does nothing. */
+    if (params.to === "exile" && controller !== null && triggerRemovalBlocked(state, id, "exile")) continue;
     const moved = moveOne(state, id, params.to ?? "graveyard", events, {tapped: params.tapped === true, controller: under});
     if (moved !== null) { arrivedAll.push(moved); if (controller !== null) was[moved] = controller; }
   }

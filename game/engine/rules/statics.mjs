@@ -197,6 +197,15 @@ export const STATIC_RULES = Object.freeze({
       where a permanent would be sacrificed (script/effects/zones.mjs, sacrificeOne) and where one is chosen to be: the
       sacrifice effect and an "unless" cost (script/effects/asking.mjs), a cost (rules/actions.mjs). */
   "cant-be-sacrificed": "script/effects/zones.mjs",
+  /** "The legend rule doesn't apply to permanents you control" (Mirror Box) or "to creature tokens you control" (The Master,
+      Multiplied; CR 704.5j, 101.2): `affects` the permanents it does not apply to, from its controller's side. A permanent it
+      names is in no group of one name, so it is never one of two. legendRuleOff, read where the rule is checked (rules/sba.mjs). */
+  "legend-rule-off": "rules/sba.mjs",
+  /** "Triggered abilities you control can't cause you to sacrifice or exile creature tokens you control" (The Master, Multiplied;
+      CR 101.2, 701.21a): `affects` what is protected, from its controller's side, `how` the ways ("sacrifice", "exile"; both when it
+      says nothing). triggerRemovalBlocked, read where a permanent would be sacrificed (script/effects/zones.mjs, sacrificeOne) or
+      exiled (moveZone, moveZoneAll) while a triggered ability of its controller's is resolving -- one of an opponent's still can. */
+  "triggers-cant-remove": "script/effects/zones.mjs",
   /** "If one or more artifact tokens would be created under your control, that many 5/5 red Dragon creature tokens with
       flying are created instead" (Draconic Visitor): `affects` the tokens it replaces, `token` what is made instead.
       tokensCreated (script/effects/permanents.mjs). */
@@ -708,6 +717,43 @@ export function cantBeSacrificed(state, id) {
     const holder = state.objects[holderId];
     for (const ability of held(holderId))
       if (ability.kind === "static" && ability.rule === "cant-be-sacrificed"
+        && matchesSelector({what: "permanent", ...ability.affects}, state, id, {controller: holder.controller, source: holderId})) return true;
+  }
+  return false;
+}
+
+/**
+ * WHETHER THE LEGEND RULE DOES NOT APPLY TO A PERMANENT (CR 704.5j, 101.2): a `legend-rule-off` static's `affects` names it
+ * ("the legend rule doesn't apply to permanents you control", Mirror Box; "to creature tokens you control", The Master,
+ * Multiplied). Such a permanent is in no group of one name, so it is never one of "two or more". A permanent of another player's, or
+ * a nontoken one beside The Master, is still held to it.
+ */
+export function legendRuleOff(state, id) {
+  const held = staticAbilities(state);
+  for (const holderId of state.zones.battlefield) {
+    const holder = state.objects[holderId];
+    for (const ability of held(holderId))
+      if (ability.kind === "static" && ability.rule === "legend-rule-off"
+        && matchesSelector({what: "permanent", ...ability.affects}, state, id, {controller: holder.controller, source: holderId})) return true;
+  }
+  return false;
+}
+
+/**
+ * WHETHER A TRIGGERED ABILITY CAN'T SACRIFICE OR EXILE A PERMANENT (CR 101.2, 701.21a, 406.2): a `triggers-cant-remove` static's
+ * `affects` names what is protected ("creature tokens you control", The Master, Multiplied) from its controller's side, `how`
+ * the ways it is protected from. Only while a triggered ability the protected permanent's controller controls is resolving
+ * (`context.triggered`, rules/stack.mjs): a spell, an activated ability, a state-based action or an opponent's trigger still can.
+ * `how` is "sacrifice" or "exile".
+ */
+export function triggerRemovalBlocked(state, id, how, context = state.resolving?.context) {
+  if (!context?.triggered || !state.objects[id]) return false;
+  const held = staticAbilities(state);
+  for (const holderId of state.zones.battlefield) {
+    const holder = state.objects[holderId];
+    if (holder.controller !== context.controller) continue;
+    for (const ability of held(holderId))
+      if (ability.kind === "static" && ability.rule === "triggers-cant-remove" && (ability.how === undefined || [].concat(ability.how).includes(how))
         && matchesSelector({what: "permanent", ...ability.affects}, state, id, {controller: holder.controller, source: holderId})) return true;
   }
   return false;
