@@ -1,0 +1,5 @@
+figures/cache/
+godot/models/
+godot/shots/
+godot/.godot/
+*.import
