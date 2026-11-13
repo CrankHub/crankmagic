@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import {createRng} from "../game/engine/rng.mjs";
 import {randomLegalPilot} from "../game/engine/pilots/random-legal.mjs";
-import {memoryStorage} from "../game/engine/storage.mjs";
+import {memoryStorage, createMatchStore} from "../game/engine/storage.mjs";
 import {basicCards} from "../game/room/room.mjs";
 import {replayTape} from "../game/room/replay.mjs";
 import {tableOn, RECORD_SCHEMA} from "../game/room/table.mjs";
@@ -89,12 +89,21 @@ async function playedTable(tableId, {playtest = false} = {}) {
   eq(Object.keys(rec).filter((k) => ["seed", "pod", "tape", "journal"].includes(k)), [], "with no seed, pod, tape or journal");
   eq(rec.view.state, room.view("s1").state, "her last view is what she was shown");
   const strings = everyString(rec);
-  ok(![...strings].some((s) => s.includes(`${matchId}:`)), "the seed is nowhere in it");
+  /* The seed itself, read from the match's store, and not "any string with the match's id and a colon": since 2026-10-26 her
+     own result's id is `game:table:<matchId>:s1` (game/room/result-record.mjs), which is no seed (ROB-251). */
+  const {seed} = await createMatchStore(storage, matchId).loadMatch();
+  ok(typeof seed === "string" && seed.startsWith(`${matchId}:`) && seed.length > matchId.length + 1, "the match has a seed");
+  ok(![...strings].some((s) => s.includes(seed)), "the seed is nowhere in it");
   const hers = room.view("s1").state, hidden = new Set();
   for (const d of [deck("ordinary01r"), deck("ordinary01c")]) for (const c of d.cards) hidden.add(c);
   const seen = everyString(hers);
-  ok([...hidden].every((c) => !strings.has(c) || seen.has(c)), "and nothing of another seat's that she was not shown: no one else's hand or library");
   const kept = JSON.parse(await storage.get(`room/${matchId}`)).history;
+  /* What she was shown is her view's state and the table's public lines: a spell Rob cast and took back is in his hand
+     again, and the line that said so was read by the whole table. The name is matched whole ("Bear x-2" is not "Bear x-27"). */
+  const told = (c) => kept.some((l) => l.text.split(c).slice(1).some((rest) => !/^[0-9]/.test(rest)));
+  const unshown = [...hidden].filter((c) => strings.has(c) && !seen.has(c) && !told(c));
+  eq(unshown, [], "and nothing of another seat's that she was not shown: no one else's hand or library");
+  ok([...hidden].some((c) => !seen.has(c) && !told(c)), "(there are such cards: the check has something to refuse)");
   eq([rec.history.length, rec.history.map((l) => l.text)], [kept.length, kept.map((l) => l.text)], `the history is the table's public lines, every one the room kept (${kept.length}), not only a view's newest`);
   eq((await t.record(ROB, matchId)).seatId, "s0", "Rob's is his own");
 }
