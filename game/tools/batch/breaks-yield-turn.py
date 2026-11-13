@@ -121,6 +121,6 @@ BREAKS = [
      '      yieldTurn: true,\n',
      '      yieldTurn: true, passStack: true,\n'),
     ('the G1 harness launching its games otherwise than the table', 'tools/fuzz-live.mjs',
-     'xTaps: true, yieldTurn: true, drawBeat: true,',
-     'xTaps: true, drawBeat: true,'),
+     'phyrexianTaps: true, yieldTurn: true, drawBeat: true,',
+     'phyrexianTaps: true, drawBeat: true,'),
 ]

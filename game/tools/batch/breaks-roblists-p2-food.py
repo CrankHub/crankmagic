@@ -62,7 +62,7 @@ BREAKS = [
     ('X reduced', ACTIONS, '    counted.generic -= Math.min(counted.generic, less);\n', ''),
     ('X offered higher', ACTIONS, '  const most = Math.floor((poolSize(pool) - rest + less) / cost.variable);', '  const most = Math.floor((poolSize(pool) - rest) / cost.variable);'),
     ('X offer reckoned', ACTIONS, '  const atX = (X) => (reckoned.less > 0 &&', '  const atX = (X) => (false &&'),
-    ('X tapped for', ACTIONS, 'generic: Math.max(0, xCounted(cost, X).generic + x - reckoned.less)}, 1, sources)', 'generic: xCounted(cost, X).generic + x}, 1, sources)'),
+    ('X tapped for', ACTIONS, 'generic: Math.max(0, xCounted(cost, X).generic + x - reckoned.less)}, 1, sources, lifeLeft)', 'generic: xCounted(cost, X).generic + x}, 1, sources, lifeLeft)'),
     ('X convoked', ACTIONS, 'generic: Math.max(0, xCounted(cost, X).generic + x - reckoned.less)}, helpers)', 'generic: xCounted(cost, X).generic + x}, helpers)'),
     ('X convoke paid', ACTIONS, 'action.lifeInstead !== undefined ? "" : null, action.extraMana ?? "", action.targets, action.x);', 'action.lifeInstead !== undefined ? "" : null, action.extraMana ?? "", action.targets);'),
     ('X paid more than one way', ACTIONS, ' action.extraMana ?? "", action.targets, action.x);\n  const {x} = reckoned, cost = anyTypeCost(reckoned.cost, permission);\n  return paymentOptions',
