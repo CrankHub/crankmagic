@@ -24,6 +24,6 @@ BREAKS = [
      '      xTaps: true,\n',
      ''),
     ('the G1 harness launching its games otherwise than the table', 'tools/fuzz-live.mjs',
-     'pooledTaps: true, xTaps: true, yieldTurn: true,',
-     'pooledTaps: true, yieldTurn: true,'),
+     'pooledTaps: true, xTaps: true, phyrexianTaps: true,',
+     'pooledTaps: true, phyrexianTaps: true,'),
 ]

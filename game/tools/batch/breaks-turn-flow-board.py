@@ -13,7 +13,7 @@ BREAKS = [
      '    if (pass && pass.endsTurn) return "End turn";\n',
      ''),
     ('your turn not said', 'crankmagic-board.js',
-     '${view.yourTurn ? ` (your ${ordinal(view.yourTurn)})` : ""}',
+     '${view.yourTurn ? `; your ${ordinal(view.yourTurn)} turn` : \'\'}',
      ''),
     ('the way of playing never told to the room', 'crankmagic-board.js',
      '    socket.send(JSON.stringify({type: "prefer", stepByStep: want, askStack: ask}));\n',

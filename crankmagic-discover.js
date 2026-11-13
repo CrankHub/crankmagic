@@ -127,7 +127,12 @@
   function getAdvancedToolsState() { try { return localStorage.getItem(advancedToolsKey) === 'open'; } catch { return false; } }
   function setAdvancedToolsState(open) { try { localStorage.setItem(advancedToolsKey, open ? 'open' : 'closed'); } catch { /* private mode */ } }
 
+  /* ONE VISIT DRAWS (ROB-236, ROB-381). Explore loads in steps, and every visit is the same view: a visit opened on a commander,
+     left at once for the chooser, finished loading afterward and drew that commander over the chooser, whose address still
+     stood. Each visit takes a number, and one that is no longer the newest stops where it next would have drawn. */
+  let discoverVisit = 0;
   views.discover = async (params) => {
+    const visit = ++discoverVisit, left = () => visit !== discoverVisit || C.route().view !== 'discover';
     C.HELP.discover = {title: 'Discover', body: '<p>The connected card catalog: follow a card into the cards it is joined to, inspect the evidence for each link, and take what you find into a group or a deck.</p><p><strong>Trace</strong> (the pane\'s third tab, with a deck picked under Yours, or <em>Trace</em> on the deck page) lights the deck from its commander outward: only the joins that serve the deck\'s strategies, loop-backs in gold, the cards it never touches ghosted on the outer band. The list in the pane is the product; the animation shows how it was chosen. The trace score is a heuristic and is labeled one; the measured score beside it is Measure\'s.</p><p>Structural links (shared mechanics and roles) and observed co-play (EDHREC) are different kinds of evidence. Neither claims a simulated improvement.</p><p>In the card pane and the pop-ups, the term with the gold ring is the card’s <strong>Primary Purpose</strong>: the one job it is in a deck for, decided by a fixed ladder (finisher, extra turn, board wipe, multiplier, untap engine, copier, blink, team quality, tutor, sacrifice outlet, removal, draw, ramp, token maker, payoff, and so on down to its body and its tribe). In a filter dialog the count beside an option is what you would have under the filters already applied; the whole-graph figure is on the hover. Picking a deck under <strong>Yours</strong> puts its commander in focus, and dragging the divider beside the graph grows the card picture up to 70%.</p><p><strong>Loops only</strong>, on by default when a deck is picked, walks only the joins that continue or pay off a loop: an untap, copy or blink onto a tap ability worth another go, a repeatable supply into a demand, an event one card causes and another fires on. <strong>Loops this card is in</strong> lists every cycle of four cards or fewer through the focus, each step named and the missing pieces dashed, with the cards that turn each pass into damage, cards or mana.</p>'};
     C.main.innerHTML = C.pageHead('Explore') + '<p role="status">Loading graph metadata…</p>';
 
@@ -182,7 +187,7 @@
       loaded = await C.catalog.loadGraph();
     }
     
-    if (C.route().view !== 'discover') return;
+    if (left()) return;
 
     /* The graph plus anything in the library it does not know about -- a card imported
        from a link, or one printed after the graph snapshot -- shaped like a graph row. */
@@ -426,7 +431,7 @@
     if (!(loaded.played && loaded.played.length) && C.catalog.loadPlayed) {
       const status = C.main.querySelector('[role=status]'); if (status) status.textContent = 'Loading the co-play links…';
       try { await C.catalog.loadPlayed(); } catch (error) { C.notice('The co-play links could not be loaded, so the graph draws the rules-derived joins only. ' + error.message, true); }
-      if (C.route().view !== 'discover') return;
+      if (left()) return;
       if (!(data.played && data.played.length) && loaded.played && loaded.played.length) data.played = loaded.played;
     }
 

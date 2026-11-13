@@ -49,8 +49,10 @@ const PAGES = [
      Loading only while a deck is loading. "To load" is two words where "Building" was one, so 25 -> 26 words;
      controls stay at nine because Loading, like Defining before it, shows only when it has decks.
      The deck stages (Rob, 2026-10-23, the Decks requirements' FLT-1): All · Boxed · Defined · Building · Shared, five
-     chips that always show where there were four, and Bulk actions where Compare was -- ten controls. */
-  ["decks", "Decks", ".cm-deck-grid", [26, 11, 4], [26, 11, 4]],
+     chips that always show where there were four, and Bulk actions where Compare was -- ten controls.
+     Each chip carries its count in a <small>, which this pass reads as an explainer word, so five chips are five where four
+     were four: the explainer budget is the chips' counts and nothing else (ROB-247; the fifth was never added here). */
+  ["decks", "Decks", ".cm-deck-grid", [26, 11, 5], [26, 11, 5]],
   /* R3.8, the landing page (INTAKE row R3.8, 2026-09-26): measured up to the four doors, so it counts the header,
      the hero and Step one -- 92 words and 10 controls, every one of them the design's own copy. A landing page
      speaks more than a working page before its first list; the budget holds it at what it says today. */

@@ -42,12 +42,26 @@ details.open = true; listeners.find(l=>l.type==='click').callback({target:{close
 eq([details.open,inputFocused], [false,1], 'choosing a question folds the overlay and returns focus to the composer while retaining the delegated action');
 /* Execute the real app's Help dispatcher with the real table Help entry; there is no #help route. */
 const opened = [], tableSource = readFileSync(new URL('../crankmagic-table.js',import.meta.url),'utf8'), appSource = readFileSync(new URL('../crankmagic-app.js',import.meta.url),'utf8');
-const helpScope = vm.createContext({C:{HELP:{}},actions:{},modal:(...args)=>opened.push(args),button:label=>label,esc:value=>value,dialog:{classList:{add:()=>{}}}});
+/* Help has tabs since 2026-10-28 (Rob; 701f5180): the dispatcher's slice starts at `helpTabs`, which it calls, and binds one
+   document-level keydown for the tab bar's arrow keys, so the scope has a document that records what is bound. */
+const bound = [], dialogClasses = [];
+const helpScope = vm.createContext({C:{HELP:{}},actions:{},modal:(...args)=>opened.push(args),button:label=>label,esc:value=>value,dialog:{classList:{add:name=>dialogClasses.push(name)}},document:{addEventListener:(type,callback)=>bound.push({type,callback})}});
 vm.runInContext(tableSource.slice(tableSource.indexOf('C.HELP.table ='),tableSource.indexOf('  const cloudPlay')),helpScope);
 helpScope.HELP=helpScope.C.HELP;
-vm.runInContext(appSource.slice(appSource.indexOf("actions['page-help']="),appSource.indexOf('/* THE GLOSSARY')),helpScope);
+const helpFrom = appSource.indexOf('const helpTabs='), helpTo = appSource.indexOf('/* THE GLOSSARY');
+ok(helpFrom > 0 && helpFrom < appSource.indexOf("actions['page-help']=") && appSource.indexOf("actions['page-help']=") < helpTo, 'the Help dispatcher and its tab bar are where the suite reads them');
+vm.runInContext(appSource.slice(helpFrom,helpTo),helpScope);
 const helpHook=/data-action="([^"]+)" data-help="([^"]+)"/.exec(render({available:false}));
 ok(helpHook && typeof helpScope.actions[helpHook[1]]==='function','unavailable Coach uses a registered Help action');
 helpScope.actions[helpHook[1]]({dataset:{help:helpHook[2]}});
-ok(opened[0]?.[0].includes('Play: the table and the board')&&opened[0]?.[1].includes('<h3>Keys</h3>'),'Coach Help opens actual table rules and bound keys');
+const helpHtml=opened[0]?.[1]||'', keysPanel=helpHtml.slice(helpHtml.indexOf('id="cm-help-panel-keys"'));
+ok(opened[0]?.[0].includes('Play: the table and the board')&&helpHtml.includes('data-action="help-tab" data-tab="keys">Keys</button>')&&helpHtml.includes('id="cm-help-panel-keys"')&&/<kbd>/.test(keysPanel),'Coach Help opens actual table rules and bound keys (the Keys tab since 2026-10-28)');
+eq([(helpHtml.match(/role="tab" /g)||[]).length,(helpHtml.match(/role="tabpanel"/g)||[]).length-(helpHtml.match(/role="tabpanel"[^>]* hidden>/g)||[]).length,dialogClasses],[5,1,['cm-slideover','cm-help-tabbed']],'as a tabbed slide-over: five tabs, one panel showing');
+eq(bound.map(l=>l.type),['keydown'],"and the tab bar's arrow keys are bound once, on the document");
+/* The arrow keys move along the tab bar, and only there. */
+{const tabs=[0,1,2].map(i=>({i,focused:0,focus(){this.focused++;}})),picked=[];helpScope.actions['help-tab']=el=>picked.push(el.i);
+  for(const t of tabs){t.parentElement={querySelectorAll:()=>tabs};t.closest=()=>t;}
+  const press=(key,target)=>{let prevented=0;bound[0].callback({key,target,preventDefault:()=>prevented++});return prevented;};
+  eq([press('ArrowRight',tabs[2]),press('ArrowLeft',tabs[0]),press('Home',tabs[1]),press('End',tabs[1]),picked],[1,1,1,1,[0,2,0,2]],'Right from the last tab wraps to the first, Left from the first to the last, Home and End go to the ends');
+  eq([press('a',tabs[1]),press('ArrowRight',{closest:()=>null}),picked.length],[0,0,4],'any other key, or an arrow outside the tab bar, is left alone');}
 console.log(`crankmagic-coach: ${checks} checks passed`);

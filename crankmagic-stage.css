@@ -295,8 +295,9 @@ button.cm-aim.is-card:focus-visible{outline:2px solid #a8dfbf;outline-offset:1px
 #matrix-v2 .cm-board button.cm-card-ref:hover,#matrix-v2 .cm-board button.cm-card-ref:focus-visible{border-bottom-style:solid;background:#ffffff1f}
 #matrix-v2 .cm-board button.cm-card-ref:focus-visible{outline:2px solid #a8dfbf;outline-offset:1px}
 #matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li[data-actor]{box-shadow:inset 3px 0 0 var(--seat);padding-left:8px}
-#matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li:not(.is-turn):not(.cm-history-more){width:auto;min-width:0;align-items:baseline}
-#matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li:not(.is-turn):not(.cm-history-more) span:first-child{flex:1 1 auto;min-width:0;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere}
+/* A line is read in full by scrolling sideways, never wrapped or cut (Rob's r5 rule 19, 2026-10-27; the widths and nowrap are the
+   .cm-board-band rules further down). ROB-332's first styles wrapped the line here, which rule 19's check caught (ROB-380). */
+#matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li:not(.is-turn):not(.cm-history-more){align-items:baseline}
 .cm-history-whole{list-style:none;margin:0;padding:0}
 #matrix-v2 .cm-board .cm-history-whole li.is-turn{justify-content:center;font-weight:700;border-bottom:1px solid #75b895;padding:4px 0}
 .cm-history-more{display:flex;justify-content:center;padding:8px 0}

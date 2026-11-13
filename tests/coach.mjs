@@ -134,9 +134,9 @@ const TEAM = "crankmagic-test.cloudflareaccess.com", AI_AUD = "aud-ai";
 const b64url = (buf) => Buffer.from(buf).toString("base64url");
 const {publicKey, privateKey} = await crypto.subtle.generateKey({name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256"}, true, ["sign", "verify"]);
 const jwk = {...await crypto.subtle.exportKey("jwk", publicKey), kid: "k1"};
-async function token(email = ROB) {
+async function token(email = ROB, aud = AI_AUD) {
   const h = b64url(JSON.stringify({alg: "RS256", kid: "k1", typ: "JWT"}));
-  const p = b64url(JSON.stringify({aud: [AI_AUD], iss: `https://${TEAM}`, email, exp: clock / 1000 + 3600, iat: clock / 1000}));
+  const p = b64url(JSON.stringify({aud: [aud], iss: `https://${TEAM}`, email, exp: clock / 1000 + 3600, iat: clock / 1000}));
   return `${h}.${p}.${b64url(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", privateKey, new TextEncoder().encode(`${h}.${p}`)))}`;
 }
 let sent = [], answer = null;
@@ -273,6 +273,14 @@ try {
   await page.routeWebSocket(/\/api\/tables\/[a-z0-9]+\/connect$/, carry);
   /* The AI door, as the Worker answers it: signed in to it, or not yet (Access's 401). */
   const posted = [];
+  /* Is the Coach at this table? The board asks the Worker before it draws a composer (c81805fc, 2026-10-26: "honest
+     availability"), so the suite answers with the Worker's own word, as it answers the question below. The probe is the
+     library's route, behind the library's sign-in, not the AI door's. */
+  await page.route(`${base}/api/ai-coach`, async (route) => {
+    const res = await handle(new Request("https://crankmagic.test/api/ai-coach", {headers: {"cf-access-jwt-assertion": await token(ROB, OPEN.ACCESS_AUD)}}), OPEN, {fetchImpl, now: clock});
+    const text = await res.text();
+    return route.fulfill({status: res.status, contentType: "application/json", body: text});
+  });
   await page.route(`${base}/api/ai/coach`, async (route) => {
     posted.push(JSON.parse(route.request().postData() || "null"));
     if (door === "signed out") return route.fulfill({status: 401, json: {error: "Sign in to CrankMagic's AI features to use them."}});
@@ -284,7 +292,13 @@ try {
   await page.locator("#cm-board .cm-stage-top").waitFor({timeout: 60000});
   await page.click(".cm-board-coach-open");
   answer = reply({answer: `Play [[${mine.name}]].`, plays: [{card: mine.name, action: "Cast", why: "It is the one card you can use now."}], show: [mine.id]});
-  await page.click("[data-action=board-coach-ask][data-q=\"What's my best play?\"]");
+  /* The questions are a folded disclosure above the composer since 2026-10-26 (c81805fc): open it, then choose. */
+  const question = page.locator("[data-action=board-coach-ask][data-q=\"What's my best play?\"]");
+  await question.waitFor({state: "attached", timeout: 20000});
+  ok(await question.count() === 1 && !(await question.isVisible()), "the questions start folded away");
+  await page.click(".cm-coach-questions > summary");
+  await question.click();
+  ok(await page.locator(".cm-coach-questions").evaluate((d) => d.open) === false, "and choosing one folds them again");
   const said = page.locator(".cm-coach-msg.is-coach:not(.is-typing) .cm-coach-said").last();
   await said.waitFor({timeout: 20000});
   eq([(await said.locator("p").textContent()).trim(), await said.locator("p b").textContent()], [`Play ${mine.name}.`, mine.name], "the Coach's answer, the card it names in bold and its brackets gone");
@@ -295,6 +309,7 @@ try {
   eq(JSON.parse(sent.at(-1).body.messages[0].content).question, "What's my best play?", "the question went through the door, with the table's brief");
   eq(posted.at(-1), {tableId: TABLE, question: "What's my best play?"}, "the board sends the table and the question, nothing more: the table says what is on it");
   door = "signed out";
+  await page.click(".cm-coach-questions > summary");
   await page.click("[data-action=board-coach-ask][data-q=\"Who's the threat?\"]");
   const link = page.locator(".cm-coach-msg.is-coach .cm-coach-chips a").last();
   await link.waitFor({timeout: 20000});
@@ -302,19 +317,32 @@ try {
   for (const mode of ["full", "table", "focus"]) {
     await page.locator('[data-action="board-camera"]').click();
     await page.locator(`[data-action="board-view"][data-view="${mode}"]`).click();
+    /* A drawer keeps its scroll per view (crankmagic-board.js, drawerPositions), so after a view change the open Coach may be
+       further down its drawer: a person scrolls the drawer to it, and so does the suite. The game itself never scrolls. */
+    await page.locator("#cm-board-coach").evaluate((el) => el.scrollIntoView({block: "end"}));
+    eq(await page.evaluate(() => [scrollY, document.scrollingElement.scrollTop]), [0, 0], `${mode}: reaching the Coach scrolls its drawer, not the game`);
+    if (!(await page.locator(".cm-coach-questions").evaluate((d) => d.open))) await page.click(".cm-coach-questions > summary");
     const layout = await page.evaluate(() => {
       const coach = document.getElementById("cm-board-coach"), button = coach.querySelector('[data-action="board-coach-ask"]');
       const c = coach.getBoundingClientRect(), b = button.getBoundingClientRect();
-      const surface = document.querySelector('.cm-stage-region, .cm-board-tabletop, .cm-board-body').getBoundingClientRect();
-      return {reserved: surface.right <= c.left + 1, hit: button.contains(document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2))};
+      /* The Coach is a module of the right drawer (r4, 2026-10-26), and the tabletop runs under the drawers, so the space
+         it keeps is the drawer's: it stays inside that pane in every view, and never floats over the mats beside it. */
+      const pane = coach.closest(".cm-stage-side")?.getBoundingClientRect();
+      const inside = !!pane && c.width > 0 && c.left >= pane.left - 1 && c.right <= pane.right + 1 && c.top >= pane.top - 1 && c.bottom <= pane.bottom + 1;
+      return {reserved: inside, hit: button.contains(document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2))};
     });
-    eq(layout, {reserved: true, hit: true}, `${mode}: Coach keeps board space reserved and its prompts receive the pointer`);
+    eq(layout, {reserved: true, hit: true}, `${mode}: Coach keeps to the right drawer and its prompts receive the pointer`);
   }
-  await page.locator('.cm-board-hand .cm-bcard').first().click({button:"right"});
+  await page.locator('.cm-stage-hand .cm-bcard').first().click({button:"right"});
   await page.locator('#cm-card-menu [data-action=board-card-menu-view]').click();
-  ok(await page.locator('#cm-board-coach').isHidden() && await page.locator('#cm-card-inspector').isVisible(), "card inspection replaces the optional Coach in the shared auxiliary space");
-  await page.locator('.cm-board-coach-open').click();
-  ok(await page.locator('#cm-board-coach').isVisible() && await page.locator('#cm-card-inspector').count() === 0, "reopening Coach replaces inspection without covering it");
+  /* Inspection has its own pane beside the right drawer, and the Coach is a module of that drawer (245f9e62, 2026-10-23, and r4): the two stand
+     side by side, neither covering the other, where inspection once took the Coach's place. */
+  await page.locator('#cm-card-inspector').waitFor({timeout: 10000});
+  const beside = await page.evaluate(() => {const c = document.getElementById("cm-board-coach").getBoundingClientRect(), i = document.getElementById("cm-card-inspector").getBoundingClientRect();
+    return {coach: c.width > 0 && c.height > 0, inspector: i.width > 0 && i.height > 0, apart: c.right <= i.left + 1 || i.right <= c.left + 1, onScreen: i.right <= innerWidth + 1 && c.left >= 0};});
+  eq(beside, {coach: true, inspector: true, apart: true, onScreen: true}, "card inspection opens beside the Coach's drawer: both show, and neither covers the other");
+  await page.locator('#cm-card-inspector [data-action=board-inspect-close]').click();
+  ok(await page.locator('#cm-board-coach').isVisible() && await page.locator('#cm-card-inspector').count() === 0, "closing inspection leaves the Coach where it was");
   await context.close();
 } finally {
   await close();

@@ -11,9 +11,11 @@ Browser suite: run with GEOMETRY_REQUIRED=1, from the repository root, with noth
 """
 SUITES = ['tests/a11y-board.mjs']
 BREAKS = [
-    ('the profile menu not a named group', 'crankmagic-board.js',
-     'class="cm-profile-menu" role="group" aria-label="Profile"',
-     'class="cm-profile-menu"'),
+    # The board has no profile menu of its own since r4 D2 (b3008cb4): its avatar opens the app's Account popover, whose
+    # named group is "You", in the page (6b70a600). The suite reads the page as index.html.
+    ('the profile menu not a named group', 'index.html',
+     '<section class="cm-menu-group" role="group" aria-label="You">',
+     '<section class="cm-menu-group">'),
     ('the table panel never scrolls', 'crankmagic-stage.css',
      'color:#edf6ef;overflow:auto}',
      'color:#edf6ef;overflow:hidden}'),
