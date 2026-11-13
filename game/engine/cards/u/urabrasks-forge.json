@@ -1,0 +1,68 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Urabrask's Forge",
+    "oracleId": "7c4b2203-a937-4d91-8e39-2283fe686b45",
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [],
+    "manaCost": "{2}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "At the beginning of combat on your turn, put an oil counter on this artifact, then create an X/1 red Phyrexian Horror creature token with trample and haste, where X is the number of oil counters on this artifact. Sacrifice that token at the beginning of the next end step.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "At the beginning of combat on your turn, put an oil counter on this artifact, then create an X/1 red Phyrexian Horror creature token with trample and haste, where X is the number of oil counters on this artifact. Sacrifice that token at the beginning of the next end step.",
+      "trigger": {
+        "on": "step",
+        "step": "COMBAT_BEGIN",
+        "yours": true
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": "self",
+          "counter": "oil",
+          "count": 1
+        },
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Phyrexian Horror",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Phyrexian",
+              "Horror"
+            ],
+            "colors": [
+              "R"
+            ],
+            "power": {
+              "countersOn": "self",
+              "counter": "oil"
+            },
+            "toughness": 1,
+            "keywords": [
+              "Trample",
+              "Haste"
+            ]
+          },
+          "atEndStep": "sacrifice"
+        }
+      ]
+    }
+  ]
+}

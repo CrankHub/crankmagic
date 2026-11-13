@@ -1,0 +1,697 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Shredder, Shadow Master",
+  "fixtures": {
+    "Smoke Fling": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Target creature you control deals damage equal to its power to target player.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you"
+          },
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "from": {
+              "target": 0
+            },
+            "who": {
+              "target": 1
+            },
+            "amount": {
+              "powerOf": {
+                "target": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Zero": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Priest": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "abilities": [
+        {
+          "id": "p0",
+          "kind": "triggered",
+          "text": "When this creature enters, you gain 3 life.",
+          "trigger": {
+            "on": "enters",
+            "who": "self"
+          },
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 3
+            }
+          ]
+        }
+      ]
+    },
+    "Smoke Token": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "token": true
+    },
+    "Smoke Kill": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Cantrip": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "You gain 1 life.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "gainLife",
+            "amount": 1
+          }
+        ]
+      }
+    },
+    "Smoke Steal": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Gain control of target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "gainControl",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Three players, attacking Maya: a token copy attacking Trey (not legendary, so both stay); each loses half their life rounded up after 5 damage (35 -> 17); the token is sacrificed at end of combat",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ],
+          "at": "Maya"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Shredder, Shadow Master",
+                "Shredder, Shadow Master"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Shredder, Shadow Master",
+              "token": true,
+              "is": true
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Shredder, Shadow Master",
+                "power": 5,
+                "toughness": 5,
+                "token": true
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 17
+            },
+            {
+              "seat": 2,
+              "life": 17
+            },
+            {
+              "seat": 0,
+              "life": 40
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 17
+        },
+        {
+          "seat": 2,
+          "life": 17
+        },
+        {
+          "event": "GameEventCardChangeZone",
+          "where": {
+            "sacrificed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Two players: no other opponent, so no token; the 5 damage and the loss still happen (40 -> 35 -> 17)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Shredder, Shadow Master"
+              ]
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 17
+        }
+      ]
+    },
+    {
+      "name": "Even life rounds to the half: 41 life, 5 damage, 36 -> loses 18, left with 18",
+      "startingLife": 41,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 18
+        }
+      ]
+    },
+    {
+      "name": "Four players, attacking Maya: a token for each of the other two opponents, Trey and Sam, and everyone attacked loses half",
+      "seats": 4,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ],
+          "at": "Maya"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Shredder, Shadow Master",
+                "Shredder, Shadow Master",
+                "Shredder, Shadow Master"
+              ]
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 17
+            },
+            {
+              "seat": 2,
+              "life": 17
+            },
+            {
+              "seat": 3,
+              "life": 17
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Blocked, Shredder deals no combat damage to Maya and she loses nothing, while the token copy unblocked at Trey still does",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ],
+          "at": "Maya"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "block": [
+            [
+              "Smoke Bear",
+              "Shredder, Shadow Master"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 2,
+          "life": 17
+        }
+      ]
+    },
+    {
+      "name": "Damage Shredder deals that is not combat damage (a Smoke Fling at Maya) costs her 5 and no more: half of her life only on combat damage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Fling"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Smoke Fling",
+          "targets": [
+            {
+              "card": "Shredder, Shadow Master"
+            },
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 35
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Killed with its attack trigger on the stack, the token copy is still made, from what Shredder last was, attacking Trey",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Smoke Kill"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shredder, Shadow Master"
+          ],
+          "at": "Maya"
+        },
+        {
+          "pass": 1
+        },
+        {
+          "cast": "Smoke Kill",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "Shredder, Shadow Master"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Shredder, Shadow Master"
+              ]
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Shredder, Shadow Master",
+                "power": 5,
+                "toughness": 5,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "cards": [
+                "Shredder, Shadow Master"
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Shredder, Shadow Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Shredder, Shadow Master",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

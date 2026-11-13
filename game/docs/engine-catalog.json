@@ -9,17 +9,17 @@
  },
  "top": {
   "cards": 3238,
-  "defined": 1993,
+  "defined": 2003,
   "provisional": 0,
-  "everyRule": 2916
+  "everyRule": 2921
  },
  "sections": {
   "Keyword abilities (CR 702)": {
    "tally": {
     "built": 86,
     "partial": 0,
-    "named": 13,
-    "missing": 95
+    "named": 15,
+    "missing": 93
    },
    "entries": [
     {
@@ -843,7 +843,7 @@
      "rule": "702.95",
      "name": "Soulbond",
      "engine": null,
-     "status": "missing",
+     "status": "named",
      "forge": "Soulbond",
      "top": 2,
      "all": 25,
@@ -1179,12 +1179,12 @@
      "rule": "702.152",
      "name": "Blitz",
      "engine": null,
-     "status": "missing",
+     "status": "named",
      "forge": "Blitz",
      "top": 1,
      "all": 19,
-     "blocks": 1,
-     "alone": 1
+     "blocks": 0,
+     "alone": 0
     },
     {
      "kind": "keyword ability",
@@ -4039,7 +4039,7 @@
      "forge": "Repeat",
      "top": 8,
      "all": 58,
-     "blocks": 6,
+     "blocks": 5,
      "alone": 1
     },
     {
@@ -4051,7 +4051,7 @@
      "forge": "RollDice",
      "top": 7,
      "all": 131,
-     "blocks": 5,
+     "blocks": 4,
      "alone": 2
     },
     {
@@ -4075,7 +4075,7 @@
      "forge": "StoreSVar",
      "top": 6,
      "all": 68,
-     "blocks": 5,
+     "blocks": 4,
      "alone": 1
     },
     {
@@ -7419,8 +7419,8 @@
      "forge": "IgnoreLegendRule",
      "top": 3,
      "all": 11,
-     "blocks": 3,
-     "alone": 2
+     "blocks": 1,
+     "alone": 1
     },
     {
      "kind": "static",
@@ -7479,7 +7479,7 @@
      "forge": "CantSacrifice",
      "top": 2,
      "all": 10,
-     "blocks": 1,
+     "blocks": 0,
      "alone": 0
     },
     {
@@ -7611,7 +7611,7 @@
      "forge": "CantExile",
      "top": 1,
      "all": 1,
-     "blocks": 1,
+     "blocks": 0,
      "alone": 0
     },
     {
@@ -9201,8 +9201,8 @@
      "forge": "Imprint",
      "top": 10,
      "all": 97,
-     "blocks": 6,
-     "alone": 4
+     "blocks": 5,
+     "alone": 3
     },
     {
      "kind": "option",
