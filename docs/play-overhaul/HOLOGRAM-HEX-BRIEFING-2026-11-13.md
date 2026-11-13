@@ -13,7 +13,7 @@ The battlefield is a map of hexes, not rows of cards. Each permanent stands on a
 These are his decisions. Do not reopen them without him.
 
 1. **Rules-true.** The engine is the only authority. Attacks aim at a player or planeswalker and the defender chooses blocks. The map hides nothing an opponent has played.
-2. **The card stays whole.** The full, unaltered card image stands behind its figure at 70 to 80 degrees from the ground, in the 2.5 by 3.5 ratio, 60 percent of the figure's height, centred so 20 percent of the figure shows above it and 20 percent below.
+2. **The card stays whole.** The full, unaltered card image stands behind its figure at 70 to 80 degrees from the ground, in the 2.5 by 3.5 ratio, 60 percent of the figure's height, centered so 20 percent of the figure shows above it and 20 percent below.
 3. **A playable card pulses neon green** around its rim.
 4. **Playing a card is one motion.** The card travels from the hand to its hex, lands flat, then tilts up and slides back to its resting place while the figure rises out of it, as if peeled off the card.
 5. **The hologram stays.** It is the far-zoom view and the figure is the near-zoom view. One dissolves into the other with distance.
