@@ -38,6 +38,81 @@ end-to-end pattern."* He chose Linear as the roadmap's home.
   draft PR is the handoff), the root `BACKLOG.md` and the roadmap draft under `docs/program/` (their open items are
   Linear issues now).
 
+## The harness's six sections (CrankHarness, ROB-400)
+
+Rob, 2026-11-02: one agent delivery harness for every CrankHub project, agnostic, CrankMagic first. Its repository
+is `CrankHub/crankharness`: the issue template, the two definitions of done, the risk list and the contract a project
+signs (`CONTRACT.md`). The contract asks this file to carry the six sections below, merged in by hand on 2026-11-10
+(ROB-400; never generated, never replacing what is here), and `WORKFLOW.md` at the root to carry the runtime policy
+the daemon reads (states, concurrency, the gate, the branch pattern, the lease default). They bind a session the
+harness dispatches; an interactive session keeps this file's other rules, and where the two differ the line says which.
+
+### Mission
+
+You implement exactly one Linear issue per session. The issue body is the spec: its goal, acceptance criteria,
+verification, Touches, caps and blockers (`crankharness/templates/issue.md`; the loop that gets you there is "The
+work is in Linear", above). If the spec is ambiguous, ask on the issue (a comment, or an elicitation on the agent
+session once ROB-409 lands) and stop; never widen or guess the scope.
+
+### Scope rules
+
+- Touch only the files listed under Touches in the issue, plus their tests. When the issue lists no Touches, the
+  lease is the issue's **lane** (its Lane label; the files in "Lanes", below): the lane-as-default-Touches rule,
+  `WORKFLOW.md` `touches.default: lane`.
+- Need another file? Ask on the issue instead of editing it. The orchestrator leases Touches: one file, one owner at a
+  time, and overlapping issues are never co-scheduled. A file of another lane is still asked for as a Shared contract
+  issue ("Lanes").
+- Do not edit CI config, `AGENTS.md`, lint rules, hooks, or tests you did not write unless the issue says so.
+- Small, atomic commits; one concern per PR; the PR opens as a draft whose title starts with the issue key, and links
+  the issue.
+
+### Phase permissions
+
+- Investigate and plan: read-only (read, search, list).
+- Implement: write inside your worktree only, on your branch. A session the harness dispatches is on
+  `agent/<ISSUE-ID>-<slug>` (`WORKFLOW.md`); an interactive session keeps `<agent>/<rob-key>-<topic>` ("The branch
+  belongs to one agent"). Never force-push; to catch up with `main`, merge `origin/main` into the branch.
+- Never deploy. Only the merge agent merges (ROB-412; until it exists, "Merging to `main`" governs). A release is the
+  release owner's ("The production release"; `crankmagic-release`), production on Rob's go.
+- Never create or use an API key: every session runs on a subscription login (Rob, 2026-11-02). Never commit secrets,
+  `.env` files, tokens or credentials; a secret lives in the environment or the credential store ("Tools a session
+  needs"). PreToolUse hooks enforce this (ROB-405); the rule stands without them.
+
+### Stop conditions
+
+- Stop after 8 implement-test cycles, or after 3 cycles that fail the same way; reflect before each retry.
+- Stop at the issue's turn cap (80 by default) or wall-clock cap (90 minutes by default). Report what you tried.
+- On a subscription usage limit: commit, write a checkpoint to `PROGRESS.md` in the worktree, release the lease and
+  stop; the launcher backs off and resumes the session (ROB-411).
+- Every stop leaves the branch pushed ("No session ends with uncommitted work"), the draft PR's body current and the
+  issue **Blocked** with a note saying why, or handed back to Todo with a `Handed off:` comment. Nothing waits on Rob.
+
+### For Rob to confirm
+
+- On finishing an issue, write `for-rob/<ISSUE-ID>.md`: the issue ID and title; what changed, in user terms; the
+  exact steps to test it in the app with the expected result; the risk flags (`crankharness/risk.md`); links to the
+  PR and the run evidence. ROB-402 starts the folder and `FOR_ROB_TO_CONFIRM.md` at the root; until it lands the
+  same entry goes in the PR body under a heading "For Rob to confirm".
+- The merge agent compiles the fragments into `FOR_ROB_TO_CONFIRM.md`, grouped by project, one checkbox each, the
+  newest wave last (ROB-417).
+- Rob is never a dependency: never wait on the file; an unchecked item blocks nothing, not work, not a merge, not
+  Done. His findings come back as new issues.
+
+### Done
+
+- An issue is Done when every line of the issue-level definition of done is true (`crankharness/dod/issue.md`):
+  tests first, coverage held, the local gate (`tools/local-ci.sh <ref> 0` and the suites the change touches,
+  "Merging to `main`") and PR CI green, the fresh-context evaluator PASS, the cross-model review clean, risk scored
+  and flagged, the diff inside Touches, no secrets, merged through the queue without force-push, the run folder
+  linked, the for-rob entry written. A line no gate can prove yet (the evaluator, the queue, the coverage diff, the
+  run folder, until their issues land) is reported in the PR as "not yet provable: <issue>", never as passed.
+- The merge agent merges and moves the issue to Done. No human approves an individual merge or issue. High-risk work
+  (auth and security, secrets and config, migrations and schema, destructive, payments, infra and CI, broad
+  refactors) is flagged `risk:high`, never blocked (Rob, 2026-11-02).
+- The work is reviewed once, with the rest of its Linear project, at project completion
+  (`crankharness/dod/project.md`): the one human checkpoint. "Rob's call" issues and moving an item between Backlog
+  and Todo stay his, as "The work is in Linear" says.
+
 ## The branch belongs to one agent
 
 Branches are named `<agent>/<rob-key>-<topic>` (`claude/rob-228-lag-instrumentation`) — `claude/`, `codex/`,
