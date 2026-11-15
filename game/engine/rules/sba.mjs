@@ -58,6 +58,7 @@ import {enduringStories, citysBlessings} from "../keywords/designations.mjs";
 import {preparedCopyStays} from "../script/effects/attributes.mjs";
 import {endControlChange, nextRecord, endCounterDurations, controlByAuras} from "../script/effects/permanents.mjs";
 import {protectedFrom} from "./protection.mjs";
+import {legendRuleOff} from "./statics.mjs";
 import {answerForDeparted, goOnWithout} from "./turn.mjs";
 
 /* The capitalized zone names the projection and the telemetry use. */
@@ -230,8 +231,25 @@ function auraToGraveyard(state, id, events) {
   returnExiledUntil(state, id, events, leftBehind);
 }
 
+/**
+ * SOULBOND (CR 702.95e): two creatures paired stay paired for as long as their pairing's controller controls both of them and both
+ * are creatures on the battlefield -- a game rule, not an action: as one leaves, stops being a creature or changes control, both
+ * become unpaired at once (`pairedWith`, effects/permanents.mjs, pair). A creature that left is a new object (CR 400.7), so the
+ * one it was paired with finds nothing at the id it kept.
+ */
+function endPairings(state) {
+  for (const id of state.zones.battlefield) {
+    const object = state.objects[id], partner = object?.pairedWith;
+    if (partner === undefined) continue;
+    const other = state.objects[partner];
+    if (!other || other.zone !== "battlefield" || other.pairedWith !== id || controllerOf(state, id) !== controllerOf(state, partner)
+      || !typesOf(state, id).includes("Creature") || !typesOf(state, partner).includes("Creature")) delete object.pairedWith;
+  }
+}
+
 export function checkStateBasedActions(state) {
   checkRingBearers(state);
+  endPairings(state);
   /* "For as long as that land has a blight counter on it" (CR 611.2b): over, for an object with none (effects/permanents.mjs). */
   endCounterDurations(state);
   /* Continuous control changes also confer hideaway's look permission (CR 406.3, 702.75a). Record it before a state-based
@@ -593,6 +611,9 @@ function legendToAsk(state) {
     for (const id of state.zones.battlefield) {
       const object = state.objects[id];
       if (object.faceDown === true || !supertypesOf(state, id).includes("Legendary") || controllerOf(state, id) !== player) continue;
+      /* "The legend rule doesn't apply to permanents you control" (Mirror Box), "to creature tokens you control" (The Master,
+         Multiplied): a permanent it names is in no group of one name (rules/statics.mjs, legendRuleOff). */
+      if (legendRuleOff(state, id)) continue;
       byName.set(object.card, [...(byName.get(object.card) ?? []), id]);
     }
     for (const [name, objectIds] of byName) if (objectIds.length > 1) return {kind: "legend-rule", player, name, objectIds};

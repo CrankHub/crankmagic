@@ -67,12 +67,12 @@ BREAKS = [
     ('vocabulary: becomes level', VOCAB, '  "becomes level",\n', ''),
 
     # A die rolled (CR 706).
-    ('die: one to its sides', RESOURCES, '  const result = rng.int(params.sides) + 1;', '  const result = rng.int(params.sides);'),
+    ('die: one to its sides', RESOURCES, '? rng.roll(params.sides) : rng.int(params.sides) + 1;', '? rng.int(params.sides) : rng.int(params.sides) + 1;'),
     ('die: kept for what follows', RESOURCES, '  context.rolled = result;\n', ''),
     ('die: a die with sides', RESOURCES, '''  if (!(Number.isInteger(params.sides) && params.sides >= 2)) return [];\n''', ''),
     ('die: never without the stream', RESOURCES, '''  if (!rng) throw new Error("A die roll needs the game's random stream");\n''', ''),
     ('die: said', RESOURCES, 'sides: params.sides, result})];', 'sides: params.sides})];'),
-    ('die: the registry', EFFECTS, '  rollDie,\n});', '});'),
+    ('die: the registry', EFFECTS, '  rollDie,\n  /* The Rakdos copy deck of 2026-11-05: "flip a coin until you lose a flip" (Mirror March; CR 705). */', '  /* The Rakdos copy deck of 2026-11-05: "flip a coin until you lose a flip" (Mirror March; CR 705). */'),
     ('die: the vocabulary', VOCAB, '    "rollDie",\n', ''),
     ('die: the plan', PLAN, '`rollDie` ("roll a d20"', 'rollDie ("roll a d20"'),
     ('die: its sides, refused', SCHEMA, '''  if (name === "rollDie" && !(Number.isInteger(effect.sides) && effect.sides >= 2))''', '''  if (name === "rollDie" && !(effect.sides !== undefined))'''),
@@ -117,7 +117,7 @@ BREAKS = [
     ('moved copies: its controller asked', PERMANENTS, '''      const asked = ask(one.controller, effect.count ?? 1, copiable(one.original, one.except), String(one.id));''',
      '''      const asked = ask(controller, effect.count ?? 1, copiable(one.original, one.except), String(one.id));'''),
     ('moved copies: the answer found', PERMANENTS, '''(id.key !== undefined ? String(id.key) : "lastKnown")''', '''"lastKnown"'''),
-    ('copy: a defining ability not copied', PERMANENTS, '''(object.abilities ?? []).filter((a) => !definesSetStats(a, except))''', '''(object.abilities ?? [])'''),
+    ('copy: a defining ability not copied', PERMANENTS, '''(object.abilities ?? []).filter((a) => !definesSetStats(a, except) &&''', '''(object.abilities ?? []).filter((a) => true &&'''),
     ('copy: only one that sets it', PERMANENTS, '''  && ((except.setPower !== undefined && ability.apply?.setPower !== undefined) || (except.setToughness !== undefined && ability.apply?.setToughness !== undefined));''',
      '''  && true;'''),
     ('schema: of moved, no targets', SCHEMA, '''effect.of === "moved" && effect.targets === undefined && effect.selector === undefined))''', '''effect.of === "moved"))'''),

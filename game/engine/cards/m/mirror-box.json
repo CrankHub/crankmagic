@@ -1,0 +1,84 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Mirror Box",
+    "oracleId": "3bed1944-58dc-4679-9aee-7be4d94fb55c",
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "The \"legend rule\" doesn't apply to permanents you control.\nEach legendary creature you control gets +1/+1.\nEach nontoken creature you control gets +1/+1 for each other creature you control with the same name as that creature.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "The \"legend rule\" doesn't apply to permanents you control.",
+      "rule": "legend-rule-off",
+      "affects": {
+        "controller": "you"
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Each legendary creature you control gets +1/+1.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Creature"
+        ],
+        "supertypes": [
+          "Legendary"
+        ],
+        "controller": "you"
+      },
+      "apply": {
+        "power": 1,
+        "toughness": 1
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Each nontoken creature you control gets +1/+1 for each other creature you control with the same name as that creature.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Creature"
+        ],
+        "controller": "you",
+        "token": false
+      },
+      "apply": {
+        "power": {
+          "count": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you",
+            "sharesNameWithIt": true
+          }
+        },
+        "toughness": {
+          "count": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you",
+            "sharesNameWithIt": true
+          }
+        }
+      }
+    }
+  ]
+}

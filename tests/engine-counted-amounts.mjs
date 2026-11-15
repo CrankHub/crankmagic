@@ -99,7 +99,7 @@ const castPox = [...SWAMPS.map((tap) => ({tap})), {cast: "Pox Plague"}, {resolve
     [1, 3, 6], "divided first, then added to and multiplied");
   eq([amountOf(s, {lifeTotal: "you", half: true}, {controller: 0}), amountOf(s, {lifeTotal: "you"}, {controller: 0})], [20, 40], "half a life total, as Heartless Hidetsugu reads it");
   eq([amountProblems({...handOf, half: true}), amountProblems({...grave, per: 7, times: 2})], [[], []], "the grammar takes half and per");
-  for (const bad of [{...handOf, half: "up"}, {...handOf, half: 2}, {...grave, per: 1}, {...grave, per: 2.5}, {...grave, per: "7"}])
+  for (const bad of [{...handOf, half: "down"}, {...handOf, half: 2}, {...grave, per: 1}, {...grave, per: 2.5}, {...grave, per: "7"}])
     ok(amountProblems(bad).length > 0, `and refuses ${JSON.stringify({half: bad.half, per: bad.per})}`);
 }
 

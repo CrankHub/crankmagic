@@ -33,11 +33,11 @@ import {moveZone, moveZoneAll, draw, destroy, destroyAll, mill, counterSpell, sa
 import {
   addMana, tap, untap, untapAll, gainLife, loseLife, dealDamage,
   putCounter, putCounterAll, removeCounter, proliferate, damageAll, fight, poison, winGame, loseGame, multiplyCounters,
-  exchangeLife, damageEach, moveCounters, becomeMonarch, rollDie,
+  exchangeLife, damageEach, moveCounters, becomeMonarch, rollDie, flipCoin,
 } from "./resources.mjs";
 import {
   createToken, animate, animateAll, pump, pumpAll, effectUntil, delayedTrigger, cleanup, attach, copyPermanent, regenerate, addPhase, gainControl,
-  becomeCopy, earthbend, goad, immediateTrigger, investigate, phaseOut, setState, exchangeControl, incubate, emblem, leaveCombat,
+  becomeCopy, earthbend, goad, immediateTrigger, investigate, phaseOut, setState, exchangeControl, incubate, emblem, leaveCombat, pair,
 } from "./permanents.mjs";
 import {alterAttribute} from "./attributes.mjs";
 import {addTurn} from "./turns.mjs";
@@ -136,6 +136,9 @@ function repeatFor(state, params, context, rng = null) {
   for (const about of eachOf(state, params.each, context)) {
     const each = {...context, about: {...(context.about ?? {}), ...about}};
     for (const effect of params.effects ?? []) events.push(...runEffect(state, countEffect(state, bindEffect(effect, each), each), each, rng));
+    /* What the pass remembered (a token made for each opponent, `rememberMore`: Shredder, Shadow Master's "sacrifice those tokens at
+       end of combat") is the resolution's, for the effects after the repetition -- and for the next pass to add to. */
+    if (each.remembered !== context.remembered) context.remembered = each.remembered;
   }
   return events;
 }
@@ -218,6 +221,10 @@ export const EFFECTS = Object.freeze({
   becomeMonarch,
   /* Wave 4c: "roll a d20" (CR 706; Ancient Copper Dragon), its result for what follows. */
   rollDie,
+  /* The Rakdos copy deck of 2026-11-05: "flip a coin until you lose a flip" (Mirror March; CR 705). */
+  flipCoin,
+  /* And soulbond (CR 702.95; Mirage Phalanx): two creatures paired. */
+  pair,
 });
 
 /** Whether the engine can perform this primitive at all, by either route. */

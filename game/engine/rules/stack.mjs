@@ -350,6 +350,9 @@ export function resolveTop(state, effect = null, rng = null) {
   const resolvedBefore = resolutionsBefore(state, entry, script);
   /* What its effects need to know about their targets, read once, now (CR 608.2h). */
   const outcome = beginResolution(state, script.effects, {...context, targets, facts: factsOf(state, targets),
+    /* A triggered ability resolving, for "triggered abilities you control can't cause you to sacrifice or exile ..." (The Master,
+       Multiplied; rules/statics.mjs, triggerRemovalBlocked). */
+    ...(entry.kind === "trigger" ? {triggered: true} : {}),
     ...(resolvedBefore !== undefined ? {resolvedBefore} : {})}, rng);
   events.push(...outcome.events);
   if (outcome.status === "waiting") {
@@ -555,6 +558,16 @@ function finishTop(state, entry, events, fizzled, attachTo = null) {
       (state.effects ??= []).push({id: `dash-haste:${arrived}`, layer: 6, affects: {ids: [arrived]}, apply: {addKeywords: ["Haste"]}, until: null, sourceController: entry.playerId});
       delayedTrigger(state, {at: "end step", text: `Dash: return ${card.name} to its owner's hand at the beginning of the next end step.`,
         effects: [{effect: "moveZone", targets: [arrived], to: "hand"}]}, {controller: entry.playerId, source: arrived});
+    }
+    /* BLITZ (CR 702.152a, 603.7d; Jaxis, the Troublemaker): cast for its blitz cost, the permanent has haste and "When this creature dies,
+       draw a card" as long as it is this permanent, and a delayed trigger sacrifices it at the beginning of the next end step -- that
+       permanent, so one that left the battlefield meanwhile is a new object and stays where it is (CR 400.7). */
+    if (to === "battlefield" && entry.cast?.paidFor === "blitz" && state.objects[arrived]) {
+      (state.effects ??= []).push({id: `blitz:${arrived}`, layer: 6, affects: {ids: [arrived]}, until: null, sourceController: entry.playerId,
+        apply: {addKeywords: ["Haste"], addAbilities: [{id: "blitz-draw", kind: "triggered", text: "When this creature dies, draw a card.",
+          trigger: {on: "GameEventCardChangeZone", from: "Battlefield", to: "Graveyard", who: "self"}, effects: [{effect: "draw", count: 1}]}]}});
+      delayedTrigger(state, {at: "end step", text: `Blitz: sacrifice ${card.name} at the beginning of the next end step.`,
+        effects: [{effect: "moveZone", targets: [arrived], sacrifice: true}]}, {controller: entry.playerId, source: arrived});
     }
     /* Cast from suspend: haste, while it is this permanent (CR 702.62a). */
     if (to === "battlefield" && entry.fromSuspend && (state.objects[arrived].types ?? []).includes("Creature"))
