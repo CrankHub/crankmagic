@@ -79,7 +79,7 @@ BREAKS = [
     ('die: the result counted', AMOUNT, '  else if ("dieRolled" in value) n = context.rolled ?? 0;', '  else if ("dieRolled" in value) n = 1;'),
     ('die: the amount kind', AMOUNT, '''  "dieRolled",\n''', ''),
     ('die: dieRolled is true', AMOUNT, '''  if ("dieRolled" in value && value.dieRolled !== true) problems.push''', '''  if (false) problems.push'''),
-    ('die: the history', HISTORY, '''      return line(`${who(f.player.playerId)} rolled a d${f.sides}: ${f.result}`);''', '''      return [];'''),
+    ('die: the history', HISTORY, '''      return line(`${who(f.player.playerId)} rolled a d${f.sides}: ${f.result}`, by(f.player.playerId));''', '''      return [];'''),
 
     # Offspring (CR 702.175a): its cost, its offers, the permanent marked, its trigger's condition kept as it triggered.
     ('offspring: two variants', ACTIONS, '''      variants = variants.flatMap((v) => [v, {...v, mana: v.mana + (atom.cost ?? ""), offspring: true}]);''', '''      variants = variants.flatMap((v) => [v]);'''),

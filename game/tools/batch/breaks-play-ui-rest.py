@@ -28,6 +28,6 @@ BREAKS = [
      's.deck ? identityOf(s.deck) : []',
      '[]'),
     ('the launch line says Waiting again', 'crankmagic-table.js',
-     '`Launches when all are ready · ${waiting',
-     '`Waiting · ${waiting'),
+     '`${waiting} to Ready Up`',
+     '`Waiting · ${waiting}`'),
 ]

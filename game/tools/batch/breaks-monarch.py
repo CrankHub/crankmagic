@@ -89,7 +89,7 @@ BREAKS = [
     ('view: the monarch', PROJECTION, '    ...(state.monarch === player.id ? {monarch: true} : {}),\n', ''),
     ('view: the monarch alone', PROJECTION, '...(state.monarch === player.id ? {monarch: true} : {})', '...(state.monarch !== undefined ? {monarch: true} : {})'),
     ('history: became the monarch', HISTORY, '''    case "GameEventBecomeMonarch":
-      return line(`${who(f.player.playerId)} became the monarch`);
+      return line(`${who(f.player.playerId)} became the monarch`, by(f.player.playerId));
 ''', ''),
     ('scenarios: the monarch checked', SCENARIO, '        if (got !== e.monarch) fail(', '        if (false) fail('),
     # The words: schema, registry, vocabulary, plan, credits.

@@ -6,7 +6,8 @@ BREAKS = [
 
  ('controller zero treated as absent', 'crankmagic-board.js', 'stack[0].controllerId ?? stack[0].targetGroups', 'stack[0].controllerId || stack[0].targetGroups'),
  ('decline binds destructive choice', 'crankmagic-board.js', 'picked=[o.index];draftRevision=view.revision;', 'picked=[0];draftRevision=view.revision;'),
- ('stale direct action binds', 'crankmagic-board.js', 'Number(el.dataset.revision)!==view.revision || ', ''),
+ # Since 0cae5802 the binding press the suite makes stale is the required popup's Confirm (board-flow-confirm); board-direct keeps the same guard, which no suite presses stale.
+ ('stale direct action binds', 'crankmagic-board.js', '(el && (Number(el.dataset.revision)!==view.revision || el.dataset.choice!==view.decision.id', '(el && (el.dataset.choice!==view.decision.id'),
  ('target stack cannot cycle', 'crankmagic-board.js', '((targetCycles.get(key)||0)+1)%Number(el.dataset.count)', '((targetCycles.get(key)||0)+0)%Number(el.dataset.count)'),
  ('unreadable actual primary', 'crankmagic-stage.css', '.cm-stage-actions .v-button.primary{color:var(--color-on-accent);background:var(--color-accent)}', '.cm-stage-actions .v-button.primary{color:#000;background:var(--color-accent)}'),
 ]

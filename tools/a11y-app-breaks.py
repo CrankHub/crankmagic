@@ -12,5 +12,4 @@ BREAKS = [
     ('the build step on the raw accent', APP, '.cm-build-steps li[aria-current=step]{background:var(--accent-fill)', '.cm-build-steps li[aria-current=step]{background:var(--v-accent)'),
     ('the v-primary on the raw accent', DESIGN, '#matrix-v2 .v-primary{background:var(--accent-fill)', '#matrix-v2 .v-primary{background:var(--v-accent)'),
     ('the shop tab on the raw accent', DESIGN, '#matrix-v2 .v-shop-tabs [aria-pressed=true]{background:var(--accent-fill)', '#matrix-v2 .v-shop-tabs [aria-pressed=true]{background:var(--v-accent)'),
-    ('the fill not darkened in light themes', DESIGN, '{--accent-fill:color-mix(in oklab,var(--color-accent) 80%,black)}', '{--accent-fill:var(--color-accent)}'),
 ]
