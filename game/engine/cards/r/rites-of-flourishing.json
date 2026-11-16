@@ -1,0 +1,49 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Rites of Flourishing",
+    "oracleId": "7080fb43-5d93-41f5-87d3-bc1801805ea0",
+    "types": [
+      "Enchantment"
+    ],
+    "subtypes": [],
+    "manaCost": "{2}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "At the beginning of each player's draw step, that player draws an additional card.\nEach player may play an additional land on each of their turns.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "At the beginning of each player's draw step, that player draws an additional card.",
+      "trigger": {
+        "on": "step",
+        "step": "DRAW",
+        "yours": false
+      },
+      "effects": [
+        {
+          "effect": "draw",
+          "count": 1,
+          "who": "that player"
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Each player may play an additional land on each of their turns.",
+      "rule": "extra-land-drop",
+      "affects": {
+        "what": "player",
+        "who": "any"
+      }
+    }
+  ]
+}

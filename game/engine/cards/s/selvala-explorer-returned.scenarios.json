@@ -1,0 +1,347 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Selvala, Explorer Returned",
+  "fixtures": {
+    "Test Elk": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Elk"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Test Giant": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Giant"
+      ],
+      "manaCost": "{2}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 3,
+      "toughness": 3
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Rob reveals a nonland and Maya a land: {G} and 1 life, once, with the ability on the stack first; then each draws what is revealed -- an instant-speed ability in Maya's turn",
+      "library": [
+        "Test Elk",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Selvala, Explorer Returned"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1",
+            "settle": true
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "zone": "hand",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "pass": 1
+        },
+        {
+          "activate": "Selvala, Explorer Returned",
+          "seat": 0
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            },
+            {
+              "seat": 0,
+              "pool": {
+                "G": 0
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Selvala, Explorer Returned"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 1
+          }
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Test Elk"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Test Elk",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Both reveal a nonland: {G}{G} and 2 life for Rob alone; each draws a card",
+      "library": [
+        "Test Elk",
+        "Test Giant"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Selvala, Explorer Returned"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Selvala, Explorer Returned"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 2
+          }
+        },
+        {
+          "seat": 0,
+          "life": 42
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Test Elk"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Test Elk"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 19
+        }
+      ]
+    },
+    {
+      "name": "Both reveal a land: no mana and no life, but each still draws a card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Selvala, Explorer Returned"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Selvala, Explorer Returned"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 0
+          }
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "event": "GameEventCardRevealed",
+          "where": {
+            "player": {
+              "playerId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three players (nobody skips a first draw, CR 103.8c; Rob and Maya have drawn, Trey has not): two nonland tops, a land for Trey -- {G}{G}, 2 life",
+      "seats": 3,
+      "library": [
+        "Wastes",
+        "Test Elk"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Selvala, Explorer Returned"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1",
+            "settle": true
+          }
+        },
+        {
+          "pass": 2
+        },
+        {
+          "activate": "Selvala, Explorer Returned",
+          "seat": 0
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 2
+          }
+        },
+        {
+          "seat": 0,
+          "life": 42
+        },
+        {
+          "seat": 2,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Summoning sick, its {T} cannot be paid: not offered the turn it arrives; the turn after, it is",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Selvala, Explorer Returned"
+          ],
+          "sick": true
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Selvala, Explorer Returned"
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1",
+            "settle": true
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Selvala, Explorer Returned"
+              },
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,421 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Heartbeat of Spring",
+  "fixtures": {
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "abilities": [
+        {
+          "id": "rock-mana",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "C": 1
+          }
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Rob taps a Forest: {G}{G}; a Wastes: {C}{C}; Maya taps an Island: {U}{U} -- any player's, any land",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Island",
+          "seat": 1
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 2,
+            "C": 2
+          }
+        },
+        {
+          "seat": 1,
+          "pool": {
+            "U": 2,
+            "G": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "A land that makes two mana of one type ({C}{C}): one more {C}, with no type to pick",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Ancient Tomb"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Ancient Tomb"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "C": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "Something that is not a land adds only its own mana",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Rock"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Rock"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "C": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "A land that makes two types at once ({B}{R}): Rob is offered each type to add one more of, and picks {R}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Rakdos Carnarium"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Rakdos Carnarium"
+              },
+              "count": 2
+            }
+          ]
+        },
+        {
+          "tap": "Rakdos Carnarium",
+          "pick": [
+            "R"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "B": 1,
+            "R": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "The same land, picking {B}: {B}{B}{R}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Rakdos Carnarium"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Rakdos Carnarium",
+          "pick": [
+            "B"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "B": 2,
+            "R": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Two of them and a land making two types: each picks a type -- three different ways (BB, BR, RR), each offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Heartbeat of Spring",
+            "Rakdos Carnarium"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Rakdos Carnarium"
+              },
+              "count": 3
+            }
+          ]
+        },
+        {
+          "tap": "Rakdos Carnarium",
+          "pick": [
+            "B",
+            "R"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "B": 2,
+            "R": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Two of them on a land making one type: each adds one more, and nothing is asked",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Heartbeat of Spring",
+            "Mountain"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Mountain"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "tap": "Mountain"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "R": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maya's own two-type land, tapped in her turn: Maya is the one who picks, and she gets the mana",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Rakdos Carnarium"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1",
+            "settle": true
+          }
+        },
+        {
+          "tap": "Rakdos Carnarium",
+          "seat": 1,
+          "pick": [
+            "B"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "pool": {
+            "B": 2,
+            "R": 1
+          }
+        },
+        {
+          "seat": 0,
+          "pool": {
+            "B": 0,
+            "R": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "A land that costs {1} to tap for {R}{G} (Mossfire Valley): the {1} paid from the pool, and one more of the type Rob picks",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Wastes",
+            "Mossfire Valley"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Mossfire Valley",
+          "pick": [
+            "G"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "C": 1,
+            "R": 1,
+            "G": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: the card itself cast without tapping first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Heartbeat of Spring"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Heartbeat of Spring"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Heartbeat of Spring"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Forest",
+            "Heartbeat of Spring",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -477,12 +477,16 @@ function effectsIn(list, out = []) {
    else that adds mana -- a sacrifice, a target, a question -- is a problem until it is built. */
 const MANA = (m) => m && typeof m === "object" && !Array.isArray(m) && Object.keys(m).length > 0
   && Object.entries(m).every(([color, n]) => /^[WUBRGC]$/.test(color) && ((Number.isInteger(n) && n > 0) || isCounted(n)));
+const LIBRARY_MOVERS = Object.freeze(["draw", "mill", "dig", "digUntil", "surveil", "scry", "rearrangeTop", "discover", "shuffle"]);
 function manaAbility(ability, id) {
   if (ability.kind !== "activated") return null;
   /* CR 605.1a: an ability that targets is not a mana ability, whatever it adds -- it goes on the stack like any other, and
      the mana is added as it resolves ("Any number of target players each lose 2 life ... You add {B}{B}", Priest of
      Forgotten Gods). */
   if ((ability.targets ?? []).length) return null;
+  /* Nor is one that moves cards to or from a library (CR 605.1a, as updated): "Parley -- {T}: Each player reveals the top card of
+     their library ... add {G} ... Then each player draws a card" (Selvala, Explorer Returned) uses the stack, and can be responded to. */
+  if ((ability.effects ?? []).some((e) => LIBRARY_MOVERS.includes(e?.effect))) return null;
   /* Nor is a loyalty ability (CR 605.1a): "[+1]: Add {R}" (Way of the Pyromancer) goes on the stack, at sorcery speed. */
   if ((ability.cost ?? []).some((a) => a?.atom === "loyalty")) return null;
   const [first, ...then] = ability.effects ?? [];

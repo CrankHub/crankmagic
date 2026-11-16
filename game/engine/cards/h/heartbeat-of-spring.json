@@ -1,0 +1,43 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Heartbeat of Spring",
+    "oracleId": "f15911a5-f597-452e-a015-b115339f28fc",
+    "types": [
+      "Enchantment"
+    ],
+    "subtypes": [],
+    "manaCost": "{2}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Whenever a player taps a land for mana, that player adds one mana of any type that land produced.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever a player taps a land for mana, that player adds one mana of any type that land produced.",
+      "trigger": {
+        "on": "tapped for mana",
+        "tapper": "any",
+        "filter": {
+          "types": [
+            "Land"
+          ]
+        }
+      },
+      "effects": [
+        {
+          "effect": "addMana",
+          "produced": true
+        }
+      ]
+    }
+  ]
+}
