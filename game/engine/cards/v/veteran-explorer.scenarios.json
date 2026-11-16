@@ -1,0 +1,1069 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Veteran Explorer",
+  "fixtures": {
+    "Smoke Murder": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "It dies: both players search for two basic lands each, put them onto the battlefield, and shuffle",
+      "library": [
+        "Forest",
+        "Island",
+        "Command Tower",
+        "Swamp",
+        "Mountain",
+        "Plains"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Search",
+                  "Don't"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Forest",
+            "Island"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Search",
+                  "Don't"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Swamp",
+            "Mountain"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Veteran Explorer",
+            "Smoke Murder"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 18
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 18
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nonbasic lands cannot be found: Command Tower is not among the choices",
+      "library": [
+        "Command Tower",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [],
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Maya's turn, she kills it: asked in turn order from the active player, so Maya before Rob, its controller",
+      "at": {
+        "turn": 2,
+        "phase": "MAIN1"
+      },
+      "library": [
+        "Forest",
+        "Island",
+        "Command Tower",
+        "Swamp",
+        "Mountain",
+        "Plains"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Smoke Murder",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Search",
+                  "Don't"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Search",
+                  "Don't"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Forest",
+            "Island"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Mountain",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Veteran Explorer"
+          ]
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maya declines and Rob searches: only Rob's lands arrive",
+      "library": [
+        "Forest",
+        "Island",
+        "Command Tower",
+        "Swamp",
+        "Mountain",
+        "Plains"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Forest",
+            "Island"
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Both decline: nobody searches, nothing arrives",
+      "library": [
+        "Forest",
+        "Island",
+        "Command Tower",
+        "Swamp",
+        "Mountain",
+        "Plains"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Up to two: only one basic land in the library, and it is found; the second is not asked for",
+      "library": [
+        "Forest",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Forest"
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Up to two: Rob takes just one of the three basic lands offered, Maya finds none",
+      "library": [
+        "Forest",
+        "Island",
+        "Swamp",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "answer": []
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three players, asked in turn order from the active player; the middle one declines",
+      "library": [
+        "Forest",
+        "Island",
+        "Command Tower",
+        "Swamp",
+        "Mountain",
+        "Plains"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Veteran Explorer",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Island",
+            "Swamp"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Mountain",
+            "Plains"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Plains"
+          ]
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 2,
+              "name": "Trey"
+            }
+          }
+        }
+      ],
+      "seats": 3
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast it with no mana floated first, then it dies and Rob searches",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "library": [
+        "Forest",
+        "Island",
+        "Command Tower",
+        "Swamp",
+        "Mountain",
+        "Plains"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Veteran Explorer",
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Veteran Explorer"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Veteran Explorer"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Veteran Explorer"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Forest",
+            "Island"
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Island",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

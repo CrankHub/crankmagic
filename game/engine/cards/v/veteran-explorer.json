@@ -1,0 +1,77 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Veteran Explorer",
+    "oracleId": "fa9677d2-1535-4c57-baa8-c0408e15da47",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Soldier",
+      "Scout"
+    ],
+    "manaCost": "{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 1,
+    "toughness": 1
+  },
+  "oracleText": "When this creature dies, each player may search their library for up to two basic land cards, put them onto the battlefield, then shuffle.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When this creature dies, each player may search their library for up to two basic land cards, put them onto the battlefield, then shuffle.",
+      "trigger": {
+        "on": "dies",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "repeatFor",
+          "each": "player",
+          "effects": [
+            {
+              "effect": "modal",
+              "chooser": "that player",
+              "title": "Search your library for up to two basic land cards and put them onto the battlefield?",
+              "modes": [
+                {
+                  "text": "Search",
+                  "effects": [
+                    {
+                      "effect": "chooseCard",
+                      "zone": "library",
+                      "selector": {
+                        "types": [
+                          "Land"
+                        ],
+                        "supertypes": [
+                          "Basic"
+                        ]
+                      },
+                      "who": "that player",
+                      "count": 2,
+                      "upTo": true,
+                      "to": "battlefield",
+                      "shuffle": true
+                    }
+                  ]
+                },
+                {
+                  "text": "Don't",
+                  "effects": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1050 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Sarpadian Empires, Vol. VII",
+  "fixtures": {
+    "Smoke Probe W": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target W creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "colors": [
+              "W"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Probe U": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target U creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "colors": [
+              "U"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Probe B": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target B creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "colors": [
+              "B"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Probe R": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target R creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "colors": [
+              "R"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Probe G": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target G creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "colors": [
+              "G"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "white Citizen: the token is a 1/1 white Citizen creature token, and only a W creature is aimed at by the W probe",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Sarpadian Empires, Vol. VII",
+            "Smoke Probe W",
+            "Smoke Probe U",
+            "Smoke Probe B",
+            "Smoke Probe R",
+            "Smoke Probe G"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "white Citizen",
+                  "blue Camarid",
+                  "black Thrull",
+                  "red Goblin",
+                  "green Saproling"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "white Citizen"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe W"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Citizen"
+                ]
+              ]
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe U"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe B"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe R"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe G"
+              },
+              "count": 0
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Citizen",
+                "power": 1,
+                "toughness": 1,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Sarpadian Empires, Vol. VII"
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Citizen",
+            "Sarpadian Empires, Vol. VII",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "blue Camarid: the token is a 1/1 blue Camarid creature token, and only a U creature is aimed at by the U probe",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Sarpadian Empires, Vol. VII",
+            "Smoke Probe W",
+            "Smoke Probe U",
+            "Smoke Probe B",
+            "Smoke Probe R",
+            "Smoke Probe G"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "white Citizen",
+                  "blue Camarid",
+                  "black Thrull",
+                  "red Goblin",
+                  "green Saproling"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "blue Camarid"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe U"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Camarid"
+                ]
+              ]
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe W"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe B"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe R"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe G"
+              },
+              "count": 0
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Camarid",
+                "power": 1,
+                "toughness": 1,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Sarpadian Empires, Vol. VII"
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Camarid",
+            "Sarpadian Empires, Vol. VII",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "black Thrull: the token is a 1/1 black Thrull creature token, and only a B creature is aimed at by the B probe",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Sarpadian Empires, Vol. VII",
+            "Smoke Probe W",
+            "Smoke Probe U",
+            "Smoke Probe B",
+            "Smoke Probe R",
+            "Smoke Probe G"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "white Citizen",
+                  "blue Camarid",
+                  "black Thrull",
+                  "red Goblin",
+                  "green Saproling"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "black Thrull"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe B"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Thrull"
+                ]
+              ]
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe W"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe U"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe R"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe G"
+              },
+              "count": 0
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Thrull",
+                "power": 1,
+                "toughness": 1,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Sarpadian Empires, Vol. VII"
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Sarpadian Empires, Vol. VII",
+            "Thrull",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "red Goblin: the token is a 1/1 red Goblin creature token, and only a R creature is aimed at by the R probe",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Sarpadian Empires, Vol. VII",
+            "Smoke Probe W",
+            "Smoke Probe U",
+            "Smoke Probe B",
+            "Smoke Probe R",
+            "Smoke Probe G"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "white Citizen",
+                  "blue Camarid",
+                  "black Thrull",
+                  "red Goblin",
+                  "green Saproling"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "red Goblin"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe R"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Goblin"
+                ]
+              ]
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe W"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe U"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe B"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe G"
+              },
+              "count": 0
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Goblin",
+                "power": 1,
+                "toughness": 1,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Sarpadian Empires, Vol. VII"
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Goblin",
+            "Sarpadian Empires, Vol. VII",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "green Saproling: the token is a 1/1 green Saproling creature token, and only a G creature is aimed at by the G probe",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Sarpadian Empires, Vol. VII",
+            "Smoke Probe W",
+            "Smoke Probe U",
+            "Smoke Probe B",
+            "Smoke Probe R",
+            "Smoke Probe G"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "white Citizen",
+                  "blue Camarid",
+                  "black Thrull",
+                  "red Goblin",
+                  "green Saproling"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "green Saproling"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe G"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Saproling"
+                ]
+              ]
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe W"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe U"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe B"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Probe R"
+              },
+              "count": 0
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Saproling",
+                "power": 1,
+                "toughness": 1,
+                "token": true
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Sarpadian Empires, Vol. VII"
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Saproling",
+            "Sarpadian Empires, Vol. VII",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast it from untapped lands, choose, and activate it",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Sarpadian Empires, Vol. VII"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Sarpadian Empires, Vol. VII"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "green Saproling"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Sarpadian Empires, Vol. VII"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Sarpadian Empires, Vol. VII"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Saproling",
+            "Sarpadian Empires, Vol. VII",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "tapped": "Sarpadian Empires, Vol. VII"
+        }
+      ]
+    },
+    {
+      "name": "Not activated before it has three mana: the ability is not offered with two untapped lands",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Sarpadian Empires, Vol. VII",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Sarpadian Empires, Vol. VII"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": []
+    }
+  ]
+}
