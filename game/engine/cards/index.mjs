@@ -704,6 +704,14 @@ function compileGivenIn(effects, text, problems) {
       if (definition) effect.abilities = definition.abilities;
       continue;
     }
+    /* "For as long as that creature has a bounty counter on it, it has 'When this creature dies, ...'" (Mathas, Fiend Seeker;
+       CR 611.2b, 613.1f): the abilities an effect gives for a while, compiled as a static's grant is -- a triggered, activated or
+       keyword ability. A mana ability given (Ultima, Origin of Oblivion) is held as written, as it was before. */
+    if (effect.effect === "effectUntil" && Array.isArray(effect.apply?.addAbilities) && effect.apply.addAbilities.length && effect.apply.addAbilities.every((a) => GRANTABLE.includes(a?.kind))) {
+      const given = compileGrant(effect.apply.addAbilities, text, problems);
+      if (given) effect.apply = {...effect.apply, addAbilities: given.abilities, ...(given.keywords.length ? {addKeywords: [...(effect.apply.addKeywords ?? []), ...given.keywords]} : {})};
+      continue;
+    }
     if (effect.abilities === undefined) continue;
     if (effect.effect !== "pump") problems.push(`${text}: ${effect.effect} gives no abilities; a pump does`);
     const given = compileGrant(effect.abilities, text, problems);

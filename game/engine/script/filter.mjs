@@ -37,6 +37,7 @@ import {typesOf, keywordsOf, controllerOf, characteristicsOf, colorsOf, everyCre
 import {parseManaCost, manaValue} from "../rules/mana.mjs";
 import {hasSubtype, isCreatureType} from "../keywords/types.mjs";
 import {protectedFrom, hexproofFrom, playerHexproofFrom} from "../rules/protection.mjs";
+import {isGoaded} from "../rules/statics.mjs";
 import {amountOf, amountProblems} from "./amount.mjs";
 import {NONE_CHOSEN} from "./chosen.mjs";
 
@@ -585,8 +586,9 @@ export function compileSelector(selector) {
       });
       if (!shares) return false;
     }
-    /* "Whenever a goaded creature attacks" (effects/permanents.mjs goad). */
-    if (selector.goaded === true && !(state.effects ?? []).some((e) => e.rule === "goaded" && e.affects.ids.includes(id))) return false;
+    /* "Whenever a goaded creature attacks" (effects/permanents.mjs goad): goaded by an effect, or by a permanent's static "is goaded"
+       (Bloodthirsty Blade; rules/statics.mjs, isGoaded; CR 701.15b). */
+    if (selector.goaded === true && !isGoaded(state, id)) return false;
     /* "At the beginning of your upkeep, if this creature isn't prepared, it becomes prepared" (Paradox Shaper; CR 722.3a-b,
        603.4): whether it has the prepared designation now -- a permanent's alone (script/effects/attributes.mjs). */
     if (selector.prepared !== undefined && (object.prepared === true) !== selector.prepared) return false;

@@ -1,0 +1,98 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Mathas, Fiend Seeker",
+    "oracleId": "1e8d9d0c-185b-4149-9ec9-74a2f2fe8764",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Vampire"
+    ],
+    "manaCost": "{R}{W}{B}",
+    "colors": [
+      "B",
+      "R",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "R",
+      "W"
+    ],
+    "power": 3,
+    "toughness": 3
+  },
+  "oracleText": "Menace\nAt the beginning of your end step, put a bounty counter on target creature an opponent controls. For as long as that creature has a bounty counter on it, it has \"When this creature dies, each opponent draws a card and gains 2 life.\"",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Menace",
+      "keyword": "menace"
+    },
+    {
+      "kind": "triggered",
+      "text": "At the beginning of your end step, put a bounty counter on target creature an opponent controls. For as long as that creature has a bounty counter on it, it has \"When this creature dies, each opponent draws a card and gains 2 life.\"",
+      "trigger": {
+        "on": "end step"
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": {
+            "target": 0
+          },
+          "counter": "bounty",
+          "count": 1
+        },
+        {
+          "effect": "effectUntil",
+          "targets": {
+            "target": 0
+          },
+          "layer": 6,
+          "until": "ever",
+          "whileCounter": "bounty",
+          "apply": {
+            "addAbilities": [
+              {
+                "id": "bounty-dies",
+                "kind": "triggered",
+                "text": "When this creature dies, each opponent draws a card and gains 2 life.",
+                "trigger": {
+                  "on": "dies",
+                  "who": "self"
+                },
+                "effects": [
+                  {
+                    "effect": "draw",
+                    "who": "opponent",
+                    "count": 1
+                  },
+                  {
+                    "effect": "gainLife",
+                    "who": "opponent",
+                    "amount": 2
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "opponent"
+        }
+      ]
+    }
+  ]
+}
