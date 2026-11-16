@@ -1,0 +1,139 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Tamiyo, Field Researcher",
+    "oracleId": "9cf99129-f51a-4418-a8cc-8ca2992b17fa",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Tamiyo"
+    ],
+    "manaCost": "{1}{G}{W}{U}",
+    "colors": [
+      "G",
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "G",
+      "U",
+      "W"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 4
+  },
+  "oracleText": "+1: Choose up to two target creatures. Until your next turn, whenever either of those creatures deals combat damage, you draw a card.\n−2: Tap up to two target nonland permanents. They don't untap during their controller's next untap step.\n−7: Draw three cards. You get an emblem with \"You may cast spells from your hand without paying their mana costs.\"",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "+1: Choose up to two target creatures. Until your next turn, whenever either of those creatures deals combat damage, you draw a card.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "delayedTrigger",
+          "when": {
+            "on": "damage dealt",
+            "who": {
+              "target": 0
+            },
+            "to": "anything",
+            "combat": true
+          },
+          "watchEach": true,
+          "untilYourNextTurn": true,
+          "text": "Whenever either of those creatures deals combat damage, you draw a card.",
+          "effects": [
+            {
+              "effect": "draw",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "count": {
+            "min": 0,
+            "max": 2
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−2: Tap up to two target nonland permanents. They don't untap during their controller's next untap step.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -2
+        }
+      ],
+      "effects": [
+        {
+          "effect": "tap",
+          "targets": {
+            "target": 0
+          },
+          "noUntap": true
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "nonTypes": [
+            "Land"
+          ],
+          "count": {
+            "min": 0,
+            "max": 2
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−7: Draw three cards. You get an emblem with \"You may cast spells from your hand without paying their mana costs.\"",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -7
+        }
+      ],
+      "effects": [
+        {
+          "effect": "draw",
+          "count": 3
+        },
+        {
+          "effect": "emblem",
+          "abilities": [
+            {
+              "kind": "static",
+              "text": "You may cast spells from your hand without paying their mana costs.",
+              "rule": "cast-without-paying",
+              "affects": {},
+              "zones": [
+                "hand"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -872,7 +872,7 @@ export function effectUntil(state, params, context) {
       /* "Creatures they control can't attack Jaces you control this turn" (Jace, Multiverse Architect): a rule changed,
          not a characteristic, so it reaches the creatures that player controls as they are -- one that arrives later
          included (CR 611.2c is about characteristics) -- `who` the player, bound as it resolves ("that player"). */
-      : params.rule === "cant-attack" && Array.isArray(params.who) ? {what: "permanent", controller: params.who[0] ?? -1}
+      : (params.rule === "cant-attack" || params.rule === "attacks-planeswalker") && Array.isArray(params.who) ? {what: "permanent", controller: params.who[0] ?? -1}
       : params.affects ?? {what: "permanent"},
     /* `toward`: which planeswalkers they can't attack ("Jaces you control"), "you" this effect's controller -- attacking a
        player, or any other planeswalker, they still may (rules/statics.mjs, cantAttack). */
@@ -901,7 +901,7 @@ export function effectUntil(state, params, context) {
        protection over the permanents it names, fixed as it resolves (`selector`, `targets`), and no player's
        (rules/protection.mjs, protectedFrom). And "you gain hexproof until end of turn" (Dawn's Truce; CR 702.11c): its
        players, read where a target is chosen (script/filter.mjs, playerHasHexproof). */
-    ...(params.until === "their-next-turn" || (["protection", "life-cant-change", "no-maximum-hand-size", "damage-doubled", "look-at-top", "player-hexproof"].includes(params.rule)
+    ...(params.until === "their-next-turn" || params.until === "their-next-end" || (["protection", "life-cant-change", "no-maximum-hand-size", "damage-doubled", "look-at-top", "player-hexproof"].includes(params.rule)
       && !(params.rule === "protection" && (params.targets || params.selector))) ? {players: Array.isArray(params.who) ? [...params.who] : [context.controller]} : {}),
     /* And "you ... gain hexproof from blue and from black until end of turn" (Veil of Summer; CR 702.11d): a hexproof from over
        players (rules/protection.mjs, playerHexproofFrom) -- with no targets and no selector, where Skrelv's is over the
@@ -922,6 +922,12 @@ export function effectUntil(state, params, context) {
     /* "Creatures your opponents control attack this turn if able" (Bident of Thassa; rules/statics.mjs, attacksEachCombat):
        named by its source when a declaration breaks it, as it was then, gone or not (rules/combat.mjs). */
     ...(params.rule === "attacks-each-combat" ? {sourceId: context.source ?? null, sourceName: state.objects[context.source]?.card ?? context.lastKnown?.name ?? null} : {}),
+    /* "During target opponent's next turn, creatures that player controls attack Gideon Jura if able" (Gideon Jura's +2; CR 508.1d):
+       the planeswalker is the source, `who` the player whose creatures they are (as they are in that turn, not as it resolved:
+       a rule changed, not a characteristic, CR 611.2c) -- read where attackers are declared (rules/statics.mjs,
+       mustAttackPlaneswalkers; rules/combat.mjs). Over as that player's next turn ends (`their-next-end`, rules/turn.mjs). */
+    ...(params.rule === "attacks-planeswalker" ? {planeswalker: context.source ?? null} : {}),
+    ...(params.until === "their-next-end" ? {madeOnTurn: state.turn} : {}),
     /* A PREVENTION SHIELD OF A PLAYER'S (CR 615; rules/replacement.mjs, preventionsFor): "prevent all combat damage that would
        be dealt to you this turn" (Inkshield) -- `who`, the players it shields -- "the next time a source of your choice
        would deal damage to you this turn" (Deflecting Palm) -- `from`, the sources chosen (CR 609.7a), and `next`, used up
@@ -1285,8 +1291,12 @@ export function delayedTrigger(state, params, context) {
     const chosen = context.chosenPlayer;
     params = {...params, player: Number.isInteger(chosen) && !state.players[chosen]?.lost ? chosen : -1};
   }
-  /* "That creature": the object, now; gone already, and the trigger waits on nothing (CR 603.7a's example). */
-  const watch = waits && params.watch !== undefined ? ((bindEffect({targets: params.watch}, context).targets ?? [])[0] ?? null) : undefined;
+  /* "That creature": the object, now; gone already, and the trigger waits on nothing (CR 603.7a's example). "Whenever either of those
+     creatures deals combat damage" (Tamiyo, Field Researcher's +1; `watchEach`): every one it names, as it resolves -- none chosen,
+     and it waits on nothing at all, so none is made. */
+  const watched = waits && params.watch !== undefined ? bindEffect({targets: params.watch}, context).targets ?? [] : undefined;
+  if (params.watchEach === true && watched !== undefined && !watched.length) return [];
+  const watch = watched === undefined ? undefined : params.watchEach === true ? [...watched] : (watched[0] ?? null);
   state.delayedTriggers.push({
     ...(waits ? {on: structuredClone(params.on), ...(watch !== undefined ? {watch} : {}), ...(params.thisTurn ? {thisTurn: true} : {}), ...(params.once ? {once: true} : {}),
       /* "Until your next turn, whenever a creature attacks you ..." (Jace, Reality Sculptor): every time, until its controller's

@@ -137,6 +137,9 @@ export const STATIC_RULES = Object.freeze({
   /** "Nonartifact spells you cast have improvise" (Inspiring Statuary; CR 702.126a): `spells`, a selector of the spell, for the
       static's controller. rules/actions.mjs, hasImprovise. */
   "spells-have-improvise": "rules/actions.mjs",
+  /** "You may spend mana as though it were mana of any color to cast planeswalker spells" (Oath of Nissa; CR 609.4b): `spells`, a
+      selector of the spell, for the static's controller -- how the cost may be paid, not what it is. rules/actions.mjs, castCost and anyTypeCost. */
+  "spend-as-any-color": "rules/actions.mjs",
   /** "You may cast this spell as though it had flash if it targets a commander" (Timely Ward; library load L2): the card's own,
       `targeting` what one of its targets must be, its targets then chosen as it is offered. rules/actions.mjs, flashAims. */
   "flash-if-targets": "rules/actions.mjs",
@@ -382,7 +385,10 @@ export function freeCast(state, player, cardId) {
   const object = state.objects[cardId];
   if (!object) return null;
   const held = staticAbilities(state);
-  for (const holderId of state.zones.battlefield) {
+  /* A permanent's, and an emblem's from the command zone, where its abilities function (CR 114.4): "you may cast spells from your
+     hand without paying their mana costs" (Tamiyo, Field Researcher's emblem), "you" the player who got it. */
+  const emblems = (state.zones.command ?? []).flat().filter((id) => state.objects[id]?.emblem === true);
+  for (const holderId of [...state.zones.battlefield, ...emblems]) {
     const holder = state.objects[holderId];
     if (holder.controller !== player) continue;
     for (const ability of held(holderId)) {
@@ -1134,6 +1140,17 @@ export const CANT_ATTACK_DEFENDERS = Object.freeze(["you", "owner", "attacked"])
  * required to attack this turn (CR 508.1d). rules/combat.mjs asks only those it could attack now. */
 export function mustAttackOf(state, id) {
   return [...new Set((state.effects ?? []).filter((e) => e.rule === "must-attack" && e.affects?.ids?.includes(id)).map((e) => e.defender))];
+}
+
+/**
+ * "DURING TARGET OPPONENT'S NEXT TURN, CREATURES THAT PLAYER CONTROLS ATTACK GIDEON JURA IF ABLE" (Gideon Jura's +2; CR 508.1d): the
+ * planeswalkers an effect with a duration (effectUntil's `rule: "attacks-planeswalker"`, `affects` the creatures as they are now,
+ * `planeswalker` the one) requires this creature to attack, each still on the battlefield. Whether it can attack one -- another
+ * player's, untapped, no restriction or cost in the way -- is rules/combat.mjs's to ask (owedPlaneswalkers).
+ */
+export function mustAttackPlaneswalkers(state, id) {
+  return [...new Set((state.effects ?? []).filter((e) => e.rule === "attacks-planeswalker" && staticAffects(state, e, id, e.sourceController)).map((e) => e.planeswalker))]
+    .filter((pw) => state.objects[pw]?.zone === "battlefield");
 }
 
 export function goadersOf(state, id) {

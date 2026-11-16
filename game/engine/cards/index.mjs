@@ -213,7 +213,7 @@ const damageDealt = (t) => (t.to === "self" ? {on: "GameEventCardDamaged", to: "
        is dealt damage": `to` "creature" (`filter` what was dealt it) or "enchanted"; about the creature dealt it. */
     : t.to === "creature" || t.to === "enchanted" ? {on: "GameEventCardDamaged", to: t.to, ...(t.filter ? {filter: t.filter} : {}), ...(t.combat ? {combat: true} : {})}
     /* "Whenever a creature deals combat damage to you" (Strixhaven Stadium): `to: "you"`, this ability's controller. */
-    : ARRIVALS.includes(t.who ?? "self") && ["player", "opponent", "you"].includes(t.to ?? "player")
+    : ARRIVALS.includes(t.who ?? "self") && ["player", "opponent", "you", "anything"].includes(t.to ?? "player")
     ? {on: "GameEventPlayerDamaged", who: t.who ?? "self", to: t.to ?? "player", ...(t.combat ? {combat: true} : {}), ...(t.noncombat ? {noncombat: true} : {}), ...(t.sourceYours ? {sourceYours: true} : {}), ...(t.filter ? {filter: t.filter} : {}),
       /* "Deals combat damage to a player or planeswalker" (Grateful Apparition): damage dealt to a planeswalker counts
          too, about its controller (rules/trigger.mjs). */
@@ -688,12 +688,15 @@ function compileGivenIn(effects, text, problems) {
     }
     /* "You get an emblem with '...'" (CR 114.2; effects/permanents.mjs, emblem): its abilities compiled as a card's are, in
        place. What works from the command zone is built (114.4): a triggered ability, a replacement effect, a rule
-       changed for players (rules/statics.mjs, playerRuleChanged), and a static ability in a layer (rules/layers.mjs,
+       changed for players (rules/statics.mjs, playerRuleChanged), a free cast (freeCast), and a static ability in a layer (rules/layers.mjs,
        gatherEffects: Liliana of the Dark Realms' "Swamps you control have ..."). */
     if (effect.effect === "emblem") {
       const list = effect.abilities;
       if (!Array.isArray(list) || !list.length) { problems.push(`${text}: an emblem's abilities are a list, with at least one`); continue; }
+      /* And "you may cast spells from your hand without paying their mana costs" (Tamiyo, Field Researcher's emblem): a static
+         `cast-without-paying`, read from the command zone as a permanent's is (rules/statics.mjs, freeCast). */
       for (const ability of list) if (!(["triggered", "replacement"].includes(ability?.kind) || (ability?.kind === "static" && typeof ability.rule === "string" && ability.affects?.what === "player")
+        || (ability?.kind === "static" && ability.rule === "cast-without-paying")
         || (ability?.kind === "static" && ability.rule === undefined && Number.isInteger(ability.layer))))
         problems.push(`${text}: an emblem's ${ability?.kind ?? "nameless"} ability -- only triggered and replacement abilities, a rule changed for players and a static in a layer work from the command zone yet`);
       const {definition, problems: inner} = compileScript({schema: SCRIPT_SCHEMA, identity: EMBLEM_IDENTITY, oracleText: "", abilities: list});

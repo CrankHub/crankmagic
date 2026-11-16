@@ -57,12 +57,18 @@ export function addMana(state, params, context) {
   })];
 }
 
-/** `tap` — CR 701.26. Something already tapped stays tapped and is not reported twice. */
+/** `tap` — CR 701.26. Something already tapped stays tapped and is not reported twice.
+ *  `noUntap`: "tap up to two target nonland permanents. They don't untap during their controller's next untap step" (Tamiyo,
+ *  Field Researcher's -2; CR 502.3, 611.2): each permanent, tapped or already tapped, is marked for its controller's next
+ *  untap step, which skips it once (rules/turn.mjs, untap). It is a mark on that object, so a permanent that leaves is a new
+ *  one with none (CR 400.7). */
 export function tap(state, params, context) {
   const events = [];
   for (const id of params.targets ?? []) {
     const object = state.objects[id];
-    if (!object || object.tapped) continue;
+    if (!object) continue;
+    if (params.noUntap === true && object.zone === "battlefield") object.skipUntap = controllerOf(state, id);
+    if (object.tapped) continue;
     object.tapped = true;
     events.push(event("GameEventCardTapped", state, {card: cardRef(state, id), tapped: true}));
   }

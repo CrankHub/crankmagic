@@ -1,0 +1,906 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Garruk, Unleashed",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ox": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ox"
+      ],
+      "manaCost": "{1}{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 2,
+      "toughness": 3
+    },
+    "Giant": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Giant"
+      ],
+      "manaCost": "{4}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    }
+  },
+  "scenarios": [
+    {
+      "name": "+1 at the Bear: +3/+3 and trample until end of turn, then 2/2 without trample next turn; Garruk has 5 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Bear"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 5,
+                "toughness": 5
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "has": [
+                  "Trample"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Bear",
+            "lacks": [
+              "Trample"
+            ]
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1 at Maya's Ox (any creature): it is a 5/6 trampler; Garruk has 5 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Ox",
+                "seat": 1
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "stats": {
+            "card": "Ox",
+            "power": 5,
+            "toughness": 6
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1 with no creature at all (up to one): Garruk still gets his loyalty counter",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 with Maya controlling two creatures to Rob's one: the Beast, and a loyalty counter back (3)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a1"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Beast",
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 with the creatures even once the Beast is made (Rob's Bear and Beast, Maya's two): no counter back (2)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Giant",
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a1"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Bear",
+            "Beast",
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 with Rob ahead after the Beast (Rob's Bear and Beast to Maya's one): no counter back (2)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a1"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Bear",
+            "Beast",
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 with three players: one opponent (Trey) controls more than Rob though Maya has none -- an opponent, any of them -- so 3",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a1"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Beast",
+            "Garruk, Unleashed"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "At 4 loyalty the -7 is not paid: only the +1 and the -2 are offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Garruk, Unleashed"
+              },
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk, Unleashed",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "-7 after three +1s: the emblem searches at Rob's end step -- the Bear is put onto the battlefield; Garruk is gone, and Maya's end step does nothing",
+      "library": [
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Bear",
+        "Wastes",
+        "Giant",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Garruk, Unleashed",
+                "counter": "loyalty",
+                "count": 7
+              }
+            }
+          ]
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "command",
+              "cards": [
+                "Garruk, Unleashed emblem"
+              ]
+            },
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "cards": [
+                "Garruk, Unleashed"
+              ]
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "choose": [
+            "Bear"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Bear"
+              ]
+            }
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Bear"
+              ]
+            },
+            {
+              "seat": 0,
+              "zone": "library",
+              "count": 16
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 8,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Bear"
+              ]
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 9,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "choose": [
+            "Giant"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Bear",
+            "Giant"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The emblem with no creature card left in the library: Rob may search, finds none, and the library is shuffled all the same",
+      "library": [
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 17
+        }
+      ]
+    },
+    {
+      "name": "The emblem's search is a may: Rob declines at the next end step, and keeps the Giant in his library",
+      "library": [
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Bear",
+        "Wastes",
+        "Giant",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk, Unleashed"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk, Unleashed",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 17
+        }
+      ]
+    }
+  ]
+}

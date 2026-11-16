@@ -124,6 +124,10 @@ function castCost(state, player, id, tax, free = false, instead = null, extra = 
      cost is the mana cost with X's value in it, then reduced; 107.3a): "Affinity for Foods" on Banquet Guests' {X}{G}{W} (Rob's
      lists P2). With the X chosen (`X`), that X is counted into the generic and reduced with it -- the cost then has no {X} left
      for its callers to add; without it, `less` says how much higher X may go than the pool alone pays (castOffers). */
+  /* "You may spend mana as though it were mana of any color to cast planeswalker spells" (Oath of Nissa; CR 609.4b): the cost is not
+     changed -- the reductions above and `needs` below read it as it was -- only marked, for anyTypeCost to read where it is paid. */
+  if (playerStatics(state, "spend-as-any-color", player)
+    .some(({ability, source: holder}) => matchesSelector({...(ability.spells ?? {}), what: "card", zone: state.objects[id]?.zone}, state, id, {controller: player, source: holder}))) cost.anyColor = true;
   const less = Math.max(0, reduction - tax);
   if (less > 0 && cost.variable > 0 && Number.isInteger(X) && X > 0) {
     const counted = xCounted(cost, X);
@@ -1462,9 +1466,11 @@ function spendPermission(state, permission, kind, asType) {
 }
 /* "Mana of any type can be spent to cast those spells" (Tinybones, Bauble Burglar; CR 118.14, 609.4b): the cost is not
    changed, only how it may be paid -- each colored or hybrid symbol by one mana of any type, as generic mana is. A snow
-   symbol is left as rules/mana.mjs pays it. NAMED: a Phyrexian symbol still asks its color or 2 life. */
+   symbol is left as rules/mana.mjs pays it. NAMED: a Phyrexian symbol still asks its color or 2 life. And the same where the
+   spell's own caster may spend mana "as though it were mana of any color" (Oath of Nissa's static `spend-as-any-color`, marked
+   on the cost by castCost): colorless mana pays a colored symbol too, as it does under a Chromatic Orrery. */
 const ANY_TYPE_PAYS = ["colored", "hybrid", "monohybrid"];
-const anyTypeCost = (cost, permission) => (permission?.ability.anyMana !== true ? cost
+const anyTypeCost = (cost, permission) => (permission?.ability.anyMana !== true && cost.anyColor !== true ? cost
   : {...cost, generic: cost.generic + cost.symbols.filter((s) => ANY_TYPE_PAYS.includes(s.kind)).length, symbols: cost.symbols.filter((s) => !ANY_TYPE_PAYS.includes(s.kind))});
 /* The life a cast through this permission costs instead of its mana cost -- "pay life equal to its mana value" (Bolas's
    Citadel; CR 118.9) -- or null when it is paid for as usual. X is 0 (CR 107.3b): no alternative cost of the Citadel's
@@ -1763,7 +1769,9 @@ export function castTapPlans(state, player, action, limit = 2) {
   const {cost, x} = asCast(state, action, () => castCost(state, player, action.objectId, tax, false, null, action.extraMana ?? "", action.targets, action.x));
   /* Its X, in a match that taps for one (`xTaps`): counted in, as the offer priced it. */
   const xs = xTaps(state) && cost.variable > 0 ? xCounted(cost, action.x ?? 0) : cost;
-  return fundingPlans(state, player, action.objectId, {...xs, generic: xs.generic + x}, limit, undefined, state.players[player].life - lifeOwed(state, player, action));
+  /* And what the offer priced for mana that may be spent as any color (anyTypeCost), the colored symbols paid as generic ones are. */
+  const paying = anyTypeCost(xs, null);
+  return fundingPlans(state, player, action.objectId, {...paying, generic: paying.generic + x}, limit, undefined, state.players[player].life - lifeOwed(state, player, action));
 }
 
 /* AN ADVENTURER CARD WEIGHED AS ITS ADVENTURE (CR 715.3a): shown as one for the length of `fn` -- its cost, its timing, its
