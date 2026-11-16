@@ -192,13 +192,15 @@ function copiable(object, except = {}) {
       .filter((t) => !except.setCreatureTypes || !isCreatureType(t)), ...(except.setCreatureTypes ?? [])])],
     ...(supertypes.length ? {supertypes} : {}),
     colors: [...new Set([...(except.setColors ?? object.colors ?? []), ...(except.addColors ?? [])])],
-    keywords: [...new Set([...(object.keywords ?? []), ...(except.addKeywords ?? [])])],
+    /* "Except it has haste and loses soulbond" (Mirage Phalanx; CR 707.9b): a keyword it does not have, and the abilities that are it
+       (an ability a keyword compiled to says which: `keyword`, cards/index.mjs). */
+    keywords: [...new Set([...(object.keywords ?? []), ...(except.addKeywords ?? [])])].filter((word) => !(except.removeKeywords ?? []).includes(word)),
     /* "And it has 'When this token leaves the battlefield, ...'" (Hofri Ghostforge; CR 707.9a): abilities the copy has besides
        the original's, part of its copiable values -- compiled with the card (cards/index.mjs), bound as it is made. */
     /* A copy whose power or toughness the effect sets ("except it's 1/1", offspring; "half that creature's power", Saw in
        Half; wave 4c) does not copy a characteristic-defining ability that would define it (CR 707.9d; Saw in Half's ruling):
        "Adeline's power is equal to the number of creatures you control" is no ability of a 1/1 copy of her. */
-    abilities: [...structuredClone((object.abilities ?? []).filter((a) => !definesSetStats(a, except))), ...structuredClone(except.addAbilities ?? [])],
+    abilities: [...structuredClone((object.abilities ?? []).filter((a) => !definesSetStats(a, except) && !(except.removeKeywords ?? []).includes(a.keyword))), ...structuredClone(except.addAbilities ?? [])],
     power: except.setPower ?? object.power ?? null, toughness: except.setToughness ?? object.toughness ?? null,
     /* Its printed loyalty (CR 707.2): a planeswalker copied as it enters has that many loyalty counters (CR 306.5b; Spark
        Double, rules/replacement.mjs ownEntering). */
@@ -380,6 +382,23 @@ function movedCopies(state, params, context) {
   /* Each as it last was (`movedWas`), beside what it became (`remembered`): destroy keeps the two in step (effects/zones.mjs). */
   return (context.movedWas ?? []).map((was, i) => ({id: (context.remembered ?? [])[i], was})).map(({id, was}) => ({id, controller: was.controller,
     original: was.copiable ?? state.objects[id], except: {...(params.except ?? {}), ...(params.halfStats === true ? {setPower: half(was.power), setToughness: half(was.toughness)} : {})}}));
+}
+
+/**
+ * `pair` -- SOULBOND (CR 702.95a): the source creature is paired with another, "that card" (a creature of its controller's that just
+ * entered) or the one an effect before it remembered (`with`). Both must be creatures on the battlefield under the controller of the
+ * effect, neither paired already -- or nothing happens, as a pairing that cannot be made is not made (CR 702.95a). A pairing ends by
+ * itself (rules/sba.mjs, endPairings); "each of those creatures" is a selector's `pairedWithSource` (script/filter.mjs).
+ */
+export function pair(state, params, context) {
+  const id = context.source, other = params.with === "that card" ? context.about?.card : (context.remembered ?? [])[0];
+  if (!Number.isInteger(id) || !Number.isInteger(other) || id === other) return [];
+  const a = state.objects[id], b = state.objects[other];
+  const ok = (object, of) => object?.zone === "battlefield" && object.pairedWith === undefined && controllerOf(state, of) === context.controller && typesOf(state, of).includes("Creature");
+  if (!ok(a, id) || !ok(b, other)) return [];
+  a.pairedWith = other;
+  b.pairedWith = id;
+  return [event("GameEventPaired", state, {card: cardRef(state, id), with: cardRef(state, other), player: {playerId: context.controller, name: state.players[context.controller]?.name}})];
 }
 
 /** `copyPermanent` — "create a token that's a copy of target creature you control" (CR 707.2), or one of each a selector matches ("for each token you control"). */

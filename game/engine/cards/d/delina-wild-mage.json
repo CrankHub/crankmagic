@@ -1,0 +1,126 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Delina, Wild Mage",
+    "oracleId": "8d57dadb-c689-4691-b331-aba15daf46ff",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elf",
+      "Shaman"
+    ],
+    "manaCost": "{3}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R"
+    ],
+    "power": 3,
+    "toughness": 2
+  },
+  "oracleText": "Whenever Delina attacks, choose target creature you control, then roll a d20.\n1—14 | Create a tapped and attacking token that's a copy of that creature, except it's not legendary and it has \"At end of combat, exile this token.\"\n15—20 | Create one of those tokens. You may roll again.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever Delina attacks, choose target creature you control, then roll a d20.\n1—14 | Create a tapped and attacking token that's a copy of that creature, except it's not legendary and it has \"At end of combat, exile this token.\"\n15—20 | Create one of those tokens. You may roll again.",
+      "trigger": {
+        "on": "attacks",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "rollDie",
+          "sides": 20,
+          "rows": [
+            {
+              "from": 1,
+              "to": 14,
+              "effects": [
+                {
+                  "effect": "copyPermanent",
+                  "targets": {
+                    "target": 0
+                  },
+                  "tapped": true,
+                  "attacking": true,
+                  "except": {
+                    "nonLegendary": true,
+                    "addAbilities": [
+                      {
+                        "kind": "triggered",
+                        "text": "At end of combat, exile this token.",
+                        "trigger": {
+                          "on": "step",
+                          "step": "COMBAT_END",
+                          "yours": false
+                        },
+                        "effects": [
+                          {
+                            "effect": "moveZone",
+                            "targets": "self",
+                            "to": "exile"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "from": 15,
+              "to": 20,
+              "effects": [
+                {
+                  "effect": "copyPermanent",
+                  "targets": {
+                    "target": 0
+                  },
+                  "tapped": true,
+                  "attacking": true,
+                  "except": {
+                    "nonLegendary": true,
+                    "addAbilities": [
+                      {
+                        "kind": "triggered",
+                        "text": "At end of combat, exile this token.",
+                        "trigger": {
+                          "on": "step",
+                          "step": "COMBAT_END",
+                          "yours": false
+                        },
+                        "effects": [
+                          {
+                            "effect": "moveZone",
+                            "targets": "self",
+                            "to": "exile"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "again": "may"
+            }
+          ]
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "you"
+        }
+      ]
+    }
+  ]
+}

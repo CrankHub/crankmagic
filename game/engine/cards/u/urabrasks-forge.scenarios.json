@@ -1,0 +1,522 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Urabrask's Forge",
+  "fixtures": {
+    "Smoke Hunt": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target red Phyrexian Horror creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Phyrexian",
+              "Horror"
+            ],
+            "colors": [
+              "R"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered, and it resolves",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Urabrask's Forge"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Urabrask's Forge"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Urabrask's Forge"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Urabrask's Forge",
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Urabrask's Forge",
+            "counter": "oil",
+            "count": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Beginning of combat: one oil counter and a 1/1 hasty trampling Horror that attacks at once; sacrificed at the end step",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Urabrask's Forge"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Urabrask's Forge",
+                "counter": "oil",
+                "count": 1
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Phyrexian Horror",
+                "power": 1,
+                "toughness": 1
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Phyrexian Horror",
+                "has": [
+                  "Trample",
+                  "Haste"
+                ]
+              }
+            },
+            {
+              "seat": 0,
+              "controls": [
+                "Urabrask's Forge",
+                "Phyrexian Horror"
+              ]
+            }
+          ]
+        },
+        {
+          "attack": [
+            "Phyrexian Horror"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 39
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            },
+            {
+              "seat": 0,
+              "controls": [
+                "Urabrask's Forge",
+                "Phyrexian Horror"
+              ]
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Urabrask's Forge"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Urabrask's Forge",
+            "counter": "oil",
+            "count": 1
+          }
+        },
+        {
+          "seat": 1,
+          "life": 39
+        }
+      ]
+    },
+    {
+      "name": "The count grows by one each of Rob's turns: Maya's combat adds nothing, the next of Rob's makes a 2/1",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Urabrask's Forge"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            },
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Urabrask's Forge",
+                "counter": "oil",
+                "count": 1
+              }
+            },
+            {
+              "seat": 0,
+              "controls": [
+                "Urabrask's Forge"
+              ]
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Urabrask's Forge",
+                "counter": "oil",
+                "count": 2
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Phyrexian Horror",
+                "power": 2,
+                "toughness": 1
+              }
+            }
+          ]
+        },
+        {
+          "attack": [
+            "Phyrexian Horror"
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 38
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Urabrask's Forge"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 38
+        }
+      ]
+    },
+    {
+      "name": "The token is a red Phyrexian Horror (a spell for exactly that aims at it and not at a Bear), and it is gone once destroyed",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Urabrask's Forge",
+            "Wastes",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Hunt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Smoke Hunt"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Phyrexian Horror"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "cast": "Smoke Hunt",
+          "targets": [
+            {
+              "card": "Phyrexian Horror"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Urabrask's Forge",
+            "Smoke Bear",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Hunt"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "At the end step the token is sacrificed, not exiled: Mayhem Devil sees it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Urabrask's Forge",
+            "Mayhem Devil"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "END_OF_TURN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Urabrask's Forge",
+            "Mayhem Devil"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    }
+  ]
+}

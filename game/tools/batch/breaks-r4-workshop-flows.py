@@ -2,12 +2,14 @@
 SUITES = ['tests/table-setup.mjs', 'tests/lock-feedback.mjs', 'tests/admin-ui.mjs']
 BREAKS = [
     ('AI decks before configured rules', 'crankmagic-table.js',
-     "try{await api('POST',`${tableUrl(table.tableId)}/rules`,{startingLife:Number(v.startingLife),bracketLimit:v.bracketLimit?Number(v.bracketLimit):null});}",
-     "try{await autoDeckAI(table);await api('POST',`${tableUrl(table.tableId)}/rules`,{startingLife:Number(v.startingLife),bracketLimit:v.bracketLimit?Number(v.bracketLimit):null});}"),
+     "try{await api('POST',`${tableUrl(table.tableId)}/rules`,",
+     "try{await autoDeckAI(table);await api('POST',`${tableUrl(table.tableId)}/rules`,"),
     ('unsupported precon assigned', 'crankmagic-table.js',
      "candidates=lists.filter(d=>[...d.commander,...d.cards].every(name=>!unknown.has(name)));", "candidates=lists;"),
-    ('repeat setup creates another table', 'crankmagic-table.js',
-     "if(creatingTables.has(form))return;", ""),
+    # The page's Create form went with the New game pop-up (701f5180), which makes the table itself (crankmagic-lounge.js,
+    # `st.busy`); what the page still guards, and tests/table-setup.mjs still checks, is one setup of a table at a time.
+    ('repeat setup runs the same table twice', 'crankmagic-table.js',
+     "if(settingUp.has(table.tableId))return;", ""),
     ('Leave forgets resumable seat', 'crankmagic-table.js',
      "const id=el.dataset.table;C.board?.close();actions.close();", "const id=el.dataset.table;C.board?.close();keepSeat(null);actions.close();"),
     ('stale toast undoes a later change', 'crankmagic-app.js',

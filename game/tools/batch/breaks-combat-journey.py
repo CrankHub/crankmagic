@@ -3,6 +3,6 @@
 SUITES = ["tests/uat/solo-vs-ai.mjs"]
 BREAKS = [
     ("real combat is missing from the board", "crankmagic-board.js",
-     'if (!attacks.length) return "";',
-     'if (true) return "";'),
+     'const attacks=combatAttacks();if(!attacks.length)return "";',
+     'const attacks=combatAttacks();if(true)return "";'),
 ]

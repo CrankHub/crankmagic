@@ -78,13 +78,15 @@ BREAKS = [
     ('the order not read back when the room wakes', R,
      'outs = record.outs || [];',
      'outs = [];'),
+    # The seat's view, which these were written for: a spectator's (`watch`, later) builds the same result, and the comment
+    # above the seat's line is what tells the two apart.
     ('no ending in the result', R,
-     '          ending: endingOf({over, ended, seats, players: state.players, departures, outs})} : null,',
-     '          } : null,'),
+     'stay as they were. */\n          ending: endingOf({over, ended, seats, players: state.players, departures, outs})} : null,',
+     'stay as they were. */\n          } : null,'),
     ('the room\'s departures not read for the ending', R,
-     'endingOf({over, ended, seats, players: state.players, departures, outs})',
-     'endingOf({over, ended, seats, players: state.players, departures: {}, outs})'),
+     'stay as they were. */\n          ending: endingOf({over, ended, seats, players: state.players, departures, outs})',
+     'stay as they were. */\n          ending: endingOf({over, ended, seats, players: state.players, departures: {}, outs})'),
     ('the room\'s own end not read for the ending', R,
-     'endingOf({over, ended, seats, players: state.players, departures, outs})',
-     'endingOf({over, seats, players: state.players, departures, outs})'),
+     'stay as they were. */\n          ending: endingOf({over, ended, seats, players: state.players, departures, outs})',
+     'stay as they were. */\n          ending: endingOf({over, seats, players: state.players, departures, outs})'),
 ]

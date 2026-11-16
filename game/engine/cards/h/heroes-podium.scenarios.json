@@ -1,0 +1,779 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Heroes' Podium",
+  "fixtures": {
+    "Smoke Legend A": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{C}",
+      "colors": [
+        "R"
+      ],
+      "power": 2,
+      "toughness": 2,
+      "supertypes": [
+        "Legendary"
+      ]
+    },
+    "Smoke Legend B": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{C}",
+      "colors": [
+        "R"
+      ],
+      "power": 3,
+      "toughness": 3,
+      "supertypes": [
+        "Legendary"
+      ]
+    },
+    "Smoke Legend C": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{C}",
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1,
+      "supertypes": [
+        "Legendary"
+      ]
+    },
+    "Smoke Their Legend": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{C}",
+      "colors": [
+        "R"
+      ],
+      "power": 5,
+      "toughness": 5,
+      "supertypes": [
+        "Legendary"
+      ]
+    },
+    "Smoke Legend Relic": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "supertypes": [
+        "Legendary"
+      ]
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Murder": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered, and it resolves",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Heroes' Podium"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Heroes' Podium"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Heroes' Podium"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "One legendary creature gets nothing; each added one grows every legendary creature of Rob's by one; a Bear and Maya's legend are untouched",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Smoke Legend A",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Their Legend"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Smoke Legend A",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Smoke Bear",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 1,
+              "stats": {
+                "card": "Smoke Their Legend",
+                "power": 5,
+                "toughness": 5
+              }
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Legend A",
+            "power": 2,
+            "toughness": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three legendary creatures: 2/2, 3/3 and 1/1 become 4/4, 5/5 and 3/3; a legendary artifact is no creature and is not given a body",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Smoke Legend A",
+            "Smoke Legend B",
+            "Smoke Legend C",
+            "Smoke Bear",
+            "Smoke Legend Relic"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Their Legend"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Smoke Legend A",
+                "power": 4,
+                "toughness": 4
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Smoke Legend B",
+                "power": 5,
+                "toughness": 5
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Smoke Legend C",
+                "power": 3,
+                "toughness": 3
+              }
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 1,
+          "stats": {
+            "card": "Smoke Their Legend",
+            "power": 5,
+            "toughness": 5
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Legend Relic",
+            "power": null,
+            "toughness": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "One of them dies: the others lose a point of it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Smoke Legend A",
+            "Smoke Legend B",
+            "Smoke Legend C",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Murder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Smoke Legend B"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Legend A",
+            "power": 3,
+            "toughness": 3
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Legend C",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Legend B",
+            "Smoke Murder"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "{X}, {T} with X of 3: the one legendary creature among the top three is taken, the other two go to the bottom",
+      "library": [
+        "Smoke Bear",
+        "Smoke Legend B",
+        "Smoke Bear"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Heroes' Podium",
+          "x": 3
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Smoke Legend B"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Smoke Legend B"
+              ]
+            },
+            {
+              "seat": 0,
+              "zone": "library",
+              "count": 19
+            },
+            {
+              "seat": 0,
+              "tapped": "Heroes' Podium",
+              "is": true
+            },
+            {
+              "event": "GameEventCardRevealed",
+              "where": {}
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Legend B",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 18
+        }
+      ]
+    },
+    {
+      "name": "{X}, {T} with X of 3 and two legendary creatures among them: only one may be taken, and nothing more is asked",
+      "library": [
+        "Smoke Legend A",
+        "Smoke Legend B",
+        "Smoke Bear"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Heroes' Podium",
+          "x": 3
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Legend A",
+                  "Smoke Legend B"
+                ],
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Smoke Legend A"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Legend A"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        }
+      ]
+    },
+    {
+      "name": "{X}, {T} with X of 3 and no legendary creature among them (a Bear, a legendary artifact, a land): nothing is asked or taken; the fourth card is out of reach",
+      "library": [
+        "Smoke Bear",
+        "Smoke Legend Relic",
+        "Wastes",
+        "Smoke Legend B"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Heroes' Podium",
+          "x": 3
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        }
+      ]
+    },
+    {
+      "name": "{X}, {T} with X of 3 and a legendary creature among them, but Rob declines (\"you may reveal\"): nothing taken, all three to the bottom",
+      "library": [
+        "Smoke Bear",
+        "Smoke Legend B",
+        "Smoke Bear"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Heroes' Podium",
+          "x": 3
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Smoke Legend B"
+                ],
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        }
+      ]
+    },
+    {
+      "name": "{X}, {T} with X of 4 and the same library: the fourth card, the legendary creature, is now within reach",
+      "library": [
+        "Smoke Bear",
+        "Smoke Legend Relic",
+        "Wastes",
+        "Smoke Legend B"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Heroes' Podium",
+          "x": 4
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Smoke Legend B"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Legend B"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        }
+      ]
+    },
+    {
+      "name": "Tapped, it cannot be used again",
+      "library": [
+        "Smoke Bear",
+        "Smoke Bear"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heroes' Podium",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Heroes' Podium",
+          "x": 2
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Heroes' Podium"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

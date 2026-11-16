@@ -54,6 +54,13 @@ export const SELECTOR_KEYS = Object.freeze([
      `affected`); "made so by this ability" (CR 613.6: an ability of the source's whose effect applies to it, rules/layers.mjs
      partsApplied). */
   "attachedTo", "affectedBy",
+  /* "Each other creature you control with the same name as that creature" (Mirror Box; CR 201.2): another object with the name of the one
+     a layer-7 amount is counted for (rules/layers.mjs, counted's `affected`). */
+  "sharesNameWithIt",
+  /* SOULBOND (CR 702.95; Mirage Phalanx): a creature paired with another or not (`paired`), and the two a source's pairing joins. */
+  "paired", "pairedWithSource",
+  /* "Return each OTHER card exiled with this artifact" (Mimic Vat; CR 607.2a): not the cards the effect before it remembered. */
+  "otherThanRemembered",
   "sharesCreatureTypeWithCommander",
   /* "An opponent has 10 or less life" (Bloodghast): a player's life total, at most. */
   "lifeAtMost", "lostThisTurnAtLeast",
@@ -131,6 +138,8 @@ export const exiledWithSource = (state, source) => (source === null || source ==
 const LAST_KNOWN_KEYS = ["what", "types", "subtypes", "supertypes", "nonTypes", "nonSubtypes", "controller", "token", "another", "attachedBy", "anyOf", "self",
   /* `nonKeywords` (Luminous Broodmoth: "whenever a creature you control without flying dies"): none of them as it last existed. */
   "nonKeywords",
+  /* `attacking` (Eomer, Marshal of Rohan: "one or more other attacking legendary creatures you control die"): it was attacking as it left. */
+  "attacking",
   "keywords", "counters", "colors"];
 export function matchesLastKnown(selector, lki, context = {}) {
   if (!lki) return false;
@@ -149,6 +158,10 @@ export function matchesLastKnown(selector, lki, context = {}) {
   if (s.controller === "you" && lki.controller !== context.controller) return false;
   if (s.controller === "opponent" && lki.controller === context.controller) return false;
   if (s.token !== undefined && (lki.token === true) !== s.token) return false;
+  if (s.attacking !== undefined) {
+    if (s.attacking !== true) throw new Error("A filter on something that has left the battlefield can say attacking: true -- it was attacking as it left");
+    if (lki.attacking !== true) return false;
+  }
   if (s.another === true && lki.cardId === context.source) return false;
   if (s.self === true && lki.cardId !== context.source) return false;
   /* "Equipped creature dies": the Equipment was attached to it as it died. */
@@ -217,6 +230,10 @@ function assertGrammar(selector) {
   /* What it shares a creature type with: a selector of permanents, held to the same grammar. */
   if (selector.sharesCreatureType !== undefined) compileSelector({...selector.sharesCreatureType, what: "permanent"});
   if (selector.multicolored !== undefined && selector.multicolored !== true) throw new Error("A selector's multicolored is true: two or more colors");
+  if (selector.otherThanRemembered !== undefined && selector.otherThanRemembered !== true) throw new Error("A selector's otherThanRemembered is true: not what the effect before it remembered");
+  if (selector.paired !== undefined && typeof selector.paired !== "boolean") throw new Error("A selector's paired is true or false: a creature paired with another, or not (soulbond)");
+  if (selector.pairedWithSource !== undefined && selector.pairedWithSource !== true) throw new Error("A selector's pairedWithSource is true: the source and the creature it is paired with (soulbond)");
+  if (selector.sharesNameWithIt !== undefined && selector.sharesNameWithIt !== true) throw new Error("A selector's sharesNameWithIt is true: another with the name of the object a layer-7 amount is counted for");
   if (selector.monocolored !== undefined && selector.monocolored !== true) throw new Error("A selector's monocolored is true: exactly one color");
   /* A color of its source's ("self"), or of a permanent a selector describes ("a card that shares a color with a legendary creature
      you control", Ringsight): held to the same grammar as what a creature type is shared with. */
@@ -463,6 +480,13 @@ export function compileSelector(selector) {
       if (selector.controller === "opponent" && holder === chooser) return false;
       /* "Each creature that player controls": the player a trigger is about (Balefire Dragon). */
       if (selector.controller === "that player" && holder !== context.about?.player) return false;
+      /* "The number of lands defending player controls" (Elturel Survivors; CR 506.3d): the player the attacking creature a count is made
+         for (`affected`, rules/layers.mjs) -- or the source -- is attacking now; none attacked, and it is no one's. */
+      if (selector.controller === "defending player") {
+        const attacker = context.affected ?? context.source;
+        const defender = (state.combat?.attacks ?? []).find((attack) => attack.attacker === attacker)?.defender;
+        if (defender === undefined || holder !== defender) return false;
+      }
       /* A player itself, bound from a target ("exile target player's graveyard", script/bind.mjs). */
       if (Number.isInteger(selector.controller) && holder !== selector.controller) return false;
     }
@@ -482,6 +506,21 @@ export function compileSelector(selector) {
     /* An ability of the source's applies to it now (CR 613.6): "each noncreature, non-Equipment artifact is an Equipment"
        (Bludgeon Brawl) -- the artifacts it made so, not those printed Equipment. */
     if (selector.affectedBy === "self" && !partsApplied(state, id).some((part) => part.startsWith(`${context.source}|`))) return false;
+    /* "With the same name as that creature" (Mirror Box; CR 201.2): another object than the one the amount is counted for, with its
+       name; a face-down permanent has none (CR 708.2) and matches nothing. */
+    if (selector.sharesNameWithIt === true) {
+      const it = context.affected;
+      if (it === undefined || it === null || id === it || !state.objects[it] || state.objects[it].faceDown === true || state.objects[id]?.faceDown === true
+        || state.objects[id]?.card !== state.objects[it].card) return false;
+    }
+    /* SOULBOND (CR 702.95a-b): paired with another creature (state.objects[id].pairedWith, effects/permanents.mjs, pair; ended by
+       rules/sba.mjs, endPairings) or not; and, of the source, "each of those creatures" -- it and the one it is paired with. */
+    if (selector.otherThanRemembered === true && (context.remembered ?? []).includes(id)) return false;
+    if (selector.paired !== undefined && (state.objects[id]?.pairedWith !== undefined) !== selector.paired) return false;
+    if (selector.pairedWithSource === true) {
+      const source = state.objects[context.source];
+      if (!source || source.pairedWith === undefined || (id !== context.source && id !== source.pairedWith)) return false;
+    }
     /* "Equipped creature": the permanent the source is attached to (CR 301.5, 701.3). */
     if (selector.attachedBy === "self") {
       if (context.source === undefined || context.source === null) throw new Error("A selector using `attachedBy` needs the source attached to it");

@@ -204,7 +204,8 @@ const titleCase = (word) => String(word).split(" ").map((w) => w.charAt(0).toUpp
    "when THIS enters", `yours: true` is "at the beginning of YOUR upkeep". */
 const ARRIVALS = ["self", "another", "any"];
 /* The steps whose beginning a card may name (rules/turn.mjs announces each as it arrives). */
-const STEPS = ["UPKEEP", "DRAW", "MAIN1", "COMBAT_BEGIN", "MAIN2", "END_OF_TURN"];
+/* And "at end of combat" (COMBAT_END; Delina's token copy, "At end of combat, exile this token"; CR 511.2). */
+const STEPS = ["UPKEEP", "DRAW", "MAIN1", "COMBAT_BEGIN", "COMBAT_END", "MAIN2", "END_OF_TURN"];
 /* "Whenever this deals combat damage to a player": `who` the source, `combat`, `to` player or opponent (CR 510.2); `to:
    "self"`, damage dealt to this permanent. */
 const damageDealt = (t) => (t.to === "self" ? {on: "GameEventCardDamaged", to: "self", ...(t.combat ? {combat: true} : {})}
@@ -463,6 +464,8 @@ function effectsIn(list, out = []) {
     effectsIn(effect.whenPaid, out);
     /* What follows a sacrifice declined (Braids, Arisen Nightmare). */
     effectsIn(effect.ifNot, out);
+    /* What each row of a rolled die does (Delina, Wild Mage). */
+    for (const row of effect.rows ?? []) effectsIn(row?.effects, out);
   }
   return out;
 }
@@ -627,6 +630,7 @@ function withDelayedTriggers(abilities, problems) {
     }
     for (const key of ["effects", "then", "otherwise"]) if (Array.isArray(out[key])) out[key] = out[key].map(walk);
     if (Array.isArray(out.modes)) out.modes = out.modes.map((mode) => ({...mode, effects: (mode.effects ?? []).map(walk)}));
+    if (Array.isArray(out.rows)) out.rows = out.rows.map((row) => ({...row, effects: (row.effects ?? []).map(walk)}));
     return out;
   };
   return abilities.map((ability) => (Array.isArray(ability.effects) ? {...ability, effects: ability.effects.map(walk)} : ability));
@@ -925,6 +929,25 @@ export function compileScript(script) {
           {effect: "delayedTrigger", at: "end of combat", text: "Exile the tokens at end of combat.", condition: {compare: {count: {rememberedCount: true}, atLeast: 1}},
             effects: [{effect: "moveZone", targets: "remembered", to: "exile"}]}]});
       keywords.push("Myriad");
+      return;
+    }
+    /* SOULBOND (CR 702.95a; Mirage Phalanx): "You may pair this creature with another unpaired creature when either enters" -- the
+       keyword IS two triggered abilities: this creature entering, its controller choosing another unpaired creature of theirs (or
+       none), and another creature of its controller's entering, paired with this one if they both are still unpaired as it
+       resolves (effects/permanents.mjs, pair). They stay paired as long as they are both creatures under one controller
+       (rules/sba.mjs, endPairings). Each ability says which keyword it is (`keyword`), for a copy that loses it. */
+    if (ability.kind === "keyword" && String(ability.keyword).toLowerCase() === "soulbond") {
+      abilities.push(
+        {id, kind: "triggered", keyword: "Soulbond", text: ability.text, trigger: TRIGGERS.enters({who: "self"}),
+          effects: [{effect: "chooseCard", zone: "battlefield", selector: {types: ["Creature"], controller: "you", another: true, paired: false}, count: 1, upTo: true, to: "stay", remember: true},
+            {effect: "pair"}]},
+        {id: `${id}-other`, kind: "triggered", keyword: "Soulbond", text: ability.text,
+          trigger: TRIGGERS.enters({who: "another", filter: {types: ["Creature"], controller: "you", paired: false}}),
+          /* An intervening "if" (CR 603.4): this creature is unpaired as the other enters, and still as the ability resolves. */
+          condition: {present: {what: "permanent", self: true, paired: false}},
+          /* "You may" (CR 603.5), asked as it resolves: the keyword's own, as the optional ability's is wrapped below. */
+          effects: [{effect: "modal", title: ability.text, modes: [{text: "Yes", effects: [{effect: "pair", with: "that card"}]}, {text: "No", effects: []}]}]});
+      keywords.push("Soulbond");
       return;
     }
     /* DETHRONE (CR 702.105a; Scourge of the Throne, precon load lane C): "Whenever this creature attacks the player with the most
@@ -1273,6 +1296,19 @@ export function compileScript(script) {
       if (!(identity.types ?? []).includes("Creature")) problems.push(`${ability.text}: dash on a card that is no creature`);
       abilities.push({id, kind: "static", rule: "alternative-cost", paidFor: "dash", text: ability.text, cost: structuredClone(cost), affects: {what: "card", self: true}});
       keywords.push("Dash");
+      return;
+    }
+    /* BLITZ [COST] (CR 702.152a; Jaxis, the Troublemaker): "You may cast this card by paying [cost] rather than its mana cost" -- an
+       alternative cost (CR 118.9) marked as cast for (`paidFor`), as dash's is -- and, if it was, the permanent it becomes has haste
+       and "When this creature dies, draw a card", and is sacrificed at the beginning of the next end step (rules/stack.mjs). */
+    if (word === "blitz") {
+      const cost = Array.isArray(ability.cost) ? ability.cost : [];
+      let parsed = null;
+      try { parsed = cost.length === 1 && cost[0]?.atom === "mana" ? parseManaCost(cost[0].cost ?? "") : null; } catch { /* refused below */ }
+      if (!parsed || !parsed.symbols.length || parsed.variable > 0) problems.push(`${ability.text}: a blitz cost of mana, once, without X`);
+      if (!(identity.types ?? []).includes("Creature")) problems.push(`${ability.text}: blitz on a card that is no creature`);
+      abilities.push({id, kind: "static", rule: "alternative-cost", paidFor: "blitz", text: ability.text, cost: structuredClone(cost), affects: {what: "card", self: true}});
+      keywords.push("Blitz");
       return;
     }
     /* WARP [COST] (CR 702.185a; All-Fates Stalker, Pinnacle Emissary): "You may cast this card from your hand by paying [cost]

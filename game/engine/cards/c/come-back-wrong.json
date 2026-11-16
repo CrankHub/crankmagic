@@ -1,0 +1,79 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Come Back Wrong",
+    "oracleId": "2a9783c5-084b-4cd3-b7fa-ae9d7fed51d1",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{2}{B}",
+    "colors": [
+      "B"
+    ],
+    "colorIdentity": [
+      "B"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Destroy target creature. If a creature card is put into a graveyard this way, return it to the battlefield under your control. Sacrifice it at the beginning of your next end step.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Destroy target creature. If a creature card is put into a graveyard this way, return it to the battlefield under your control. Sacrifice it at the beginning of your next end step.",
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "effect": "destroy",
+          "targets": {
+            "target": 0
+          },
+          "remember": true
+        },
+        {
+          "effect": "moveZone",
+          "targets": "remembered",
+          "to": "battlefield",
+          "controller": "you",
+          "only": {
+            "types": [
+              "Creature"
+            ]
+          },
+          "remember": true
+        },
+        {
+          "effect": "delayedTrigger",
+          "at": "end step",
+          "yours": true,
+          "text": "Sacrifice it at the beginning of your next end step.",
+          "condition": {
+            "compare": {
+              "count": {
+                "rememberedCount": true
+              },
+              "atLeast": 1
+            }
+          },
+          "effects": [
+            {
+              "effect": "moveZone",
+              "targets": "remembered",
+              "to": "graveyard",
+              "sacrifice": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

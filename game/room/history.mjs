@@ -153,6 +153,12 @@ export function historyLines(event, names = []) {
     /* A die rolled (CR 706.1; Ancient Copper Dragon): the roll and its result, which every player sees. */
     case "GameEventDieRolled":
       return line(`${who(f.player.playerId)} rolled a d${f.sides}: ${f.result}`, by(f.player.playerId));
+    /* A coin flipped (CR 705; Mirror March): the flip and whether it was won, which every player sees. */
+    case "GameEventCoinFlipped":
+      return line(`${who(f.player.playerId)} flipped a coin and ${f.won ? "won" : "lost"} the flip`, by(f.player.playerId));
+    /* Two creatures paired (CR 702.95a; Mirage Phalanx): which, and with which. */
+    case "GameEventPaired":
+      return line(`${who(f.player.playerId)} paired ${mention(f.card)} with ${mention(f.with)}`, {...by(f.player.playerId), ...src(f.card)});
     /* A Class's level (CR 716.2a). */
     case "GameEventCardLevel":
       return line(`${mention(f.card)} reached level ${f.newValue}`, src(f.card));

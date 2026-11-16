@@ -7,7 +7,7 @@ distinct list of actions, triggers, effects, actions, options, etc. that can be 
 rules"). The keyword actions and abilities are the Comprehensive Rules' own list (701, 702); the effects, triggers,
 static abilities, replacement effects and costs are every one used by the 33,821 cards Forge implements.
 
-**The most-played 80% of Commander cards:** 3,238 cards; 1,993 defined and playable today; 2,916 with every
+**The most-played 80% of Commander cards:** 3,238 cards; 2,003 defined and playable today; 2,921 with every
 mechanic built, so only their definitions are left to write.
 
 **Status:** *built* the engine does it; *partial* some forms; *named* in the engine's vocabulary, not built; *missing* not
@@ -18,7 +18,7 @@ many most-played cards need it among other missing things; **Alone** how many it
 
 | Section | Entries | Built | Partial | Named | Missing |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Keyword abilities (CR 702) | 194 | 86 | 0 | 13 | 95 |
+| Keyword abilities (CR 702) | 194 | 86 | 0 | 15 | 93 |
 | Keyword actions (CR 701) | 70 | 22 | 5 | 1 | 42 |
 | Effects | 192 | 79 | 2 | 1 | 110 |
 | Triggers | 138 | 26 | 4 | 1 | 107 |
@@ -44,13 +44,13 @@ The things that alone hold back the most of the most-played cards.
 | trigger | AbilityCast | — | missing | 5 | 5 |
 | count | Your life total | — | missing | 4 | 7 |
 | count | Amount | — | missing | 4 | 7 |
-| option | Imprint (a card exiled with this) | — | missing | 4 | 6 |
 | static | RaiseCost | — | missing | 4 | 5 |
 | effect | Discover | discover | named | 4 | 4 |
 | keyword ability | Landwalk | — | named | 4 | 4 |
 | static | CantBeActivated | — | missing | 4 | 4 |
 | option | Unless a player sacrifices a permanent | — | missing | 4 | 4 |
 | option | Remembering what an effect moved | — | missing | 3 | 44 |
+| option | Present in a zone other than the battlefield ("as long as this card is in your graveyard") | — | missing | 3 | 6 |
 
 ## Keyword abilities (CR 702)
 
@@ -124,7 +124,7 @@ The things that alone hold back the most of the most-played cards.
 | 702.83 | Exalted | Exalted | built | 2 | 35 | 0 | 0 |
 | 702.138 | Escape | Escape | built | 2 | 33 | 0 | 0 |
 | 702.66 | Delve | Delve | built | 2 | 29 | 0 | 0 |
-| 702.95 | Soulbond | — | missing | 2 | 25 | 2 | 1 |
+| 702.95 | Soulbond | — | named | 2 | 25 | 2 | 1 |
 | 702.13 | Intimidate | — | missing | 2 | 23 | 2 | 2 |
 | 702.63 | Vanishing | — | missing | 2 | 21 | 2 | 2 |
 | 702.134 | Mentor | Mentor | built | 2 | 19 | 0 | 0 |
@@ -152,7 +152,7 @@ The things that alone hold back the most of the most-played cards.
 | 702.166 | Bargain | — | missing | 1 | 22 | 1 | 0 |
 | 702.109 | Dash | — | named | 1 | 22 | 0 | 0 |
 | 702.93 | Undying | — | missing | 1 | 22 | 1 | 1 |
-| 702.152 | Blitz | — | missing | 1 | 19 | 1 | 1 |
+| 702.152 | Blitz | — | named | 1 | 19 | 0 | 0 |
 | 702.182 | Job Select | — | missing | 1 | 19 | 1 | 1 |
 | 702.102 | Fuse | — | missing | 1 | 17 | 1 | 1 |
 | 702.153 | Casualty | — | missing | 1 | 16 | 1 | 1 |
@@ -398,10 +398,10 @@ The things that alone hold back the most of the most-played cards.
 | Phases | phaseOut | built | 9 | 56 | 0 | 0 |
 | RemoveCounter | removeCounter | built | 8 | 198 | 0 | 0 |
 | ChoosePlayer | — | missing | 8 | 120 | 7 | 5 |
-| Repeat | — | missing | 8 | 58 | 6 | 1 |
-| RollDice | — | missing | 7 | 131 | 5 | 2 |
+| Repeat | — | missing | 8 | 58 | 5 | 1 |
+| RollDice | — | missing | 7 | 131 | 4 | 2 |
 | Amass | amass | built | 7 | 72 | 0 | 0 |
-| StoreSVar | — | missing | 6 | 68 | 5 | 1 |
+| StoreSVar | — | missing | 6 | 68 | 4 | 1 |
 | Shuffle | shuffle | built | 6 | 66 | 0 | 0 |
 | LosesGame | loseGame | built | 6 | 45 | 0 | 0 |
 | Discover | discover | named | 6 | 35 | 4 | 4 |
@@ -688,12 +688,12 @@ The things that alone hold back the most of the most-played cards.
 | AttackRestrict | — | missing | 4 | 8 | 3 | 2 |
 | CombatDamageToughness | rules/statics | built | 3 | 20 | 0 | 0 |
 | ManaConvert | — | missing | 3 | 14 | 3 | 2 |
-| IgnoreLegendRule | — | missing | 3 | 11 | 3 | 2 |
+| IgnoreLegendRule | — | missing | 3 | 11 | 1 | 1 |
 | UnspentMana | — | missing | 3 | 6 | 2 | 1 |
 | MinMaxBlocker | — | missing | 2 | 41 | 2 | 2 |
 | CanAttackDefender | rules/statics | built | 2 | 32 | 0 | 0 |
 | CantPreventDamage | — | missing | 2 | 11 | 2 | 2 |
-| CantSacrifice | — | missing | 2 | 10 | 1 | 0 |
+| CantSacrifice | — | missing | 2 | 10 | 0 | 0 |
 | ActivateAbilityAsIfHaste | keywords/timing | built | 2 | 4 | 0 | 0 |
 | OptionalCost | — | missing | 1 | 40 | 1 | 1 |
 | OptionalAttackCost | — | missing | 1 | 28 | 1 | 1 |
@@ -704,7 +704,7 @@ The things that alone hold back the most of the most-played cards.
 | BlockRestrict | — | missing | 1 | 4 | 1 | 0 |
 | Activations | — | missing | 1 | 3 | 0 | 0 |
 | NumLoyaltyAct | — | missing | 1 | 2 | 0 | 0 |
-| CantExile | — | missing | 1 | 1 | 1 | 0 |
+| CantExile | — | missing | 1 | 1 | 0 | 0 |
 | CantTarget | — | missing | 0 | 27 | 0 | 0 |
 | CantPlayLand | — | missing | 0 | 11 | 0 | 0 |
 | IgnoreLandWalk | — | missing | 0 | 10 | 0 | 0 |
@@ -849,7 +849,7 @@ The things that alone hold back the most of the most-played cards.
 | Unless a player pays mana ("unless that player pays {1}") | unlessPays (generic mana) | built | 16 | 287 | 0 | 0 |
 | A token that enters tapped and attacking | `attacking` on createToken and copyPermanent: that player, or the one its controller chooses (batch 67) | built | 16 | 88 | 0 | 0 |
 | It gains a keyword until end of turn (a token made this way) | gainsUntilEndOfTurn | built | 16 | 67 | 0 | 0 |
-| Imprint (a card exiled with this) | — | missing | 10 | 97 | 6 | 4 |
+| Imprint (a card exiled with this) | — | missing | 10 | 97 | 5 | 3 |
 | Except it isn't legendary (a copy) | except.nonLegendary | built | 10 | 43 | 0 | 0 |
 | Unless a player reveals a card ("reveal an Island or Swamp card") | unlessReveal, as it enters | built | 10 | 22 | 0 | 0 |
 | Present in a zone other than the battlefield ("as long as this card is in your graveyard") | — | missing | 9 | 160 | 6 | 3 |

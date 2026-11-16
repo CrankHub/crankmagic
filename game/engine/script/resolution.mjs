@@ -64,6 +64,9 @@ export function beginResolution(state, effects, context = {}, rng = null) {
       ...(context.targetsChosen ? {targetsChosen: context.targetsChosen} : {}),
       /* And the division its caster announced, target by target (CR 601.2d; effects/resources.mjs, damageHits' `divided`). */
       ...(context.division ? {division: context.division} : {}),
+      /* A triggered ability resolving (rules/stack.mjs): "triggered abilities you control can't cause you to sacrifice or exile
+         ..." (rules/statics.mjs, triggerRemovalBlocked). */
+      ...(context.triggered === true ? {triggered: true} : {}),
       /* How many times its ability resolved before this one this turn (rules/stack.mjs; script/condition.mjs, firstResolution). */
       ...(context.resolvedBefore !== undefined ? {resolvedBefore: context.resolvedBefore} : {})},
     events: [],
@@ -121,6 +124,19 @@ export function runResolution(state, rng = null) {
         gift: resolving.context.gift});
       resolving.queue.shift();
       resolving.queue.unshift(...structuredClone((holds ? effect.then : effect.otherwise) ?? []));
+      continue;
+    }
+    /* "ROLL A D20. 1-14 | ... 15-20 | ... YOU MAY ROLL AGAIN" (Delina, Wild Mage; CR 706.2): a die with `rows`, rolled as it reaches
+       the head, and the effects of the row its result is in put in front of what follows, so one of them may stop to ask. A row
+       that sends the roll round again puts the same die behind its effects -- asked first ("may"), the roll then its own answer. */
+    if (effect?.effect === "rollDie" && Array.isArray(effect.rows)) {
+      resolving.queue.shift();
+      const {rows, ...die} = effect;
+      resolving.events.push(...runEffect(state, die, resolving.context, rng));
+      const result = resolving.context.rolled ?? 0, row = rows.find((r) => result >= r.from && result <= r.to);
+      const again = row?.again === "may" ? [{effect: "modal", title: "Roll again?", modes: [{text: "Roll again", effects: [structuredClone(effect)]}, {text: "Stop rolling", effects: []}]}]
+        : row?.again === "must" ? [structuredClone(effect)] : [];
+      resolving.queue.unshift(...structuredClone(row?.effects ?? []), ...again);
       continue;
     }
     /* EMPOWER JACE N (the live-game plan of 2026-10-04): "put N loyalty counters on a Jace token you control. If you don't

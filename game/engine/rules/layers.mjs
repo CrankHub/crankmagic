@@ -107,7 +107,9 @@ function printed(state, id) {
 export const LAYER_AFFECTS_KEYS = Object.freeze(["anyOf", "what", "ids", "types", "subtypes", "supertypes", "controller", "token", "another", "self", "attachedBy", "colors", "colorless", "countersAtLeast", "tapped", "counters",
   "keywords", "hasDealtDamage", "hasDealtCombatDamage", "attacking", "zone", "modified", "nonTypes", "nonSubtypes", "continued", "nonSupertypes", "commander",
   /* "Commander creatures you OWN have ..." (Agent of the Iron Throne, a Background; Rob's lists P2). */
-  "owner"]);
+  "owner",
+  /* SOULBOND (CR 702.95; Mirage Phalanx): "each of those creatures" -- the source and the creature it is paired with. */
+  "pairedWithSource"]);
 /* MODIFIED (CR 700.15; Kodama of the West Tree, wave 4d L3): a permanent with a counter on it, one that is equipped, or one
    enchanted by an Aura its controller controls. Its attachments read as printed (an Equipment or an Aura subtype, its
    controller) -- what the layers are deriving is the permanent, not them -- so the layer matcher and the selector grammar
@@ -167,6 +169,12 @@ function affects(state, effect, current, sourceController) {
   if (rule.self === true && current.id !== effect.sourceId) return false;
   /* "Equipped creature has haste": the one its source is attached to (CR 301.5). */
   if (rule.attachedBy === "self" && state.objects[effect.sourceId]?.attachedTo !== current.id) return false;
+  /* "As long as Mirage Phalanx is paired with another creature, each of those creatures has ...": the source and its partner, read off
+     the pairing the objects keep (effects/permanents.mjs, pair), which no layer changes. */
+  if (rule.pairedWithSource === true) {
+    const source = state.objects[effect.sourceId];
+    if (!source || source.pairedWith === undefined || (current.id !== effect.sourceId && current.id !== source.pairedWith)) return false;
+  }
   /* "As long as enchanted creature is white" (Steel of the Godhead): its colors as they now are -- layer 5 is done by the
      time layers 6 and 7 ask. */
   /* "Creatures you control of the chosen color get +1/+0" (Heraldic Banner): the color its permanent chose as it entered, by
@@ -972,6 +980,8 @@ export function lastKnown(state, id) {
     damage: object.damage ?? 0,
     tapped: object.tapped === true,
     token: object.token === true,
+    /* Attacking as it left (CR 506.4): "other attacking legendary creatures you control die" (Eomer, Marshal of Rohan). */
+    attacking: (state.combat?.attacks ?? []).some((attack) => attack.attacker === id),
     commander: object.commander === true,
     /* Its abilities as it last was, the ones given it included: "when this creature dies" given by Feign Death. */
     abilities: structuredClone(heldAbilities(object, current)),

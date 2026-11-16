@@ -1,0 +1,360 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Mirror Box",
+  "fixtures": {
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Token Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "token": true
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Shatter": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target artifact.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Artifact"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Two legendary creatures of one name beside Mirror Box both stay, each 4/4: its 2/2, +1/+1 legendary, +1/+1 for the other of its name",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror Box",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror Box",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Legend",
+            "power": 4,
+            "toughness": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three nontoken creatures of one name: each is 2 bigger for the two others",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror Box",
+            "Smoke Bear",
+            "Smoke Bear",
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Bear",
+            "power": 4,
+            "toughness": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "A lone creature gets nothing for its own name, and Maya's creatures of that name are no count",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror Box",
+            "Smoke Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "A token copy adds to the card's count but gets nothing itself: Kiki-Jiki's copy of Smoke Bear makes the card 3/3 and stays 2/2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror Box",
+            "Kiki-Jiki, Mirror Breaker",
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kiki-Jiki, Mirror Breaker",
+          "targets": [
+            {
+              "card": "Smoke Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Bear",
+            "power": 3,
+            "toughness": 3,
+            "token": false
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Smoke Bear",
+            "power": 2,
+            "toughness": 2,
+            "token": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Only his: Maya's pair of legendary creatures is held to the legend rule (one kept) while Rob's stay",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror Box",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mirror Box",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "Smoke Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mirror Box destroyed, the legend rule applies again: one of the pair is kept and the other dies",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirror Box",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Smoke Shatter"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "cast": "Smoke Shatter",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "Mirror Box"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Keep Smoke Legend (untapped, arrived turn 0, #1)",
+                  "Keep Smoke Legend (untapped, arrived turn 0, #2)"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            0
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Mirror Box",
+            "Smoke Legend"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cast offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Mirror Box"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Mirror Box",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

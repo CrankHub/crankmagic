@@ -91,8 +91,10 @@ try {
         /* Measured in the card's own layout, before any transform: the phone's board is turned 90 degrees and Full's table tilted. */
         const badge = await page.locator(`${tymna} .cm-bcard-tax`).evaluate((b) => {const c = b.closest(".cm-bcard"); return {right: c.clientWidth - b.offsetLeft - b.offsetWidth, top: b.offsetTop, w: c.clientWidth, px: parseFloat(getComputedStyle(b).fontSize)};});
         ok(badge.right < badge.w * 0.2 && badge.top < badge.w * 0.2 && badge.px >= 10, `${where}: the badge sits at the card's top-right, at 10px or more (${JSON.stringify(badge)})`);
-        const apart = await page.locator(tymna).evaluate((el) => {const b = el.querySelector('.cm-bcard-tax'), n = el.querySelector('.cm-bcard-name'); return n.offsetLeft + n.offsetWidth <= b.offsetLeft + 0.5 || n.offsetTop + n.offsetHeight <= b.offsetTop + 0.5;});
-        ok(apart, `${where}: the badge never lies over the name`);
+        const apart = await page.locator(tymna).evaluate((el) => {const b = el.querySelector('.cm-bcard-tax'), n = el.querySelector('.cm-bcard-name'); return {ok: n.offsetLeft + n.offsetWidth <= b.offsetLeft - 1 || n.offsetTop + n.offsetHeight <= b.offsetTop + 0.5, name: [n.offsetLeft, n.offsetTop, n.offsetWidth, n.offsetHeight], badge: [b.offsetLeft, b.offsetTop, b.offsetWidth, b.offsetHeight]};});
+        /* A whole pixel between them, not edge to edge: the two once met at 16px against 16px here and a pixel of font difference on
+           Actions' Linux laid the badge over the name (ROB-236). */
+        ok(apart.ok, `${where}: the badge never lies over the name, with a pixel to spare (${JSON.stringify(apart)})`);
 
       }
       ok(await page.locator(kraum).evaluate((el) => el.classList.contains("is-bright")), `${where}: castable Kraum is lit`);
@@ -110,7 +112,7 @@ try {
       for (const fy of [0.5, 0.8]) if (!k.ok) k = await reach(page, kraum, [0.5, fy]);
       ok(k.ok, `${where}: Kraum still takes the pointer where it is pressed`);
       await page.mouse.click(k.x, k.y);
-      const cast = '[data-action=board-flow-confirm]';
+      const cast = '#cm-card-menu [data-action=board-card-menu-do]';   /* the card's own menu: View, then Cast -- the row is the second press */
       await page.locator(cast).waitFor();
       ok(acts(frames).length === 0, `${where}: opening Kraum's native menu sends no action`);
       const castAt = await reach(page, cast);

@@ -22,6 +22,6 @@ BREAKS = [
      'if (view.status === "finished" || (!view.mayYield && !view.yielding)) return "";',
      'if (view.status === "finished") return "";'),
     ("phone loses its visible yield", T,
-     '${passButton()}${view.state.turnPlayerId !== view.seat ? skipControl(true) : ""}</div>`',
+     '${passButton()}${!isYou(view.state.turnPlayerId) ? skipControl(true) : ""}</div>`',
      '${passButton()}</div>`'),
 ]

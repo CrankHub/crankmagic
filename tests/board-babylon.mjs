@@ -54,8 +54,13 @@ try{
   ok(Math.abs(flat.quad[1]-flat.quad[3])<.03&&Math.abs(flat.quad[5]-flat.quad[7])<.03,'a stored rotation from an older session cannot cant the table');
   await slide('Table tilt',40);
   const initial=await align('reset');
+  /* The Table design lives in the Table menu, with Background, not in Camera (r4 D1, 113c4283, 2026-10-26): open the menu when it is shut. */
+  const pickDesign=async design=>{const select=page.getByLabel('Table design',{exact:true});
+    if(!await select.count())await page.locator('[data-action=board-table-menu]').click();
+    await select.selectOption(design);};
+  ok(await page.locator('.cm-stage-camera [data-action=board-camera][aria-expanded=true]').count()===1&&await page.locator('.cm-stage-camera').getByLabel('Table design',{exact:true}).count()===0,'Camera carries no Table design');
   for(let n=0;n<4;n++)for(const design of ['obsidian-glass','medieval-banded']){
-    await page.getByLabel('Table design',{exact:true}).selectOption(design);
+    await pickDesign(design);
     const d=await align(design);
     ok(d.materials<=initial.materials+3&&d.textures<=initial.textures+2,'changing designs disposes obsolete materials and textures');
   }
@@ -64,7 +69,7 @@ try{
     await page.getByRole('button',{name:'Camera',exact:false}).click();
     await page.screenshot({path:path.join(shots,'babylon-oak-1280.png')});
     await page.getByRole('button',{name:'Camera',exact:false}).click();
-    await page.getByLabel('Table design',{exact:true}).selectOption('obsidian-glass');
+    await pickDesign('obsidian-glass');
     await page.getByRole('button',{name:'Camera',exact:false}).click();
     await page.screenshot({path:path.join(shots,'babylon-obsidian-1280.png')});
   }
