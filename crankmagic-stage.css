@@ -444,8 +444,13 @@ body.cm-hand-dragging,body.cm-hand-dragging *{cursor:grabbing!important;user-sel
    card's own mana cost stays in sight (Rob, 2026-10-21: "covering the card's mana value"); never under 10px, light on dark
    in either theme (the theme's ink turns light in dark, a11y-board). The name
    leaves it room (a badge over the name made its letters unreadable, a11y-board), wrapping sooner instead. */
-.cm-bcard.has-tax .cm-bcard-name{right:calc(5% + max(10px,calc(var(--bc,72px) * .13)) * 1.7 + 10px)}
+.cm-bcard.has-tax .cm-bcard-name{right:calc(4% + 15px * var(--hud-scale,1) * 1.2 + 12px)}
 .cm-bcard-tax{position:absolute;right:4%;top:13%;z-index:2;padding:1px 5px;border-radius:5px;background:#0b1d1f;color:#f3fff7;font-size:max(10px,calc(var(--bc,72px) * .13));font-weight:800;line-height:1.2;pointer-events:none}
+/* On the board the badge's text is 15px times the HUD scale (the board's small-text rule, further down), and the name's room above
+   was still reckoned from the 10px it once was: at the default scale the two met edge to edge (16px against 16px on a 45px card),
+   and a pixel of font difference, or a larger HUD scale, laid the badge over the name (ROB-236; Actions' Linux, Focus at 1280x720).
+   The badge is at least 1.2em wide, and the name's rule above leaves exactly that, its padding and 2px. */
+#matrix-v2 .cm-board .cm-bcard-tax{box-sizing:content-box;min-width:1.2em;text-align:center}
 /* PARTNERS (ROB-29): both commanders in the command zone, the second over the first like a small pile, each its own button. */
 .cm-board-pile>.cm-board-partners{position:relative;justify-self:start;display:block;z-index:1}
 .cm-mat:not(.is-bare) .cm-board-pile>.cm-board-partners{margin:-3px 0 0 -3px}
