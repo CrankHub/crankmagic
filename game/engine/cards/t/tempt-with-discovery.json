@@ -1,0 +1,104 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Tempt with Discovery",
+    "oracleId": "4baa6145-216e-476b-b178-aaaa1e633701",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Tempting offer — Search your library for a land card and put it onto the battlefield. Each opponent may search their library for a land card and put it onto the battlefield. For each opponent who searches a library this way, search your library for a land card and put it onto the battlefield. Then each player who searched a library this way shuffles.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Tempting offer — Search your library for a land card and put it onto the battlefield. Each opponent may search their library for a land card and put it onto the battlefield. For each opponent who searches a library this way, search your library for a land card and put it onto the battlefield. Then each player who searched a library this way shuffles.",
+      "targets": [],
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "library",
+          "selector": {
+            "types": [
+              "Land"
+            ]
+          },
+          "to": "battlefield"
+        },
+        {
+          "effect": "repeatFor",
+          "each": "opponent",
+          "effects": [
+            {
+              "effect": "modal",
+              "chooser": "that player",
+              "title": "Tempting offer: search your library for a land card and put it onto the battlefield?",
+              "modes": [
+                {
+                  "text": "Search",
+                  "did": true,
+                  "effects": [
+                    {
+                      "effect": "chooseCard",
+                      "zone": "library",
+                      "selector": {
+                        "types": [
+                          "Land"
+                        ]
+                      },
+                      "to": "battlefield",
+                      "who": "that player"
+                    }
+                  ]
+                },
+                {
+                  "text": "Don't",
+                  "effects": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "effect": "repeatFor",
+          "each": "who did",
+          "effects": [
+            {
+              "effect": "chooseCard",
+              "zone": "library",
+              "selector": {
+                "types": [
+                  "Land"
+                ]
+              },
+              "to": "battlefield"
+            }
+          ]
+        },
+        {
+          "effect": "shuffle"
+        },
+        {
+          "effect": "repeatFor",
+          "each": "who did",
+          "effects": [
+            {
+              "effect": "shuffle",
+              "who": "that player"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

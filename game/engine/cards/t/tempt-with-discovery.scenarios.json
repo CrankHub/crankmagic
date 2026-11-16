@@ -1,0 +1,987 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Tempt with Discovery",
+  "scenarios": [
+    {
+      "name": "One opponent searches: Rob finds a land, Maya finds one, and Rob finds another for her; all three shuffle",
+      "library": [
+        "Forest",
+        "Island",
+        "Swamp",
+        "Mountain",
+        "Plains",
+        "Command Tower"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Search",
+                  "Don't"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Swamp"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Mountain"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 18
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "The opponent declines: Rob finds one land only, and Maya does not search",
+      "library": [
+        "Forest",
+        "Island",
+        "Swamp",
+        "Mountain",
+        "Plains",
+        "Command Tower"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Search",
+                  "Don't"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "stack": 0
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three opponents: Maya and Sam search, Trey declines -- Rob finds three lands in all, asked in turn order",
+      "library": [
+        "Forest",
+        "Island",
+        "Swamp",
+        "Mountain",
+        "Plains",
+        "Command Tower"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Swamp"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 3
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Mountain"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Plains"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Command Tower"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island",
+            "Plains",
+            "Command Tower"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 3,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "stack": 0
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 3,
+              "name": "Sam"
+            }
+          }
+        }
+      ],
+      "seats": 4
+    },
+    {
+      "name": "An opponent who searches and finds nothing has still searched: Rob searches again, and she shuffles",
+      "library": [
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "cards": [
+            "Forest",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "cards": [
+            "Sol Ring"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Forest"
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Forest",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 21
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "No land in Rob's library: he searches, finds none, and still searches again for an opponent who searched",
+      "library": [
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "cards": [
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "stack": 0
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 1,
+              "name": "Maya"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "A land card of any kind: a nonbasic land is found as a basic is",
+      "library": [
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Sol Ring",
+        "Command Tower"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Command Tower"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Command Tower"
+          ]
+        },
+        {
+          "choose": [
+            "Don't"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Command Tower"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "library": [
+        "Forest",
+        "Island",
+        "Swamp",
+        "Mountain",
+        "Plains",
+        "Command Tower"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tempt with Discovery"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Tempt with Discovery"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Tempt with Discovery"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "choose": [
+            "Search"
+          ]
+        },
+        {
+          "choose": [
+            "Swamp"
+          ]
+        },
+        {
+          "choose": [
+            "Mountain"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp"
+          ]
+        }
+      ]
+    }
+  ]
+}

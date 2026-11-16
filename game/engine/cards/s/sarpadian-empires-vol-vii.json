@@ -1,0 +1,159 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Sarpadian Empires, Vol. VII",
+    "oracleId": "f71d55f5-f220-4cb0-9468-b8d339ab8535",
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [
+      "Book"
+    ],
+    "manaCost": "{3}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "As this artifact enters, choose white Citizen, blue Camarid, black Thrull, red Goblin, or green Saproling.\n{3}, {T}: Create a 1/1 creature token of the chosen color and type.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "replacement",
+      "text": "As this artifact enters, choose white Citizen, blue Camarid, black Thrull, red Goblin, or green Saproling.",
+      "watches": {
+        "event": "enters",
+        "who": "self"
+      },
+      "change": {
+        "choose": [
+          "white Citizen",
+          "blue Camarid",
+          "black Thrull",
+          "red Goblin",
+          "green Saproling"
+        ]
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "{3}, {T}: Create a 1/1 creature token of the chosen color and type.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{3}"
+        },
+        {
+          "atom": "{T}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "condition": {
+            "chosen": "white Citizen"
+          },
+          "token": {
+            "name": "Citizen",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Citizen"
+            ],
+            "colors": [
+              "W"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "effect": "createToken",
+          "count": 1,
+          "condition": {
+            "chosen": "blue Camarid"
+          },
+          "token": {
+            "name": "Camarid",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Camarid"
+            ],
+            "colors": [
+              "U"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "effect": "createToken",
+          "count": 1,
+          "condition": {
+            "chosen": "black Thrull"
+          },
+          "token": {
+            "name": "Thrull",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Thrull"
+            ],
+            "colors": [
+              "B"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "effect": "createToken",
+          "count": 1,
+          "condition": {
+            "chosen": "red Goblin"
+          },
+          "token": {
+            "name": "Goblin",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Goblin"
+            ],
+            "colors": [
+              "R"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "effect": "createToken",
+          "count": 1,
+          "condition": {
+            "chosen": "green Saproling"
+          },
+          "token": {
+            "name": "Saproling",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Saproling"
+            ],
+            "colors": [
+              "G"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ]
+    }
+  ]
+}
