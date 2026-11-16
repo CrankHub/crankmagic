@@ -2990,6 +2990,12 @@ function performOffered(state, player, action, during) {
     const payment = manaAbilityPayment(state, player, ability);
     if (!produced || !payment || !withinLimit(state, action.objectId, ability) || !countersPayable(state, action.objectId, ability.counterCost) || !millPayable(state, player, ability))
       throw new Error(`${object.card} cannot add that mana now`);
+    /* Refused before anything is paid or tapped: a land that makes more than one type, with a "type that land produced" trigger
+       watching it (manaPickable), is activated with its pick -- one type of what it makes for each such trigger (manaTriggered). */
+    const picksOwed = ability.tapSelf && MANA_KEYS.filter((k) => (produced[k] ?? 0) > 0).length > 1
+      ? manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced, source: {cardId: action.objectId}}}}) : 0;
+    if (picksOwed > 0 && (action.extra ?? []).length < picksOwed)
+      throw new Error(`Choose which of the types ${object.card} produces to add one more of (${MANA_KEYS.filter((k) => (produced[k] ?? 0) > 0).join(", ")}) before tapping it`);
     const pool = state.players[player].manaPool;
     spend(pool, payment.mana);
     const life = (ability.payLife ?? 0) + payment.life;
