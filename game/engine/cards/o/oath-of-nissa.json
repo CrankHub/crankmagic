@@ -1,0 +1,79 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Oath of Nissa",
+    "oracleId": "c4efdbab-711d-4269-9b24-b05d36f7e5c7",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Enchantment"
+    ],
+    "subtypes": [],
+    "manaCost": "{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "When Oath of Nissa enters, look at the top three cards of your library. You may reveal a creature, land, or planeswalker card from among them and put it into your hand. Put the rest on the bottom of your library in any order.\nYou may spend mana as though it were mana of any color to cast planeswalker spells.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When Oath of Nissa enters, look at the top three cards of your library. You may reveal a creature, land, or planeswalker card from among them and put it into your hand. Put the rest on the bottom of your library in any order.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "dig",
+          "count": 3,
+          "take": 1,
+          "upTo": true,
+          "selector": {
+            "anyOf": [
+              {
+                "types": [
+                  "Creature"
+                ]
+              },
+              {
+                "types": [
+                  "Land"
+                ]
+              },
+              {
+                "types": [
+                  "Planeswalker"
+                ]
+              }
+            ]
+          },
+          "reveal": "taken",
+          "to": "hand",
+          "rest": "bottom"
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "You may spend mana as though it were mana of any color to cast planeswalker spells.",
+      "rule": "spend-as-any-color",
+      "affects": {
+        "what": "player",
+        "who": "you"
+      },
+      "spells": {
+        "types": [
+          "Planeswalker"
+        ]
+      }
+    }
+  ]
+}

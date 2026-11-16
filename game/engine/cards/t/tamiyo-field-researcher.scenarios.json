@@ -1,0 +1,1123 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Tamiyo, Field Researcher",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ox": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ox"
+      ],
+      "manaCost": "{1}{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 2,
+      "toughness": 3
+    },
+    "Giant": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Giant"
+      ],
+      "manaCost": "{4}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Rhino": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Rhino"
+      ],
+      "manaCost": "{4}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 5,
+      "toughness": 5,
+      "keywords": [
+        "Trample"
+      ]
+    },
+    "Llanowar Elf": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Elf"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 1,
+      "toughness": 1,
+      "abilities": [
+        {
+          "id": "t-g",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "G": 1
+          }
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "name": "+1 at the Bear and the Ox, both attacking Maya: each deals combat damage and Rob draws a card for each (two); Tamiyo has 5 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Bear",
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Bear"
+              },
+              {
+                "card": "Ox"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Bear",
+            "Ox"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 2
+        },
+        {
+          "seat": 1,
+          "life": 36
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1 at the Bear alone: the Ox, not chosen, deals combat damage too, and Rob draws just the one card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Bear",
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Bear"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Bear",
+            "Ox"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "+1 with nobody chosen (up to two): Tamiyo still gets her loyalty counter, and no card is drawn when the Bear hits",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1 lasts through Maya's turn: the chosen Bear blocks her Giant and deals combat damage to it -- Rob draws a card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Giant"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Bear"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Giant"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Bear",
+              "Giant"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "+1: the Ox, not chosen, blocks and deals combat damage on Maya's turn -- no card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Bear",
+            "Ox"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Giant"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Bear"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Giant"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Ox",
+              "Giant"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "+1 at the Rhino, trampling over Maya's Bear: it deals combat damage to the Bear and to Maya at once, and Rob draws one card for it, not two",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Rhino"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Rhino"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Rhino"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Bear",
+              "Rhino"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2",
+            "settle": true
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "+1 at the Giant attacking Maya's Jace: damage to a planeswalker is combat damage too -- Rob draws a card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Giant"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Giant"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Giant"
+          ],
+          "at": "Jace Beleren (Maya)"
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "+1 is over when Rob's next turn begins: the Bear attacks on turn 3 and nothing is drawn but the turn's own card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Bear"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "hand",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "life": 38
+        }
+      ]
+    },
+    {
+      "name": "-2 at Maya's Bear and Giant: both tapped, and still tapped after her untap step; they untap in the one after (Tamiyo has 2)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Giant"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a1",
+          "targets": [
+            [
+              {
+                "card": "Bear",
+                "seat": 1
+              },
+              {
+                "card": "Giant",
+                "seat": 1
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Bear"
+            },
+            {
+              "seat": 1,
+              "tapped": "Giant"
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Bear"
+            },
+            {
+              "seat": 1,
+              "tapped": "Giant"
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 4,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Bear",
+              "is": false
+            },
+            {
+              "seat": 1,
+              "tapped": "Giant",
+              "is": false
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 at one permanent (up to two) -- Maya's Ox: tapped and held through her next untap step",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a1",
+          "targets": [
+            [
+              {
+                "card": "Ox",
+                "seat": 1
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Ox"
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 at a permanent already tapped (Rob's own Elf, tapped for mana): it does not untap in Rob's next untap step either",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher",
+            "Llanowar Elf"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Llanowar Elf"
+        },
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a1",
+          "targets": [
+            [
+              {
+                "card": "Llanowar Elf"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Llanowar Elf"
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Llanowar Elf",
+              "is": false
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2 at no one (up to two): Tamiyo is still paid 2 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a1",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Bear",
+              "is": false
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "At 4 loyalty the -7 is not paid: only the +1 and the -2 are offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Tamiyo, Field Researcher"
+              },
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "-7 after three +1s: Rob draws three and gets the emblem -- the Giant in his hand is cast for nothing (it could not be before), his lands untouched",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tamiyo, Field Researcher"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Giant"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a0",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Tamiyo, Field Researcher",
+                "counter": "loyalty",
+                "count": 7
+              }
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Giant"
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "activate": "Tamiyo, Field Researcher",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "command",
+              "cards": [
+                "Tamiyo, Field Researcher emblem"
+              ]
+            },
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "cards": [
+                "Tamiyo, Field Researcher"
+              ]
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "count": 7
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Giant"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Giant"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Giant"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands, nothing tapped by hand: Tamiyo enters with 4 loyalty",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Plains",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Tamiyo, Field Researcher"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Tamiyo, Field Researcher"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Tamiyo, Field Researcher"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Tamiyo, Field Researcher",
+            "counter": "loyalty",
+            "count": 4
+          }
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Tamiyo, Field Researcher",
+            "Forest",
+            "Plains",
+            "Island",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

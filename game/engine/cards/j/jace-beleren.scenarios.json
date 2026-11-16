@@ -1,0 +1,488 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Jace Beleren",
+  "scenarios": [
+    {
+      "name": "+2: each player draws a card -- Rob and Maya each one more, and Jace has 5 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace Beleren",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "-1 at Maya: only Maya draws; Jace has 2 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jace Beleren",
+          "ability": "a1",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace Beleren",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-1 at himself: Rob draws (the target is any player)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jace Beleren",
+          "ability": "a1",
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace Beleren",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "At 3 loyalty the -10 is not paid: only the +2 and the -1 (at either player) are offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Jace Beleren"
+              },
+              "count": 3
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace Beleren",
+            "counter": "loyalty",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "-10 after four +2s (11 loyalty): Maya mills what she has left, twelve, and Jace is left with 1",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 8,
+            "phase": "CLEANUP"
+          }
+        },
+        {
+          "choose": [
+            "Wastes"
+          ]
+        },
+        {
+          "to": {
+            "turn": 9,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Jace Beleren",
+                "counter": "loyalty",
+                "count": 11
+              }
+            },
+            {
+              "seat": 1,
+              "zone": "library",
+              "count": 12
+            },
+            {
+              "seat": 1,
+              "zone": "graveyard",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a2",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 0
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "count": 13
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 12
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace Beleren",
+            "counter": "loyalty",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "-10 at himself: Rob mills his own library, and Maya is untouched",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 7,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 8,
+            "phase": "CLEANUP"
+          }
+        },
+        {
+          "choose": [
+            "Wastes"
+          ]
+        },
+        {
+          "to": {
+            "turn": 9,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jace Beleren",
+          "ability": "a2",
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "count": 12
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 12
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands, nothing tapped by hand: Jace enters with 3 loyalty",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Jace Beleren"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Jace Beleren"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Jace Beleren"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace Beleren",
+            "counter": "loyalty",
+            "count": 3
+          }
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Jace Beleren",
+            "Island",
+            "Island",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

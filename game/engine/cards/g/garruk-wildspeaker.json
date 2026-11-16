@@ -1,0 +1,118 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Garruk Wildspeaker",
+    "oracleId": "186b4def-4fff-4a2b-bcbf-5318b0ac5fa9",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Garruk"
+    ],
+    "manaCost": "{2}{G}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 3
+  },
+  "oracleText": "+1: Untap two target lands.\n−1: Create a 3/3 green Beast creature token.\n−4: Creatures you control get +3/+3 and gain trample until end of turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "+1: Untap two target lands.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "untap",
+          "targets": {
+            "target": 0
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Land"
+          ],
+          "count": {
+            "min": 2,
+            "max": 2
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−1: Create a 3/3 green Beast creature token.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Beast",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Beast"
+            ],
+            "colors": [
+              "G"
+            ],
+            "power": 3,
+            "toughness": 3
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−4: Creatures you control get +3/+3 and gain trample until end of turn.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -4
+        }
+      ],
+      "effects": [
+        {
+          "effect": "pumpAll",
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you"
+          },
+          "power": 3,
+          "toughness": 3,
+          "keywords": [
+            "Trample"
+          ],
+          "until": "end-of-turn"
+        }
+      ]
+    }
+  ]
+}
