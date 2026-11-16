@@ -18,6 +18,20 @@
           }
         }
       ]
+    },
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
     }
   },
   "scenarios": [
@@ -414,6 +428,83 @@
             "Wastes",
             "Wastes"
           ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, a land making two types among them: Terminate is paid from the plain lands, and the two-type land -- whose type to add one more of is its tapper's pick -- is not tapped for the cast on its own",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Heartbeat of Spring",
+            "Rakdos Carnarium",
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Terminate"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Terminate"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Terminate",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Terminate"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "tapped": "Rakdos Carnarium",
+          "is": false
         }
       ]
     }

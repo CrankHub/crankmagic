@@ -872,7 +872,7 @@ export function effectUntil(state, params, context) {
       /* "Creatures they control can't attack Jaces you control this turn" (Jace, Multiverse Architect): a rule changed,
          not a characteristic, so it reaches the creatures that player controls as they are -- one that arrives later
          included (CR 611.2c is about characteristics) -- `who` the player, bound as it resolves ("that player"). */
-      : (params.rule === "cant-attack" || params.rule === "attacks-planeswalker") && Array.isArray(params.who) ? {what: "permanent", controller: params.who[0] ?? -1}
+      : params.rule === "cant-attack" && Array.isArray(params.who) ? {what: "permanent", controller: params.who[0] ?? -1}
       : params.affects ?? {what: "permanent"},
     /* `toward`: which planeswalkers they can't attack ("Jaces you control"), "you" this effect's controller -- attacking a
        player, or any other planeswalker, they still may (rules/statics.mjs, cantAttack). */
@@ -927,7 +927,6 @@ export function effectUntil(state, params, context) {
        a rule changed, not a characteristic, CR 611.2c) -- read where attackers are declared (rules/statics.mjs,
        mustAttackPlaneswalkers; rules/combat.mjs). Over as that player's next turn ends (`their-next-end`, rules/turn.mjs). */
     ...(params.rule === "attacks-planeswalker" ? {planeswalker: context.source ?? null} : {}),
-    ...(params.until === "their-next-end" ? {madeOnTurn: state.turn} : {}),
     /* A PREVENTION SHIELD OF A PLAYER'S (CR 615; rules/replacement.mjs, preventionsFor): "prevent all combat damage that would
        be dealt to you this turn" (Inkshield) -- `who`, the players it shields -- "the next time a source of your choice
        would deal damage to you this turn" (Deflecting Palm) -- `from`, the sources chosen (CR 609.7a), and `next`, used up
@@ -1295,7 +1294,6 @@ export function delayedTrigger(state, params, context) {
      creatures deals combat damage" (Tamiyo, Field Researcher's +1; `watchEach`): every one it names, as it resolves -- none chosen,
      and it waits on nothing at all, so none is made. */
   const watched = waits && params.watch !== undefined ? bindEffect({targets: params.watch}, context).targets ?? [] : undefined;
-  if (params.watchEach === true && watched !== undefined && !watched.length) return [];
   const watch = watched === undefined ? undefined : params.watchEach === true ? [...watched] : (watched[0] ?? null);
   state.delayedTriggers.push({
     ...(waits ? {on: structuredClone(params.on), ...(watch !== undefined ? {watch} : {}), ...(params.thisTurn ? {thisTurn: true} : {}), ...(params.once ? {once: true} : {}),

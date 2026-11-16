@@ -2598,8 +2598,6 @@ const sameAction = (a, b) => a.kind === b.kind
   && (a.objectId ?? null) === (b.objectId ?? null)
   && (a.abilityId ?? null) === (b.abilityId ?? null)
   && (a.produce ?? null) === (b.produce ?? null)
-  /* And a tap that picks another type for its triggered mana to add (Heartbeat of Spring) another than one that picks the first. */
-  && JSON.stringify(a.extra ?? null) === JSON.stringify(b.extra ?? null)
   && (a.x ?? null) === (b.x ?? null)
   /* A cast with flashback is another action than the same card cast another way: it is exiled after (CR 702.34a). */
   && (a.flashback === true) === (b.flashback === true)

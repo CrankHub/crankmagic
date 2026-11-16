@@ -1,0 +1,206 @@
+{
+  "schema": "library-load-lane@1",
+  "lane": "Rob's box and upgrade cards for D1, D3, D4, D5, D6 and D8, 2026-11-15",
+  "source": {
+    "list": "pasted by Rob 2026-11-15",
+    "distinct": 28
+  },
+  "cards": [
+    {
+      "name": "Bloodthirsty Blade",
+      "copies": 1,
+      "deck": "D5",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Comet Storm",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Dictate of Kruphix",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Felothar, Dawn of the Abzan",
+      "copies": 1,
+      "deck": "D4",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Garruk Wildspeaker",
+      "copies": 1,
+      "deck": "D1",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Garruk, Unleashed",
+      "copies": 1,
+      "deck": "D1",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Gideon Jura",
+      "copies": 1,
+      "deck": "D1",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Hardened Tactician",
+      "copies": 1,
+      "deck": "D5",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Heartbeat of Spring",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Heritage Reclamation",
+      "copies": 1,
+      "deck": "D3",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Heroes' Reunion",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Improvised Club",
+      "copies": 1,
+      "deck": "D6",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Jace Beleren",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Kardur, Doomscourge",
+      "copies": 1,
+      "deck": "D5",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Lazotep Plating",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Mathas, Fiend Seeker",
+      "copies": 1,
+      "deck": "D5",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Minds Aglow",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Mjölnir, Hammer of Thor",
+      "copies": 1,
+      "deck": "D5",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Moon-Blessed Cleric",
+      "copies": 1,
+      "deck": "D8",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Oath of Nissa",
+      "copies": 1,
+      "deck": "D1",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Plea for Guidance",
+      "copies": 1,
+      "deck": "D8",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Rites of Flourishing",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Sarpadian Empires, Vol. VII",
+      "copies": 1,
+      "deck": "D8",
+      "where": "upgrade",
+      "loadedHere": true
+    },
+    {
+      "name": "Selvala, Explorer Returned",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Tamiyo, Field Researcher",
+      "copies": 1,
+      "deck": "D1",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Tempt with Discovery",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "The Sentry, Golden Guardian",
+      "copies": 1,
+      "deck": "D5",
+      "where": "box",
+      "loadedHere": true
+    },
+    {
+      "name": "Veteran Explorer",
+      "copies": 1,
+      "deck": "D8",
+      "where": "box",
+      "loadedHere": true
+    }
+  ]
+}

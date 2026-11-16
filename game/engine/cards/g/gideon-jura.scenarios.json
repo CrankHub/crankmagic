@@ -70,6 +70,20 @@
           }
         }
       ]
+    },
+    "Inkling": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Inkling"
+      ],
+      "manaCost": "{1}{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 2,
+      "toughness": 2
     }
   },
   "scenarios": [
@@ -768,6 +782,67 @@
             "Wastes",
             "Wastes"
           ]
+        }
+      ]
+    },
+    {
+      "name": "+2 with Combat Calligrapher: an Inkling cannot attack a planeswalker its controller's opponent controls, so it is not made to -- the Bear attacks Gideon alone (8 - 2 = 6) and the Inkling stays home",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gideon Jura",
+            "Combat Calligrapher"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Inkling"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Gideon Jura",
+          "ability": "a0",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Gideon Jura",
+            "counter": "loyalty",
+            "count": 6
+          }
+        },
+        {
+          "seat": 1,
+          "tapped": "Inkling",
+          "is": false
+        },
+        {
+          "seat": 1,
+          "tapped": "Bear",
+          "is": true
         }
       ]
     }

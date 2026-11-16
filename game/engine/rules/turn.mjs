@@ -338,7 +338,7 @@ function endOfTurn(state, events) {
   /* "During target opponent's next turn" (Gideon Jura's +2): over at the end of the first turn of that player begun after it was
      made (CR 514.2), as the effect's `players` say -- never this turn's, which began before it. */
   if ((state.effects ?? []).some((e) => e.until === "their-next-end"))
-    state.effects = state.effects.filter((e) => !(e.until === "their-next-end" && (e.players ?? []).includes(state.activePlayer) && state.turn > e.madeOnTurn));
+    state.effects = state.effects.filter((e) => !(e.until === "their-next-end" && (e.players ?? []).includes(state.activePlayer)));
   /* "Becomes a copy of target artifact until end of turn" ends with them (effects/permanents.mjs). */
   endCopies(state);
   /* And a delayed trigger that lasted "this turn" ("whenever a creature dies this turn", CR 603.7b) ends with them. */
