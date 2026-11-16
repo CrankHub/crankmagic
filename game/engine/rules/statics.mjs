@@ -1366,6 +1366,20 @@ export function playerStatics(state, rule, player) {
 }
 
 /**
+ * THE STATICS THAT NAME EVERY PLAYER (`affects: {what: "player", who: "any"}`), whoever controls their permanent: "each player may
+ * play an additional land on each of their turns" (Rites of Flourishing; CR 305.2). Not playerStatics': that one is its
+ * controller's alone.
+ */
+export function eachPlayerStatics(state, rule) {
+  const held = staticAbilities(state);
+  /* Only a permanent whose own printed ability names every player is read through the layers: this is asked on every offer. */
+  const names = (id) => (state.objects[id].abilities ?? []).some((a) => a.kind === "static" && a.rule === rule && a.affects?.who === "any");
+  return state.zones.battlefield.filter(names).flatMap((holderId) => held(holderId)
+    .filter((ability) => ability.kind === "static" && ability.rule === rule && ability.affects?.who === "any")
+    .map((ability) => ({ability: chosenFor(ability, state.objects[holderId]), source: holderId})));
+}
+
+/**
  * HOW MUCH LESS A SPELL COSTS (CR 601.2f). Every "spells cost {N} less" static ability on the battlefield whose spell
  * selector (`affects`) fits this card, cast by whom it says (`caster`: you, the default, opponent, or any): the
  * generic mana it takes off, summed. The selector is read against the card where it is being cast from, so "a red

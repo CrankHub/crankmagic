@@ -1,0 +1,45 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Minds Aglow",
+    "oracleId": "b259f4e4-04a9-40e0-85e9-34b4b74ee388",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Join forces — Starting with you, each player may pay any amount of mana. Each player draws X cards, where X is the total amount of mana paid this way.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Join forces — Starting with you, each player may pay any amount of mana. Each player draws X cards, where X is the total amount of mana paid this way.",
+      "effects": [
+        {
+          "effect": "unlessPays",
+          "joinForces": true,
+          "amountX": true,
+          "ifPaid": true,
+          "effects": [
+            {
+              "effect": "draw",
+              "count": {
+                "x": true
+              },
+              "who": "each"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

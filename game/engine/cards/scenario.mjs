@@ -190,6 +190,9 @@ export function runScenario(scenario, cards, fixtures = {}) {
     if (kind === "activate" && step.ability !== undefined) found = found.filter((a) => a.abilityId === step.ability);
     /* Which of a mana ability's alternatives: "{T}: Add {W} or {U}" taps for the one named. */
     if (step.mana !== undefined) found = found.filter((a) => JSON.stringify(a.mana) === JSON.stringify(step.mana));
+    /* Which type a triggered mana ability adds one more of, when the tap made more than one (Heartbeat of Spring; CR 605.1b): the
+       offer that names it, `pick: ["G"]` -- one for each such ability. Without it, the tap that asks for none. */
+    found = found.filter((a) => JSON.stringify(a.extra ?? []) === JSON.stringify(step.pick ?? []));
     /* The value chosen for X (CR 107.3): the offer that names it. */
     if (step.x !== undefined) found = found.filter((a) => a.x === step.x);
     /* Which modes, chosen as it is cast (CR 700.2): the offer that names them. */

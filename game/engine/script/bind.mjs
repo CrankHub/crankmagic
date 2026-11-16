@@ -110,7 +110,11 @@ export function countOf(spec, context = {}) {
   const count = spec && typeof spec === "object" ? spec.count : undefined;
   /* "Exile X target creatures" (Curse of the Swine; CR 601.2c, X chosen before the targets, 601.2b): `min` "X" too, exactly X. */
   const x = Math.max(0, context?.x ?? 0);
-  return count && typeof count === "object" ? {min: count.min === "X" ? x : count.min ?? 0, max: count.max === "X" ? x : count.max ?? null} : null;
+  const bounds = count && typeof count === "object" ? {min: count.min === "X" ? x : count.min ?? 0, max: count.max === "X" ? x : count.max ?? null} : null;
+  /* "Choose any target, then choose another target for each time this spell was kicked" (Comet Storm; multikicker, CR 702.33c,
+     601.2c): `plusKicked`, one target more for each time it was kicked -- how the offer was cast (`context.kicked`, or `cast`'s). */
+  const kicks = Math.max(0, context?.kicked ?? context?.cast?.kicked ?? 0);
+  return bounds && count.plusKicked === true ? {min: bounds.min + kicks, max: bounds.max === null ? null : bounds.max + kicks} : bounds;
 }
 /** The placeholder a counted target holds in an offer until its controller picks (rules/turn.mjs, "choose-targets"), and
     how many there are to pick from (`of`): "up to two" with none to pick does nothing, for a pilot weighing the offer. */

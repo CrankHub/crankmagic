@@ -662,9 +662,9 @@ function tappedForMana(state, fields, condition, sourceId, controller) {
  * makes at once, to the player who tapped (its controller, for "its controller adds"). "One mana of any type that land
  * produced": one of what it made.
  */
-export function manaTriggered(state, event) {
+export function manaTriggered(state, event, picks = []) {
   const fields = event?.data?.fields ?? {};
-  const made = [];
+  const made = [], pending = [...picks];
   /* Its triggered mana abilities as they are after layer 6 (CR 613.1f): Ultima made an Elk by Oko adds no {C}. */
   const held = abilitiesReader(state);
   for (const id of state.zones.battlefield) {
@@ -672,7 +672,15 @@ export function manaTriggered(state, event) {
     for (const ability of held(id)) {
       const mana = ability.kind === "triggered" ? ability.trigger?.manaAbility : null;
       if (!mana || !tappedForMana(state, fields, ability.trigger, id, holder.controller)) continue;
-      const [kind] = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
+      const kinds = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
+      /* "Choose one type that was produced and add one mana of that type" (Heartbeat of Spring's ruling, CR 106.1, 605.1b): with
+         more than one type produced the tapping player says which, one pick for each such ability, in the order they are read --
+         the pick the activation was offered with (manaPickable); with one type, no pick. */
+      let kind = kinds[0];
+      if (mana.produced && kinds.length > 1) {
+        kind = pending.shift();
+        if (!kinds.includes(kind)) throw new Error(`Choose which of the types that land produced (${kinds.join(", ")}) to add one more of`);
+      }
       /* "An additional one mana of the chosen color" (Utopia Sprawl): the color its permanent chose as it entered; none
          chosen, none. */
       const chosen = mana.chosenColor === true ? CHOSEN_COLOR_LETTER[holder.chosen] : undefined;
@@ -691,6 +699,21 @@ export function manaTriggered(state, event) {
     made.push({player: mana.toTapper === true ? fields.player?.playerId ?? d.controller : d.controller, mana: {...mana.mana}, source: d.source});
   }
   return made;
+}
+
+/**
+ * HOW MANY TRIGGERED MANA ABILITIES ASK THE TAPPING PLAYER WHICH TYPE (CR 605.1b): those that add one mana "of any type that land
+ * produced", for this tap -- each one a pick, when more than one type was produced (manaTriggered). `event`: what the tap would
+ * say, `{data: {fields: {player, source, produced, tapped}}}`. Zero when the tap triggers none of them.
+ */
+export function manaPicks(state, event) {
+  const fields = event?.data?.fields ?? {};
+  const held = abilitiesReader(state);
+  let picks = 0;
+  for (const id of state.zones.battlefield)
+    for (const ability of held(id))
+      if (ability.kind === "triggered" && ability.trigger?.manaAbility?.produced && tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) picks += 1;
+  return picks;
 }
 
 /**

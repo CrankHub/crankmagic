@@ -1,0 +1,45 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dictate of Kruphix",
+    "oracleId": "be74a4c1-d569-4203-b28a-3e2ac6a82990",
+    "types": [
+      "Enchantment"
+    ],
+    "subtypes": [],
+    "manaCost": "{1}{U}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Flash (You may cast this spell any time you could cast an instant.)\nAt the beginning of each player's draw step, that player draws an additional card.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Flash",
+      "keyword": "flash"
+    },
+    {
+      "kind": "triggered",
+      "text": "At the beginning of each player's draw step, that player draws an additional card.",
+      "trigger": {
+        "on": "step",
+        "step": "DRAW",
+        "yours": false
+      },
+      "effects": [
+        {
+          "effect": "draw",
+          "count": 1,
+          "who": "that player"
+        }
+      ]
+    }
+  ]
+}

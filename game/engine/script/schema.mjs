@@ -258,6 +258,10 @@ function checkEffect(effect, path, errors) {
     errors.push({path: `${path}.timesAny`, message: "\"You may pay a cost any number of times\" is `timesAny: true` with `ifPaid: true` and a `mana` cost, nothing else to pay beside it"});
   if (name === "unlessPays" && effect.amountX !== undefined && !(effect.amountX === true && effect.ifPaid === true && effect.amount === undefined && effect.mana === undefined))
     errors.push({path: `${path}.amountX`, message: "\"You may pay {X}\" is `amountX: true` with `ifPaid: true`, and no amount or mana beside it"});
+  /* "Join forces -- starting with you, each player may pay any amount of mana" (Minds Aglow; effects/asking.mjs): every player,
+     the amount chosen as it is paid -- `amountX` and `ifPaid`, and no payer named, as the controller is first. */
+  if (name === "unlessPays" && effect.joinForces !== undefined && !(effect.joinForces === true && effect.amountX === true && effect.ifPaid === true && effect.who === undefined))
+    errors.push({path: `${path}.joinForces`, message: "\"Join forces\" is `joinForces: true` with `amountX: true` and `ifPaid: true`, and no `who`"});
   if (name === "play" && effect.exileInstead !== undefined && effect.exileInstead !== true)
     errors.push({path: `${path}.exileInstead`, message: "\"If that spell would be put into a graveyard, exile it instead\" is `exileInstead: true`"});
   /* Discover's two ways (Hit the Mother Lode; effects/asking.mjs): what follows no cast, a list, and the spell cast remembered. */
@@ -445,7 +449,9 @@ function checkSelector(selector, path, errors, {choice = false} = {}) {
 /* A target's count: `min` a whole number (0 when absent), `max` a whole number at least 1 and at least `min`, or absent. */
 /* `x`: "up to that many" -- a reflexive trigger's `max: "X"`, the X it was made with (Bloodthirsty Adversary). */
 const countValid = (count, {x = false} = {}) => Boolean(count) && typeof count === "object" && !Array.isArray(count)
-  && Object.keys(count).every((k) => k === "min" || k === "max")
+  /* `plusKicked` ("another target for each time this spell was kicked", Comet Storm; script/bind.mjs countOf): one more of the
+     whole numbers it names for each kick, a spell's alone. */
+  && Object.keys(count).every((k) => k === "min" || k === "max" || (k === "plusKicked" && count[k] === true && Number.isInteger(count.min) && Number.isInteger(count.max)))
   /* "Exile X target creatures" (Curse of the Swine; script/bind.mjs countOf): exactly X, `{min: "X", max: "X"}`. */
   && (count.min === undefined || (Number.isInteger(count.min) && count.min >= 0) || (count.min === "X" && count.max === "X"))
   && (count.max === undefined || (x && count.max === "X" && (count.min ?? 0) === 0) || (count.min === "X" && count.max === "X") || (Number.isInteger(count.max) && count.max >= 1 && count.max >= (count.min ?? 0)));
@@ -474,6 +480,9 @@ function checkAbility(ability, path, errors, {permanent = false, manaX = false} 
        (CR 601.2b-c). */
     if (count !== undefined && !countValid(count, {x: ability.kind === "spell" && manaX}))
       errors.push({path: `${path}.targets[${index}].count`, message: "A target's count is `{min, max}`: whole numbers, max at least 1 and at least min, or no max for \"any number\""});
+    /* "Another target for each time this spell was kicked" (Comet Storm; script/bind.mjs countOf): a spell's alone. */
+    if (count?.plusKicked !== undefined && ability.kind !== "spell")
+      errors.push({path: `${path}.targets[${index}].count`, message: "\"Another target for each time it was kicked\" (`plusKicked`) is a spell's count"});
     /* "Target artifact a player controls and target artifact card in that player's graveyard" (Goblin Welder; script/bind.mjs,
        `ownedByControllerOf`): an earlier, single target of the same ability, a permanent -- this one a card, uncounted. */
     if (ownedByControllerOf !== undefined && !(Number.isInteger(ownedByControllerOf) && ownedByControllerOf >= 0 && ownedByControllerOf < index && count === undefined
