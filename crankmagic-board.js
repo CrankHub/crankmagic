@@ -5060,7 +5060,9 @@ globalThis.CrankBoard = Object.seal({
     if(document.getElementById('cm-card-menu'))return;
     if(C.accountMenuOpen?.() || document.querySelector('#cm-user-menu:popover-open'))return;
     if (event.key === "Escape" && coach.open && event.target.closest?.("#cm-board-coach")) {event.preventDefault(); actions["board-coach"](); return;}
-    if (event.key === "Escape" && peekId !== null && !showing) {peek(null); return;}
+    /* Escape closes what is showing. While a card is being inspected no hover preview is drawn, but the card last hovered is
+       still remembered: that memory must not take the Escape meant for the inspection (ROB-236; it took two presses). */
+    if (event.key === "Escape" && peekId !== null && !showing) {peek(null); if (!inspection) return;}
     if (event.key === "Escape" && stackShown !== null) stackPeek(null);
     /* ⌘/Ctrl + and − still size the cards with the Settings window open, as its card-size line says. */
     const sizing = (event.ctrlKey || event.metaKey) && ["+", "=", "-", "_"].includes(event.key);
