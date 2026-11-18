@@ -82,6 +82,8 @@ export function tableEvent(event, eventId) {
       return at("monarch", {player: f.player.playerId});
     case "GameEventDieRolled":
       return at("roll", {player: f.player.playerId, sides: f.sides, result: f.result});
+    case "GameEventCoinFlipped":
+      return at("flip", {player: f.player.playerId, won: f.won === true});
     case "GameEventGameOutcome":
       return at("over", {winner: f.winner ?? null});
     default:

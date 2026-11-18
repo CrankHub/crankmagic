@@ -1517,6 +1517,33 @@ export const chooseColor = {
   },
 };
 
+/* ---- choosePlayer: "choose an opponent" as an effect resolves (Faramir, Prince of Ithilien) -- a player CHOSEN, never targeted, so
+   hexproof or protection from it stops nothing (CR 115.1, 601.2c's targets are another thing). One of its controller's opponents
+   still in the game (CR 800.4a), its controller's choice; what is chosen, the effects after it name "the chosen player"
+   (script/bind.mjs), and a delayed trigger made after it waits for that player's own turn (`player`, effects/permanents.mjs). With
+   one opponent left the rules leave no choice, so it is chosen and nobody is asked. ---- */
+export const choosePlayer = {
+  open(state, params, context) {
+    const opponents = state.players.filter((p) => p.id !== context.controller && !p.lost).map((p) => p.id);
+    if (opponents.length === 0) return false;
+    if (opponents.length === 1) { context.chosenPlayer = opponents[0]; return false; }
+    state.awaiting = {kind: "effect-choice", effect: "choosePlayer", player: context.controller, source: context.source ?? null, options: opponents};
+    return true;
+  },
+  choice(state, awaiting) {
+    const name = awaiting.source !== null ? state.objects[awaiting.source]?.card : null;
+    return {id: `choosePlayer:${awaiting.player}:${state.turn}`, title: `${name ? `${name}: c` : "C"}hoose an opponent`, mode: "one", min: 1, max: 1,
+      options: awaiting.options.map((id, index) => ({index, label: state.players[id].name}))};
+  },
+  apply(state, awaiting, indices) {
+    const picked = (indices ?? []).length === 1 ? awaiting.options[indices[0]] : undefined;
+    if (picked === undefined) throw new Error("Choose one opponent");
+    return {events: [], chosenPlayer: picked};
+  },
+  /* Its controller left the game: the spell or ability left with them (CR 800.4a), and nothing is chosen. */
+  left() { return {events: []}; },
+};
+
 /* ---- manaColors: "add one mana of any color" as an effect resolves (CR 106.1a, 106.3) ----
 
    "At the beginning of your first main phase, remove all charge counters from this artifact. Add one mana of any color for
@@ -3032,7 +3059,7 @@ export const ASKING = Object.freeze({
     choice: mergedOrderChoice, apply: finishMergedOrder,
     left(state, awaiting) { return finishMergedOrder(state, awaiting, awaiting.cards.map((_, i) => i)); },
   },
-  mergePermanent, ringTempts, twoPiles, scry, rearrangeTop, surveil, dig, discard, modal, chooseCard, proliferate, sacrifice, populate, amass, unlessPays, copySpell, chooseType, chooseColor, play, changeTargets, attackWhom, enchantWhat, commanderHome, orderDamage, orderCounters, orderTokens, orderDraws, explore,
+  mergePermanent, ringTempts, twoPiles, scry, rearrangeTop, surveil, dig, discard, modal, chooseCard, proliferate, sacrifice, populate, amass, unlessPays, copySpell, chooseType, chooseColor, choosePlayer, play, changeTargets, attackWhom, enchantWhat, commanderHome, orderDamage, orderCounters, orderTokens, orderDraws, explore,
   conniveWhich, manaColors, counterKind, countersToRemove, countersOnto, orderDestruction, chooseInstead, chooseSource, vote,
   /* Wave 4c: a hand looked at (Gitaxian Probe). */
   handLook,

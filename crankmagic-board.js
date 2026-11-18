@@ -168,6 +168,9 @@ globalThis.CrankBoard = Object.seal({
     choiceFlow=CrankChoiceFlow.create(pathOptions(options),flowContext());
     showing=null;held=null;peek(null);draw();
   }
+  /* Asked in a run you chose Resolve all for: this answer goes for the same question each time the run asks it (Rob, 2026-10-09:
+     "Yes to all"; game/room/room.mjs). Said by the pane and the pop-up alike. */
+  const forRunNote = d => d.forRun ? `<p class="cm-muted cm-board-for-run">Resolve all: your answer goes for this same question each time the run asks it.</p>` : "";
   function flowDecision(d) {
     if(flowPaused)return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" aria-label="${e(d.title)}"><h2>${e(d.kind==='priority' ? findCard(actionCard)?.name || d.title : d.title)}</h2>${b('Resume','board-flow-resume')}</section>`;
     if(!choiceFlow)choiceFlow=CrankChoiceFlow.create(pathOptions(d.options),flowContext());
@@ -188,7 +191,8 @@ globalThis.CrankBoard = Object.seal({
       const output=n.kind==='mana-source' && review[i+1]?.key.startsWith('mana-color:') ? review[++i] : null;
       reviewRows.push(`<li data-kind="${e(n.kind)}"${n.automatic?' data-automatic="true"':''}>${visual(n)}<span>${n.key==='mana-payment'?'Pay':label(n)}</span>${output?label(output):n.key==='mana-payment'?label({...n,label:n.reviewLabel ?? n.label}):''}</li>`);
     }
-    return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" data-flow-status="${step.status}" aria-label="${e(d.title)}"><h2>${e(source?.name || (d.kind==='priority' ? d.options.find(o=>o.index===step.index)?.label : d.title) || d.title)}</h2>
+    const forRun = forRunNote(d);
+    return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" data-flow-status="${step.status}" aria-label="${e(d.title)}"><h2>${e(source?.name || (d.kind==='priority' ? d.options.find(o=>o.index===step.index)?.label : d.title) || d.title)}</h2>${forRun}
       ${source?.name?`<button class="cm-flow-inspect" type="button" data-action="board-combat-inspect" data-card="${source.cardId}" aria-label="Inspect ${e(source.name)}"><img class="cm-flow-card" src="${e(pictureOf(source.name,source))}" alt=""></button>`:''}
       <div class="cm-board-options">${ready?`<ul class="cm-choice-review">${reviewRows.join('')}</ul>${attackChoice!==null?riskMark(attackRisk(d.options.find(o=>o.index===step.index))):''}`:choices}</div>
       <div class="cm-decide-actions">${ready?b('Confirm','board-flow-confirm',{revision:String(view.revision),choice:d.id,match:view.matchId,index:String(step.index)},true,{disabled:sending}).replace('>Confirm</button>',`>${CHEV_PATH('M3 8l3 3 7-7')}<span>Confirm</span></button>`):''}${choiceFlow.selections.length?b('Back','board-flow-back',{},false,{disabled:sending}).replace('>Back</button>',`>${CHEV_LEFT}<span>Back</span></button>`):''}${attackChoice!==null?b("Don't attack",'board-flow-no-attack',{},false,{disabled:sending}):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
@@ -2247,9 +2251,7 @@ globalThis.CrankBoard = Object.seal({
     /* A question in the card's own words ("When this creature enters, you may search ...") is a sentence to read, not a
        heading: it is set as one (Rob, 2026-10-01: a choice is a pop-up where the player selects). */
     const sentence = String(d.title || "").length > 48;
-    /* Asked in a run you chose Resolve all for: this answer goes for the same question each time the run asks it (Rob,
-       2026-10-09: "Yes to all"; game/room/room.mjs). */
-    const forRun = d.forRun ? `<p class="cm-muted cm-board-for-run">Resolve all: your answer goes for this same question each time the run asks it.</p>` : "";
+    const forRun = forRunNote(d);
     return `<section class="cm-board-decision${blocking() ? " is-blocking" : ""}" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" aria-label="${e(d.title)}">${decisionPick(d,d.options.find(o=>o.index===picked[0]))}${reviewReady(d) && targeting && choiceTargets(d.options.find(o=>o.index===picked[0])).length ? targetHeading(d,d.options.find(o=>o.index===picked[0])) : blocking() ? "" : `<h2>${e(d.title)}</h2>`}${forRun}${targeting && d.mode !== "many" ? `<ol class="cm-steps"><li class="${reviewReady(d) ? '' : 'is-now'}">Pick</li><li class="${reviewReady(d) ? 'is-now' : ''}">Review</li></ol>` : ""}${reviewReady(d) && targeting ? "" : deskCard()}
       <div class="cm-board-options">${body}</div>${foot ? `<div class="cm-board-decision-foot">${foot}</div>` : ""}</section>`;
   }
@@ -2465,6 +2467,7 @@ globalThis.CrankBoard = Object.seal({
       div.setAttribute("aria-hidden", "true");
       div.innerHTML = card(c, {where: "peek", action: "none"});
       if (!now) document.getElementById("cm-board").append(div);
+      placePeek(div);
       say(`Showing ${c.name}`);
     }, 350);
   }
@@ -2491,6 +2494,7 @@ globalThis.CrankBoard = Object.seal({
       div.setAttribute("aria-hidden", "true");
       div.innerHTML = `<span class="cm-bcard"><img src="${e(img.getAttribute("src"))}" alt="" referrerpolicy="no-referrer"></span>`;
       if (!old) document.getElementById("cm-board").append(div);
+      placePeek(div);
     }, 350);
   }
   /* A CARD NAMED IN TEXT POPS UP LARGE TOO (ROB-327, ROB-332; Rob: "I should also be able to hover over the card names to see the on
@@ -2513,6 +2517,7 @@ globalThis.CrankBoard = Object.seal({
       div.setAttribute("aria-hidden", "true");
       div.innerHTML = `<span class="cm-bcard"><img src="${e(pictureOf(name))}" alt="" referrerpolicy="no-referrer"></span>`;
       if (!old) document.getElementById("cm-board").append(div);
+      placePeek(div);
       say(`Showing ${name}`);
     }, 350);
   }
@@ -2534,6 +2539,39 @@ globalThis.CrankBoard = Object.seal({
     div.style.left = `${Math.round(left)}px`; div.style.top = `${Math.round(top)}px`;
     div.dataset.side = box.left - w - gap >= 8 ? "left" : "below";
     say(`Showing ${name}`);
+  }
+  /* BESIDE THE QUESTION, NEVER OVER IT (ROB-385; Rob, 2026-11-01: the hover "should be on the same plane as the pop-up, so it
+     should get pushed to whichever side of the pop-up ... has the available width between browser edge and pop-up edge; favoring
+     the left, then right, then bottom; we won't use the top. If all 3 of those sides are not wide enough, use the largest ... and
+     resize the image to fit with minimal padding, but retain the card's aspect ratio"). With a required pop-up on the screen, the
+     big card goes to the first side of it with room for the card at its size; with none, to the side where it can be largest,
+     made that large and no larger, its shape kept (the card is a width and an aspect ratio, so only the width is set). With no
+     pop-up it stays in the middle. Placed as it is shown and as the board is drawn or fitted. */
+  const PEEK_GAP = 12, PEEK_EDGE = 8;
+  function placePeek(div = document.getElementById("cm-board-peek")) {
+    if (!div || div.classList.contains("cm-stack-peek")) return;
+    const shown = div.querySelector(".cm-bcard");
+    div.classList.remove("is-beside"); div.style.left = ""; div.style.top = ""; delete div.dataset.side;
+    shown?.style.removeProperty("--bc");
+    const popup = document.querySelector(".cm-required-popup"), p = popup?.getBoundingClientRect();
+    if (!shown || !p?.width) return;
+    let {width: w, height: h} = shown.getBoundingClientRect();
+    const room = {left: [p.left - PEEK_GAP - PEEK_EDGE, innerHeight - 2 * PEEK_EDGE], right: [innerWidth - p.right - PEEK_GAP - PEEK_EDGE, innerHeight - 2 * PEEK_EDGE],
+      below: [innerWidth - 2 * PEEK_EDGE, innerHeight - p.bottom - PEEK_GAP - PEEK_EDGE]};
+    const scale = (side) => Math.max(0, Math.min(room[side][0] / w, room[side][1] / h));
+    let side = ["left", "right", "below"].find((x) => scale(x) >= 1);
+    if (!side) {
+      side = ["left", "right", "below"].reduce((a, b) => scale(b) > scale(a) ? b : a);
+      /* The width set is the card's inside its border, so what the border adds is taken off the room. */
+      const border = w - parseFloat(getComputedStyle(shown).width);
+      shown.style.setProperty("--bc", `${Math.max(0, Math.floor(w * scale(side) - (border > 0 ? border : 0)))}px`);
+      ({width: w, height: h} = shown.getBoundingClientRect());
+    }
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+    const x = side === "left" ? p.left - PEEK_GAP - w : side === "right" ? p.right + PEEK_GAP : clamp(p.left + p.width / 2 - w / 2, PEEK_EDGE, innerWidth - PEEK_EDGE - w);
+    const y = side === "below" ? p.bottom + PEEK_GAP : clamp(p.top + p.height / 2 - h / 2, PEEK_EDGE, innerHeight - PEEK_EDGE - h);
+    div.classList.add("is-beside"); div.dataset.side = side;
+    div.style.left = `${Math.round(x)}px`; div.style.top = `${Math.round(y)}px`;
   }
   function stillUnder(id) {
     const under = pointerAt && document.elementFromPoint(pointerAt.x, pointerAt.y);
@@ -2911,19 +2949,38 @@ globalThis.CrankBoard = Object.seal({
   }
   /* NEVER OVER A QUESTION (the same run's screens: "LIFE -1" and "LIFE -3" over Discard 1 card's options, "YOUR TURN"
      over the turns gone by). The callouts lie over the table, and a question asked of you is read first: with its panel
-     under the layer, the layer moves below it, or above it, whichever has room, and with room for neither it waits out
-     of sight. Placed as each callout comes and as the board is drawn (fit). */
+     under the layer, the layer moves below it, or above it, whichever has room, then beside it (the ROB-319 pop-up is
+     centered, and at 720 tall it leaves room above and below for neither: every callout waited out of sight for as long as
+     a question was open), and with room nowhere it waits out of sight. Placed as each callout comes and as the board is
+     drawn (fit).
+     BEHIND THE POP-UP (ROB-386; Rob, 2026-11-01: "the callouts can go behind the pop-up, but I don't expect those to fire typically
+     when the pop-up is up"): a required pop-up is not moved around; the layer stays where it is and is cut where the pop-up lies,
+     so a callout passes behind it. The layer sits outside the board, above it, and the pop-up inside it, so no z-index could put
+     the one between: the cut is a clip path with the pop-up's box as a hole. */
   function placeCallouts() {
     const layer = document.getElementById("cm-board-callouts");
     if (!layer) return;
-    layer.style.top = "";
+    layer.style.top = ""; layer.style.left = ""; layer.style.clipPath = "";
     layer.classList.remove("is-hidden");
+    const popup = document.querySelector(".cm-required-popup");
+    if (popup) {
+      const a = popup.getBoundingClientRect(), l = layer.getBoundingClientRect();
+      if (!a.width || !layer.children.length || l.bottom <= a.top || l.top >= a.bottom || l.right <= a.left || l.left >= a.right) return;
+      /* The layer's own box from (0,0), less the pop-up's box in the layer's terms (the even-odd rule makes the second a hole);
+         the outer box reaches well past the layer, so a callout's glow is never clipped where the pop-up is not. */
+      const x = a.left - l.left, y = a.top - l.top, far = 4000;
+      layer.style.clipPath = `path(evenodd, "M ${-far} ${-far} H ${far} V ${far} H ${-far} Z M ${x} ${y} H ${x + a.width} V ${y + a.height} H ${x} Z")`;
+      return;
+    }
     const ask = document.querySelector("#cm-board-decision[data-choice-id], .cm-board-went");
     if (!ask || !layer.children.length) return;
     const a = ask.getBoundingClientRect(), l = layer.getBoundingClientRect(), gap = 8;
     if (!a.width || l.bottom <= a.top || l.top >= a.bottom || l.right <= a.left || l.left >= a.right) return;
+    const beside = (x) => {layer.style.left = `${Math.round(x + l.width / 2)}px`; layer.style.top = `${Math.round(Math.max(gap, Math.min(a.top, innerHeight - gap - l.height)))}px`;};
     if (a.bottom + gap + l.height <= innerHeight - gap) layer.style.top = `${a.bottom + gap}px`;
     else if (a.top - gap - l.height >= gap) layer.style.top = `${a.top - gap - l.height}px`;
+    else if (a.right + gap + l.width <= innerWidth - gap) beside(a.right + gap);   /* the layer is centered on its left (translateX(-50%)) */
+    else if (a.left - gap - l.width >= gap) beside(a.left - gap - l.width);
     else layer.classList.add("is-hidden");
   }
   function nextCallout() {
@@ -3135,6 +3192,7 @@ globalThis.CrankBoard = Object.seal({
       const under = pointerAt && document.elementFromPoint(pointerAt.x, pointerAt.y), host = document.getElementById("cm-board");
       if (host && under && (under.closest(".cm-board .cm-bcard[data-card], #cm-board [data-peek-card]") || pictureAt(under, null))) host.append(keptPeek);
     }
+    placePeek();
     if (focusData && Object.keys(focusData).length) {
       const next = [...document.querySelectorAll("#cm-board button, #cm-board input, #cm-board select, #cm-board textarea")].find((el) =>
         Object.entries(focusData).every(([key, value]) => el.dataset[key] === value));
@@ -3446,6 +3504,7 @@ globalThis.CrankBoard = Object.seal({
       const ask = host.querySelector(".cm-board-main>.cm-board-ask, .cm-board-tabletop>.cm-board-ask");
       if (ask) ask.style.maxHeight = `${Math.max(160, Math.floor(innerHeight - ask.getBoundingClientRect().top - 12))}px`;
       placeCallouts();
+      placePeek();
       placePlays();
     } finally {fitting = false;}
   }
@@ -4556,13 +4615,31 @@ globalThis.CrankBoard = Object.seal({
     const lean = o.lean ? ` <span class="cm-lean${o.lean.startsWith("helps") ? " is-helps" : " is-against"}">⚠ ${e(o.lean)}</span>` : "";
     return `<button type="button" role="menuitem" class="cm-card-menu-do" data-action="board-card-menu-do" ${offerAttrs(o)} aria-label="${e(sayFor(o))}" title="${e(sayFor(o))}"${sending ? " disabled" : ""}><i aria-hidden="true">${glyph}</i><span>${words}${lean}</span></button>`;
   }
+  /* ONE ROW A KIND, NOT EVERY COMBINATION (ROB-319): a kind of play the card offers one way is its own row (sent at its press when
+     it asks nothing more, Rob, 2026-10-27); a land, an undo and each mana ability are always their own rows, each saying what it is
+     (a mana row its symbol). Any other kind offered several ways -- modes, targets, costs, payments -- is one row, "✦ Cast · 10
+     ways", which opens the pop-up to ask them a layer at a time. The menu listed every mode x target x payment of Vigorbloom
+     Charm, the list ROB-319 was made to end; a way with no target is still one of several (the charm's draw mode). */
+  function menuEntries(member) {
+    const out = [], kinds = new Map();
+    for (const o of optionsFor(member.cardId)) {
+      if (["activate-mana","play-land","undo-mana","undo-land","undo-play"].includes(o.act)) {out.push(o); continue;}
+      if (!kinds.has(o.act)) {kinds.set(o.act, []); out.push({kind: o.act});}
+      kinds.get(o.act).push(o);
+    }
+    return out.map((x) => x.kind === undefined ? menuRow(x, member) : kinds.get(x.kind).length === 1 ? menuRow(kinds.get(x.kind)[0], member) : menuKindRow(x.kind, kinds.get(x.kind).length, member));
+  }
+  function menuKindRow(act, ways, c) {
+    const [glyph, verb] = MENU[act] || [menuGlyph(), ""], said = `${verb || act} ${c.name || ""}: ${ways} ways`.replace(/\s+/g, " ");
+    return `<button type="button" role="menuitem" class="cm-card-menu-do is-kind" data-action="board-card-menu-choose" data-card="${c.cardId}" data-act="${e(act)}" aria-label="${e(said)}" title="${e(said)}"${sending ? " disabled" : ""}><i aria-hidden="true">${glyph}</i><span><b>${e(verb)}</b> <small>${ways} ways</small></span></button>`;
+  }
   function cardMenuHtml() {
     if (!cardMenu || !view) return "";
     const c = findCard(cardMenu.id) || shownCard(cardMenu.id), opts = optionsFor(cardMenu.id);
     if (!c || (!c.name && !opts.length)) {cardMenu = null; return "";}
     const members=(cardMenu.members || []).map(id=>findCard(id)).filter(Boolean),entries=members.length>1?members:[c];
-    const named = c.name || "A face-down card", n = entries.reduce((n,c)=>n+optionsFor(c.cardId).length,0);
-    const rows=entries.map((member,i)=>`${entries.length>1?`<p class="cm-card-menu-copy">Copy ${i+1}${member.tapped?' · tapped':''}</p>`:''}${optionsFor(member.cardId).map(o=>menuRow(o,member)).join('')}`).join('');
+    const lists = entries.map(menuEntries), named = c.name || "A face-down card", n = lists.reduce((n,l)=>n+l.length,0);
+    const rows=entries.map((member,i)=>`${entries.length>1?`<p class="cm-card-menu-copy">Copy ${i+1}${member.tapped?' · tapped':''}</p>`:''}${lists[i].join('')}`).join('');
     return `<div id="cm-card-menu" class="cm-card-menu" role="menu" aria-label="${e(named)}: ${n ? `${n} ${n === 1 ? "action" : "actions"}` : "no actions now"}" style="left:${cardMenu.x}px;top:${cardMenu.y}px">
       ${c.name ? `<button type="button" role="menuitem" class="cm-card-menu-card" data-action="board-card-menu-view" data-card="${c.cardId}" aria-label="Read ${e(c.name)}" title="Read ${e(c.name)}"><img class="cm-card-menu-art" src="${e(pictureOf(c.name, c))}" alt=""><i aria-hidden="true">🔍</i><span>${e(c.name)}</span></button>` : `<span class="cm-card-menu-card" role="none"><i aria-hidden="true">◐</i><span>${e(named)}</span></span>`}
       ${c.name && c.appearance ? `<button type="button" role="menuitem" class="cm-card-menu-card is-original" data-action="board-card-menu-original" data-card="${c.cardId}" aria-label="Read the original ${e(c.name)}, the card it is under this look" title="Original: ${e(c.name)}"><img class="cm-card-menu-art" src="${e(pictureOf(c.name))}" alt=""><i aria-hidden="true">↺</i><span>Original</span></button>` : ""}
@@ -4585,7 +4662,10 @@ globalThis.CrankBoard = Object.seal({
      goes back to the card. */
   function openCardMenu(id, at, el = at instanceof Element ? at : null,members=[]) {
     if(decisionPopup()){actions['board-combat-inspect']({dataset:{card:String(id)}});return;}
-    if(view.decision?.kind==='priority' && optionsFor(id).some(o=>!['undo-mana','undo-play','undo-land'].includes(o.act)))return beginChoice(id,null,null,el);
+    /* A card's own click and its right click open its menu, which commits nothing (Rob, 2026-10-30, choosing between ROB-319's
+       pop-up on the first click and the r4 click map of his Oct 21 notes: "Right-click = menu"). The pop-up comes from a row
+       that has a real choice to make, or from a double click; a first click that opened it swallowed the second, so a double
+       click no longer tapped a land. */
     if (!view || !document.getElementById("cm-board")) return;
     const box = at instanceof Element ? at.getBoundingClientRect() : null;
     cardMenu = {id,members, x: Math.round(box ? box.right + 4 : at.x), y: Math.round(box ? box.top : at.y), from: el?.isConnected ? C.focusKey(el) : null,anchor:box?{left:box.left,right:box.right,top:box.top,bottom:box.bottom}:null};
@@ -4610,19 +4690,22 @@ globalThis.CrankBoard = Object.seal({
     cardMenu = null; document.getElementById("cm-card-menu")?.remove();
     if (back) C.focusFind(from)?.focus({preventScroll: true});
   }
+  actions["board-card-menu-choose"] = el => {closeCardMenu(true); beginChoice(Number(el.dataset.card), el.dataset.act);};
   actions["board-card-menu-do"] = el => {
     const o=currentOffer(el.dataset);if(!o)return;
     closeCardMenu(true);
     if(['undo-mana','undo-land','undo-play'].includes(o.act))return bindOffer(el.dataset);
-    /* ROB-319: priority offers enter the same conditional popup, including a sole answer awaiting confirmation. */
+    /* STANDING RULE (Rob, 2026-10-27): where two clicks already stand between the player and the action -- the card, then its row --
+       there is no third step to confirm. A row that asks nothing more is sent; one with a real choice (a mode, a target, a cost, a
+       payment) enters the ROB-319 pop-up and is confirmed there. Rob, 2026-10-30, choosing between the two rules: "Two clicks send". */
     /* Only an offer of priority: the picks of a many-of question (discard some, sacrifice some) are toggled here, and sent by its own Confirm. */
-    if(view.decision?.kind==="priority")return beginChoice(o.cardId,o.act);
+    if(view.decision?.kind==="priority")return selfOnly(o) ? commitOffer(o) : beginChoice(o.cardId,o.act);
     option(o.index);
   };
   function commitOffer(o) {
     const d = view?.decision;
     if (!d || sending || !d.options.some((x) => x.index === o.index)) return;
-    if(d.kind==='priority' && !['pass','resolve-all','undo-mana','undo-play','undo-land'].includes(o.act))return beginChoice(o.cardId,o.act);
+    if(d.kind==='priority' && !selfOnly(o) && !['pass','resolve-all','undo-mana','undo-play','undo-land'].includes(o.act))return beginChoice(o.cardId,o.act);
     picked = [o.index]; draftRevision = view.revision; actionCard = null; targetReviewing = false;
     return actions["board-confirm"]();
   }
@@ -4977,7 +5060,9 @@ globalThis.CrankBoard = Object.seal({
     if(document.getElementById('cm-card-menu'))return;
     if(C.accountMenuOpen?.() || document.querySelector('#cm-user-menu:popover-open'))return;
     if (event.key === "Escape" && coach.open && event.target.closest?.("#cm-board-coach")) {event.preventDefault(); actions["board-coach"](); return;}
-    if (event.key === "Escape" && peekId !== null && !showing) {peek(null); return;}
+    /* Escape closes what is showing. While a card is being inspected no hover preview is drawn, but the card last hovered is
+       still remembered: that memory must not take the Escape meant for the inspection (ROB-236; it took two presses). */
+    if (event.key === "Escape" && peekId !== null && !showing) {peek(null); if (!inspection) return;}
     if (event.key === "Escape" && stackShown !== null) stackPeek(null);
     /* ⌘/Ctrl + and − still size the cards with the Settings window open, as its card-size line says. */
     const sizing = (event.ctrlKey || event.metaKey) && ["+", "=", "-", "_"].includes(event.key);

@@ -77,12 +77,16 @@ export const PRIMITIVES = Object.freeze({
     "moveCounters", "replaceCounters", "amass", "poison", "winGame", "loseGame", "goad", "empowerJace", "becomeMonarch",
     /* Wave 4c: "roll a d20" (CR 706; Forge's RollDice; Ancient Copper Dragon), its result counted by what follows. */
     "rollDie",
+    /* The Rakdos copy deck of 2026-11-05: "flip a coin until you lose a flip" (Mirror March; CR 705), the flips won counted by what follows. */
+    "flipCoin",
   ]),
   permanents: Object.freeze([
     "createToken", "copyPermanent", "becomeCopy", "earthbend", "populate", "unlessPays", "animate", "animateAll", "attach", "gainControl", "setState",
     "phaseOut", "exchangeControl", "incubate",
     /* The library load's L1: "you get an emblem with ..." (CR 114), an object in the command zone, not a permanent (114.5). */
     "emblem", "mergePermanent", "ringTempts",
+    /* The Rakdos copy deck of 2026-11-05: soulbond (CR 702.95; Mirage Phalanx), two creatures paired. */
+    "pair",
   ]),
   modifiers: Object.freeze([
     "pump", "pumpAll", "alterAttribute", "effectUntil", "grantKeyword", "regenerate",
@@ -95,6 +99,8 @@ export const PRIMITIVES = Object.freeze({
     "modal", "sequence", "repeatFor", "branch", "delayedTrigger", "immediateTrigger", "counterSpell",
     "copySpell", "addTurn", "chooseCard", "chooseType", "chooseColor", "genericChoice", "twoPiles", "connive",
     "investigate", "cleanup", "addPhase", "changeTargets", "chooseSource", "vote",
+    /* Master Table column AL load: "choose an opponent" (Faramir, Prince of Ithilien), a player chosen as it resolves, not targeted. */
+    "choosePlayer",
   ]),
 });
 
@@ -209,6 +215,12 @@ const BEYOND_TIER0 = ["shroud", "ward", "forestwalk",
   "surge", "freerunning",
   /* Dash (CR 702.109; Ragavan, Nimble Pilferer, wave 4d L3): an alternative cost, haste and a return to the hand (rules/stack.mjs). */
   "dash",
+  /* Blitz (CR 702.152; Jaxis, the Troublemaker): an alternative cost giving haste and "when this dies, draw a card", sacrificed at the next
+     end step (cards/index.mjs, rules/stack.mjs). */
+  "blitz",
+  /* Soulbond (CR 702.95; Mirage Phalanx): two triggered abilities pairing it with another creature, and a pairing that ends by itself
+     (cards/index.mjs, rules/sba.mjs). */
+  "soulbond",
   /* Embalm (CR 702.128): a token copy from the graveyard (cards/index.mjs). */
   "embalm",
   /* Tiered (CR 702.183): each mode its own additional cost (keywords/timing.mjs). */
@@ -261,6 +273,9 @@ const BEYOND_TIER0 = ["shroud", "ward", "forestwalk",
   "dredge",
   /* Card load w4d L1: mobilize (CR 702.181; Voice of Victory), a triggered ability as it attacks (cards/index.mjs). */
   "mobilize",
+  /* Master Table column AL load: harmonize (Roamer's Routine), flashback's cast and exile with a creature that may be tapped to
+     take its power off the cost's generic mana (cards/index.mjs, rules/actions.mjs). */
+  "harmonize",
   /* Wave 4d, L6: kicker (CR 702.33a; Tear Asunder), an optional additional cost paid once at most, and what the spell does then
      (cards/index.mjs, rules/actions.mjs, rules/stack.mjs). */
   "kicker",

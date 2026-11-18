@@ -54,7 +54,7 @@ const reply = (status, value) => new Response(JSON.stringify(value), {status, he
 const newTableId = () => crypto.randomUUID().replace(/-/g, "");
 
 /** @returns {?Promise<Response>} null when the path is not Play's */
-export function tables(request, env, who, {newId = newTableId, invitations = null} = {}) {
+export function tables(request, env, who, {newId = newTableId, invitations = null, fetchImpl} = {}) {
   const url = new URL(request.url);
   const match = /^\/api\/tables(?:\/([^/]+)(?:\/([a-z-]+))?)?$/.exec(url.pathname);
   if (!match) return null;
@@ -107,7 +107,7 @@ export function tables(request, env, who, {newId = newTableId, invitations = nul
     if ((given === "live" || given === "mine") && !action) {
       if (request.method !== "GET") return reply(405, {error: `Read ${given} with a GET.`});
       const headers = {};
-      if (given === "live" && (await groupOf(who.email, env, null)) === "owner") headers["x-crankmagic-admin"] = "1";
+      if (given === "live" && (await groupOf(who.email, env, null, {fetchImpl})) === "owner") headers["x-crankmagic-admin"] = "1";
       return forward(REGISTRY, `/lounge/${given}`, {headers});
     }
     /* A DECK'S READINESS, BEFORE ANY TABLE (AI-5): a deck's tile and its page say whether it is playable at the table, or

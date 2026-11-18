@@ -128,6 +128,15 @@ export function createRng(seed, resume = null, options = {}) {
       return value;
     },
 
+    /**
+     * A die's result, 1 to `sides`: the same draw as `int(sides)` plus one, named for what it is so a scenario can pin the dice
+     * and the coins of one game (cards/scenario.mjs, `rolls`) without touching the shuffles and the random picks that share
+     * the stream. A coin is a die of two sides: 1 wins the flip (effects/resources.mjs, flipCoin).
+     */
+    roll(sides) {
+      return api.int(sides) + 1;
+    },
+
     /** One element, uniformly. Throws on an empty list rather than returning undefined. */
     pick(list) {
       if (!Array.isArray(list) || list.length === 0) throw new Error("pick needs a non-empty array");
