@@ -1,0 +1,284 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Genghis Frog",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Mutant Pup": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Turtle",
+        "Mutant"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 1,
+      "toughness": 1
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands: it enters, a Mutagen; the Mutagen puts a +1/+1 counter on Genghis Frog for {1}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Genghis Frog"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Genghis Frog"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Genghis Frog",
+                "Forest",
+                "Island",
+                "Wastes",
+                "Mutagen"
+              ]
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Genghis Frog",
+                "has": [
+                  "Trample"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Mutagen",
+          "targets": [
+            {
+              "card": "Genghis Frog"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Genghis Frog",
+            "power": 2,
+            "toughness": 4
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Genghis Frog",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Genghis Frog",
+            "Forest",
+            "Island",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Another Mutant Rob controls enters: a Mutagen; a Bear (not a Mutant) enters: nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Genghis Frog",
+            "Forest",
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear",
+            "Mutant Pup"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Bear"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Mutant Pup"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Genghis Frog",
+            "Bear",
+            "Mutant Pup",
+            "Forest",
+            "Forest",
+            "Wastes",
+            "Mutagen"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A Mutant Maya controls enters: no Mutagen for anyone",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Genghis Frog"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Mutant Pup"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Forest",
+          "seat": 1
+        },
+        {
+          "cast": "Mutant Pup",
+          "seat": 1
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Genghis Frog"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "Forest",
+            "Mutant Pup"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -677,7 +677,10 @@ export function targetRefs(effects) {
     if (value.effect === "immediateTrigger") return;
     /* Nor an emblem's abilities' (CR 114.4: they are its own, compiled and checked as a card's are, cards/index.mjs). */
     if (value.effect === "emblem") return;
-    Object.values(value).forEach(walk);
+    /* Nor a created token's abilities' (Nezumi Linkbreaker's Mercenary, "{T}: Target creature you control gets +1/+0"): the
+       creating effect defines them (CR 111.3), and their targets are chosen as the token's ability is activated (CR 602.2b). */
+    const own = value.effect === "createToken" && value.token?.abilities ? {...value, token: {...value.token, abilities: []}} : value;
+    Object.values(own).forEach(walk);
   };
   walk(effects);
   return found;
