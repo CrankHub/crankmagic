@@ -20,6 +20,8 @@
  *                             refused with nothing changed, {type:"refused", status, error, view} to the sender alone
  *   ws   {type:"view"}        the sender's view again; with `after` (an event id), the events since it, or `eventsReset`
  *   ws   {type:"yield", on}   Yield turn on, or Stop yielding -> every seat's view; refused as `prefer` is
+ *   ws   {type:"cancel", choiceId}  the seat's pending question canceled (room.mjs, cancel) -> every seat's view; refused
+ *                             (422, what to do instead; 409, no longer open) with the sender's view, `of: "cancel"`
  *   ws   {type:"check", choiceId, indices}  a draft checked, nothing changed -> {type:"checked", ok, open, reasons}
  *                             to the sender alone
  */
@@ -155,6 +157,14 @@ export class GameRoom {
     if (frame && frame.type === "yield") {
       try {await room.yieldTurn(seatId, {on: frame.on === true});}
       catch (error) {if (!(error instanceof RoomError)) throw error; return send({type: "refused", of: "yield", status: error.status, error: error.message, view: room.view(seatId)});}
+      this.broadcast();
+      return this.schedule();
+    }
+    /* Cancel (Linear ROB-205; room.mjs, cancel): the seat's own question canceled -- its cast backed out, or, confirmed, a
+       trigger, the rest of its spell, or a declaration ended. The game moves, so every seat's view goes out, as after an act. */
+    if (frame && frame.type === "cancel") {
+      try {await room.cancel(seatId, {choiceId: typeof frame.choiceId === "string" ? frame.choiceId : undefined});}
+      catch (error) {if (!(error instanceof RoomError)) throw error; return send({type: "refused", of: "cancel", status: error.status, error: error.message, view: room.view(seatId)});}
       this.broadcast();
       return this.schedule();
     }
