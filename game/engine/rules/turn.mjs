@@ -447,7 +447,7 @@ export function goOnWithout(state, withdrawn) {
 }
 
 /* CANCEL (Linear ROB-205; Rob, 2026-10-29: every pending decision gets a Cancel that exits the action; Rob, 2026-11-19: "If
- * I press 'Cancel' that means I'm cancelling the action. I DON'T want to resume it."). What Cancel can do depends on whose
+ * I press 'Cancel' that means I'm canceling the action. I DON'T want to resume it."). What Cancel can do depends on whose
  * the question is and what it is part of; `cancelWay` says which, and changes nothing:
  *
  *   back-out    the player's own cast or activation, stopped to ask its targets or how it is paid. Nothing has moved or
