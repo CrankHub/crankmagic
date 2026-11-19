@@ -187,6 +187,8 @@ function subjects(state, event, condition, sourceId, controller) {
   /* "Whenever you scry or surveil" (CR 701.22a, 701.25a): who did it. */
   if (condition.on === "GameEventScried") {
     const scrier = fields.player?.playerId;
+    /* "Whenever you scry" (Arwen Undómiel): a scry, never a surveil (`kind`). */
+    if (condition.kind !== undefined && fields.kind !== condition.kind) return [];
     return whoseIs(condition.scrier ?? "you", scrier, controller) ? [{player: scrier}] : [];
   }
   /* "Whenever this creature transforms into Ashling, Rimebound" (CR 701.27e): this permanent, the face it has just after. */
