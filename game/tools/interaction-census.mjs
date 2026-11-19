@@ -172,9 +172,15 @@ const walk = (value, visit) => {
 export function definitionFacets(def) {
   const out = {modes: 0, keywordNames: new Set(), activated: [], loyalty: 0, additionalCost: false, unions: new Set(), targetSpecs: 0};
   const faces = [def, ...["back", "adventure", "prepare"].map((k) => def[k]).filter((x) => x && typeof x === "object")];
+  /* A choice made inside one of the modes as it resolves ("you may tap or untap target permanent", Gandalf the Grey's first
+     mode) is no mode the text bullets: only a modal no other modal's modes hold is counted. */
+  const nested = new WeakSet();
   for (const face of faces) for (const ability of face.abilities ?? []) {
     walk(ability, (node) => {
-      if (node.effect === "modal") out.modes += (node.modes ?? []).length;
+      if (node.effect === "modal" && !nested.has(node)) {
+        out.modes += (node.modes ?? []).length;
+        walk(node.modes ?? [], (inner) => { if (inner.effect === "modal") nested.add(inner); });
+      }
       if (Array.isArray(node.anyOf)) {
         const types = new Set();
         for (const branch of node.anyOf) for (const t of branch.types ?? []) types.add(t.toLowerCase());

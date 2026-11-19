@@ -1,0 +1,886 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Gandalf the Grey",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Nought": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Draw a card.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "draw",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "Spark": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Spark deals 1 damage to any target.",
+        "targets": [
+          {
+            "anyOf": [
+              {
+                "what": "permanent",
+                "types": [
+                  "Creature"
+                ]
+              },
+              {
+                "what": "player"
+              }
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "amount": 1,
+            "targets": {
+              "target": 0
+            },
+            "who": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Lore": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Draw a card.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "draw",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered once",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Gandalf the Grey"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island",
+            "Mountain"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Gandalf the Grey"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Gandalf the Grey"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Gandalf the Grey",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island",
+            "Mountain"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Rob casts an instant: all four modes offered (the tap mode at each permanent, the copy at his own spell); he chooses 3 damage to each opponent",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Nought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Nought"
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Copy target instant or sorcery spell you control. You may choose new targets for the copy. → Nought",
+                  "Gandalf deals 3 damage to each opponent.",
+                  "Put Gandalf on top of its owner's library.",
+                  "You may tap or untap target permanent. → Bear",
+                  "You may tap or untap target permanent. → Gandalf the Grey"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Gandalf deals 3 damage to each opponent."
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gandalf the Grey",
+            "Bear"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Choose one that has not been chosen: after the damage, the second spell offers only the other three; Rob taps his own Bear with it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Nought",
+            "Nought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "Gandalf deals 3 damage to each opponent."
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Copy target instant or sorcery spell you control. You may choose new targets for the copy. → Nought",
+                  "Put Gandalf on top of its owner's library.",
+                  "You may tap or untap target permanent. → Bear",
+                  "You may tap or untap target permanent. → Gandalf the Grey"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "You may tap or untap target permanent. → Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Tap target permanent",
+                  "Untap target permanent",
+                  "Neither"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Tap target permanent"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "tapped": "Bear"
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Untap: a tapped Wastes untapped by the tap-or-untap mode (cast with a sorcery, Lore)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Wastes",
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Lore"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Lore"
+        },
+        {
+          "choose": [
+            "You may tap or untap target permanent. → Wastes"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Untap target permanent"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Wastes",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Island"
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "\"You may\" tap or untap: Rob chooses neither, and the Bear stays untapped",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Nought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "You may tap or untap target permanent. → Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Neither"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Bear",
+          "is": false
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Copy: Spark at Maya copied -- the copy keeps its target -- and Maya takes 1 twice",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Spark"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Spark",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Copy target instant or sorcery spell you control. You may choose new targets for the copy. → Spark"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Spark"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Put Gandalf on top of its owner's library: the Nought under the trigger then draws him; cast again he is a new object (CR 400.7), and every mode is offered again",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Island",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Nought",
+            "Nought",
+            "Nought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "Gandalf deals 3 damage to each opponent."
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "Put Gandalf on top of its owner's library."
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "battlefield",
+              "cards": [
+                "Wastes",
+                "Wastes",
+                "Wastes",
+                "Island",
+                "Mountain"
+              ]
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Wastes",
+                "Gandalf the Grey",
+                "Nought"
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Gandalf the Grey"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Copy target instant or sorcery spell you control. You may choose new targets for the copy. → Nought",
+                  "Gandalf deals 3 damage to each opponent.",
+                  "Put Gandalf on top of its owner's library.",
+                  "You may tap or untap target permanent. → Gandalf the Grey",
+                  "You may tap or untap target permanent. → Wastes",
+                  "You may tap or untap target permanent. → Wastes",
+                  "You may tap or untap target permanent. → Wastes",
+                  "You may tap or untap target permanent. → Island",
+                  "You may tap or untap target permanent. → Mountain"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Gandalf deals 3 damage to each opponent."
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 34
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "All four chosen: a fifth instant cast while the fourth trigger waits has no mode left, and its trigger is removed (CR 603.3c, 700.2)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Nought",
+            "Nought",
+            "Nought",
+            "Nought",
+            "Nought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "Gandalf deals 3 damage to each opponent."
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "You may tap or untap target permanent. → Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Neither"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "choose": [
+            "Copy target instant or sorcery spell you control. You may choose new targets for the copy. → Nought"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "settle": true
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Put Gandalf on top of its owner's library."
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Put Gandalf on top of its owner's library."
+          ]
+        },
+        {
+          "cast": "Nought"
+        },
+        {
+          "expect": [
+            {
+              "stack": 3
+            }
+          ]
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Gandalf the Grey"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 15
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Not Rob's spell, not an instant or sorcery: Maya's instant and Rob's creature spell do not trigger it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gandalf the Grey",
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Nought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Bear"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "cast": "Nought",
+          "seat": 1
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gandalf the Grey",
+            "Bear",
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    }
+  ]
+}

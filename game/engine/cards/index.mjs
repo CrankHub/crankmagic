@@ -324,7 +324,8 @@ const TRIGGERS = {
     : t.who === "any" && t.each === undefined ? {on: "GameEventCardCounters", counterAdded: true, counter: t.counter, who: "any", ...(t.filter ? {filter: t.filter} : {}),
       ...(t.putBy ? {putBy: t.putBy} : {})} : null),
   /* "Whenever you scry or surveil" (Proft, Consulting Detective; CR 701.22a, 701.25a): once each is done, by `scrier`. */
-  scried: (t) => ({on: "GameEventScried", scrier: t.scrier ?? "you"}),
+  /* "Whenever you scry" alone (Arwen Undómiel; CR 701.22a): `kind: "scry"`, a surveil not among them (CR 701.25a). */
+  scried: (t) => ({on: "GameEventScried", scrier: t.scrier ?? "you", ...(t.kind === "scry" ? {kind: "scry"} : {})}),
   /* "Whenever you proliferate" (Ezuri, Stalker of Spheres; CR 701.34a): once each proliferate is done, by `proliferator`
      you, opponent or any. */
   proliferated: (t) => ({on: "GameEventProliferate", proliferator: t.proliferator ?? "you"}),
