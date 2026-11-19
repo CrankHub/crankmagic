@@ -108,12 +108,17 @@ export function eachOf(state, each, context) {
   if (each === "remembered") return (context.remembered ?? []).filter((id) => state.objects[id]).map((card) => ({card, player: state.objects[card].owner}));
   /* "For each opponent other than defending player" (myriad, CR 702.116a): the player the attack trigger is about left out. */
   if (each === "other opponent") return players.filter((player) => player !== context.controller && player !== context.about?.player).map((player) => ({player}));
+  /* "For each opponent who searches a library this way, search your library for a land card" and "then each player who searched a
+     library this way shuffles" (Tempt with Discovery; CR 207.2c, 101.4): the players who did what this resolution offered them (a
+     modal mode's `did`, effects/asking.mjs), in turn order, once each -- not an opponent who declined, nor one who has left the
+     game (CR 800.4a). */
+  if (each === "who did") return players.filter((player) => (context.whoDid ?? []).includes(player)).map((player) => ({player}));
   return [];
 }
 /* The most passes a process repeated "again" makes: more than any library holds, so only a library run out ends it. */
 const REPEAT_LIMIT = 1000;
 /** What `repeatFor` may range over. */
-export const REPEAT_EACH = Object.freeze(["player", "opponent", "creature", "remembered", "other opponent"]);
+export const REPEAT_EACH = Object.freeze(["player", "opponent", "creature", "remembered", "other opponent", "who did"]);
 
 /**
  * `repeatFor` — Forge's RepeatEach: "deals damage to each player equal to twice the number of nonbasic lands that

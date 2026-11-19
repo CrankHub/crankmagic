@@ -148,7 +148,10 @@ function subjects(state, event, condition, sourceId, controller) {
     return objectsAfterMove(state, arrival.becomes).flatMap(id => subjects(state,
       {...event, data: {...event.data, fields: {...arrival, becomes: id, componentArrival: true}}}, condition, sourceId, controller));
   /* "Deals combat damage to a player or planeswalker" (Grateful Apparition): damage dealt to a permanent is watched too. */
-  const toPermanent = condition.planeswalkers === true && condition.on === "GameEventPlayerDamaged" && event.kind === "GameEventCardDamaged";
+  /* And "whenever either of those creatures deals combat damage" (Tamiyo, Field Researcher; `to: "anything"`): damage dealt to
+     any permanent as well, a creature's too -- about that permanent's controller. */
+  const toAnything = condition.to === "anything";
+  const toPermanent = (condition.planeswalkers === true || toAnything) && condition.on === "GameEventPlayerDamaged" && event.kind === "GameEventCardDamaged";
   /* "Whenever you cast or copy an instant or sorcery spell" (magecraft; `orCopy`): a spell copied is watched too. */
   const copied = condition.orCopy === true && condition.on === "GameEventSpellAbilityCast" && event.kind === "GameEventSpellCopied";
   if (event.kind !== condition.on && !toPermanent && !copied) return [];
@@ -340,8 +343,8 @@ function subjects(state, event, condition, sourceId, controller) {
     if (condition.sourceYours && fields.source?.controller !== controller) return [];
     /* A planeswalker dealt it, still there as triggers are collected (before state-based actions): about its controller. */
     const damaged = toPermanent ? fields.card?.cardId : undefined;
-    if (toPermanent && !(state.objects[damaged] && characteristicsOf(state, damaged).types.includes("Planeswalker"))) return [];
-    const to = toPermanent ? state.objects[damaged].controller : fields.target?.playerId, source = fields.source?.cardId;
+    if (toPermanent && !toAnything && !(state.objects[damaged] && characteristicsOf(state, damaged).types.includes("Planeswalker"))) return [];
+    const to = toPermanent ? state.objects[damaged]?.controller : fields.target?.playerId, source = fields.source?.cardId;
     if (condition.to === "opponent" && to === controller) return [];
     /* "Whenever a creature deals combat damage to you" (Strixhaven Stadium): this ability's controller, and no one else. */
     if (condition.to === "you" && to !== controller) return [];
@@ -659,9 +662,9 @@ function tappedForMana(state, fields, condition, sourceId, controller) {
  * makes at once, to the player who tapped (its controller, for "its controller adds"). "One mana of any type that land
  * produced": one of what it made.
  */
-export function manaTriggered(state, event) {
+export function manaTriggered(state, event, picks = []) {
   const fields = event?.data?.fields ?? {};
-  const made = [];
+  const made = [], pending = [...picks];
   /* Its triggered mana abilities as they are after layer 6 (CR 613.1f): Ultima made an Elk by Oko adds no {C}. */
   const held = abilitiesReader(state);
   for (const id of state.zones.battlefield) {
@@ -669,7 +672,15 @@ export function manaTriggered(state, event) {
     for (const ability of held(id)) {
       const mana = ability.kind === "triggered" ? ability.trigger?.manaAbility : null;
       if (!mana || !tappedForMana(state, fields, ability.trigger, id, holder.controller)) continue;
-      const [kind] = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
+      const kinds = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
+      /* "Choose one type that was produced and add one mana of that type" (Heartbeat of Spring's ruling, CR 106.1, 605.1b): with
+         more than one type produced the tapping player says which, one pick for each such ability, in the order they are read --
+         the pick the activation was offered with (manaPickable); with one type, no pick. */
+      let kind = kinds[0];
+      if (mana.produced && kinds.length > 1) {
+        kind = pending.shift();
+        if (!kinds.includes(kind)) throw new Error(`Choose which of the types that land produced (${kinds.join(", ")}) to add one more of`);
+      }
       /* "An additional one mana of the chosen color" (Utopia Sprawl): the color its permanent chose as it entered; none
          chosen, none. */
       const chosen = mana.chosenColor === true ? CHOSEN_COLOR_LETTER[holder.chosen] : undefined;
@@ -688,6 +699,21 @@ export function manaTriggered(state, event) {
     made.push({player: mana.toTapper === true ? fields.player?.playerId ?? d.controller : d.controller, mana: {...mana.mana}, source: d.source});
   }
   return made;
+}
+
+/**
+ * HOW MANY TRIGGERED MANA ABILITIES ASK THE TAPPING PLAYER WHICH TYPE (CR 605.1b): those that add one mana "of any type that land
+ * produced", for this tap -- each one a pick, when more than one type was produced (manaTriggered). `event`: what the tap would
+ * say, `{data: {fields: {player, source, produced, tapped}}}`. Zero when the tap triggers none of them.
+ */
+export function manaPicks(state, event) {
+  const fields = event?.data?.fields ?? {};
+  const held = abilitiesReader(state);
+  let picks = 0;
+  for (const id of state.zones.battlefield)
+    for (const ability of held(id))
+      if (ability.kind === "triggered" && ability.trigger?.manaAbility?.produced && tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) picks += 1;
+  return picks;
 }
 
 /**
@@ -767,6 +793,8 @@ export function collectTriggers(state, events) {
   /* And the emblems in the command zone, whose abilities function there (CR 114.4; "whenever you draw a card, exile target
      permanent an opponent controls", Teferi, Hero of Dominaria's): its controller the player who got it (114.2). */
   const emblems = (state.zones.command ?? []).flat().filter((id) => state.objects[id]?.emblem === true);
+  /* What each delayed trigger that names no recipient has fired for in this action, by source (below). */
+  const dealtOnce = new Map();
   for (const event of events ?? []) {
     /* An arrival waiting to be told what it is a copy of triggers once it is (rules/entering.mjs). */
     if (event.data?.fields?.awaitingCopy === true) continue;
@@ -940,8 +968,16 @@ export function collectTriggers(state, events) {
          planeswalker, `planeswalkers`), the source that dealt it: "whenever that creature deals combat damage to a player or
          planeswalker this turn" (Hunter's Insight; CR 603.7c). */
       const watched = d.on.on === "GameEventPlayerDamaged" ? event.data?.fields?.source?.cardId : event.data?.fields?.card?.cardId;
-      if (d.watch !== undefined && (d.watch === null || watched !== d.watch)) continue;
+      /* Each of a list it waits on (`watchEach`, effects/permanents.mjs): any one of them is what the event is about. */
+      if (d.watch !== undefined && (d.watch === null || (Array.isArray(d.watch) ? !d.watch.includes(watched) : watched !== d.watch))) continue;
       for (const about of subjects(state, event, d.on, d.source, d.controller)) {
+        /* A creature that deals combat damage to several things at once deals it once for a trigger that names no one it dealt it
+           to (`to: "anything"`; CR 510.2, 603.2c): once for each source, for each delayed trigger, in one action. */
+        if (d.on.to === "anything") {
+          const done = (dealtOnce.get(d) ?? dealtOnce.set(d, new Set()).get(d));
+          if (done.has(about.card)) continue;
+          done.add(about.card);
+        }
         state.pendingTriggers.push({
           abilityId: "delayed", text: d.text ?? "A delayed trigger", controller: d.controller,
           source: {cardId: d.source, name: d.source !== null ? state.objects[d.source]?.card ?? null : null}, cause: null, optional: false,
