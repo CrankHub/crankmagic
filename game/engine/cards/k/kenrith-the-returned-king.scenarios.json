@@ -1,0 +1,574 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Kenrith, the Returned King",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Fallen Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Fallen Boar": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Boar"
+      ],
+      "manaCost": "{2}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 3,
+      "toughness": 3
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way)",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kenrith, the Returned King"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Kenrith, the Returned King"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Kenrith, the Returned King",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "{R}: every creature, Maya's too, gains trample and haste; Rob's Bear that just arrived attacks for 2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ],
+          "sick": true
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "keywords": {
+                "card": "Their Bear",
+                "has": [
+                  "Trample",
+                  "Haste"
+                ]
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Kenrith, the Returned King",
+                "has": [
+                  "Trample",
+                  "Haste"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        }
+      ]
+    },
+    {
+      "name": "{R} lasts until end of turn: on Maya's turn her Bear has neither",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "keywords": {
+            "card": "Their Bear",
+            "lacks": [
+              "Trample",
+              "Haste"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "{1}{G}: a +1/+1 counter on Maya's Bear",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a1",
+          "targets": [
+            {
+              "card": "Their Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "counters": {
+            "card": "Their Bear",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 1,
+          "stats": {
+            "card": "Their Bear",
+            "power": 3,
+            "toughness": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "{2}{W}: target player gains 5 life -- Maya, or Rob",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Kenrith, the Returned King"
+              },
+              "count": 2,
+              "targets": [
+                [
+                  "Maya"
+                ],
+                [
+                  "Rob"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a2",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 45
+        },
+        {
+          "seat": 0,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "{3}{U}: target player draws a card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a3",
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "{4}{B}: a creature card from Maya's graveyard enters under her control, its owner's; a land card is no target",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Their Fallen Bear",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Kenrith, the Returned King"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Their Fallen Bear"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a4",
+          "targets": [
+            {
+              "card": "Their Fallen Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "controls": [
+            "Their Fallen Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Forest"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "{4}{B} on a creature card from Rob's own graveyard: it enters under his control",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kenrith, the Returned King",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Fallen Boar"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Kenrith, the Returned King",
+          "ability": "a4",
+          "targets": [
+            {
+              "card": "Fallen Boar"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Kenrith, the Returned King",
+            "Fallen Boar",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

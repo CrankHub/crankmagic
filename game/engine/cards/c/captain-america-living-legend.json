@@ -1,0 +1,62 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Captain America, Living Legend",
+    "oracleId": "67aa946d-e694-494e-ba0c-44880d5bc03e",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Soldier",
+      "Hero"
+    ],
+    "manaCost": "{1}{W}{U}",
+    "colors": [
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "U",
+      "W"
+    ],
+    "power": 3,
+    "toughness": 4
+  },
+  "oracleText": "Vigilance\nWhenever a creature you control becomes tapped during your turn, if it's the first time that creature has become tapped this turn, untap it.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Vigilance",
+      "keyword": "vigilance"
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever a creature you control becomes tapped during your turn, if it's the first time that creature has become tapped this turn, untap it.",
+      "trigger": {
+        "on": "becomes tapped",
+        "who": "any",
+        "filter": {
+          "types": [
+            "Creature"
+          ],
+          "controller": "you"
+        }
+      },
+      "effects": [
+        {
+          "effect": "untap",
+          "targets": "that card"
+        }
+      ],
+      "condition": {
+        "yourTurn": true,
+        "firstTappedThisTurn": true
+      }
+    }
+  ]
+}

@@ -135,6 +135,21 @@ function recordCounters(state, events) {
   }
 }
 
+/* HOW MANY TIMES A PERMANENT HAS BECOME TAPPED THIS TURN (CR 701.26a): "if it's the first time that creature has become tapped
+   this turn" (Captain America, Living Legend; script/condition.mjs, firstTappedThisTurn) -- by attacking, a {T} cost, a mana
+   ability or an effect, each tap event the rules emit. Kept on the permanent with its turn, so one that changes zones is a new
+   object with none (CR 400.7). */
+function recordTaps(state, events) {
+  for (const event of events ?? []) {
+    const fields = event.data?.fields ?? {};
+    if (event.kind !== "GameEventCardTapped" || fields.tapped !== true) continue;
+    /* One tapped for a cost that also sacrificed it (a Treasure) is gone already, and a new object (CR 400.7). */
+    const object = state.objects[fields.card?.cardId];
+    if (!object) continue;
+    object.tapsThisTurn = {turn: state.turn, count: (object.tapsThisTurn?.turn === state.turn ? object.tapsThisTurn.count : 0) + 1};
+  }
+}
+
 /**
  * WHAT A TRIGGER IS ABOUT, ONE ENTRY PER TRIGGERING (CR 603.2c). "Whenever a creature you control attacks" triggers once
  * for each creature that attacks, so an event can answer more than once; each answer says what it was about -- the spell
@@ -753,6 +768,7 @@ export function collectTriggers(state, events) {
   if (!state.pendingTriggers) state.pendingTriggers = [];
   recordArrivals(state, events);
   recordCounters(state, events);
+  recordTaps(state, events);
   /* Triggers that trigger again (triggersAgain): copied once this action is read, so a "one or more" trigger is copied
      with everything it came to be about. */
   const again = [];

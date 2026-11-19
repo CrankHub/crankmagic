@@ -1,0 +1,498 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Rocksteady, Crash Courser",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Other Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "War Boar": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Boar"
+      ],
+      "manaCost": "{2}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 3,
+      "toughness": 3
+    },
+    "Their Boar": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Boar"
+      ],
+      "manaCost": "{2}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 3,
+      "toughness": 3
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way)",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rocksteady, Crash Courser"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Rocksteady, Crash Courser"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Rocksteady, Crash Courser",
+            "Forest",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rocksteady attacks; one of Maya's two Bears blocks it and dies",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rocksteady, Crash Courser"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear",
+            "Their Other Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Rocksteady, Crash Courser"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Their Bear",
+              "Rocksteady, Crash Courser"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Their Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Rocksteady, Crash Courser"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "His War Boar and his Bear attack: the Bear, not a Boar, may be blocked by two creatures and dies; the Boar unblocked deals 3",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rocksteady, Crash Courser",
+            "War Boar",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear",
+            "Their Other Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "War Boar",
+            "Bear"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Their Bear",
+              "Bear"
+            ],
+            [
+              "Their Other Bear",
+              "Bear"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "answer": [],
+          "amounts": [
+            2,
+            0
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Boars YOU control: Maya's Boar attacking Rob may be blocked by two of his creatures, and dies",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rocksteady, Crash Courser",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Boar"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Their Boar"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Bear",
+              "Their Boar"
+            ],
+            [
+              "Rocksteady, Crash Courser",
+              "Their Boar"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "answer": [],
+          "amounts": [
+            3,
+            0
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Their Boar"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Forestcycling {2}: a Forest from the library to the hand, Rocksteady to the graveyard",
+      "library": [
+        "Island",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rocksteady, Crash Courser"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Rocksteady, Crash Courser"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Forest"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Rocksteady, Crash Courser"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Forestcycling with no Forest in the library finds nothing; the card is still cycled",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rocksteady, Crash Courser"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Rocksteady, Crash Courser"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Rocksteady, Crash Courser"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        }
+      ]
+    },
+    {
+      "name": "Forestcycling works only from the hand: on the battlefield it is not offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Rocksteady, Crash Courser",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Rocksteady, Crash Courser"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": []
+    }
+  ]
+}

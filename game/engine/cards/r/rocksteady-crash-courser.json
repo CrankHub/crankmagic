@@ -1,0 +1,81 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Rocksteady, Crash Courser",
+    "oracleId": "f9330a7b-8a65-4e04-a777-bf6512332850",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Rhino",
+      "Mutant"
+    ],
+    "manaCost": "{4}{G}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 7,
+    "toughness": 7
+  },
+  "oracleText": "Rocksteady can't be blocked by more than one creature.\nBoars you control can't be blocked by more than one creature.\nForestcycling {2} ({2}, Discard this card: Search your library for a Forest card, reveal it, put it into your hand, then shuffle.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Rocksteady can't be blocked by more than one creature.",
+      "rule": "blocked-by-one-at-most",
+      "affects": {
+        "what": "permanent",
+        "self": true
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Boars you control can't be blocked by more than one creature.",
+      "rule": "blocked-by-one-at-most",
+      "affects": {
+        "what": "permanent",
+        "subtypes": [
+          "Boar"
+        ],
+        "controller": "you"
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "Forestcycling {2} ({2}, Discard this card: Search your library for a Forest card, reveal it, put it into your hand, then shuffle.)",
+      "zone": "hand",
+      "cycling": true,
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}"
+        },
+        {
+          "atom": "discard",
+          "self": true
+        }
+      ],
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "library",
+          "selector": {
+            "subtypes": [
+              "Forest"
+            ]
+          },
+          "to": "hand",
+          "reveal": true,
+          "shuffle": true
+        }
+      ]
+    }
+  ]
+}
