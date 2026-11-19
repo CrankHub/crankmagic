@@ -1,0 +1,51 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Moon-Blessed Cleric",
+    "oracleId": "89ed0598-a3ee-4d14-9a35-25e0dd80d9fb",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Elf",
+      "Cleric"
+    ],
+    "manaCost": "{2}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": 3,
+    "toughness": 2
+  },
+  "oracleText": "Divine Intervention — When this creature enters, you may search your library for an enchantment card, reveal it, then shuffle and put that card on top.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Divine Intervention — When this creature enters, you may search your library for an enchantment card, reveal it, then shuffle and put that card on top.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "library",
+          "selector": {
+            "types": [
+              "Enchantment"
+            ]
+          },
+          "reveal": true,
+          "shuffle": true,
+          "to": "top"
+        }
+      ],
+      "optional": true
+    }
+  ]
+}

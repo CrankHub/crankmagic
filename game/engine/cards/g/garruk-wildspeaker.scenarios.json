@@ -1,0 +1,476 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Garruk Wildspeaker",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ox": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ox"
+      ],
+      "manaCost": "{1}{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 2,
+      "toughness": 3
+    }
+  },
+  "scenarios": [
+    {
+      "name": "+1: the Forest and the Island, both tapped for mana, untap; Garruk has 4 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk Wildspeaker",
+            "Forest",
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Forest"
+            },
+            {
+              "seat": 0,
+              "tapped": "Island"
+            }
+          ]
+        },
+        {
+          "activate": "Garruk Wildspeaker",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Forest"
+              },
+              {
+                "card": "Island"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Forest",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Island",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk Wildspeaker",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1 at two of Maya's lands: any lands are targets, and they untap for her",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk Wildspeaker"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Swamp"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk Wildspeaker",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Mountain",
+                "seat": 1
+              },
+              {
+                "card": "Swamp",
+                "seat": 1
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk Wildspeaker",
+            "counter": "loyalty",
+            "count": 4
+          }
+        },
+        {
+          "seat": 1,
+          "tapped": "Mountain",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "With one land on the battlefield the +1 has no two targets: only the -1 is offered (and the -4 is not paid at 3)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk Wildspeaker",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Garruk Wildspeaker"
+              },
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk Wildspeaker",
+            "counter": "loyalty",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "With two lands the +1 and the -1 are offered, never the -4 at 3 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk Wildspeaker",
+            "Forest",
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Garruk Wildspeaker"
+              },
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk Wildspeaker",
+            "counter": "loyalty",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "-1: a 3/3 green Beast token; Garruk has 2 loyalty",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk Wildspeaker"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk Wildspeaker",
+          "ability": "a1"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Beast",
+                "token": true,
+                "power": 3,
+                "toughness": 3
+              }
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Beast",
+            "Garruk Wildspeaker"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk Wildspeaker",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "-4 after a +1: Rob's creatures are +3/+3 and trample for the turn, a creature that comes after and Maya's are not; Garruk dies; it is gone next turn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Garruk Wildspeaker",
+            "Forest",
+            "Island",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ox"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Garruk Wildspeaker",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Forest"
+              },
+              {
+                "card": "Island"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Garruk Wildspeaker",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 5,
+                "toughness": 5
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "has": [
+                  "Trample"
+                ]
+              }
+            },
+            {
+              "seat": 1,
+              "stats": {
+                "card": "Ox",
+                "power": 2,
+                "toughness": 3
+              }
+            },
+            {
+              "seat": 0,
+              "zone": "graveyard",
+              "cards": [
+                "Garruk Wildspeaker"
+              ]
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 4,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "lacks": [
+                  "Trample"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Bear",
+            "Forest",
+            "Island"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands, nothing tapped by hand: Garruk enters with 3 loyalty",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Garruk Wildspeaker"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Garruk Wildspeaker"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Garruk Wildspeaker"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Garruk Wildspeaker",
+            "counter": "loyalty",
+            "count": 3
+          }
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Garruk Wildspeaker",
+            "Forest",
+            "Forest",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

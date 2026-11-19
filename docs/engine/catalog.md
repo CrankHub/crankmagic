@@ -7,7 +7,7 @@ distinct list of actions, triggers, effects, actions, options, etc. that can be 
 rules"). The keyword actions and abilities are the Comprehensive Rules' own list (701, 702); the effects, triggers,
 static abilities, replacement effects and costs are every one used by the 33,821 cards Forge implements.
 
-**The most-played 80% of Commander cards:** 3,238 cards; 2,003 defined and playable today; 2,921 with every
+**The most-played 80% of Commander cards:** 3,238 cards; 2,013 defined and playable today; 2,924 with every
 mechanic built, so only their definitions are left to write.
 
 **Status:** *built* the engine does it; *partial* some forms; *named* in the engine's vocabulary, not built; *missing* not
@@ -36,14 +36,14 @@ The things that alone hold back the most of the most-played cards.
 
 | Kind | Name | Engine | Status | Alone | Holds back |
 | --- | --- | --- | --- | ---: | ---: |
-| option | Remembering an object ("the exiled card", "that creature" later) | — | missing | 8 | 44 |
+| option | Remembering an object ("the exiled card", "that creature" later) | — | missing | 8 | 43 |
 | count | What entered or died this turn | — | missing | 8 | 8 |
 | effect | ChoosePlayer | — | missing | 5 | 7 |
 | count | Times this resolved this turn | — | missing | 5 | 7 |
-| count | How many things an effect remembered | — | missing | 5 | 7 |
 | trigger | AbilityCast | — | missing | 5 | 5 |
 | count | Your life total | — | missing | 4 | 7 |
 | count | Amount | — | missing | 4 | 7 |
+| count | How many things an effect remembered | — | missing | 4 | 6 |
 | static | RaiseCost | — | missing | 4 | 5 |
 | effect | Discover | discover | named | 4 | 4 |
 | keyword ability | Landwalk | — | named | 4 | 4 |
@@ -828,12 +828,12 @@ The things that alone hold back the most of the most-played cards.
 | Fewer targets than the most ("up to", "any number of") | a target's count {min, max} (script/bind.mjs), picked as a pick-several | built | 126 | 1672 | 0 | 0 |
 | Remembering what an effect moved | — | missing | 124 | 1168 | 44 | 3 |
 | More than one target of a kind ("up to N") | a target's count {min, max} (script/bind.mjs); a count that is X is not built | partial | 123 | 1664 | 0 | 0 |
-| Remembering an object ("the exiled card", "that creature" later) | — | missing | 123 | 1460 | 44 | 8 |
+| Remembering an object ("the exiled card", "that creature" later) | — | missing | 123 | 1460 | 43 | 8 |
 | An intervening "if" or "activate only if": a permanent present | condition {present: selector} | built | 114 | 1200 | 0 | 0 |
 | How long an effect lasts (until end of turn is built; others not) | — | partial | 111 | 1658 | 0 | 0 |
 | An effect's condition: a comparison | a count compared: an arrival's unless {min, max}; a condition's {atLeast, atMost} | built | 104 | 684 | 0 | 0 |
 | You may (an optional effect, CR 603.5) | modal (Yes / No) | built | 101 | 1094 | 0 | 0 |
-| You may play or cast a card from another zone | — | missing | 99 | 625 | 32 | 1 |
+| You may play or cast a card from another zone | — | missing | 99 | 625 | 31 | 1 |
 | An intervening "if" or "activate only if": a counted value | condition {compare} | built | 79 | 974 | 0 | 0 |
 | An effect's condition: a counted value | condition {compare: {count, atLeast / atMost / moreThan / fewerThan}} | built | 75 | 603 | 0 | 0 |
 | Unless a player pays | unlessPays, by kind | partial | 66 | 677 | 0 | 0 |
@@ -881,7 +881,7 @@ The things that alone hold back the most of the most-played cards.
 | — | That much life ("loses that much life", the life gained) | {lifeGained: true}: the life the trigger is about (batch 68) | built | 11 | 38 | 0 | 0 |
 | — | Your life total | — | missing | 10 | 92 | 7 | 4 |
 | — | Amount | — | missing | 10 | 43 | 7 | 4 |
-| — | How many things an effect remembered | — | missing | 8 | 71 | 7 | 5 |
+| — | How many things an effect remembered | — | missing | 8 | 71 | 6 | 4 |
 | — | Times this resolved this turn | — | missing | 7 | 31 | 7 | 5 |
 | — | The monarch | condition {monarch: "you"} (script/condition.mjs); "while you're the monarch", a damage trigger's monarch: "you" | built | 7 | 15 | 0 | 0 |
 | 700.5 | Devotion to two colors (CR 700.5) | {devotion: [color, color]} | built | 6 | 13 | 0 | 0 |
@@ -891,7 +891,7 @@ The things that alone hold back the most of the most-played cards.
 | — | Your starting life total | — | missing | 5 | 23 | 3 | 0 |
 | — | LifeGained | — | missing | 5 | 20 | 1 | 0 |
 | — | Whether it was kicked | — | missing | 3 | 92 | 2 | 2 |
-| — | Times kicked | — | missing | 3 | 30 | 2 | 1 |
+| — | Times kicked | — | missing | 3 | 30 | 1 | 1 |
 | — | Life your opponents lost this turn | amount {lifeLostThisTurn: "opponents"} (effects/resources.mjs keeps each player's, rules/turn.mjs clears it) | built | 3 | 26 | 0 | 0 |
 | — | An amount the trigger carries | — | missing | 3 | 21 | 2 | 1 |
 | — | Your experience counters | amount {countersOn: "you", counter: "experience"} (script/amount.mjs); putCounter's who gives them | built | 3 | 15 | 0 | 0 |
@@ -1089,7 +1089,7 @@ The things that alone hold back the most of the most-played cards.
 | Protection from black | Protection from black | built | 2 | 48 | 0 | 0 |
 | Protection from white | Protection from white | built | 2 | 32 | 0 | 0 |
 | Strive | — | missing | 2 | 20 | 2 | 2 |
-| Multikicker | — | named | 2 | 19 | 1 | 0 |
+| Multikicker | — | named | 2 | 19 | 0 | 0 |
 | Partner with | Partner with | built | 1 | 52 | 0 | 0 |
 | MayFlashSac | — | missing | 1 | 10 | 1 | 0 |
 | DeckLimit | — | missing | 1 | 5 | 1 | 0 |

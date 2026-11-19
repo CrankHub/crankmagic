@@ -1,0 +1,44 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Heroes' Reunion",
+    "oracleId": "beab66e0-2b6c-478f-ba42-8c0c216a527e",
+    "types": [
+      "Instant"
+    ],
+    "subtypes": [],
+    "manaCost": "{G}{W}",
+    "colors": [
+      "G",
+      "W"
+    ],
+    "colorIdentity": [
+      "G",
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Target player gains 7 life.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Target player gains 7 life.",
+      "targets": [
+        {
+          "what": "player"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "gainLife",
+          "amount": 7,
+          "who": {
+            "target": 0
+          }
+        }
+      ]
+    }
+  ]
+}

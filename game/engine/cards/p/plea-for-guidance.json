@@ -1,0 +1,45 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Plea for Guidance",
+    "oracleId": "358cfcf3-8ad0-4877-a59a-76ee269169fb",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{5}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Search your library for up to two enchantment cards, reveal them, put them into your hand, then shuffle.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Search your library for up to two enchantment cards, reveal them, put them into your hand, then shuffle.",
+      "targets": [],
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "library",
+          "selector": {
+            "types": [
+              "Enchantment"
+            ]
+          },
+          "count": 2,
+          "upTo": true,
+          "reveal": true,
+          "shuffle": true,
+          "to": "hand"
+        }
+      ]
+    }
+  ]
+}

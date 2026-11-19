@@ -190,6 +190,9 @@ function untap(state, events) {
     /* Exerted (Arena of Glory; CR 701.43a): it doesn't untap during its exerting player's next untap step -- this one, used up
        whether or not it is tapped. */
     if (o.exerted === state.activePlayer) { delete o.exerted; continue; }
+    /* "They don't untap during their controller's next untap step" (Tamiyo, Field Researcher; CR 502.3; effects/resources.mjs, tap's
+       `noUntap`): the same, used up whether or not it is tapped. */
+    if (o.skipUntap === state.activePlayer) { delete o.skipUntap; continue; }
     /* The active player's permanents (CR 502.3), and another player's that a static of theirs untaps now (Seedborn Muse). */
     if (!o.tapped || (o.controller !== state.activePlayer && !untapsDuringOthers(state, id))) continue;
     /* "Doesn't untap during your untap step" (Mana Vault, Meekstone). */
@@ -332,6 +335,10 @@ function endOfTurn(state, events) {
      begun after it was made -- this one, if it was made before this turn began. */
   if ((state.effects ?? []).some((e) => e.until === "your-next-end"))
     state.effects = state.effects.filter((e) => !(e.until === "your-next-end" && e.sourceController === state.activePlayer && state.turn > e.madeOnTurn));
+  /* "During target opponent's next turn" (Gideon Jura's +2): over at the end of the first turn of that player begun after it was
+     made (CR 514.2), as the effect's `players` say -- never this turn's, which began before it. */
+  if ((state.effects ?? []).some((e) => e.until === "their-next-end"))
+    state.effects = state.effects.filter((e) => !(e.until === "their-next-end" && (e.players ?? []).includes(state.activePlayer)));
   /* "Becomes a copy of target artifact until end of turn" ends with them (effects/permanents.mjs). */
   endCopies(state);
   /* And a delayed trigger that lasted "this turn" ("whenever a creature dies this turn", CR 603.7b) ends with them. */

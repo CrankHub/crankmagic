@@ -1,0 +1,80 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Selvala, Explorer Returned",
+    "oracleId": "b628a39b-c923-473d-900a-1617f47ecb76",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elf",
+      "Scout"
+    ],
+    "manaCost": "{1}{G}{W}",
+    "colors": [
+      "G",
+      "W"
+    ],
+    "colorIdentity": [
+      "G",
+      "W"
+    ],
+    "power": 2,
+    "toughness": 4
+  },
+  "oracleText": "Parley — {T}: Each player reveals the top card of their library. For each nonland card revealed this way, add {G} and you gain 1 life. Then each player draws a card. (Activate only as an instant.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "Parley — {T}: Each player reveals the top card of their library. For each nonland card revealed this way, add {G} and you gain 1 life. Then each player draws a card.",
+      "cost": [
+        {
+          "atom": "{T}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "peekAndReveal",
+          "who": "each",
+          "count": 1,
+          "reveal": true,
+          "remember": true
+        },
+        {
+          "effect": "addMana",
+          "mana": {
+            "G": {
+              "rememberedCount": true,
+              "filter": {
+                "nonTypes": [
+                  "Land"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "effect": "gainLife",
+          "who": "you",
+          "amount": {
+            "rememberedCount": true,
+            "filter": {
+              "nonTypes": [
+                "Land"
+              ]
+            }
+          }
+        },
+        {
+          "effect": "draw",
+          "count": 1,
+          "who": "each"
+        }
+      ]
+    }
+  ]
+}

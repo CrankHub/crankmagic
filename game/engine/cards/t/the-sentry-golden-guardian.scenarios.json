@@ -1,0 +1,486 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "The Sentry, Golden Guardian",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "The Void": {
+      "name": "The Void",
+      "supertypes": [
+        "Legendary"
+      ],
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Horror",
+        "Villain"
+      ],
+      "colors": [
+        "B"
+      ],
+      "power": 5,
+      "toughness": 5,
+      "keywords": [
+        "Flying",
+        "Indestructible"
+      ],
+      "token": true,
+      "abilities": [
+        {
+          "id": "void-attacks",
+          "kind": "static",
+          "text": "The Void attacks each combat if able.",
+          "rule": "attacks-each-combat",
+          "affects": {
+            "what": "permanent",
+            "self": true
+          }
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand; the opponent creates The Void, a legendary 5/5 flying, indestructible Horror Villain under their control",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Sentry, Golden Guardian"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "The Sentry, Golden Guardian"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "The Sentry, Golden Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "controls": [
+            "The Void"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "The Sentry, Golden Guardian",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "stats": {
+            "card": "The Void",
+            "power": 5,
+            "toughness": 5,
+            "token": true
+          }
+        },
+        {
+          "seat": 1,
+          "keywords": {
+            "card": "The Void",
+            "token": true,
+            "has": [
+              "Flying",
+              "Indestructible"
+            ]
+          }
+        },
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "The Sentry, Golden Guardian",
+            "has": [
+              "Flying",
+              "Vigilance",
+              "Indestructible"
+            ]
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "The Void attacks each combat if able: on Maya's turn it is declared attacking, hits Rob for 5, and the Sentry (vigilance, flying) may block it with neither dying",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Sentry, Golden Guardian"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "The Sentry, Golden Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "The Void"
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "COMBAT_DAMAGE"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 35
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "The Void"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The Void blocked by the Sentry: both are indestructible 5/5 and nothing dies",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Sentry, Golden Guardian"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "The Sentry, Golden Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "The Void"
+          ]
+        },
+        {
+          "block": [
+            [
+              "The Sentry, Golden Guardian",
+              "The Void"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "The Sentry, Golden Guardian",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "The Void"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Three players: Rob chooses which opponent creates The Void (Trey), and Maya creates nothing",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Sentry, Golden Guardian"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "The Sentry, Golden Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Trey"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 2,
+          "controls": [
+            "The Void"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": []
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "The Sentry, Golden Guardian",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "An opponent who already controls a legendary The Void creates another: the legend rule keeps one (CR 704.5j)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Sentry, Golden Guardian"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "The Void"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "The Sentry, Golden Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "controls": [
+            "The Void"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "The Sentry, Golden Guardian",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

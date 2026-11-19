@@ -213,7 +213,7 @@ const damageDealt = (t) => (t.to === "self" ? {on: "GameEventCardDamaged", to: "
        is dealt damage": `to` "creature" (`filter` what was dealt it) or "enchanted"; about the creature dealt it. */
     : t.to === "creature" || t.to === "enchanted" ? {on: "GameEventCardDamaged", to: t.to, ...(t.filter ? {filter: t.filter} : {}), ...(t.combat ? {combat: true} : {})}
     /* "Whenever a creature deals combat damage to you" (Strixhaven Stadium): `to: "you"`, this ability's controller. */
-    : ARRIVALS.includes(t.who ?? "self") && ["player", "opponent", "you"].includes(t.to ?? "player")
+    : ARRIVALS.includes(t.who ?? "self") && ["player", "opponent", "you", "anything"].includes(t.to ?? "player")
     ? {on: "GameEventPlayerDamaged", who: t.who ?? "self", to: t.to ?? "player", ...(t.combat ? {combat: true} : {}), ...(t.noncombat ? {noncombat: true} : {}), ...(t.sourceYours ? {sourceYours: true} : {}), ...(t.filter ? {filter: t.filter} : {}),
       /* "Deals combat damage to a player or planeswalker" (Grateful Apparition): damage dealt to a planeswalker counts
          too, about its controller (rules/trigger.mjs). */
@@ -477,12 +477,16 @@ function effectsIn(list, out = []) {
    else that adds mana -- a sacrifice, a target, a question -- is a problem until it is built. */
 const MANA = (m) => m && typeof m === "object" && !Array.isArray(m) && Object.keys(m).length > 0
   && Object.entries(m).every(([color, n]) => /^[WUBRGC]$/.test(color) && ((Number.isInteger(n) && n > 0) || isCounted(n)));
+const LIBRARY_MOVERS = Object.freeze(["draw", "mill", "dig", "digUntil", "surveil", "scry", "rearrangeTop", "discover", "shuffle"]);
 function manaAbility(ability, id) {
   if (ability.kind !== "activated") return null;
   /* CR 605.1a: an ability that targets is not a mana ability, whatever it adds -- it goes on the stack like any other, and
      the mana is added as it resolves ("Any number of target players each lose 2 life ... You add {B}{B}", Priest of
      Forgotten Gods). */
   if ((ability.targets ?? []).length) return null;
+  /* Nor is one that moves cards to or from a library (CR 605.1a, as updated): "Parley -- {T}: Each player reveals the top card of
+     their library ... add {G} ... Then each player draws a card" (Selvala, Explorer Returned) uses the stack, and can be responded to. */
+  if ((ability.effects ?? []).some((e) => LIBRARY_MOVERS.includes(e?.effect))) return null;
   /* Nor is a loyalty ability (CR 605.1a): "[+1]: Add {R}" (Way of the Pyromancer) goes on the stack, at sorcery speed. */
   if ((ability.cost ?? []).some((a) => a?.atom === "loyalty")) return null;
   const [first, ...then] = ability.effects ?? [];
@@ -688,17 +692,28 @@ function compileGivenIn(effects, text, problems) {
     }
     /* "You get an emblem with '...'" (CR 114.2; effects/permanents.mjs, emblem): its abilities compiled as a card's are, in
        place. What works from the command zone is built (114.4): a triggered ability, a replacement effect, a rule
-       changed for players (rules/statics.mjs, playerRuleChanged), and a static ability in a layer (rules/layers.mjs,
+       changed for players (rules/statics.mjs, playerRuleChanged), a free cast (freeCast), and a static ability in a layer (rules/layers.mjs,
        gatherEffects: Liliana of the Dark Realms' "Swamps you control have ..."). */
     if (effect.effect === "emblem") {
       const list = effect.abilities;
       if (!Array.isArray(list) || !list.length) { problems.push(`${text}: an emblem's abilities are a list, with at least one`); continue; }
+      /* And "you may cast spells from your hand without paying their mana costs" (Tamiyo, Field Researcher's emblem): a static
+         `cast-without-paying`, read from the command zone as a permanent's is (rules/statics.mjs, freeCast). */
       for (const ability of list) if (!(["triggered", "replacement"].includes(ability?.kind) || (ability?.kind === "static" && typeof ability.rule === "string" && ability.affects?.what === "player")
+        || (ability?.kind === "static" && ability.rule === "cast-without-paying")
         || (ability?.kind === "static" && ability.rule === undefined && Number.isInteger(ability.layer))))
         problems.push(`${text}: an emblem's ${ability?.kind ?? "nameless"} ability -- only triggered and replacement abilities, a rule changed for players and a static in a layer work from the command zone yet`);
       const {definition, problems: inner} = compileScript({schema: SCRIPT_SCHEMA, identity: EMBLEM_IDENTITY, oracleText: "", abilities: list});
       problems.push(...inner.map((problem) => `${text}: ${problem}`));
       if (definition) effect.abilities = definition.abilities;
+      continue;
+    }
+    /* "For as long as that creature has a bounty counter on it, it has 'When this creature dies, ...'" (Mathas, Fiend Seeker;
+       CR 611.2b, 613.1f): the abilities an effect gives for a while, compiled as a static's grant is -- a triggered, activated or
+       keyword ability. A mana ability given (Ultima, Origin of Oblivion) is held as written, as it was before. */
+    if (effect.effect === "effectUntil" && Array.isArray(effect.apply?.addAbilities) && effect.apply.addAbilities.length && effect.apply.addAbilities.every((a) => GRANTABLE.includes(a?.kind))) {
+      const given = compileGrant(effect.apply.addAbilities, text, problems);
+      if (given) effect.apply = {...effect.apply, addAbilities: given.abilities, ...(given.keywords.length ? {addKeywords: [...(effect.apply.addKeywords ?? []), ...given.keywords]} : {})};
       continue;
     }
     if (effect.abilities === undefined) continue;

@@ -387,6 +387,8 @@ export function offerDetails(state, seat, actions) {
       parts.push(way ? `escape for ${way.mana}, exiling ${inWords(way.exile)} other card${way.exile === 1 ? "" : "s"}` : "escape");
     }
     if (a.kind === "activate-mana" && a.produce !== undefined) parts.push(manaText(a.mana));
+    /* The type each triggered mana ability adds one more of, when the land made more than one (Heartbeat of Spring; CR 605.1b). */
+    if (a.kind === "activate-mana" && a.extra?.length) parts.push(`one more ${a.extra.map((k) => `{${k}}`).join(" and ")}`);
     return parts.join(" · ");
   };
   const details = actions.map((a) => (a.kind === "pass" ? "" : say(a, true)));
