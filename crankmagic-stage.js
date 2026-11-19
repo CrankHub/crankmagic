@@ -21,11 +21,17 @@
      lies REACH_PAD px above the bottom of the screen (`reachMost`): zooming or moving the view never shortens the table.
      The shortest is the length it always had, where the front mat's captions are already at 10px. */
   const REACH_PAD=8;
-  function geometry(width, height, {tilt = 40, zoom = 100, seats = 3, rotation = 0, pan = null, look = null, reach = 0, rearMin = 0} = {}) {
-    const w=Math.max(1,width), h=Math.max(1,height), angle=clamp(tilt,0,TILT_LIMIT)*Math.PI/180;
+  /* THE DRAWERS' GUTTERS (ROB-512; Rob, 2026-11-19: "Go with option 1 on ROB-512, fixed gutters"): `inL` and `inR` are where the
+     drawers lie, open or shut (crankmagic-board.js, `gutter`), as the flat views have them. The table is laid out in the room between
+     them -- `width` is the table's own width -- and drawn centered in that room (`screenX`), so an open drawer covers none of your mat
+     and opening one moves nothing (Rob, 2026-10-28). The canvas still fills the stage (`canvasWidth`): Babylon's projection is shifted
+     sideways by the same amount (paint). */
+  function geometry(width, height, {tilt = 40, zoom = 100, seats = 3, rotation = 0, pan = null, look = null, reach = 0, rearMin = 0, inL = 0, inR = 0} = {}) {
+    const W=Math.max(1,width), gl=Math.max(0,Number(inL)||0), gr=Math.max(0,Number(inR)||0);
+    const w=Math.max(1,W-gl-gr), h=Math.max(1,height), angle=clamp(tilt,0,TILT_LIMIT)*Math.PI/180;
     const yaw=clamp(rotation,-180,180)*Math.PI/180, c=Math.cos(yaw), q=Math.sin(yaw);
     const base=h*.88, sx=.902*clamp(zoom,60,200)/100, sy=sx*Math.cos(angle);
-    const cx=w/2, cy=base/2, screenY=h*.43, distance=Math.max(w,h)*2.5, focal=sx*distance;
+    const cx=w/2, cy=base/2, screenX=gl+w/2, screenY=h*.43, distance=Math.max(w,h)*2.5, focal=sx*distance;
     /* The resting camera's ray through the bottom of the screen less the pad, down the middle of the view, meets the
        table's plane at world depth Z: the farthest the near edge may come toward the viewer. */
     const rest=Math.PI/2-angle, b0=(h-REACH_PAD-screenY)/(.902*distance), ry=-Math.sin(rest)-b0*Math.cos(rest), rz=Math.cos(rest)-b0*Math.sin(rest);
@@ -41,7 +47,7 @@
     // homogeneous, over the resting distance (so the center's w is 1 at rest).
     const world=(x,y)=>{const X=x-cx,Y=y-cy;return [c*X-q*Y,0,-(q*X+c*Y)];};
     const toScreen=p=>{const d=[p[0]-eye[0],p[1]-eye[1],p[2]-eye[2]],xc=dot(right,d),yc=dot(up,d),zc=dot(ahead,d);
-      return [(cx*zc+focal*xc)/distance,(screenY*zc-focal*yc)/distance,zc/distance];};
+      return [(screenX*zc+focal*xc)/distance,(screenY*zc-focal*yc)/distance,zc/distance];};
     const project=(x,y)=>{const [X,Y,W]=toScreen(world(x,y));return [X/W,Y/W];};
     function surface(r) {
       const o=toScreen(world(r.x,r.y)), u=toScreen(world(r.x+1,r.y)), v=toScreen(world(r.x,r.y+1));
@@ -50,7 +56,7 @@
     }
     /* The table point under a screen point (relative to the stage), or null where the ray misses the table's plane. */
     function unproject(px,py) {
-      const a=(px-cx)/focal,b=(py-screenY)/focal,ray=[0,1,2].map(i=>ahead[i]+a*right[i]-b*up[i]);
+      const a=(px-screenX)/focal,b=(py-screenY)/focal,ray=[0,1,2].map(i=>ahead[i]+a*right[i]-b*up[i]);
       if(ray[1]>=-1e-9)return null;
       const k=-eye[1]/ray[1],X=eye[0]+k*ray[0],Z=eye[2]+k*ray[2],Y=-Z;
       return {x:c*X+q*Y+cx,y:-q*X+c*Y+cy,world:[X,0,Z]};
@@ -59,7 +65,7 @@
     const margin=22,gap=20,count = clamp(seats,1,3),rearY=18,rearH=Math.min(Math.max(base*.24,Number(rearMin)||0),Math.max(base*.24,planeHeight-90)),rearW=(w-margin*2-gap*(count-1))/count;
     const rear=Array.from({length:seats},(_,i)=>surface({x:margin+i*(rearW+gap),y:rearY,width:rearW,height:rearH}));
     const frontY=rearY+rearH+22,front=surface({x:margin,y:frontY,width:w-margin*2,height:planeHeight-frontY-18});
-    return {width:w,height:h,planeHeight,base,cy,reach:reachPx,reachMost,sx,sy,ox,oy,angle,yaw,distance,focal,screenY,pan:at,
+    return {width:w,canvasWidth:W,height:h,planeHeight,base,cy,reach:reachPx,reachMost,sx,sy,ox,oy,angle,yaw,distance,focal,screenX,screenY,pan:at,
       camera:{eye,yaw:turn,pitch,right,up,ahead},project,unproject,quad,rear,front};
   }
   /* THE FLAT TABLE (Rob, 2026-10-28: Table and Focus are the 3D view's HUD and functions without the canvas). Both lay their boards on a plane at no tilt and
@@ -388,7 +394,7 @@
     if(current!==s||!s.engine||!s.box)return;
     const B=root.BABYLON,g=given||geometry(s.box.width,s.box.height,{...s.opts,look:s.pose}),unit=50;
     /* Drawn at the resolution's pixels, shown at the stage's CSS size (crankmagic-stage.css sizes the canvas). */
-    const ratio=pixelRatio();s.engine.setSize(Math.round(g.width*ratio),Math.round(g.height*ratio));
+    const ratio=pixelRatio();s.engine.setSize(Math.round(g.canvasWidth*ratio),Math.round(g.height*ratio));
     const q=quality(),design=tableDesign(s.opts.table).id,key=[design,g.width,g.planeHeight,q].join(':');
     /* While the person's side is being stretched (opts.live) the table already built is stretched to the new length,
        not built again at every move; it is built at its length when the stretch is let go. */
@@ -406,8 +412,9 @@
     // The geometry's own camera in Babylon's units: its eye, and its turn and pitch as Babylon's yaw and pitch, no roll.
     const {eye,yaw,pitch}=g.camera;
     s.camera.position.set(eye[0]/unit,eye[1]/unit,eye[2]/unit);s.camera.rotation.set(pitch,yaw,0);
-    const projection=B.Matrix.PerspectiveFovLH(2*Math.atan(g.height/(2*g.focal)),g.width/g.height,.1,200);
+    const projection=B.Matrix.PerspectiveFovLH(2*Math.atan(g.height/(2*g.focal)),g.canvasWidth/g.height,.1,200);
     projection.m[9]=.14; // center the tabletop at 43% of the available height, above the hand
+    projection.m[8]=2*(g.screenX-g.canvasWidth/2)/g.canvasWidth; // and across the room between the drawers' gutters (ROB-512)
     s.camera.freezeProjectionMatrix(projection);s.scene.render();
     s.geometry=g;s.host.dataset.renderer='webgl';s.host.dataset.engine='babylon';s.opts.onReady?.();
   }
@@ -520,7 +527,7 @@
        draws it with: where the mesh really is, against where the DOM's plane is. */
     const W=g.width/100,D=s.tableDepth/2;
     const corners=[[-W,D],[W,D],[W,-D],[-W,-D]].flatMap(([x,z])=>{
-      const p=B.Vector3.Project(new B.Vector3(x,-.225,z),world,s.scene.getTransformMatrix(),new B.Viewport(0,0,g.width,g.height));return [p.x,p.y];
+      const p=B.Vector3.Project(new B.Vector3(x,-.225,z),world,s.scene.getTransformMatrix(),new B.Viewport(0,0,g.canvasWidth,g.height));return [p.x,p.y];
     });
     /* The projection the DOM draws: its transform after the scale(k) of a mat laid out k times larger (sharpness). */
     const front=s.host.querySelector('.cm-stage-front'),k=Number(front?.dataset.sharp||1),shown=front?Array.from(new DOMMatrix(getComputedStyle(front).transform).toFloat64Array()).map((v,i)=>i<8?v*k:v):null;
@@ -528,7 +535,7 @@
       camera:{position:s.camera.position.asArray(),rotation:s.camera.rotation.asArray()},pan:{...g.pan},
       look:s.look?{t:s.look.t,dir:s.look.dir,ms:s.look.aim.ms,r:s.look.aim.r,clock:s.look.last,started:s.look.started,back:s.look.back,at:g.project(...planeOf(g,s.look.aim.point)),
         rise:s.look.aim.rise,steer:s.look.steer?{...s.look.steer}:null,turned:s.look.turned?{...s.look.turned}:null}:null,
-      center:[g.width/2,g.screenY],front:{shown,matrix:g.front.matrix,height:g.front.height,quad:g.front.quad},rear:g.rear.map(r=>({height:r.height,width:r.width})),
+      center:[g.screenX,g.screenY],front:{shown,matrix:g.front.matrix,height:g.front.height,quad:g.front.quad},rear:g.rear.map(r=>({height:r.height,width:r.width})),
       length:{base:g.base,reach:g.reach,most:g.reachMost,plane:g.planeHeight,built:s.tableDepth*50,scale:s.table.root.scaling.z,builds:s.builds},
       backdrop:{id:s.backdrop??null,lines:s.environment?.dataset.lines?Number(s.environment.dataset.lines):null,src:s.video?.getAttribute('src')??null},
       graphics:{resolution:resNow(),software:softwareGL(),ratio:pixelRatio(),canvas:[s.canvas.width,s.canvas.height],css:[s.canvas.clientWidth,s.canvas.clientHeight],dither:s.scene.imageProcessingConfiguration.ditheringEnabled,

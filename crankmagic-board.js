@@ -1682,14 +1682,14 @@ globalThis.CrankBoard = Object.seal({
       const lo = Math.max(drawerL + half + 8, cap ? cap.right - at0.left + 12 + half : 0), hi = region.clientWidth - covered - half - 8;
       popup.style.left = `${Math.round(Math.max(lo > hi ? hi : lo, Math.min(hi, (drawerL + region.clientWidth - covered) / 2)))}px`;
     }
-    /* Drawers lie over the stage and the hand and move neither: a flat table keeps its boards clear of where they lie, open or not (the 40px is the tab on each edge). */
-    if (flat) {
+    /* Drawers lie over the stage and the hand and move neither: the table -- flat or 3D (ROB-512, Rob 2026-11-19: "fixed gutters") -- keeps its boards clear of where they lie, open or not (the 40px is the tab on each edge). */
+    {
       const railW = host.querySelector(":scope > .cm-stage-rail.is-open")?.offsetWidth, sideW = host.querySelector(":scope > .cm-stage-side.is-open")?.offsetWidth;
       if (railW) drawerW.left = railW; if (sideW) drawerW.right = sideW;
       const room = host.clientWidth * .4;
       gutter = {left: Math.round(Math.min(drawerW.left, room) + 40), right: Math.round(Math.min(drawerW.right, room) + 40)};
       host.style.setProperty("--gut-l", `${gutter.left}px`); host.style.setProperty("--gut-r", `${gutter.right}px`);
-    } else {host.style.removeProperty("--gut-l"); host.style.removeProperty("--gut-r");}
+    }
     if (flat) fitFan(host);   /* the tray's height first: the boards are fitted above it */
     const tray = host.querySelector(":scope > .cm-stage-hand");
     const opts = {flat, grid: flat && mode === "table", reserve: flat ? Math.round((tray?.classList.contains("is-hidden") ? (tray.getBoundingClientRect().height || 0) : Math.min(tray?.getBoundingClientRect().height || 0, Number(tray?.dataset.base) || Infinity)) + 14) : 0, tilt: cameraTilt(), zoom: camera.zoom, pan: camera.pan, reach: camera.reach, rearMin:0, live: !!stretch, rotation: 0, cards: camera.cards, reduced: globalThis.CrankMotion?.reduced() ?? false,
@@ -1698,6 +1698,8 @@ globalThis.CrankBoard = Object.seal({
       combat: view.state.phase?.startsWith("COMBAT_") ?? false, instant: view.state.stack.some((s) => /Instant/i.test(typeLineOf(s))),
       onReady() {stageError = ""; const el = document.querySelector(".cm-stage-error"); if (el) el.textContent = "";},
       onError(message) {stageError = message; const el = document.querySelector(".cm-stage-error"); if (el) el.textContent = `${message} Use Focus view in Camera if graphics are unavailable.`; say(`${message} Use Focus view in Camera if graphics are unavailable.`);}};
+    /* 3D: the table laid out and drawn between the drawers' gutters (crankmagic-stage.js, geometry's inL and inR). */
+    if (!flat) {opts.inL = gutter.left; opts.inR = gutter.right;}
     if (flat) {
       opts.background = ""; opts.table = "";
       /* The boards meet with only a hair between them (no dial at the center now); they start below the action pop-up, and the turn box top left is not drawn over a board's name. */

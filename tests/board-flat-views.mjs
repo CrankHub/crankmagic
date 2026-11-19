@@ -51,7 +51,7 @@ async function open(mode, width, height) {
 const rects = (page) => page.evaluate(() => {
   const R = (e) => {const b = e.getBoundingClientRect(); return {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)};};
   const one = (s) => {const e = document.querySelector(s); return e ? R(e) : null;};
-  return {region: one(".cm-stage-region"), hand: one(".cm-stage-hand"), fan: one(".cm-stage-fan"), rail: one(".cm-stage-rail.is-open"), side: one(".cm-stage-side.is-open"),
+  return {region: one(".cm-stage-region"), front: one(".cm-stage-front"), hand: one(".cm-stage-hand"), fan: one(".cm-stage-fan"), rail: one(".cm-stage-rail.is-open"), side: one(".cm-stage-side.is-open"),
     boards: [...document.querySelectorAll(".cm-stage-slot > .cm-mat, .cm-stage-slot.cm-stage-big")].map(R), slots: [...document.querySelectorAll(".cm-stage-slot, .cm-stage-rear")].map(R)};
 });
 const toggle = async (page, action) => {await page.evaluate((a) => document.querySelector(`[data-action="${a}"]`)?.click(), action); await page.waitForTimeout(900);};
@@ -82,7 +82,8 @@ for (const mode of ["table", "focus", "full"]) {
     eq(a.region, both.region, `${mode}: the stage does not move ${name}`);
     eq(a.hand, both.hand, `${mode}: the hand does not move ${name}`);
     eq(a.fan, both.fan, `${mode}: the hand's cards do not move ${name}`);
-    if (mode !== "full") eq(a.slots, both.slots, `${mode}: no board moves ${name}`);
+    eq(a.slots, both.slots, `${mode}: no board moves ${name}`);
+    if (mode === "full") eq(a.front, both.front, `full: your own mat does not move ${name} (ROB-512: fixed gutters)`);
   }
   ok(both.region.x === 0 && both.region.w === 1440, `${mode}: the stage is the window's whole width`);
   ok(both.hand.x === 0 && both.hand.w === 1440, `${mode}: the hand is the window's whole width`);
@@ -94,6 +95,21 @@ for (const mode of ["table", "focus", "full"]) {
   });
   ok(over.left && over.right, `${mode}: a drawer lies over the stage and the hand (it is what a pointer finds at its edge)`);
 
+  /* ROB-512 (Rob, 2026-11-19: "Go with option 1 on ROB-512, fixed gutters"): in 3D too, the table lies between the drawers, open or
+     shut, so an open drawer covers none of your own mat -- before, a permanent at its left end (x 80 to 165) was under the Actions drawer. */
+  if (mode === "full") {
+    const g = await rects(page), left = g.rail.x + g.rail.w, right = g.side.x;
+    ok(g.front && g.front.x >= left - 1 && g.front.x + g.front.w <= right + 1, `full: your own mat lies between the open drawers (${g.front?.x}..${g.front ? g.front.x + g.front.w : "?"} within ${left}..${right})`);
+    for (const b of g.slots) ok(b.x >= left - 1 && b.x + b.w <= right + 1, `full: an opponent's mat lies between the drawers (${b.x}..${b.x + b.w} within ${left}..${right})`);
+    /* The leftmost card on your mat (the mat is drawn in perspective, so its box's corner is not on it): a press at its center finds it. */
+    const reach = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll(".cm-stage-front .cm-bcard")].map((c) => ({c, r: c.getBoundingClientRect()})).filter((x) => x.r.width > 4).sort((p, q) => p.r.left - q.r.left);
+      if (!cards.length) return {cards: 0};
+      const {c, r} = cards[0], at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return {cards: cards.length, x: Math.round(r.left), card: !!at && (at === c || c.contains(at) || !!at.closest?.(".cm-card-slot")?.contains(c)), drawer: !!at?.closest(".cm-stage-rail"), hit: at ? at.className?.toString().slice(0, 40) : null};
+    });
+    ok(reach.cards > 0 && reach.card && !reach.drawer, `full: a press on the leftmost card of your mat finds the card, not the drawer (${JSON.stringify(reach)})`);
+  }
   if (mode !== "full") {
     const g = await rects(page), left = g.rail.x + g.rail.w, right = g.side.x;
     for (const b of g.slots) ok(b.x >= left && b.x + b.w <= right, `${mode}: a board lies between the drawers (${b.x}..${b.x + b.w} within ${left}..${right})`);
