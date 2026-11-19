@@ -173,7 +173,7 @@ globalThis.CrankBoard = Object.seal({
   const forRunNote = d => d.forRun ? `<p class="cm-muted cm-board-for-run">Resolve all: your answer goes for this same question each time the run asks it.</p>` : "";
   function flowDecision(d) {
     /* CANCELED, AND WAITING ON THE PLAYER'S WORD (ROB-205; Rob, 2026-11-19: "The Resume pop-up would be ok if it included 'Confirm
-       Cancel' button that cancelled out of that loop entirely"). The room says how this question may be canceled (game/room/room.mjs,
+       Cancel' button that canceled out of that loop entirely"). The room says how this question may be canceled (game/room/room.mjs,
        `decision.cancel`): an answer the game owes gets Resume and Confirm cancel; one the rules need answered gets Resume and why,
        in the room's words. A board on an older room (no `cancel`) keeps Resume alone. */
     if(flowPaused){

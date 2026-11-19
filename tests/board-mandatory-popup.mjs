@@ -165,8 +165,8 @@ try {
     await context.close();
   }
 
-  /* CANCEL CANCELS (ROB-205; Rob, 2026-11-19: "If I press 'Cancel' that means I'm cancelling the action. I DON'T want to resume
-     it. The Resume pop-up would be ok if it included 'Confirm Cancel' button that cancelled out of that loop entirely."). The room
+  /* CANCEL CANCELS (ROB-205; Rob, 2026-11-19: "If I press 'Cancel' that means I'm canceling the action. I DON'T want to resume
+     it. The Resume pop-up would be ok if it included 'Confirm Cancel' button that canceled out of that loop entirely."). The room
      says how each question may be canceled (game/room/room.mjs, `decision.cancel`; tests/room-cancel-decision.mjs proves what the
      room does with it). Here, the board:
        - an owed answer (a trigger's targets): Cancel leaves a small box OFF the mats -- not centered over the board -- with Resume
