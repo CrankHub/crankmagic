@@ -67,7 +67,7 @@ import {runEffects} from "../script/effects/index.mjs";
 import {changeLife} from "../script/effects/resources.mjs";
 import {unprepare, preparedCopyStays} from "../script/effects/attributes.mjs";
 import {checkStateBasedActions, gameOver} from "./sba.mjs";
-import {costReduction, costIncrease, lifeIncrease, lifeForLess, costsReadTargets, abilityCostIncrease, abilityCostReduction, equipCostReduction, playerStatics, freeCast, flashGranted, castForbidden, placeCounters, activationForbidden, permanentActivationForbidden, cantBeSacrificed, ruleChanged, sorceryTimeOnly, playerRuleChanged, loyaltyCostIncrease} from "./statics.mjs";
+import {costReduction, costIncrease, lifeIncrease, lifeForLess, costsReadTargets, abilityCostIncrease, abilityCostReduction, equipCostReduction, playerStatics, eachPlayerStatics, freeCast, flashGranted, castForbidden, placeCounters, activationForbidden, permanentActivationForbidden, cantBeSacrificed, ruleChanged, sorceryTimeOnly, playerRuleChanged, loyaltyCostIncrease} from "./statics.mjs";
 import {countMana, amountOf, countEffect, isCounted, amountProblems, commanderless} from "../script/amount.mjs";
 import {bindEffect} from "../script/bind.mjs";
 import {conditionHolds} from "../script/condition.mjs";
@@ -75,7 +75,7 @@ import {lastKnown, characteristicsOf, abilitiesOf, deriving, derivingAfresh, onc
 import {namesChosen, withChosen, chosenFor} from "../script/chosen.mjs";
 import {poolFor, spendFor, addRestricted, addRider, riderChoices, addProvenance, addPoolMana} from "./restricted-mana.mjs";
 import {askEntering} from "./entering.mjs";
-import {collectTriggers, openTriggers, manaTriggered} from "./trigger.mjs";
+import {collectTriggers, openTriggers, manaTriggered, manaPicks} from "./trigger.mjs";
 
 const MAIN_PHASES = ["MAIN1", "MAIN2"];
 /* A LAND IN ANY STEP OF YOUR OWN TURN (`landAnyStep`; Rob, 2026-10-21): a house rule, not CR 305.1's main phase -- the
@@ -124,6 +124,10 @@ function castCost(state, player, id, tax, free = false, instead = null, extra = 
      cost is the mana cost with X's value in it, then reduced; 107.3a): "Affinity for Foods" on Banquet Guests' {X}{G}{W} (Rob's
      lists P2). With the X chosen (`X`), that X is counted into the generic and reduced with it -- the cost then has no {X} left
      for its callers to add; without it, `less` says how much higher X may go than the pool alone pays (castOffers). */
+  /* "You may spend mana as though it were mana of any color to cast planeswalker spells" (Oath of Nissa; CR 609.4b): the cost is not
+     changed -- the reductions above and `needs` below read it as it was -- only marked, for anyTypeCost to read where it is paid. */
+  if (playerStatics(state, "spend-as-any-color", player)
+    .some(({ability, source: holder}) => matchesSelector({...(ability.spells ?? {}), what: "card", zone: state.objects[id]?.zone}, state, id, {controller: player, source: holder}))) cost.anyColor = true;
   const less = Math.max(0, reduction - tax);
   if (less > 0 && cost.variable > 0 && Number.isInteger(X) && X > 0) {
     const counted = xCounted(cost, X);
@@ -1370,8 +1374,10 @@ const sacrificeCount = (atom, X) => (atom?.count === "X" ? X ?? 0 : atom?.count 
 /* "You may play an additional land this turn" (Hearthhull): an effect for the turn (effects/permanents.mjs, effectUntil). */
 /* "3+ | You may play an additional land on each of your turns" (Exploration Broodship): one whose condition holds. */
 /* "You may play two additional lands on each of your turns" (Azusa, Lost but Seeking; CR 305.2): `count`, that many. */
+/* "Each player may play an additional land on each of their turns" (Rites of Flourishing): the statics that name every player count for each. */
 const landDropsLeft = (state, player) => (state.players[player].landAllowance ?? 1)
-  + playerStatics(state, "extra-land-drop", player).filter(({ability, source}) => conditionHolds(state, ability.condition, {controller: player, source}))
+  + [...playerStatics(state, "extra-land-drop", player).filter(({ability}) => ability.affects?.who !== "any"), ...eachPlayerStatics(state, "extra-land-drop")]
+    .filter(({ability, source}) => conditionHolds(state, ability.condition, {controller: player, source}))
     .reduce((n, {ability}) => n + (ability.count ?? 1), 0)
   + (state.effects ?? []).filter((e) => e.rule === "extra-land-drop" && e.sourceController === player).length - state.players[player].landsPlayed;
 
@@ -1462,9 +1468,11 @@ function spendPermission(state, permission, kind, asType) {
 }
 /* "Mana of any type can be spent to cast those spells" (Tinybones, Bauble Burglar; CR 118.14, 609.4b): the cost is not
    changed, only how it may be paid -- each colored or hybrid symbol by one mana of any type, as generic mana is. A snow
-   symbol is left as rules/mana.mjs pays it. NAMED: a Phyrexian symbol still asks its color or 2 life. */
+   symbol is left as rules/mana.mjs pays it. NAMED: a Phyrexian symbol still asks its color or 2 life. And the same where the
+   spell's own caster may spend mana "as though it were mana of any color" (Oath of Nissa's static `spend-as-any-color`, marked
+   on the cost by castCost): colorless mana pays a colored symbol too, as it does under a Chromatic Orrery. */
 const ANY_TYPE_PAYS = ["colored", "hybrid", "monohybrid"];
-const anyTypeCost = (cost, permission) => (permission?.ability.anyMana !== true ? cost
+const anyTypeCost = (cost, permission) => (permission?.ability.anyMana !== true && cost.anyColor !== true ? cost
   : {...cost, generic: cost.generic + cost.symbols.filter((s) => ANY_TYPE_PAYS.includes(s.kind)).length, symbols: cost.symbols.filter((s) => !ANY_TYPE_PAYS.includes(s.kind))});
 /* The life a cast through this permission costs instead of its mana cost -- "pay life equal to its mana value" (Bolas's
    Citadel; CR 118.9) -- or null when it is paid for as usual. X is 0 (CR 107.3b): no alternative cost of the Citadel's
@@ -1561,6 +1569,23 @@ function playableElsewhere(state, player, kind) {
  * they cannot pass either. An empty list is the honest answer to "what may you do", and a caller
  * that treats it as "nothing to do" is right.
  */
+/**
+ * THE PICKS A TAP OFFERS (CR 605.1b, 106.1): for a mana ability that makes more than one type of mana at once, each triggered
+ * mana ability that adds one mana "of any type that land produced" (Heartbeat of Spring, Mirari's Wake) asks which type -- so one
+ * offer for each way to pick, a list of types, one for each such ability (the same types in another order are the same pick).
+ * `[null]`: no pick, the tap makes one type or nothing asks. Never for an ability with no {T} of its own: it is "tapped for mana"
+ * only when its source is tapped (the event's `tapped`).
+ */
+function manaPickable(state, player, id, ability, mana) {
+  const kinds = MANA_KEYS.filter((k) => (mana?.[k] ?? 0) > 0);
+  if (kinds.length < 2 || !ability.tapSelf) return [null];
+  const picks = manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced: mana, source: {cardId: id}}}});
+  if (!picks) return [null];
+  let ways = [[]];
+  for (let n = 0; n < picks; n += 1) ways = ways.flatMap((way) => kinds.filter((k) => way.length === 0 || k >= way[way.length - 1]).map((k) => [...way, k]));
+  return ways;
+}
+
 /** Its mana abilities' activations, each an offer (CR 605.3a): any time the player has priority, whatever the step. */
 function manaOffers(state, player) {
   const actions = [];
@@ -1590,12 +1615,17 @@ function manaOffers(state, player) {
         : ability.tapCreature ? manaTappers(state, player, id, ability.tapCreature, ability.tapSelf === true).map((x) => ({tap: x}))
         /* "Exile a card from your graveyard" (Rubble Rouser): one offer per card it may exile, as an activated ability's. */
         : ability.exileFromGraveyard ? graveyardChoices(state, player, id, ability.exileFromGraveyard).map((x) => ({exile: x})) : [null];
-      for (const costChoice of fodder) alternatives.forEach((mana, produce) => actions.push({
-        kind: "activate-mana", objectId: id, abilityId: ability.id, label: object.card, mana,
-        /* A fixed ability is one offer and looks as it always has; a choice says which it is. */
-        ...(alternatives.length > 1 || Array.isArray(ability.produces) || ability.anyColor || ability.reflect || ability.among ? {produce} : {}),
-        ...(costChoice ? {costChoice, costNames: [state.objects[costChoice.sacrifice ?? costChoice.tap ?? costChoice.exile].card]} : {}),
-      }));
+      for (const costChoice of fodder) alternatives.forEach((mana, produce) => {
+        /* "Add one mana of any type that land produced" with more than one type made (Heartbeat of Spring): each pick the tapping
+           player may make, an offer of its own (manaPickable). */
+        for (const extra of manaPickable(state, player, id, ability, mana)) actions.push({
+          kind: "activate-mana", objectId: id, abilityId: ability.id, label: object.card, mana,
+          /* A fixed ability is one offer and looks as it always has; a choice says which it is. */
+          ...(alternatives.length > 1 || Array.isArray(ability.produces) || ability.anyColor || ability.reflect || ability.among ? {produce} : {}),
+          ...(extra ? {extra} : {}),
+          ...(costChoice ? {costChoice, costNames: [state.objects[costChoice.sacrifice ?? costChoice.tap ?? costChoice.exile].card]} : {}),
+        });
+      });
     }
   }
   /* "Exile this card from your hand: Add {R}" (Simian Spirit Guide; CR 605.1a, 113.6b): a mana ability of a card in its owner's
@@ -1668,7 +1698,8 @@ const manaTappers = (state, player, sourceId, selector, tapsSelf = true) => stat
 export function tapUnits(state, player, offered = manaOffers(state, player), bundles = false) {
   const units = new Map();
   for (const offer of offered) {
-    if (offer.costChoice) continue;
+    /* Nor a tap that asks which type its triggered mana adds (manaPickable): that pick is its tapper's, made when they tap it. */
+    if (offer.costChoice || offer.extra) continue;
     const ability = abilitiesOf(state, offer.objectId).find((a) => a.id === offer.abilityId);
     if (!ability?.tapSelf || ability.cost || ability.payLife || ability.then || ability.sacrifice || ability.sacrificeSelf || ability.counterCost || ability.spendOnly || ability.millCost
       /* Nor mana that does something when spent (Path of Ancestry): which mana pays is then a choice of its own. */
@@ -1763,7 +1794,9 @@ export function castTapPlans(state, player, action, limit = 2) {
   const {cost, x} = asCast(state, action, () => castCost(state, player, action.objectId, tax, false, null, action.extraMana ?? "", action.targets, action.x));
   /* Its X, in a match that taps for one (`xTaps`): counted in, as the offer priced it. */
   const xs = xTaps(state) && cost.variable > 0 ? xCounted(cost, action.x ?? 0) : cost;
-  return fundingPlans(state, player, action.objectId, {...xs, generic: xs.generic + x}, limit, undefined, state.players[player].life - lifeOwed(state, player, action));
+  /* And what the offer priced for mana that may be spent as any color (anyTypeCost), the colored symbols paid as generic ones are. */
+  const paying = anyTypeCost(xs, null);
+  return fundingPlans(state, player, action.objectId, {...paying, generic: paying.generic + x}, limit, undefined, state.players[player].life - lifeOwed(state, player, action));
 }
 
 /* AN ADVENTURER CARD WEIGHED AS ITS ADVENTURE (CR 715.3a): shown as one for the length of `fn` -- its cost, its timing, its
@@ -1910,6 +1943,8 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     variants = variants.flatMap((v) => [v, ...tappers.map((c) => ({...v, mana: v.mana + `{-${characteristicsOf(state, c).power}}`, harmonize: c}))]);
   }
   for (const variant of variants) {
+  /* The times this variant kicks it, for what its targets count ("another target for each time this spell was kicked"; script/bind.mjs). */
+  cast.kicked = variant.kicked ?? 0;
   /* Creatures tapped as an additional cost (tapAnyAtom): asked once the cast is taken, and paid from the pool -- never tapped
      for, which taps creatures too (a mana creature), the two questions about the same creatures. */
   const tapsAny = tapAnyAtom(variant.atoms);
@@ -2646,6 +2681,8 @@ export function offerSpecs(state, player, action) {
   /* And the X announced (CR 601.2b, before the targets, 601.2c): "exile X target creatures" (Curse of the Swine), "each of up
      to X targets" (Crackle with Power). */
   const context = {controller: player, source: action.objectId, chosenTargets: action.targets ?? [], ...(Number.isInteger(action.x) ? {x: action.x} : {})};
+  /* And the times it was kicked (multikicker, CR 702.33c): "another target for each time this spell was kicked" (Comet Storm). */
+  if (Number.isInteger(action.kicked)) context.kicked = action.kicked;
   if (action.kind === "cast") {
     /* A gift promised changes what it targets (Consumed by Greed's second target; Dewdrop Cure's "up to three" for "up to two";
        CR 601.2c, 702.174a): the promised cast's own, as aimsFor takes them (castOffers) -- a counted one is asked here. */
@@ -2953,6 +2990,12 @@ function performOffered(state, player, action, during) {
     const payment = manaAbilityPayment(state, player, ability);
     if (!produced || !payment || !withinLimit(state, action.objectId, ability) || !countersPayable(state, action.objectId, ability.counterCost) || !millPayable(state, player, ability))
       throw new Error(`${object.card} cannot add that mana now`);
+    /* Refused before anything is paid or tapped: a land that makes more than one type, with a "type that land produced" trigger
+       watching it (manaPickable), is activated with its pick -- one type of what it makes for each such trigger (manaTriggered). */
+    const picksOwed = ability.tapSelf && MANA_KEYS.filter((k) => (produced[k] ?? 0) > 0).length > 1
+      ? manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced, source: {cardId: action.objectId}}}}) : 0;
+    if (picksOwed > 0 && (action.extra ?? []).length < picksOwed)
+      throw new Error(`Choose which of the types ${object.card} produces to add one more of (${MANA_KEYS.filter((k) => (produced[k] ?? 0) > 0).join(", ")}) before tapping it`);
     const pool = state.players[player].manaPool;
     spend(pool, payment.mana);
     const life = (ability.payLife ?? 0) + payment.life;
@@ -2994,7 +3037,7 @@ function performOffered(state, player, action, during) {
       ...(ability.tapSelf ? {tapped: true} : {}),
     }));
     /* Triggered mana abilities: at once, as part of this one -- "its controller adds an additional {G}". */
-    for (const extra of manaTriggered(state, events[events.length - 1])) {
+    for (const extra of manaTriggered(state, events[events.length - 1], action.extra ?? [])) {
       addPoolMana(state, extra.player, extra.mana);
       events.push(event("GameEventManaPool", state, {player: {playerId: extra.player, name: state.players[extra.player].name}, produced: {...extra.mana}, source: cardRef(state, extra.source)}));
     }

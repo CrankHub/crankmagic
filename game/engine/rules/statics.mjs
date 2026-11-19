@@ -137,6 +137,9 @@ export const STATIC_RULES = Object.freeze({
   /** "Nonartifact spells you cast have improvise" (Inspiring Statuary; CR 702.126a): `spells`, a selector of the spell, for the
       static's controller. rules/actions.mjs, hasImprovise. */
   "spells-have-improvise": "rules/actions.mjs",
+  /** "You may spend mana as though it were mana of any color to cast planeswalker spells" (Oath of Nissa; CR 609.4b): `spells`, a
+      selector of the spell, for the static's controller -- how the cost may be paid, not what it is. rules/actions.mjs, castCost and anyTypeCost. */
+  "spend-as-any-color": "rules/actions.mjs",
   /** "You may cast this spell as though it had flash if it targets a commander" (Timely Ward; library load L2): the card's own,
       `targeting` what one of its targets must be, its targets then chosen as it is offered. rules/actions.mjs, flashAims. */
   "flash-if-targets": "rules/actions.mjs",
@@ -371,6 +374,10 @@ export const STATIC_RULES = Object.freeze({
       Rabblemaster): `affects` the creatures, "you" its controller. Required of each that can attack someone with no cost to
       pay; a declaration leaving out one it could have is refused, saying which (attacksEachCombat, below; rules/combat.mjs). */
   "attacks-each-combat": "rules/combat.mjs",
+  /** A goad that lasts as long as the permanent does (CR 701.15b): "Equipped creature ... is goaded" (Bloodthirsty Blade):
+      `affects` the creatures, "you" its controller -- who goads them. Each attacks each combat if able and a player other than
+      its controller's if able, and is goaded for any "goaded creature" that asks (goadersOf, isGoaded, below; rules/combat.mjs). */
+  "goaded": "rules/combat.mjs",
 });
 
 /**
@@ -382,7 +389,10 @@ export function freeCast(state, player, cardId) {
   const object = state.objects[cardId];
   if (!object) return null;
   const held = staticAbilities(state);
-  for (const holderId of state.zones.battlefield) {
+  /* A permanent's, and an emblem's from the command zone, where its abilities function (CR 114.4): "you may cast spells from your
+     hand without paying their mana costs" (Tamiyo, Field Researcher's emblem), "you" the player who got it. */
+  const emblems = (state.zones.command ?? []).flat().filter((id) => state.objects[id]?.emblem === true);
+  for (const holderId of [...state.zones.battlefield, ...emblems]) {
     const holder = state.objects[holderId];
     if (holder.controller !== player) continue;
     for (const ability of held(holderId)) {
@@ -1136,8 +1146,54 @@ export function mustAttackOf(state, id) {
   return [...new Set((state.effects ?? []).filter((e) => e.rule === "must-attack" && e.affects?.ids?.includes(id)).map((e) => e.defender))];
 }
 
+/**
+ * "DURING TARGET OPPONENT'S NEXT TURN, CREATURES THAT PLAYER CONTROLS ATTACK GIDEON JURA IF ABLE" (Gideon Jura's +2; CR 508.1d): the
+ * planeswalkers an effect with a duration (effectUntil's `rule: "attacks-planeswalker"`, `affects` the creatures as they are now,
+ * `planeswalker` the one) requires this creature to attack, each still on the battlefield. Whether it can attack one -- another
+ * player's, untapped, no restriction or cost in the way -- is rules/combat.mjs's to ask (owedPlaneswalkers).
+ */
+export function mustAttackPlaneswalkers(state, id) {
+  return [...new Set((state.effects ?? []).filter((e) => e.rule === "attacks-planeswalker" && staticAffects(state, e, id, e.sourceController)).map((e) => e.planeswalker))]
+    .filter((pw) => state.objects[pw]?.zone === "battlefield");
+}
+
+/**
+ * WHO A CREATURE MUST ATTACK AWAY FROM (CR 701.15b, 508.1d): the players whose goad, or whose words that say the same,
+ * bind it -- it attacks each combat if able, and a player other than them if able (rules/combat.mjs). Three sources:
+ *   - an effect's goad, on the creatures it fixed as it resolved (effects/permanents.mjs, goad), each until its goader's next turn;
+ *   - a static `goaded` ("equipped creature is goaded", Bloodthirsty Blade): `affects` the creatures, its holder's controller
+ *     the goader, for as long as it holds;
+ *   - a rule changed for a while, `attacks-other-than-you` ("until your next turn, creatures your opponents control attack each
+ *     combat if able and attack a player other than you if able", Kardur, Doomscourge), over every creature it describes as it is
+ *     now (CR 611.2c: one that arrives later too) -- the same requirement without the status, so no creature it binds is goaded.
+ */
 export function goadersOf(state, id) {
-  return [...new Set((state.effects ?? []).filter((e) => e.rule === "goaded" && e.affects.ids.includes(id)).map((e) => e.sourceController))];
+  const goaders = new Set();
+  for (const e of state.effects ?? []) {
+    if (e.rule === "goaded" && e.affects.ids.includes(id)) goaders.add(e.sourceController);
+    else if (e.rule === "attacks-other-than-you" && staticAffects(state, e, id, e.sourceController)) goaders.add(e.sourceController);
+  }
+  for (const goader of staticGoaders(state, id)) goaders.add(goader);
+  return [...goaders];
+}
+
+/* A static `goaded`'s goaders for this creature: the controller of each permanent holding one that takes it in (CR 701.15b). */
+function staticGoaders(state, id) {
+  const out = [], held = staticAbilities(state);
+  for (const holderId of state.zones.battlefield) {
+    const holder = state.objects[holderId];
+    for (const ability of held(holderId)) {
+      if (ability.kind !== "static" || ability.rule !== "goaded") continue;
+      if (matchesSelector({what: "permanent", ...ability.affects}, state, id, {controller: holder.controller, source: holderId})) out.push(holder.controller);
+    }
+  }
+  return out;
+}
+
+/** Whether this creature is goaded (CR 701.15b): by an effect's goad or a static `goaded`. What an
+ *  `attacks-other-than-you` rule binds is not goaded -- it says the same thing in other words. */
+export function isGoaded(state, id) {
+  return (state.effects ?? []).some((e) => e.rule === "goaded" && e.affects.ids.includes(id)) || staticGoaders(state, id).length > 0;
 }
 
 /**
@@ -1307,6 +1363,20 @@ export function playerStatics(state, rule, player) {
     for (const ability of held(holderId)) if (ability.kind === "static" && ability.rule === rule) found.push({ability: chosenFor(ability, holder), source: holderId});
   }
   return found;
+}
+
+/**
+ * THE STATICS THAT NAME EVERY PLAYER (`affects: {what: "player", who: "any"}`), whoever controls their permanent: "each player may
+ * play an additional land on each of their turns" (Rites of Flourishing; CR 305.2). Not playerStatics': that one is its
+ * controller's alone.
+ */
+export function eachPlayerStatics(state, rule) {
+  const held = staticAbilities(state);
+  /* Only a permanent whose own printed ability names every player is read through the layers: this is asked on every offer. */
+  const names = (id) => (state.objects[id].abilities ?? []).some((a) => a.kind === "static" && a.rule === rule && a.affects?.who === "any");
+  return state.zones.battlefield.filter(names).flatMap((holderId) => held(holderId)
+    .filter((ability) => ability.kind === "static" && ability.rule === rule && ability.affects?.who === "any")
+    .map((ability) => ({ability: chosenFor(ability, state.objects[holderId]), source: holderId})));
 }
 
 /**
