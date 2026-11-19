@@ -2011,6 +2011,9 @@ export function compileScript(script) {
         ...(ability.zone === "graveyard" ? {zone: "graveyard"} : {}),
         /* Exhaust (CR 702.177a): "Activate only once" -- this object's, never again; a new object may (CR 400.7). */
         ...(ability.exhaust === true ? {exhaust: true} : {}),
+        /* Power-up (CR 702.193a): known by its words, "Power-up — [Cost]: [Effect]" -- activated only once by this object, and
+           cheaper by the permanent's mana cost the turn it entered (rules/actions.mjs, poweredUp). */
+        ...(/^Power-up\b/.test(ability.text ?? "") ? {powerUp: true} : {}),
         /* Cycling (CR 702.29a): its discard is the card being cycled, for "when you cycle this card" (rules/actions.mjs). */
         ...(ability.cycling === true ? {cycling: true} : {}),
         /* "This ability costs {1} less to activate for each legendary creature you control" (CR 602.2b, 601.2f). */
