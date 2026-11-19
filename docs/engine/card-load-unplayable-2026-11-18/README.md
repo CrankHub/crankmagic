@@ -20,7 +20,7 @@ with its decks, where it is (the boxes D1-A to D8-A, the designs, or both) and w
 | Not in the oracle data (Star Trek, 2026-11-13; ROB-532) | 4 more, outside the 42 |
 
 Six workers wrote them in parallel, each group on its own branch; this branch merged five and regenerated the shared files
-once. Group E (Gandalf the Grey, Bolg of the North, Gorbag of Minas Morgul, Inspired Tethermage, Arwen Undómiel, Scavenger
+once. Group E (Gandalf, Bolg of the North, Gorbag of Minas Morgul, Inspired Tethermage, Arwen Undómiel, Scavenger
 Regent // Exude Toxin) is written and follows in its own pull request, so the box cards reach staging first.
 
 | Group | Cards | Scenarios |
