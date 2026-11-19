@@ -977,6 +977,9 @@ export function lastKnown(state, id) {
     power: current.power ?? null,
     toughness: current.toughness ?? null,
     counters: {...current.counters},
+    /* Its mana value as it last was (CR 202.3, 608.2h): a copy's, the copied cost's (707.2) -- "if that permanent's mana value
+       was 3 or less" (Vindictive Triumph), asked of what left, not of the card it became. X is 0 off the stack (202.3e). */
+    manaValue: valueCostOf(object) ? manaValue(parseManaCost(valueCostOf(object))) : 0,
     damage: object.damage ?? 0,
     tapped: object.tapped === true,
     token: object.token === true,

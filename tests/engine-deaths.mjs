@@ -68,7 +68,10 @@ const zoneOf = (s, name) => Object.values(s.objects).filter((o) => o.card === na
     m({anyOf: [{types: ["Planeswalker"]}, {types: ["Creature"]}], controller: "you"}), m({anyOf: [{types: ["Planeswalker"]}], controller: "you"})],
     [true, false, true, false, true, false, true, false, false, true, false, true, false],
     "a departure's filter reads it as it was: whose, a token or not, its types, not itself for another, what was attached, a choice of types");
-  throws(() => m({manaValue: 2}), /cannot use `manaValue`/, "a key the snapshot cannot answer is refused, not guessed");
+  throws(() => m({named: "Elf"}), /cannot use `named`/, "a key the snapshot cannot answer is refused, not guessed");
+  /* ROB-531 (Vindictive Triumph): a permanent's snapshot carries its mana value, and a spell's record as it was cast does not. */
+  eq([lki.manaValue, m({manaValue: {max: 2}}), m({manaValue: {max: 1}})], [2, true, false], "its mana value as it last was, {1}{G} two: at most 2, not at most 1");
+  throws(() => matchesLastKnown({manaValue: {max: 2}}, {types: ["Instant"]}), /cannot use `manaValue`/, "a record without one is refused, not guessed");
   eq(matchesLastKnown({types: ["Creature"]}, null), false, "and nothing matches no snapshot");
 }
 
