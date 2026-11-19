@@ -1,0 +1,166 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Kenrith, the Returned King",
+    "oracleId": "d209b948-9afb-4fd1-a961-72c87282878c",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Noble"
+    ],
+    "manaCost": "{4}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "power": 5,
+    "toughness": 5
+  },
+  "oracleText": "{R}: All creatures gain trample and haste until end of turn.\n{1}{G}: Put a +1/+1 counter on target creature.\n{2}{W}: Target player gains 5 life.\n{3}{U}: Target player draws a card.\n{4}{B}: Put target creature card from a graveyard onto the battlefield under its owner's control.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "{R}: All creatures gain trample and haste until end of turn.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{R}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "pumpAll",
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          },
+          "power": 0,
+          "toughness": 0,
+          "keywords": [
+            "Trample",
+            "Haste"
+          ],
+          "until": "end-of-turn"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{1}{G}: Put a +1/+1 counter on target creature.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}{G}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": {
+            "target": 0
+          },
+          "counter": "+1/+1",
+          "count": 1
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{2}{W}: Target player gains 5 life.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}{W}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "gainLife",
+          "amount": 5,
+          "who": {
+            "target": 0
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "player"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{3}{U}: Target player draws a card.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{3}{U}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "draw",
+          "count": 1,
+          "who": {
+            "target": 0
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "player"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{4}{B}: Put target creature card from a graveyard onto the battlefield under its owner's control.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{4}{B}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "moveZone",
+          "targets": {
+            "target": 0
+          },
+          "to": "battlefield"
+        }
+      ],
+      "targets": [
+        {
+          "what": "card",
+          "zone": "graveyard",
+          "types": [
+            "Creature"
+          ]
+        }
+      ]
+    }
+  ]
+}

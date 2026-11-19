@@ -91,6 +91,8 @@
  *                                      permanent the spell became (rules/stack.mjs)
  *   {counterPutThisTurn: true|false}   a counter of any kind was put on its own permanent this turn, as it entered too (CR
  *                                      122.6; Wakka, Devoted Guardian), or none was
+ *   {firstTappedThisTurn: true}        the permanent the trigger is about has become tapped once this turn (CR 701.26a;
+ *                                      Captain America, Living Legend), counted as each tap happens (rules/trigger.mjs)
  *   {kicked: true|false}               its own permanent was kicked as it was cast, or was not (CR 702.33d; Josu Vess, Lich
  *                                      Knight: "when Josu Vess enters, if he was kicked") -- asked again as its trigger resolves,
  *                                      as it triggered (rules/trigger.mjs keeps it)
@@ -186,7 +188,9 @@ const CONDITION_KEYS = ["present", "atLeast", "atMost", "handEmpty", "notTheirTu
   /* The precon load, lane C: Scourge of the Throne's "if it's attacking the player with the most life or tied for most life"
      (dethrone's player, CR 702.105a), and pack tactics' "if you attacked with creatures with total power 6 or greater this
      combat" (Minion of the Mighty). */
-  "attackingMostLife", "attackedWithPowerAtLeast"];
+  "attackingMostLife", "attackedWithPowerAtLeast",
+  /* ROB-531: Captain America, Living Legend's "if it's the first time that creature has become tapped this turn" (CR 701.26a). */
+  "firstTappedThisTurn"];
 /** Whether these effects, nested ones included, ask `firstResolution` -- so their ability's resolutions are counted
     (rules/stack.mjs). */
 export const asksFirstResolution = (effects) => JSON.stringify(effects ?? []).includes('"firstResolution"');
@@ -345,6 +349,11 @@ export function conditionHolds(state, condition, {controller, source = null, abo
   /* "If a counter was put on Wakka this turn" (Wakka, Devoted Guardian; CR 122.6): its own permanent, a counter of any kind
      put on it this turn -- as it entered too -- kept on it as the turn it last happened (rules/trigger.mjs, recordCounters). */
   if (condition.counterPutThisTurn !== undefined && ((source !== null && state.objects[source]?.counterPutTurn === state.turn) !== condition.counterPutThisTurn)) return false;
+  /* "IF IT'S THE FIRST TIME THAT CREATURE HAS BECOME TAPPED THIS TURN" (Captain America, Living Legend; CR 701.26a, 603.4): the
+     permanent the trigger is about has become tapped once this turn, the tap that triggered it -- counted on the permanent as
+     each tap happens (rules/trigger.mjs, recordTaps). Asked again as it resolves: tapped again since, untapped by something
+     else in between, and it is no longer the first. */
+  if (condition.firstTappedThisTurn === true && state.objects[about?.card]?.tapsThisTurn?.count !== 1) return false;
   /* "IF IT WASN'T CAST" (Preston, the Vanisher; CR 601.2): the permanent the trigger is about was cast, by anyone, from anywhere
      -- read on the permanent as castByYou is (rules/stack.mjs); one put onto the battlefield, or a new object since (CR 400.7),
      was not. */
