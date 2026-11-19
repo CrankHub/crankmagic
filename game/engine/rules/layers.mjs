@@ -391,6 +391,13 @@ function gatherEffects(state) {
         partOf: partOf(id, ability),
       });
     }
+    /* A HONE COUNTER (Dwalin, Weaponmaster): "each hone counter on an Equipment grants +1/+0 to equipped creature" -- the
+       counter's meaning lives on the Equipment that has it (CR 122.1), not on the creature, so it is read here as a
+       modifying effect of the Equipment's in layer 7c (CR 613.4c), reaching what it is attached to (CR 301.5). No ability of
+       the Equipment's: one that loses its abilities still grants it, as a +1/+1 counter still counts. */
+    const hone = holder.counters?.hone ?? 0;
+    if (hone > 0) found.push({layer: 7, sublayer: "c", affects: {what: "permanent", attachedBy: "self"}, apply: {power: hone, toughness: 0},
+      sourceId: id, sourceController: holder.controller, timestamp: holder.timestamp});
   }
   /* AN EMBLEM'S STATIC ABILITIES (CR 114.4), from the command zone, where they function: "Swamps you control have '{T}: Add
      {B}{B}{B}{B}'" (Liliana of the Dark Realms' emblem; CR 113.6) -- read for every permanent as it now is, not fixed as the
@@ -977,6 +984,9 @@ export function lastKnown(state, id) {
     power: current.power ?? null,
     toughness: current.toughness ?? null,
     counters: {...current.counters},
+    /* Its mana value as it last was (CR 202.3, 608.2h): a copy's, the copied cost's (707.2) -- "if that permanent's mana value
+       was 3 or less" (Vindictive Triumph), asked of what left, not of the card it became. X is 0 off the stack (202.3e). */
+    manaValue: valueCostOf(object) ? manaValue(parseManaCost(valueCostOf(object))) : 0,
     damage: object.damage ?? 0,
     tapped: object.tapped === true,
     token: object.token === true,

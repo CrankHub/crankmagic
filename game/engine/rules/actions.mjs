@@ -409,7 +409,7 @@ function lifeOwed(state, player, action) {
 function abilityPayments(state, player, action) {
   const object = state.objects[action.objectId];
   const ability = chosenFor(abilitiesOf(state, action.objectId).find((candidate) => candidate.id === action.abilityId), object);
-  const found = ability ? costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), undefined, bentFor(action)) : null;
+  const found = ability ? costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0, action.objectId), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), undefined, bentFor(action)) : null;
   return found?.owed ? paymentOptions(poolFor(state, player, {ability: action.objectId}), found.owed.cost, found.owed.options, PAY_CHOICES) : [];
 }
 
@@ -1057,7 +1057,8 @@ const boastLimit = (state, id, ability) => (ability.boast === true && state.obje
 /* Whether an ability is within its limit this turn ("activate only once each turn", CR 602.5b), and an exhaust ability
    not yet activated by this object (CR 702.177a). */
 const withinLimit = (state, id, ability) => (!ability.limit || usesThisTurn(state, id, ability.id) < boastLimit(state, id, ability))
-  && !(ability.exhaust && (state.objects[id]?.exhausted ?? []).includes(ability.id));
+  /* And a power-up ability, activated only once by this object, as an exhaust ability is (Aerial Doombot; CR 702.193a). */
+  && !((ability.exhaust || ability.powerUp) && (state.objects[id]?.exhausted ?? []).includes(ability.id));
 /* Whether a mana ability's "mill N cards" can be paid: that many cards in its controller's library (CR 118.3, 701.17). */
 const millPayable = (state, player, ability) => !ability.millCost || cardsIn(state, "library", player).length >= ability.millCost;
 /* Whether a mana ability's counters can be paid: every removal has the counters to remove. */
@@ -1338,12 +1339,32 @@ const abilityLess = (state, player, id, ability, targets = null) => (ability.cos
   /* "Activated abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant; rules/statics.mjs,
      abilityCostReduction): what a permanent's static takes off the abilities of the permanent this one is. */
   + abilityCostReduction(state, id);
+/* POWER-UP (CR 702.193a-b; Aerial Doombot, Ultron Drone): the turn this permanent entered, the ability's mana cost is reduced
+   by the permanent's mana cost -- its generic mana off the generic, each colored or colorless symbol off one of the same type,
+   and one the cost has none of off the generic instead (CR 118.7), never below nothing (CR 601.2f). */
+function poweredUp(state, id, printed) {
+  const object = state.objects[id];
+  if (object.arrivedTurn !== state.turn) return printed;
+  const symbols = (text) => String(text ?? "").match(/\{[^}]+\}/g) ?? [];
+  const generic = (symbol) => /^\{\d+\}$/.test(symbol);
+  const rest = symbols(printed).filter((s) => !generic(s));
+  let left = symbols(printed).filter(generic).reduce((n, s) => n + Number(s.slice(1, -1)), 0);
+  for (const symbol of symbols(object.manaCost)) {
+    const at = rest.indexOf(symbol);
+    if (generic(symbol)) left -= Number(symbol.slice(1, -1));
+    else if (at >= 0) rest.splice(at, 1);
+    else left -= 1;
+  }
+  return `{${Math.max(0, left)}}${rest.join("")}`;
+}
 /* AN ABILITY'S TOTAL COST (CR 602.2b, 601.2f), as far as it is not mana: its printed cost, with a loyalty cost changed by
    what an effect adds to it -- "Planeswalkers' loyalty abilities you activate cost an additional [+1] to activate" (Carth
    the Lion; rules/statics.mjs, loyaltyCostIncrease). The cost to activate a loyalty ability may be modified (CR 606.4), and
    the costs to put on and remove loyalty counters are combined into one (606.5): a [−2] becomes [−1], a [0] becomes [+1],
-   a [−X] for X of 3 becomes [−2]. Any other ability's cost is its own. */
-function costOf(state, player, ability, x = 0) {
+   a [−X] for X of 3 becomes [−2]. A power-up ability's mana is reduced the turn its permanent, `id`, entered (poweredUp).
+   Any other ability's cost is its own. */
+function costOf(state, player, ability, x, id) {
+  if (ability.powerUp) return (ability.cost ?? []).map((atom) => (atom.atom === "mana" ? {...atom, cost: poweredUp(state, id, atom.cost)} : atom));
   if (ability.loyalty === undefined) return ability.cost ?? [];
   const more = loyaltyCostIncrease(state, player);
   if (!more) return ability.cost ?? [];
@@ -2318,7 +2339,7 @@ function abilityOffers(state, player, id, ability) {
   const actions = [];
   /* Its targets first, when its cost reads them (abilityAims): each way to choose them costed, and offered, on its own. */
   for (const X of abilityXValues(state, player, ability, id)) for (const aim of abilityAims(state, ability, {controller: player, source: id, ...(X !== null ? {x: X} : {})})) {
-    const plain = costPayment(state, player, id, costOf(state, player, ability, X ?? 0), X ?? 0, abilityLess(state, player, id, ability, aim));
+    const plain = costPayment(state, player, id, costOf(state, player, ability, X ?? 0, id), X ?? 0, abilityLess(state, player, id, ability, aim));
     /* Waterbend (CR 701.67a): beside the pool's payment, one offer that taps artifacts and creatures for part of it, when
        some may be -- which ones, and the mana for the rest, asked once it is taken. */
     const bends = (waterbendRange(state, player, id, ability, X ?? 0, abilityLess(state, player, id, ability, aim))?.most ?? 0) > 0;
@@ -3366,7 +3387,7 @@ function performOffered(state, player, action, during) {
     const ability = chosenFor(abilitiesOf(state, action.objectId).find((candidate) => candidate.id === action.abilityId), object);
     /* Recomputed, as a cast's payment is: the pool may have moved since the offer. */
     /* With the way its player chose (`payWith`, X8b), when the pool pays it more than one way. */
-    const payment = costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), action.payWith, bentFor(action));
+    const payment = costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0, action.objectId), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), action.payWith, bentFor(action));
     if (!payment || payment.payWays || !withinLimit(state, action.objectId, ability)) throw new Error(`${object.card}'s ability cannot be paid for now`);
     /* The artifacts and creatures its waterbend cost taps, as its player picked them (waterbendPicked). */
     const bent = action.waterbend === true ? waterbendPicked(state, player, action) : [];
@@ -3413,7 +3434,7 @@ function performOffered(state, player, action, during) {
     };
     if (payment.mana && !(ability.cost ?? []).some((a) => a.atom === "mana" || a.atom === "waterbend")) payMana();
     /* Its total cost (costOf): a loyalty cost Carth the Lion adds to, paid as one (CR 606.5). */
-    for (const atom of costOf(state, player, ability, action.x ?? 0)) {
+    for (const atom of costOf(state, player, ability, action.x ?? 0, action.objectId)) {
       if (atom.atom === "{T}") {
         object.tapped = true;
         events.push(event("GameEventCardTapped", state, {card: cardRef(state, action.objectId), tapped: true}));
@@ -3524,7 +3545,8 @@ function performOffered(state, player, action, during) {
     if (ability.limit) recordUse(state, action.objectId, ability.id);
     /* Exhausted: this object never activates it again (CR 702.177a). It is a new object once it changes zones (CR 400.7),
        and moveObject makes it one, so the record goes with the old. */
-    if (ability.exhaust) (object.exhausted ??= []).push(ability.id);
+    /* A power-up ability too: "activate this ability only once" (Aerial Doombot; CR 702.193a). */
+    if (ability.exhaust || ability.powerUp) (object.exhausted ??= []).push(ability.id);
     /* A loyalty ability activated: none other of this permanent's this turn (CR 606.3). */
     if (ability.loyalty !== undefined) recordUse(state, action.objectId, "loyalty");
     /* And by its player, whatever becomes of the permanent (CR 400.7): "if you've activated a loyalty ability this turn"
