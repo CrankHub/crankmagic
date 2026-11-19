@@ -307,6 +307,6 @@ BREAKS = [
      'if (false) throw new Error('),
     ('attacking as it died: not a key', FILTER,
      '''  "attacking",
-  "keywords", "counters", "colors"];''',
-     '''  "keywords", "counters", "colors"];'''),
+  /* `manaValue` (Vindictive Triumph''',
+     '''  /* `manaValue` (Vindictive Triumph'''),
 ]

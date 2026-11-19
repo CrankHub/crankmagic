@@ -1,11 +1,12 @@
 /* Copyright (c) 2026 Rob Minor. All rights reserved. See LICENSE. */
 
 /* THE CARD LOAD OF ROB'S "UNPLAYABLE CARDS 2026-11-18" WORKBOOK (ROB-531): the 42 cards of his boxes and designs the engine
- * could not play, each playable now and each through its scenarios.
+ * could not play, each one loaded here playable now and each through its scenarios.
  *
  * - The 42 are the lane file `docs/engine/card-load-unplayable-2026-11-18/lane-unplayable.json`, from the workbook's
- *   "Not in the engine" rows on both sheets; each is a definition every table plays (`tableDefinition`), written by
- *   hand, and each has its scenarios run here on its own, so a change to one shows at once, under the name of the card.
+ *   "Not in the engine" rows on both sheets. Each one marked `loadedHere` is a definition every table plays
+ *   (`tableDefinition`), written by hand, and has its scenarios run here on its own, so a change to one shows at once,
+ *   under the name of the card. The rest (group E, six design cards) follow in their own pull request, which flips them.
  * - The four Star Trek cards of the workbook are not in the oracle data yet (ROB-532); the lane file names them and
  *   this suite holds that none of them is claimed.
  */

@@ -11,6 +11,8 @@ TRIGGER = 'game/engine/rules/trigger.mjs'
 BIND = 'game/engine/script/bind.mjs'
 CONDITION = 'game/engine/script/condition.mjs'
 FILTER = 'game/engine/script/filter.mjs'
+INDEX = 'game/engine/cards/index.mjs'
+ACTIONS = 'game/engine/rules/actions.mjs'
 
 BREAKS = [
     # Dwalin, Weaponmaster: a hone counter on an Equipment grants +1/+0 to the equipped creature (CR 122.1, 613.4c, 301.5).
@@ -54,4 +56,35 @@ BREAKS = [
     ('captain: every tap is the first', CONDITION,
      'if (condition.firstTappedThisTurn === true && state.objects[about?.card]?.tapsThisTurn?.count !== 1) return false;',
      ''),
+    # Aerial Doombot, Ultron Drone: power-up, once by this object and cheaper the turn it entered (CR 702.193a-b, 118.7, 601.2f).
+    ('power-up: never known', INDEX,
+     '...(/^Power-up\\b/.test(ability.text ?? "") ? {powerUp: true} : {}),',
+     '...(false ? {powerUp: true} : {}),'),
+    ('power-up: activated any number of times', ACTIONS,
+     '&& !((ability.exhaust || ability.powerUp) && (state.objects[id]?.exhausted',
+     '&& !((ability.exhaust) && (state.objects[id]?.exhausted'),
+    ('power-up: its use is not recorded', ACTIONS,
+     'if (ability.exhaust || ability.powerUp) (object.exhausted ??= []).push(ability.id);',
+     'if (ability.exhaust) (object.exhausted ??= []).push(ability.id);'),
+    ('power-up: never reduced', ACTIONS,
+     '  if (ability.powerUp) return (ability.cost ?? []).map(',
+     '  if (false) return (ability.cost ?? []).map('),
+    ('power-up: reduced on any turn', ACTIONS,
+     '  if (object.arrivedTurn !== state.turn) return printed;\n',
+     ''),
+    ('power-up: generic mana is not taken off', ACTIONS,
+     '    if (generic(symbol)) left -= Number(symbol.slice(1, -1));',
+     '    if (generic(symbol)) left -= 0;'),
+    ('power-up: a colored symbol is not matched', ACTIONS,
+     '    else if (at >= 0) rest.splice(at, 1);',
+     '    else if (false) rest.splice(at, 1);'),
+    ('power-up: an unmatched symbol takes nothing off', ACTIONS,
+     '    else left -= 1;',
+     '    else left -= 0;'),
+    ('power-up: reduced below nothing', ACTIONS,
+     'return `{${Math.max(0, left)}}${rest.join("")}`;',
+     'return `{${left}}${rest.join("")}`;'),
+    ('power-up: the activation is offered at the full cost', ACTIONS,
+     'const plain = costPayment(state, player, id, costOf(state, player, ability, X ?? 0, id),',
+     'const plain = costPayment(state, player, id, costOf(state, player, ability, X ?? 0),'),
 ]
