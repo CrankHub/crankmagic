@@ -37,7 +37,7 @@
       "manaCost": "{1}",
       "colors": []
     },
-    "Peek": {
+    "Smoke Peek": {
       "types": [
         "Instant"
       ],
@@ -354,7 +354,7 @@
       ]
     },
     {
-      "name": "Another source's scry triggers it too (Peek), and the target may be Maya's creature",
+      "name": "Another source's scry triggers it too (Smoke Peek), and the target may be Maya's creature",
       "setup": [
         {
           "seat": 0,
@@ -368,7 +368,7 @@
           "seat": 0,
           "zone": "hand",
           "cards": [
-            "Peek"
+            "Smoke Peek"
           ]
         },
         {
@@ -384,7 +384,7 @@
           "tap": "Island"
         },
         {
-          "cast": "Peek"
+          "cast": "Smoke Peek"
         },
         {
           "resolve": true
@@ -529,7 +529,7 @@
       ]
     },
     {
-      "name": "Maya's scry is not Rob's: her Peek does not trigger his Arwen",
+      "name": "Maya's scry is not Rob's: her Smoke Peek does not trigger his Arwen",
       "setup": [
         {
           "seat": 0,
@@ -549,7 +549,7 @@
           "seat": 1,
           "zone": "hand",
           "cards": [
-            "Peek"
+            "Smoke Peek"
           ]
         }
       ],
@@ -565,7 +565,7 @@
           "seat": 1
         },
         {
-          "cast": "Peek",
+          "cast": "Smoke Peek",
           "seat": 1
         },
         {

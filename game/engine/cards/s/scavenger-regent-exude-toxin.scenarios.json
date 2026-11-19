@@ -44,7 +44,7 @@
       "power": 4,
       "toughness": 4
     },
-    "Zap": {
+    "Smoke Zap": {
       "types": [
         "Instant"
       ],
@@ -54,7 +54,7 @@
       ],
       "spell": {
         "id": "s",
-        "text": "Zap deals 1 damage to target creature.",
+        "text": "Smoke Zap deals 1 damage to target creature.",
         "targets": [
           {
             "what": "permanent",
@@ -74,7 +74,7 @@
         ]
       }
     },
-    "Counterspell": {
+    "Smoke Counter": {
       "types": [
         "Instant"
       ],
@@ -502,7 +502,7 @@
           "seat": 1,
           "zone": "hand",
           "cards": [
-            "Counterspell"
+            "Smoke Counter"
           ]
         }
       ],
@@ -525,7 +525,7 @@
           "seat": 1
         },
         {
-          "cast": "Counterspell",
+          "cast": "Smoke Counter",
           "seat": 1,
           "targets": [
             {
@@ -556,7 +556,7 @@
       ]
     },
     {
-      "name": "Ward -- discard a card: Maya discards a card, and her Zap resolves on the Regent",
+      "name": "Ward -- discard a card: Maya discards a card, and her Smoke Zap resolves on the Regent",
       "setup": [
         {
           "seat": 0,
@@ -576,7 +576,7 @@
           "seat": 1,
           "zone": "hand",
           "cards": [
-            "Zap",
+            "Smoke Zap",
             "Bear"
           ]
         }
@@ -590,7 +590,7 @@
           "seat": 1
         },
         {
-          "cast": "Zap",
+          "cast": "Smoke Zap",
           "seat": 1,
           "targets": [
             {
@@ -629,7 +629,7 @@
           "zone": "graveyard",
           "cards": [
             "Bear",
-            "Zap"
+            "Smoke Zap"
           ]
         },
         {
@@ -649,7 +649,7 @@
       ]
     },
     {
-      "name": "Ward: Maya won't discard, and her Zap is countered",
+      "name": "Ward: Maya won't discard, and her Smoke Zap is countered",
       "setup": [
         {
           "seat": 0,
@@ -669,7 +669,7 @@
           "seat": 1,
           "zone": "hand",
           "cards": [
-            "Zap",
+            "Smoke Zap",
             "Bear"
           ]
         }
@@ -683,7 +683,7 @@
           "seat": 1
         },
         {
-          "cast": "Zap",
+          "cast": "Smoke Zap",
           "seat": 1,
           "targets": [
             {
@@ -705,7 +705,7 @@
           "seat": 1,
           "zone": "graveyard",
           "cards": [
-            "Zap"
+            "Smoke Zap"
           ]
         },
         {

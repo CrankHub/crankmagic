@@ -17,7 +17,7 @@
       "power": 2,
       "toughness": 1
     },
-    "Goblin Raider": {
+    "Smoke Raider": {
       "types": [
         "Creature"
       ],
@@ -207,21 +207,21 @@
       ]
     },
     {
-      "name": "A Goblin counts too: the Goblin Raider sacrificed, and Rob chooses a Treasure",
+      "name": "A Goblin counts too: the Smoke Raider (a Goblin) sacrificed, and Rob chooses a Treasure",
       "setup": [
         {
           "seat": 0,
           "zone": "battlefield",
           "cards": [
             "Gorbag of Minas Morgul",
-            "Goblin Raider"
+            "Smoke Raider"
           ]
         }
       ],
       "steps": [
         {
           "attack": [
-            "Goblin Raider"
+            "Smoke Raider"
           ]
         },
         {
@@ -256,7 +256,7 @@
           "seat": 0,
           "zone": "graveyard",
           "cards": [
-            "Goblin Raider"
+            "Smoke Raider"
           ]
         },
         {
