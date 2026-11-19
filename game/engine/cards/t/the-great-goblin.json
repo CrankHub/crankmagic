@@ -1,0 +1,132 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "The Great Goblin",
+    "oracleId": "83dcfac0-6efd-4e37-9402-15f9889e84e1",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Goblin",
+      "Noble"
+    ],
+    "manaCost": "{1}{B/R}{B/R}",
+    "colors": [
+      "B",
+      "R"
+    ],
+    "colorIdentity": [
+      "B",
+      "R"
+    ],
+    "power": 3,
+    "toughness": 2
+  },
+  "oracleText": "Whenever you put one or more counters on a Goblin, Orc, or Army you control, The Great Goblin deals 2 damage to target opponent.\nWhenever another Goblin, Orc, or Army you control dies, exile the top card of your library. You may play it until the end of your next turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever you put one or more counters on a Goblin, Orc, or Army you control, The Great Goblin deals 2 damage to target opponent.",
+      "trigger": {
+        "on": "counter added",
+        "who": "any",
+        "counter": "any",
+        "putBy": "you",
+        "filter": {
+          "controller": "you",
+          "anyOf": [
+            {
+              "subtypes": [
+                "Goblin"
+              ]
+            },
+            {
+              "subtypes": [
+                "Orc"
+              ]
+            },
+            {
+              "subtypes": [
+                "Army"
+              ]
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "effect": "dealDamage",
+          "amount": 2,
+          "who": {
+            "target": 0
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "player",
+          "who": "opponent"
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever another Goblin, Orc, or Army you control dies, exile the top card of your library. You may play it until the end of your next turn.",
+      "trigger": {
+        "on": "dies",
+        "who": "any",
+        "filter": {
+          "anyOf": [
+            {
+              "types": [
+                "Creature"
+              ],
+              "subtypes": [
+                "Goblin"
+              ],
+              "controller": "you",
+              "another": true
+            },
+            {
+              "types": [
+                "Creature"
+              ],
+              "subtypes": [
+                "Orc"
+              ],
+              "controller": "you",
+              "another": true
+            },
+            {
+              "types": [
+                "Creature"
+              ],
+              "subtypes": [
+                "Army"
+              ],
+              "controller": "you",
+              "another": true
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "effect": "moveZone",
+          "fromTop": 1,
+          "to": "exile",
+          "remember": true
+        },
+        {
+          "effect": "mayPlay",
+          "targets": "remembered",
+          "until": "your-next-end"
+        }
+      ]
+    }
+  ]
+}

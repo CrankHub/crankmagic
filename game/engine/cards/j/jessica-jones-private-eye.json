@@ -1,0 +1,60 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Jessica Jones, Private Eye",
+    "oracleId": "6677cd5a-0785-499b-ba99-f6bdcfb196d5",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Detective",
+      "Hero"
+    ],
+    "manaCost": "{2}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R"
+    ],
+    "power": 2,
+    "toughness": 3
+  },
+  "oracleText": "{T}, Put a stun counter on Jessica Jones: Exile the top X cards of your library, where X is Jessica Jones's power. You may play those cards this turn. (If a permanent with a stun counter would become untapped, remove one from it instead.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "{T}, Put a stun counter on Jessica Jones: Exile the top X cards of your library, where X is Jessica Jones's power. You may play those cards this turn. (If a permanent with a stun counter would become untapped, remove one from it instead.)",
+      "cost": [
+        {
+          "atom": "{T}"
+        },
+        {
+          "atom": "addCounters",
+          "self": true,
+          "counter": "stun",
+          "count": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "moveZone",
+          "fromTop": {
+            "powerOf": "self"
+          },
+          "to": "exile",
+          "remember": true
+        },
+        {
+          "effect": "mayPlay",
+          "targets": "remembered"
+        }
+      ]
+    }
+  ]
+}
