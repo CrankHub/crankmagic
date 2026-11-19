@@ -2,7 +2,7 @@
 /* ROB-205: every pending decision has a Cancel that exits it, through the room as the board sees it (CrankRoomView@1).
  *
  * Rob, 2026-10-29: every pending decision gets a Cancel that exits the action (two playtest games of Oct 28 ended on a trigger
- * prompt with no way out). Rob, 2026-11-19: "If I press 'Cancel' that means I'm cancelling the action. I DON'T want to resume
+ * prompt with no way out). Rob, 2026-11-19: "If I press 'Cancel' that means I'm canceling the action. I DON'T want to resume
  * it." The room's view says, on the seat's own question, how it may be canceled (`decision.cancel`), and `room.cancel` does it:
  *   - back-out: Tezzeret's Gambit stopped to ask what pays for it is backed out -- the game exactly as before the cast, Rob at
  *     priority again, the card in his hand, no land tapped, no life paid, and no history line naming a card from his hand;

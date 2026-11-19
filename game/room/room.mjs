@@ -1327,7 +1327,7 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
     },
 
     /**
-     * CANCEL (Linear ROB-205; Rob, 2026-11-19: "If I press 'Cancel' that means I'm cancelling the action. I DON'T want to
+     * CANCEL (Linear ROB-205; Rob, 2026-11-19: "If I press 'Cancel' that means I'm canceling the action. I DON'T want to
      * resume it."): the seat's pending question canceled as the engine says it may be (rules/turn.mjs, cancelWay). Its own
      * cast or activation, stopped to ask targets or payment, is backed out: nothing of it happened, nobody else saw it begin,
      * and no history line names the card from their hand. An answer the game owes, confirmed -- a trigger taken off the
