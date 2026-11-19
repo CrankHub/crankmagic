@@ -1,0 +1,88 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Scavenger Regent // Exude Toxin",
+    "oracleId": "7e97a242-0bac-4f18-9228-e98ecca36254",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Dragon"
+    ],
+    "manaCost": "{3}{B}",
+    "colors": [
+      "B"
+    ],
+    "colorIdentity": [
+      "B"
+    ],
+    "power": 4,
+    "toughness": 4
+  },
+  "oracleText": "Flying\nWard—Discard a card.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Flying",
+      "keyword": "flying"
+    },
+    {
+      "kind": "keyword",
+      "text": "Ward—Discard a card.",
+      "keyword": "ward",
+      "cost": [
+        {
+          "atom": "discard"
+        }
+      ]
+    }
+  ],
+  "adventure": {
+    "identity": {
+      "name": "Exude Toxin",
+      "types": [
+        "Sorcery"
+      ],
+      "subtypes": [
+        "Omen"
+      ],
+      "manaCost": "{X}{B}{B}",
+      "colors": [
+        "B"
+      ],
+      "power": null,
+      "toughness": null
+    },
+    "oracleText": "Each non-Dragon creature gets -X/-X until end of turn. (Then shuffle this card into its owner's library.)",
+    "abilities": [
+      {
+        "kind": "spell",
+        "text": "Each non-Dragon creature gets -X/-X until end of turn.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "pumpAll",
+            "selector": {
+              "types": [
+                "Creature"
+              ],
+              "nonSubtypes": [
+                "Dragon"
+              ]
+            },
+            "power": {
+              "x": true,
+              "times": -1
+            },
+            "toughness": {
+              "x": true,
+              "times": -1
+            },
+            "until": "end-of-turn"
+          }
+        ]
+      }
+    ]
+  }
+}

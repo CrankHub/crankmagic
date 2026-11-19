@@ -324,7 +324,8 @@ const TRIGGERS = {
     : t.who === "any" && t.each === undefined ? {on: "GameEventCardCounters", counterAdded: true, counter: t.counter, who: "any", ...(t.filter ? {filter: t.filter} : {}),
       ...(t.putBy ? {putBy: t.putBy} : {})} : null),
   /* "Whenever you scry or surveil" (Proft, Consulting Detective; CR 701.22a, 701.25a): once each is done, by `scrier`. */
-  scried: (t) => ({on: "GameEventScried", scrier: t.scrier ?? "you"}),
+  /* "Whenever you scry" alone (Arwen Undómiel; CR 701.22a): `kind: "scry"`, a surveil not among them (CR 701.25a). */
+  scried: (t) => ({on: "GameEventScried", scrier: t.scrier ?? "you", ...(t.kind === "scry" ? {kind: "scry"} : {})}),
   /* "Whenever you proliferate" (Ezuri, Stalker of Spheres; CR 701.34a): once each proliferate is done, by `proliferator`
      you, opponent or any. */
   proliferated: (t) => ({on: "GameEventProliferate", proliferator: t.proliferator ?? "you"}),
@@ -2379,6 +2380,12 @@ export function compileScript(script) {
     for (const problem of adventure.problems) problems.push(`Adventure: ${problem}`);
     /* What is cast from exile after it is a permanent spell (715.3d): an adventurer card is a permanent card. */
     if (types.some((t) => t === "Instant" || t === "Sorcery")) problems.push("an adventurer card is a permanent card; its Adventure is the instant or sorcery");
+    /* AN OMEN CARD (CR 720; Scavenger Regent // Exude Toxin): the same two sets of characteristics, cast the same way (720.3,
+       rules/actions.mjs), but an Omen spell is shuffled into its owner's library as the last of its resolution (720.3d) --
+       never exiled, so no permission to cast it from there follows (rules/stack.mjs finds it gone). One that does not
+       resolve goes where any spell would. */
+    if (adventure.definition?.spell && adventure.definition.subtypes.includes("Omen"))
+      adventure.definition.spell.effects = [...adventure.definition.spell.effects, {effect: "moveZone", targets: "self", to: "library", shuffle: true}];
     if (adventure.definition) definition.adventurer = {main: faceOfDefinition(definition, names[0]), adventure: faceOfDefinition(adventure.definition, names[1])};
   }
   /* A PREPARATION CARD (CR 722): "Card // Prepare spell", the prepare spell -- the inset frame's alternative characteristics

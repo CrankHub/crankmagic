@@ -15,13 +15,11 @@ with its decks, where it is (the boxes D1-A to D8-A, the designs, or both) and w
 | On the list | 42 |
 | In the oracle data (2026-10-04) | 42 |
 | Playable before this load | 0 |
-| **Loaded here** | **36**, the six box cards among them |
-| Loaded in the next pull request (group E) | 6 |
+| **Loaded** | **42**: 36 in the first pull request (the six box cards among them), group E's 6 in the second |
 | Not in the oracle data (Star Trek, 2026-11-13; ROB-532) | 4 more, outside the 42 |
 
-Six workers wrote them in parallel, each group on its own branch; this branch merged five and regenerated the shared files
-once. Group E (Gandalf, Bolg of the North, Gorbag of Minas Morgul, Inspired Tethermage, Arwen Undómiel, Scavenger
-Regent // Exude Toxin) is written and follows in its own pull request, so the box cards reach staging first.
+Six workers wrote them in parallel, each group on its own branch. The first pull request merged five groups and
+regenerated the shared files once, so the box cards reached staging first; the second merged group E on top of it.
 
 | Group | Cards | Scenarios |
 | --- | --- | ---: |
@@ -29,6 +27,7 @@ Regent // Exude Toxin) is written and follows in its own pull request, so the bo
 | B, spells and power-up | Razzle-Dazzler; Poised Practitioner; Devoted Duelist; Aerial Doombot; Ultron Drone; **Guiding Hydra**; Flitterwing Nuisance | 45 |
 | C, exile and graveyard | The Great Goblin; Gila Courser; Jessica Jones, Private Eye; Night Nurse, Healer of Heroes; Bre of Clan Stoutarm; Stoic Grove-Guide; **Vindictive Triumph** | 42 |
 | D, tokens | Genghis Frog; Slithering Cryptid; H.E.R.B.I.E. Scout Unit; Harrier Strix; Dwynen's Elite; Nezumi Linkbreaker; Underfoot Underdogs | 21 |
+| E, the hardest | Gandalf (the S0-D6 commander); Bolg of the North; Gorbag of Minas Morgul; Inspired Tethermage; Arwen Undómiel; Scavenger Regent // Exude Toxin | 49 |
 | F, statics | **Captain America, Living Legend**; **Rocksteady, Crash Courser**; **Moon-Vigil Adherents**; **Kenrith, the Returned King**; Alesha's Legacy; Mirkwood Meditator; Krotiq Nestguard; Eagles of the North | 43 |
 
 The six in bold are the box cards (D2-A Chulane, D3-A Ghalta, D4-A Felothar, D5-A Tymna + Kraum, D8-A Kenrith twice).
@@ -47,6 +46,16 @@ The six in bold are the box cards (D2-A Chulane, D3-A Ghalta, D4-A Felothar, D5-
 - **A card put in its zone this turn** (`script/filter.mjs` `arrivedThisTurn`; CR 400.7). Night Nurse, Healer of Heroes.
 - **The first time a permanent has become tapped this turn** (`rules/trigger.mjs` `recordTaps`, `script/condition.mjs`
   `firstTappedThisTurn`; CR 701.26a, 603.4). Captain America, Living Legend.
+
+- **"Whenever you scry"**, a surveil not among them (`cards/index.mjs` `scried`, `rules/trigger.mjs`; CR 701.22a, 701.25a).
+  Arwen Undómiel.
+- **A reflexive trigger's modes chosen as it goes on the stack** (`effects/permanents.mjs` `immediateTrigger`; CR 603.12,
+  603.3c, 700.2b). Gorbag of Minas Morgul.
+- **Counters a cost puts on, seen** (`rules/actions.mjs` `payCounters`; CR 122.6, 606.4): a loyalty ability's [+1] is
+  putting loyalty counters. Inspired Tethermage.
+- **An omen card** (`script/schema.mjs`, `cards/index.mjs`; CR 720.2, 720.3d): written as an Adventure is, its spell shuffled
+  into its owner's library as the last of its resolution. Scavenger Regent // Exude Toxin.
+- **The census reads a choice inside a mode as no bulleted mode** (`game/tools/interaction-census.mjs`). Gandalf.
 
 No new effect primitive, so `vocabulary.mjs`, `PLAN.md` §12.2 and the vocabulary count are unchanged.
 

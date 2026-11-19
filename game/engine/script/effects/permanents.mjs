@@ -1269,6 +1269,12 @@ export function immediateTrigger(state, params, context) {
      effect before it kept each as it left (`movedWas`, effects/asking.mjs and effects/zones.mjs), one for each it moved. */
   const was = params.about === "remembered" && (context.movedWas ?? []).length === (context.remembered ?? []).length ? context.movedWas?.[0] : undefined;
   const about = params.about === "remembered" && context.remembered?.[0] !== undefined ? {...(context.about ?? {}), card: context.remembered[0], ...(was ? {lastKnown: structuredClone(was)} : {})} : context.about;
+  /* "When you do, choose one —" (Gorbag of Minas Morgul): a reflexive trigger whose one effect is a modal has its modes chosen
+     as it is put on the stack (CR 603.3c, 700.2b), as a printed trigger's are (cards/index.mjs), never as it resolves. */
+  const lone = (params.effects ?? []).length === 1 && params.effects[0]?.effect === "modal" && params.effects[0].chooser === undefined ? params.effects[0] : null;
+  const script = lone
+    ? {targets: [], effects: [], modal: {choose: lone.choose ?? 1, modes: lone.modes.map((m) => ({text: m.text ?? "", targets: structuredClone(m.targets ?? []), effects: structuredClone(countThisWay(m.effects ?? [], context, state))}))}}
+    : {targets: structuredClone(params.targets ?? []), effects: structuredClone(countThisWay(params.effects, context, state))};
   (state.pendingTriggers ??= []).push({abilityId: "reflexive", text: params.text ?? "When you do", controller: context.controller,
     source: {cardId: source, name: source !== null ? state.objects[source]?.card ?? null : null}, cause: null, optional: false,
     ...(about ? {about: structuredClone(about)} : {}),
@@ -1276,7 +1282,7 @@ export function immediateTrigger(state, params, context) {
        what its targets and effects read as X (rules/trigger.mjs). */
     ...(Number.isInteger(context.x) ? {x: context.x} : {}),
     /* "Put that many +1/+1 counters" (Augusta, Order Returned): what this resolution did, counted now (script/bind.mjs). */
-    script: {targets: structuredClone(params.targets ?? []), effects: structuredClone(countThisWay(params.effects, context, state))}});
+    script});
   return [];
 }
 

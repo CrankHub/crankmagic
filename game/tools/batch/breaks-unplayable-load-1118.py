@@ -4,9 +4,12 @@ caught by the load's suite (which runs the scenarios of all 42 cards) or by the 
 
     python -u game/tools/batch/breaks.py game/tools/batch/breaks-unplayable-load-1118.py
 """
-SUITES = ['tests/engine-unplayable-load-1118.mjs', 'tests/engine-deaths.mjs', 'tests/engine-history-records.mjs', 'tests/room-untap-mana.mjs']
+SUITES = ['tests/engine-unplayable-load-1118.mjs', 'tests/engine-deaths.mjs', 'tests/engine-history-records.mjs', 'tests/room-untap-mana.mjs', 'tests/engine-interaction-census.mjs']
 TURN = 'game/engine/rules/turn.mjs'
 UNTAP = 'game/engine/rules/untap-mana.mjs'
+PERMANENTS = 'game/engine/script/effects/permanents.mjs'
+SCHEMA = 'game/engine/script/schema.mjs'
+CENSUS = 'game/tools/interaction-census.mjs'
 
 LAYERS = 'game/engine/rules/layers.mjs'
 TRIGGER = 'game/engine/rules/trigger.mjs'
@@ -92,4 +95,33 @@ BREAKS = [
     ('power-up: the activation is offered at the full cost', ACTIONS,
      'const plain = costPayment(state, player, id, costOf(state, player, ability, X ?? 0, id),',
      'const plain = costPayment(state, player, id, costOf(state, player, ability, X ?? 0),'),
+    # Arwen Undomiel: "whenever you scry", a surveil not among them (CR 701.22a, 701.25a).
+    ('arwen: the scry kind is not compiled', INDEX,
+     '...(t.kind === "scry" ? {kind: "scry"} : {})',
+     '...({})'),
+    ('arwen: a surveil is a scry', TRIGGER,
+     '    if (condition.kind !== undefined && fields.kind !== condition.kind) return [];\n',
+     ''),
+    # Gorbag of Minas Morgul: a reflexive trigger's modes chosen as it goes on the stack (CR 603.12, 603.3c, 700.2b).
+    ('gorbag: the modes are chosen as it resolves', PERMANENTS,
+     'params.effects[0].chooser === undefined ? params.effects[0] : null;',
+     'params.effects[0].chooser === undefined ? null : null;'),
+    # Inspired Tethermage: counters a cost puts on are put by the player paying it (CR 122.6, 606.4).
+    ('tethermage: a cost puts its counters on unseen', ACTIONS,
+     '    if (events && counters[c.counter] > before) events.push(',
+     '    if (false) events.push('),
+    ('tethermage: the activation passes no events', ACTIONS,
+     'put: atom.atom === "addCounters"}], player, events);',
+     'put: atom.atom === "addCounters"}], player);'),
+    # Scavenger Regent // Exude Toxin: an omen card (CR 720.2, 720.3d).
+    ('omen: the subtype is refused', SCHEMA,
+     '.some((s) => s === "Adventure" || s === "Omen")',
+     '.includes("Adventure")'),
+    ('omen: the spell is not shuffled in', INDEX,
+     '    if (adventure.definition?.spell && adventure.definition.subtypes.includes("Omen"))\n',
+     '    if (false)\n'),
+    # Gandalf the Grey: a choice inside a mode is no bulleted mode (the census).
+    ('census: a modal inside a mode counts its modes', CENSUS,
+     '        walk(node.modes ?? [], (inner) => { if (inner.effect === "modal") nested.add(inner); });\n',
+     ''),
 ]
