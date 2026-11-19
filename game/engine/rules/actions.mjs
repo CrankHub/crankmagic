@@ -1066,9 +1066,15 @@ const countersPayable = (state, id, costs) => (costs ?? []).every((c) => c.put |
 /* A cost's counters (CR 602.2b, 606.4): put on by the player paying it -- "twice that many instead" sees them (a loyalty
    ability's +1, Wall of Roots' -0/-1; rules/statics.mjs, placeCounters), but not "if an effect would put" (Doubling Season's
    ruling: a cost is no effect) -- or removed. */
-function payCounters(state, id, costs, by = null) {
+/* `events`: counters a cost puts on are put by the player paying it (CR 122.6, 606.4) -- "whenever you put one or more loyalty
+   counters on a planeswalker" (Inspired Tethermage) sees a loyalty ability's [+1]. */
+function payCounters(state, id, costs, by = null, events = null) {
   const counters = state.objects[id].counters;
-  for (const c of costs ?? []) counters[c.counter] = Math.max(0, (counters[c.counter] ?? 0) + (c.put ? placeCounters(state, {id}, c.counter, c.count, by, {cost: true}).count : -c.count));
+  for (const c of costs ?? []) {
+    const before = counters[c.counter] ?? 0;
+    counters[c.counter] = Math.max(0, before + (c.put ? placeCounters(state, {id}, c.counter, c.count, by, {cost: true}).count : -c.count));
+    if (events && counters[c.counter] > before) events.push(event("GameEventCardCounters", state, {card: cardRef(state, id), type: c.counter, oldValue: before, newValue: counters[c.counter], by}));
+  }
 }
 
 /* A SACRIFICE OF MANY (Bolas's Citadel: "sacrifice ten nonland permanents"): one offer for each set while the sets are
@@ -3456,7 +3462,7 @@ function performOffered(state, player, action, during) {
       /* Life paid is life lost (CR 119.4), counted as it is paid (War Room). */
       if (atom.atom === "payLife") changeLife(state, player, -amountOf(state, atom.amount ?? 0, {controller: player, source: action.objectId}), events);
       if (atom.atom === "addCounters" || atom.atom === "removeCounters")
-        payCounters(state, action.objectId, [{counter: atom.counter, count: atom.count === "X" ? action.x ?? 0 : atom.count ?? 1, put: atom.atom === "addCounters"}], player);
+        payCounters(state, action.objectId, [{counter: atom.counter, count: atom.count === "X" ? action.x ?? 0 : atom.count ?? 1, put: atom.atom === "addCounters"}], player, events);
       /* "Return a Forest you control to its owner's hand": the one chosen with the offer. */
       if (atom.atom === "returnToHand" && action.costChoice?.returnToHand !== undefined) moveOne(state, action.costChoice.returnToHand, "hand", events);
       /* "Discard a card": the one chosen with the offer, a discard -- "whenever you discard a card" sees it. */
