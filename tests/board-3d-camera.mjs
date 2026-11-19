@@ -231,7 +231,7 @@ try {
   const frames = async () => page.evaluate(() => {const f = __frames; globalThis.__frames = []; return {f, down: globalThis.__down, up: globalThis.__up};});
   /* A place on the table (plane fractions), on the screen as the camera rests. */
   const place = (fx, fy) => page.evaluate(([fx, fy]) => {
-    const r = document.querySelector(".cm-stage-region").getBoundingClientRect(), g = CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3});
+    const r = document.querySelector(".cm-stage-region").getBoundingClientRect(), g = CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3, ...((h) => ({inL: parseFloat(h.style.getPropertyValue("--gut-l")) || 0, inR: parseFloat(h.style.getPropertyValue("--gut-r")) || 0}))(document.getElementById("cm-board"))});
     const [x, y] = g.project(g.width * fx, g.planeHeight * fy);return {x: r.left + x, y: r.top + y};
   }, [fx, fy]);
   const same = (a, b) => a.position.every((n, i) => Math.abs(n - b.position[i]) < 1e-9) && a.rotation.every((n, i) => Math.abs(n - b.rotation[i]) < 1e-9);
@@ -301,7 +301,7 @@ try {
   /* UP, THEN OVER, THEN CLOSER (Rob, Oct 26), from the motion itself (CrankStage.headPose), not from how many frames this
      runner draws: the eye goes up first, straight up and without turning to look, and the rise is given back by the end. */
   const rise = await page.evaluate(({x, y}) => {
-    const r = document.querySelector(".cm-stage-region").getBoundingClientRect(), g = CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3});
+    const r = document.querySelector(".cm-stage-region").getBoundingClientRect(), g = CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3, ...((h) => ({inL: parseFloat(h.style.getPropertyValue("--gut-l")) || 0, inR: parseFloat(h.style.getPropertyValue("--gut-r")) || 0}))(document.getElementById("cm-board"))});
     const P = g.unproject(x - r.left, y - r.top).world, at = (t) => CrankStage.headPose(g, P, t);
     const toP = (p) => Math.hypot(P[0] - g.camera.eye[0] - p.x, P[1] - g.camera.eye[1] - p.y, P[2] - g.camera.eye[2] - p.z), rest = toP({x: 0, y: 0, z: 0});
     const forward = (px, py) => CrankStage.headPose(g, g.unproject(px - r.left, py - r.top).world, 1).z;
@@ -321,7 +321,7 @@ try {
   await page.mouse.move(close_.x + 160, close_.y + 60, {steps: 4});
   await page.waitForFunction(() => {const l = CrankStage.diagnostics().look; return l?.steer && Math.abs(l.steer.yaw - l.turned.yaw) < 1e-4 && Math.abs(l.steer.pitch - l.turned.pitch) < 1e-4;}, null, {timeout: 4000, polling: "raf"});
   await page.waitForTimeout(120);
-  const turnedAt = await diag(page), focal = await page.evaluate(() => {const r = document.querySelector(".cm-stage-region").getBoundingClientRect(); return CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3}).focal;});
+  const turnedAt = await diag(page), focal = await page.evaluate(() => {const r = document.querySelector(".cm-stage-region").getBoundingClientRect(); return CrankStage.geometry(r.width, r.height, {tilt: 40, zoom: 100, seats: 3, ...((h) => ({inL: parseFloat(h.style.getPropertyValue("--gut-l")) || 0, inR: parseFloat(h.style.getPropertyValue("--gut-r")) || 0}))(document.getElementById("cm-board"))}).focal;});
   near(turnedAt.camera.rotation[1] - heldAt.camera.rotation[1], Math.atan2(160, focal), .002, "160 px to the right turns the head right by the angle 160 px spans");
   near(turnedAt.camera.rotation[0] - heldAt.camera.rotation[0], Math.atan2(60, focal), .002, "and 60 px down pitches it down by the angle 60 px spans");
   ok(same({position: turnedAt.camera.position, rotation: [0, 0, 0]}, {position: heldAt.camera.position, rotation: [0, 0, 0]}), "turning the head turns it: the eye stays where it is");

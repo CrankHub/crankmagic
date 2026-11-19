@@ -108,7 +108,9 @@ try {
     globalThis.__tabletopExpectedGeometry=()=>{
       const host=document.querySelector('.cm-stage-region'),r=host.getBoundingClientRect();
       const tilt=(90-Number(document.querySelector('[data-stage-camera="tilt"]').value))*CrankStage.floorTilt(localStorage.getItem('cm-stage-background')||CrankStage.appearances.backgrounds[0].id)/90,zoom=Number(document.querySelector('[data-stage-camera="zoom"]').value);
-      const options={tilt,zoom,seats:3,pan:{x:0,y:0},reach:Number(localStorage.getItem('cm-stage-reach-v1'))||0};
+      // The drawers' gutters, as the board passes them (ROB-512: the 3D table lies between them, open or shut).
+      const board=document.getElementById('cm-board'),gut=k=>parseFloat(board.style.getPropertyValue(k))||0;
+      const options={tilt,zoom,seats:3,pan:{x:0,y:0},reach:Number(localStorage.getItem('cm-stage-reach-v1'))||0,inL:gut('--gut-l'),inR:gut('--gut-r')};
       const base=CrankStage.geometry(r.width,r.height,options);
       const regions=[document.querySelector('.cm-stage-front'),...document.querySelectorAll('.cm-stage-rear')];
       // Rear caption repair measures the initial rear layout, then expands it once. Measure

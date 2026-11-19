@@ -31,7 +31,7 @@
     const w=Math.max(1,W-gl-gr), h=Math.max(1,height), angle=clamp(tilt,0,TILT_LIMIT)*Math.PI/180;
     const yaw=clamp(rotation,-180,180)*Math.PI/180, c=Math.cos(yaw), q=Math.sin(yaw);
     const base=h*.88, sx=.902*clamp(zoom,60,200)/100, sy=sx*Math.cos(angle);
-    const cx=w/2, cy=base/2, screenX=gl+w/2, screenY=h*.43, distance=Math.max(w,h)*2.5, focal=sx*distance;
+    const cx=w/2, cy=base/2, screenX=gl+w/2, screenY=h*.43, distance=Math.max(W,h)*2.5, focal=sx*distance;
     /* The resting camera's ray through the bottom of the screen less the pad, down the middle of the view, meets the
        table's plane at world depth Z: the farthest the near edge may come toward the viewer. */
     const rest=Math.PI/2-angle, b0=(h-REACH_PAD-screenY)/(.902*distance), ry=-Math.sin(rest)-b0*Math.cos(rest), rz=Math.cos(rest)-b0*Math.sin(rest);
