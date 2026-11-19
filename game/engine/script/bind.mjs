@@ -677,6 +677,13 @@ export function targetRefs(effects) {
     if (value.effect === "immediateTrigger") return;
     /* Nor an emblem's abilities' (CR 114.4: they are its own, compiled and checked as a card's are, cards/index.mjs). */
     if (value.effect === "emblem") return;
+    /* Nor a token's own abilities' ("create ... an Equipment artifact token named Axe with ... equip {2}", Dáin Ironfoot): the
+       token's, its targets chosen as it activates them (CR 111.4, 602.2b) -- the rest of the effect names this ability's. */
+    if (value.effect === "createToken" && Array.isArray(value.token?.abilities)) {
+      const {token: {abilities: _own, ...token}, ...rest} = value;
+      walk([rest, token]);
+      return;
+    }
     Object.values(value).forEach(walk);
   };
   walk(effects);
