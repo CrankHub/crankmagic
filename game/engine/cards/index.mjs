@@ -2377,6 +2377,12 @@ export function compileScript(script) {
     for (const problem of adventure.problems) problems.push(`Adventure: ${problem}`);
     /* What is cast from exile after it is a permanent spell (715.3d): an adventurer card is a permanent card. */
     if (types.some((t) => t === "Instant" || t === "Sorcery")) problems.push("an adventurer card is a permanent card; its Adventure is the instant or sorcery");
+    /* AN OMEN CARD (CR 720; Scavenger Regent // Exude Toxin): the same two sets of characteristics, cast the same way (720.3,
+       rules/actions.mjs), but an Omen spell is shuffled into its owner's library as the last of its resolution (720.3d) --
+       never exiled, so no permission to cast it from there follows (rules/stack.mjs finds it gone). One that does not
+       resolve goes where any spell would. */
+    if (adventure.definition?.spell && adventure.definition.subtypes.includes("Omen"))
+      adventure.definition.spell.effects = [...adventure.definition.spell.effects, {effect: "moveZone", targets: "self", to: "library", shuffle: true}];
     if (adventure.definition) definition.adventurer = {main: faceOfDefinition(definition, names[0]), adventure: faceOfDefinition(adventure.definition, names[1])};
   }
   /* A PREPARATION CARD (CR 722): "Card // Prepare spell", the prepare spell -- the inset frame's alternative characteristics

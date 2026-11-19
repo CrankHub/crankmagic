@@ -885,8 +885,9 @@ export function validateScript(script) {
       checkIdentity({...adventure.identity, oracleId: adventure.identity?.oracleId ?? script.identity?.oracleId}, errors);
       for (const e of errors.slice(before)) e.path = `adventure.${e.path}`;
       const types = adventure.identity?.types ?? [];
-      if (!(types.length === 1 && ["Instant", "Sorcery"].includes(types[0])) || !(adventure.identity?.subtypes ?? []).includes("Adventure"))
-        errors.push({path: "adventure.identity", message: "An Adventure is an instant or a sorcery with the subtype Adventure (CR 715.2)"});
+      /* An omen card's Omen (CR 720.2; Scavenger Regent // Exude Toxin) is written the same way, with the subtype Omen. */
+      if (!(types.length === 1 && ["Instant", "Sorcery"].includes(types[0])) || !(adventure.identity?.subtypes ?? []).some((s) => s === "Adventure" || s === "Omen"))
+        errors.push({path: "adventure.identity", message: "An Adventure is an instant or a sorcery with the subtype Adventure (CR 715.2), an Omen one with the subtype Omen (CR 720.2)"});
       adventure.abilities.forEach((ability, index) => checkAbility(ability, `adventure.abilities[${index}]`, errors));
     }
     if (script.back !== undefined) errors.push({path: "adventure", message: "A card is an adventurer card or a double-faced card, not both"});
