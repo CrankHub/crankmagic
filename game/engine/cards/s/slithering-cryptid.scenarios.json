@@ -1,0 +1,255 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Slithering Cryptid",
+  "fixtures": {
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{2}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 3,
+      "toughness": 3
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands, {G/U} paid with an Island: it enters, a Mutagen",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Slithering Cryptid"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Slithering Cryptid"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Slithering Cryptid",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Mutagen"
+          ]
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Slithering Cryptid",
+            "power": 2,
+            "toughness": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "{G/U} paid with a Forest; the Mutagen's counter goes on Maya's Ogre (any target creature)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Slithering Cryptid"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Slithering Cryptid"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Mutagen",
+          "targets": [
+            {
+              "card": "Ogre",
+              "seat": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "counters": {
+            "card": "Ogre",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 1,
+          "stats": {
+            "card": "Ogre",
+            "power": 4,
+            "toughness": 4
+          }
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Slithering Cryptid",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A Mutant: with Genghis Frog out, two triggers and two Mutagens",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Genghis Frog",
+            "Island",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Slithering Cryptid"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Slithering Cryptid"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "min": 2
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Genghis Frog",
+            "Slithering Cryptid",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Mutagen",
+            "Mutagen"
+          ]
+        }
+      ]
+    }
+  ]
+}

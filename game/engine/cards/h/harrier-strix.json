@@ -1,0 +1,72 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Harrier Strix",
+    "oracleId": "eb154ebb-d02f-405a-a557-3d5ec7648c42",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Bird"
+    ],
+    "manaCost": "{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": 1,
+    "toughness": 1
+  },
+  "oracleText": "Flying\nWhen this creature enters, tap target permanent.\n{2}{U}: Draw a card, then discard a card.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Flying",
+      "keyword": "flying"
+    },
+    {
+      "kind": "triggered",
+      "text": "When this creature enters, tap target permanent.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "tap",
+          "targets": {
+            "target": 0
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{2}{U}: Draw a card, then discard a card.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}{U}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "draw",
+          "count": 1
+        },
+        {
+          "effect": "discard",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

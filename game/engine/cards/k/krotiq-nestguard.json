@@ -1,0 +1,49 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Krotiq Nestguard",
+    "oracleId": "33117d34-ea70-4566-92a3-5dec9bfe529a",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Insect"
+    ],
+    "manaCost": "{2}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 4,
+    "toughness": 4
+  },
+  "oracleText": "Defender\n{2}{G}: This creature can attack this turn as though it didn't have defender.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Defender",
+      "keyword": "defender"
+    },
+    {
+      "kind": "activated",
+      "text": "{2}{G}: This creature can attack this turn as though it didn't have defender.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}{G}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "effectUntil",
+          "rule": "attacks-despite-defender",
+          "targets": "self",
+          "until": "end-of-turn"
+        }
+      ]
+    }
+  ]
+}

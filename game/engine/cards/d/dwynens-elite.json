@@ -1,0 +1,66 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dwynen's Elite",
+    "oracleId": "3d4a7dd3-9258-4bd1-adc4-08f0205e196a",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elf",
+      "Warrior"
+    ],
+    "manaCost": "{1}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 2,
+    "toughness": 2
+  },
+  "oracleText": "When this creature enters, if you control another Elf, create a 1/1 green Elf Warrior creature token.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When this creature enters, if you control another Elf, create a 1/1 green Elf Warrior creature token.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Elf Warrior",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Elf",
+              "Warrior"
+            ],
+            "colors": [
+              "G"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ],
+      "condition": {
+        "present": {
+          "what": "permanent",
+          "subtypes": [
+            "Elf"
+          ],
+          "controller": "you",
+          "another": true
+        }
+      }
+    }
+  ]
+}

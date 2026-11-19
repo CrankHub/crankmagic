@@ -1,0 +1,292 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Nezumi Linkbreaker",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{2}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 3,
+      "toughness": 3
+    },
+    "Snuff": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{B}",
+      "colors": [
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from an untapped Swamp, then destroyed: a 1/1 red Mercenary, its {T} not yet usable (summoning sick)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Nezumi Linkbreaker",
+            "Snuff"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Nezumi Linkbreaker"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Nezumi Linkbreaker",
+                "Swamp",
+                "Swamp"
+              ]
+            }
+          ]
+        },
+        {
+          "cast": "Snuff",
+          "targets": [
+            {
+              "card": "Nezumi Linkbreaker"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Mercenary",
+            "Swamp",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Mercenary",
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Nezumi Linkbreaker",
+            "Snuff"
+          ]
+        },
+        {
+          "offers": {
+            "kind": "activate",
+            "card": "Mercenary"
+          },
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "Rob's next turn: {T}, a creature he controls (not Maya's) gets +1/+0 until end of turn; not in combat (a sorcery's timing)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Nezumi Linkbreaker",
+            "Bear",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Snuff"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Snuff",
+          "targets": [
+            {
+              "card": "Nezumi Linkbreaker"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "COMBAT_BEGIN"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Mercenary"
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN2"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Mercenary"
+              },
+              "count": 2,
+              "targets": [
+                [
+                  "Bear"
+                ],
+                [
+                  "Mercenary"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Mercenary",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 3,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "tapped": "Mercenary"
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 4,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        }
+      ]
+    }
+  ]
+}

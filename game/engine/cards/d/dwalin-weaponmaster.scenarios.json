@@ -1,0 +1,484 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Dwalin, Weaponmaster",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{3}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered once",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dwalin, Weaponmaster"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dwalin, Weaponmaster"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Dwalin, Weaponmaster"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Dwalin, Weaponmaster",
+            "Mountain",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Dwalin, Weaponmaster",
+            "has": [
+              "First Strike"
+            ],
+            "lacks": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enters: a hone counter on each Equipment Rob controls (Bonesplitter and Gold Pan), none on Maya's; the equipped Bear is 5/2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dwalin, Weaponmaster"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bonesplitter",
+            "Gold Pan",
+            "Bear",
+            "Wastes",
+            "Mountain",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bonesplitter"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Bonesplitter",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 4,
+                "toughness": 2
+              }
+            }
+          ]
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Dwalin, Weaponmaster"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bonesplitter",
+            "counter": "hone",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Gold Pan",
+            "counter": "hone",
+            "count": 1
+          }
+        },
+        {
+          "seat": 1,
+          "counters": {
+            "card": "Bonesplitter",
+            "counter": "hone",
+            "count": 0
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 5,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Dwalin, Weaponmaster",
+            "power": 2,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attacks: another hone counter each time; the Bear wearing Bonesplitter is 5/2, then 6/2 on Rob's next attack",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dwalin, Weaponmaster",
+            "Bear",
+            "Bonesplitter",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Bonesplitter",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Dwalin, Weaponmaster",
+            "Bear"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Bonesplitter",
+                "counter": "hone",
+                "count": 1
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 5,
+                "toughness": 2
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 33
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Dwalin, Weaponmaster"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "COMBAT_END"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bonesplitter",
+            "counter": "hone",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 6,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 1,
+          "life": 31
+        }
+      ]
+    },
+    {
+      "name": "The counters are on the Equipment: unattached, Bonesplitter gives nothing; equipped to the Bear, then moved to the Ogre, the bonus moves with it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dwalin, Weaponmaster"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bonesplitter",
+            "Bear",
+            "Ogre",
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Dwalin, Weaponmaster"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Bonesplitter",
+                "counter": "hone",
+                "count": 1
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Ogre",
+                "power": 4,
+                "toughness": 4
+              }
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Bonesplitter",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 5,
+                "toughness": 2
+              }
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Bonesplitter",
+          "targets": [
+            {
+              "card": "Ogre"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Ogre",
+            "power": 7,
+            "toughness": 4
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Bonesplitter",
+            "counter": "hone",
+            "count": 1
+          }
+        }
+      ]
+    }
+  ]
+}

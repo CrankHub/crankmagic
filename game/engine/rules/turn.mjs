@@ -881,6 +881,9 @@ export function advance(state) {
     if (state.endStepsThisTurn) state.endStepsThisTurn = 0;
     /* And the nonland permanents that left the battlefield (state/index.mjs, recordDeath; void). */
     if (state.nonlandLeftThisTurn) state.nonlandLeftThisTurn = 0;
+    /* And the times each permanent became tapped (rules/trigger.mjs, recordTaps): none yet this turn, so a tap taken back
+       before anything else happens leaves the permanent as it was (rules/untap-mana.mjs). */
+    for (const object of Object.values(state.objects)) if (object.tapsThisTurn) delete object.tapsThisTurn;
     for (const player of state.players) {
       if (player.lostThisTurn) player.lostThisTurn = 0;
       if (player.drawnThisTurn) player.drawnThisTurn = 0;

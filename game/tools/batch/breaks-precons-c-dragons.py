@@ -93,7 +93,7 @@ BREAKS = [
      'const attack = (state.combat?.attacks ?? []).find((a) => a.attacker === source);'),
     ('attackingMostLife of any value', CO,
      '  if ("attackingMostLife" in condition && condition.attackingMostLife !== true) problems.push(', '  if (false) problems.push('),
-    ('attackingMostLife not a key', CO, '  "attackingMostLife", "attackedWithPowerAtLeast"];', '  "attackedWithPowerAtLeast"];'),
+    ('attackingMostLife not a key', CO, '  "attackingMostLife", "attackedWithPowerAtLeast",\n', '  "attackedWithPowerAtLeast",\n'),
     ('dethrone reads no life', TR,
      '      .filter((a) => condition.defenderMostLife !== true || (a.defender?.playerId !== undefined && !a.defender.planeswalker && hasMostLife(state, a.defender.playerId)));',
      '      ;'),

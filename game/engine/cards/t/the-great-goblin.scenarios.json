@@ -1,0 +1,1045 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "The Great Goblin",
+  "fixtures": {
+    "Grunt": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Goblin"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Orc Raider": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Orc"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Army Squad": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Zombie",
+        "Army"
+      ],
+      "manaCost": "{B}",
+      "colors": [
+        "B"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Grow": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Put a +1/+1 counter on target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "putCounter",
+            "targets": {
+              "target": 0
+            },
+            "counter": "+1/+1",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "Double Grow": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Put two +1/+1 counters on target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "putCounter",
+            "targets": {
+              "target": 0
+            },
+            "counter": "+1/+1",
+            "count": 2
+          }
+        ]
+      }
+    },
+    "Spread": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Put a +1/+1 counter on each creature you control.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "putCounterAll",
+            "selector": {
+              "what": "permanent",
+              "types": [
+                "Creature"
+              ],
+              "controller": "you"
+            },
+            "counter": "+1/+1",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "Doom": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{B}",
+      "colors": [
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Amass Two": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{B}",
+      "colors": [
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Amass Orcs 2.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "amass",
+            "subtype": "Orc",
+            "count": 2
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Amass Orcs 2: the Orc Army token made and two counters put on it -- one trigger, 2 damage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Amass Two"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Amass Two"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Orc Army",
+            "counter": "+1/+1",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands, a Swamp and a Mountain for its hybrid symbols: a 3/2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Mountain",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Great Goblin"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "The Great Goblin"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "The Great Goblin",
+            "power": 3,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "A +1/+1 counter on a Grunt: 2 damage to Maya, the one opponent",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Forest",
+            "Grunt"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Grow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Grow",
+          "targets": [
+            {
+              "card": "Grunt"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Maya"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Grunt",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Two counters put on the Great Goblin itself at once: one trigger, 2 damage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Double Grow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Double Grow",
+          "targets": [
+            {
+              "card": "The Great Goblin"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "The Great Goblin",
+            "counter": "+1/+1",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "A counter on each creature at once: the Goblin itself, an Orc and an Army trigger, a Bear does not -- 6 damage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Orc Raider",
+            "Army Squad",
+            "Bear",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Spread"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Spread"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "choose": [
+            "Maya"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 3
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 34
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Maya puts a counter on Rob's Goblin, and Rob on Maya's: neither is Rob putting one on his own -- nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Grow"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Grunt",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Grow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Grow",
+          "targets": [
+            {
+              "card": "Grunt"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Forest",
+          "seat": 1
+        },
+        {
+          "cast": "Grow",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "The Great Goblin"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "The Great Goblin",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three players: the 2 damage goes to the opponent Rob targets, Trey",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Grow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Grow",
+          "targets": [
+            {
+              "card": "The Great Goblin"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Maya",
+                  "Trey"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Trey"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 2,
+          "life": 38
+        }
+      ]
+    },
+    {
+      "name": "A Grunt dies: the top card, an Island, exiled and played as his land",
+      "library": [
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Grunt",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Doom"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Doom",
+          "targets": [
+            {
+              "card": "Grunt"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "exile",
+              "cards": [
+                "Island"
+              ]
+            }
+          ]
+        },
+        {
+          "play": "Island"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Swamp",
+            "Island"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "An Army dies on turn 1: the exiled Orc may be cast on turn 3, his next turn, and not on turn 5",
+      "library": [
+        "Orc Raider",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Army Squad",
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Doom"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Doom",
+          "targets": [
+            {
+              "card": "Army Squad"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Orc Raider"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Mountain"
+        }
+      ],
+      "expect": [
+        {
+          "offers": {
+            "kind": "cast",
+            "card": "Orc Raider"
+          },
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": [
+            "Orc Raider"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "An Orc dies: exiled, and the Orc cast from exile at once",
+      "library": [
+        "Grunt"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Orc Raider",
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Doom"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Doom",
+          "targets": [
+            {
+              "card": "Orc Raider"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Grunt"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "The Great Goblin",
+            "Grunt",
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "Not another: the Great Goblin itself dying, a Bear of Rob's, and Maya's Goblin -- nothing exiled",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Great Goblin",
+            "Bear",
+            "Swamp",
+            "Swamp",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Doom",
+            "Doom",
+            "Doom"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Grunt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Doom",
+          "targets": [
+            {
+              "card": "Grunt"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Doom",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Doom",
+          "targets": [
+            {
+              "card": "The Great Goblin"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Bear",
+            "Doom",
+            "Doom",
+            "Doom",
+            "The Great Goblin"
+          ]
+        }
+      ]
+    }
+  ]
+}

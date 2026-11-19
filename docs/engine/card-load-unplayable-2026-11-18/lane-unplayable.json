@@ -1,0 +1,517 @@
+{
+ "schema": "library-load-lane@1",
+ "lane": "Unplayable Cards 2026-11-18: the cards in the Master's boxes and designs the engine could not play",
+ "source": {
+  "list": "Rob's workbook \"Unplayable Cards 2026-11-18.xlsx\" (from the Master saved 2026-11-18 22:22), sheets \"Dx-A (8 boxes)\" and \"Series-G-CJ-HG\", status \"Not in the engine\"",
+  "distinct": 42,
+  "notInTheOracleData": [
+   {
+    "name": "Federation Probe",
+    "decks": [
+     "S2-D2 Ezuri, Claw of Progress",
+     "G1-D1 Denzilore Fatehold"
+    ],
+    "where": "design"
+   },
+   {
+    "name": "Silicate Surveyor",
+    "decks": [
+     "S2-D6 Laelia, the Blade Reforged"
+    ],
+    "where": "design"
+   },
+   {
+    "name": "Command Subadjunct",
+    "decks": [
+     "G1-D3 Vraska, Soul of Stone"
+    ],
+    "where": "design"
+   },
+   {
+    "name": "Captain's Tutelage",
+    "decks": [
+     "G1-D4 Alexios, Deimos of Kosmos"
+    ],
+    "where": "design"
+   }
+  ]
+ },
+ "cards": [
+  {
+   "name": "Aerial Doombot",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Alesha's Legacy",
+   "decks": [
+    "S1-D3 The Great Goblin"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Arwen Undómiel",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress",
+    "S0-D5 Maralen, Fae Ascendant"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": false
+  },
+  {
+   "name": "Bolg of the North",
+   "decks": [
+    "S1-D3 The Great Goblin"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": false
+  },
+  {
+   "name": "Bre of Clan Stoutarm",
+   "decks": [
+    "HG1 Bre of Clan Stoutarm"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Captain America, Living Legend",
+   "decks": [
+    "D2-A Chulane"
+   ],
+   "where": [
+    "box"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Devoted Duelist",
+   "decks": [
+    "S0-D6 Gandalf the Grey"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Dwalin, Weaponmaster",
+   "decks": [
+    "S1-D5 Dwalin, Weaponmaster"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Dwynen's Elite",
+   "decks": [
+    "S2-D5 Freyalise, Llanowar's Fury",
+    "S0-D5 Maralen, Fae Ascendant"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": true
+  },
+  {
+   "name": "Dáin Ironfoot",
+   "decks": [
+    "S1-D5 Dwalin, Weaponmaster",
+    "S2-D6 Laelia, the Blade Reforged",
+    "G1-D4 Alexios, Deimos of Kosmos"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 3,
+   "loadedHere": true
+  },
+  {
+   "name": "Eagles of the North",
+   "decks": [
+    "S2-D4 Shadrix Silverquill"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Flitterwing Nuisance",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress",
+    "S0-D5 Maralen, Fae Ascendant"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": true
+  },
+  {
+   "name": "Gandalf the Grey",
+   "decks": [
+    "S0-D6 Gandalf the Grey"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": false
+  },
+  {
+   "name": "Genghis Frog",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Gila Courser",
+   "decks": [
+    "S2-D6 Laelia, the Blade Reforged"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Gold Pan",
+   "decks": [
+    "S1-D5 Dwalin, Weaponmaster",
+    "G1-D4 Alexios, Deimos of Kosmos"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": true
+  },
+  {
+   "name": "Gorbag of Minas Morgul",
+   "decks": [
+    "G0-D3 Tymna the Weaver + Sidar Kondo of Jamuraa"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": false
+  },
+  {
+   "name": "Guiding Hydra",
+   "decks": [
+    "D8-A Kenrith, the Returned King"
+   ],
+   "where": [
+    "box"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "H.E.R.B.I.E. Scout Unit",
+   "decks": [
+    "S1-D6 Tatyova, Benthic Druid",
+    "S2-D2 Ezuri, Claw of Progress",
+    "G1-D2 Lyra, Archangel of Dawn"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 3,
+   "loadedHere": true
+  },
+  {
+   "name": "Harrier Strix",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Inspired Tethermage",
+   "decks": [
+    "S2-D5 Freyalise, Llanowar's Fury"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": false
+  },
+  {
+   "name": "Jessica Jones, Private Eye",
+   "decks": [
+    "S2-D6 Laelia, the Blade Reforged"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Kenrith, the Returned King",
+   "decks": [
+    "D8-A Kenrith, the Returned King"
+   ],
+   "where": [
+    "box"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Krotiq Nestguard",
+   "decks": [
+    "G0-D1 Arcades, the Strategist"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Mirkwood Meditator",
+   "decks": [
+    "S1-D6 Tatyova, Benthic Druid"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Moon-Vigil Adherents",
+   "decks": [
+    "D4-A Felothar",
+    "S2-D5 Freyalise, Llanowar's Fury"
+   ],
+   "where": [
+    "box",
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": true
+  },
+  {
+   "name": "Nezumi Linkbreaker",
+   "decks": [
+    "S0-D1 Teysa Karlov"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Night Nurse, Healer of Heroes",
+   "decks": [
+    "G0-D3 Tymna the Weaver + Sidar Kondo of Jamuraa",
+    "G1-D2 Lyra, Archangel of Dawn",
+    "HG1 Bre of Clan Stoutarm"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 3,
+   "loadedHere": true
+  },
+  {
+   "name": "Poised Practitioner",
+   "decks": [
+    "G1-D1 Denzilore Fatehold"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Quintessential Katana",
+   "decks": [
+    "G1-D2 Lyra, Archangel of Dawn"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Razzle-Dazzler",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Rocksteady, Crash Courser",
+   "decks": [
+    "D3-A Ghalta"
+   ],
+   "where": [
+    "box"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Scavenger Regent // Exude Toxin",
+   "decks": [
+    "S0-D5 Maralen, Fae Ascendant"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": false
+  },
+  {
+   "name": "Slithering Cryptid",
+   "decks": [
+    "S2-D2 Ezuri, Claw of Progress"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Starry-Eyed Skyrider",
+   "decks": [
+    "S2-D4 Shadrix Silverquill",
+    "G0-D3 Tymna the Weaver + Sidar Kondo of Jamuraa"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": true
+  },
+  {
+   "name": "Stoic Grove-Guide",
+   "decks": [
+    "S0-D5 Maralen, Fae Ascendant"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Stormbeacon Blade",
+   "decks": [
+    "S1-D5 Dwalin, Weaponmaster"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "The Great Goblin",
+   "decks": [
+    "S1-D3 The Great Goblin"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Ultron Drone",
+   "decks": [
+    "S2-D3 Mabel, Valley Hero"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Underfoot Underdogs",
+   "decks": [
+    "S0-D3 Purphoros, God of the Forge"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Vindictive Triumph",
+   "decks": [
+    "D5-A Tymna + Kraum"
+   ],
+   "where": [
+    "box"
+   ],
+   "count": 1,
+   "loadedHere": true
+  },
+  {
+   "name": "Wingnut, Bat on the Belfry",
+   "decks": [
+    "S2-D3 Mabel, Valley Hero",
+    "G1-D4 Alexios, Deimos of Kosmos"
+   ],
+   "where": [
+    "design"
+   ],
+   "count": 2,
+   "loadedHere": true
+  }
+ ]
+}

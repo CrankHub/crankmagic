@@ -1,0 +1,88 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Eagles of the North",
+    "oracleId": "e519cebf-0f09-4da9-abef-82928738514d",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Bird",
+      "Soldier"
+    ],
+    "manaCost": "{5}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": 3,
+    "toughness": 3
+  },
+  "oracleText": "Flying\nWhen this creature enters, creatures you control get +1/+0 and gain first strike until end of turn.\nPlainscycling {1} ({1}, Discard this card: Search your library for a Plains card, reveal it, put it into your hand, then shuffle.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Flying",
+      "keyword": "flying"
+    },
+    {
+      "kind": "triggered",
+      "text": "When this creature enters, creatures you control get +1/+0 and gain first strike until end of turn.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "pumpAll",
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you"
+          },
+          "power": 1,
+          "toughness": 0,
+          "keywords": [
+            "First Strike"
+          ],
+          "until": "end-of-turn"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "Plainscycling {1} ({1}, Discard this card: Search your library for a Plains card, reveal it, put it into your hand, then shuffle.)",
+      "zone": "hand",
+      "cycling": true,
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}"
+        },
+        {
+          "atom": "discard",
+          "self": true
+        }
+      ],
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "library",
+          "selector": {
+            "subtypes": [
+              "Plains"
+            ]
+          },
+          "to": "hand",
+          "reveal": true,
+          "shuffle": true
+        }
+      ]
+    }
+  ]
+}

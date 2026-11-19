@@ -1,0 +1,284 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "H.E.R.B.I.E. Scout Unit",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands: it draws the Island, puts it onto the battlefield tapped, and Rob's land play is still his",
+      "library": [
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "H.E.R.B.I.E. Scout Unit",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "H.E.R.B.I.E. Scout Unit"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Forest",
+                  "Island"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Island"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Island"
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Forest"
+              ]
+            }
+          ]
+        },
+        {
+          "play": "Forest"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "H.E.R.B.I.E. Scout Unit",
+            "Island",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "tapped": "Forest",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "H.E.R.B.I.E. Scout Unit",
+            "has": [
+              "Flying"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "\"You may\": Rob declines, and the Island he drew stays in his hand",
+      "library": [
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "H.E.R.B.I.E. Scout Unit"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "H.E.R.B.I.E. Scout Unit"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": []
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "H.E.R.B.I.E. Scout Unit",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "No land in hand after the draw: nothing to put, nothing asked",
+      "library": [
+        "Bear"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "H.E.R.B.I.E. Scout Unit"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "H.E.R.B.I.E. Scout Unit"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": []
+              }
+            }
+          ]
+        },
+        {
+          "choose": []
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "H.E.R.B.I.E. Scout Unit",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

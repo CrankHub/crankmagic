@@ -1,0 +1,420 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Jessica Jones, Private Eye",
+  "fixtures": {
+    "Grunt": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Goblin"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Might": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Target creature gets +3/+3 until end of turn.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "pump",
+            "targets": {
+              "target": 0
+            },
+            "power": 3,
+            "toughness": 3
+          }
+        ]
+      }
+    },
+    "Weaken": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{B}",
+      "colors": [
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Target creature gets -2/-0 until end of turn.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "pump",
+            "targets": {
+              "target": 0
+            },
+            "power": -2,
+            "toughness": 0
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Tapped with a stun counter: the top two cards exiled; the Island played and the Grunt cast from exile",
+      "library": [
+        "Island",
+        "Grunt",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jessica Jones, Private Eye",
+            "Mountain"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jessica Jones, Private Eye"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "exile",
+              "cards": [
+                "Island",
+                "Grunt"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Jessica Jones, Private Eye",
+              "is": true
+            },
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Jessica Jones, Private Eye",
+                "counter": "stun",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "play": "Island"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Grunt"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Jessica Jones, Private Eye",
+            "Mountain",
+            "Island",
+            "Grunt"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "This turn only, and the stun counter: on turn 3 the cards are not offered, and she stays tapped as the counter comes off; untapped on turn 5",
+      "library": [
+        "Island",
+        "Grunt",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jessica Jones, Private Eye",
+            "Mountain"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jessica Jones, Private Eye"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Grunt"
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "play-land",
+                "card": "Island"
+              },
+              "count": 0
+            },
+            {
+              "seat": 0,
+              "tapped": "Jessica Jones, Private Eye",
+              "is": true
+            },
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Jessica Jones, Private Eye",
+                "counter": "stun",
+                "count": 0
+              }
+            },
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Jessica Jones, Private Eye"
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 5,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Jessica Jones, Private Eye",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": [
+            "Island",
+            "Grunt"
+          ]
+        },
+        {
+          "offers": {
+            "kind": "activate",
+            "card": "Jessica Jones, Private Eye"
+          },
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "X is her power as it resolves: +3/+3 in response, five cards exiled",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jessica Jones, Private Eye",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Might"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jessica Jones, Private Eye"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Might",
+          "targets": [
+            {
+              "card": "Jessica Jones, Private Eye"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "exile",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "name": "Power 0: nothing exiled, the stun counter still put on her",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jessica Jones, Private Eye",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Weaken"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Weaken",
+          "targets": [
+            {
+              "card": "Jessica Jones, Private Eye"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Jessica Jones, Private Eye"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jessica Jones, Private Eye",
+            "counter": "stun",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands: summoning sick, her {T} ability is not offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Jessica Jones, Private Eye"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Jessica Jones, Private Eye"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "offers": {
+            "kind": "activate",
+            "card": "Jessica Jones, Private Eye"
+          },
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Jessica Jones, Private Eye",
+            "power": 2,
+            "toughness": 3
+          }
+        }
+      ]
+    }
+  ]
+}

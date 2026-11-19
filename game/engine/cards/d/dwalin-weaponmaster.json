@@ -1,0 +1,81 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dwalin, Weaponmaster",
+    "oracleId": "cee583b7-7cc3-40ea-a227-b760839ec291",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Dwarf",
+      "Warrior"
+    ],
+    "manaCost": "{1}{R/W}",
+    "colors": [
+      "R",
+      "W"
+    ],
+    "colorIdentity": [
+      "R",
+      "W"
+    ],
+    "power": 2,
+    "toughness": 1
+  },
+  "oracleText": "First strike\nWhenever Dwalin enters or attacks, put a hone counter on each Equipment you control. (Each hone counter on an Equipment grants +1/+0 to equipped creature.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "First strike",
+      "keyword": "first strike"
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Dwalin enters or attacks, put a hone counter on each Equipment you control. (Each hone counter on an Equipment grants +1/+0 to equipped creature.)",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "putCounterAll",
+          "selector": {
+            "what": "permanent",
+            "subtypes": [
+              "Equipment"
+            ],
+            "controller": "you"
+          },
+          "counter": "hone",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Dwalin enters or attacks, put a hone counter on each Equipment you control. (Each hone counter on an Equipment grants +1/+0 to equipped creature.)",
+      "trigger": {
+        "on": "attacks",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "putCounterAll",
+          "selector": {
+            "what": "permanent",
+            "subtypes": [
+              "Equipment"
+            ],
+            "controller": "you"
+          },
+          "counter": "hone",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

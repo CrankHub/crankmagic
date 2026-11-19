@@ -1,0 +1,74 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Vindictive Triumph",
+    "oracleId": "d6b478d1-5015-49ba-b1aa-cbc2b08107a6",
+    "types": [
+      "Instant"
+    ],
+    "subtypes": [],
+    "manaCost": "{W}{B}{B}",
+    "colors": [
+      "B",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Exile target creature or planeswalker. If that permanent's mana value was 3 or less, return it to the battlefield tapped under your control. Exile it at the beginning of the next end step.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "Exile target creature or planeswalker. If that permanent's mana value was 3 or less, return it to the battlefield tapped under your control. Exile it at the beginning of the next end step.",
+      "targets": [
+        {
+          "anyOf": [
+            {
+              "what": "permanent",
+              "types": [
+                "Creature"
+              ]
+            },
+            {
+              "what": "permanent",
+              "types": [
+                "Planeswalker"
+              ]
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "effect": "moveZone",
+          "targets": {
+            "target": 0
+          },
+          "to": "exile",
+          "remember": true
+        },
+        {
+          "effect": "moveZone",
+          "targets": "remembered",
+          "to": "battlefield",
+          "tapped": true,
+          "controller": "you",
+          "atEndStep": "exile",
+          "condition": {
+            "about": "moved",
+            "is": {
+              "manaValue": {
+                "max": 3
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Flitterwing Nuisance",
+    "oracleId": "9148f2cb-5594-463c-a21b-a67706ec46d1",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Faerie",
+      "Rogue"
+    ],
+    "manaCost": "{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": 2,
+    "toughness": 2
+  },
+  "oracleText": "Flying\nThis creature enters with a -1/-1 counter on it.\n{2}{U}, Remove a counter from this creature: Whenever a creature you control deals combat damage to a player or planeswalker this turn, draw a card.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Flying",
+      "keyword": "flying"
+    },
+    {
+      "kind": "replacement",
+      "text": "This creature enters with a -1/-1 counter on it.",
+      "watches": {
+        "event": "enters",
+        "who": "self"
+      },
+      "change": {
+        "entersWithCounters": {
+          "counter": "-1/-1",
+          "count": 1
+        }
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "{2}{U}, Remove a counter from this creature: Whenever a creature you control deals combat damage to a player or planeswalker this turn, draw a card.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}{U}"
+        },
+        {
+          "atom": "removeAnyCounter",
+          "self": true
+        }
+      ],
+      "effects": [
+        {
+          "effect": "delayedTrigger",
+          "when": {
+            "on": "damage dealt",
+            "who": "any",
+            "filter": {
+              "types": [
+                "Creature"
+              ],
+              "controller": "you"
+            },
+            "combat": true,
+            "to": "player",
+            "planeswalkers": true
+          },
+          "thisTurn": true,
+          "text": "Whenever a creature you control deals combat damage to a player or planeswalker this turn, draw a card.",
+          "effects": [
+            {
+              "effect": "draw",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

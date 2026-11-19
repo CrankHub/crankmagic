@@ -90,6 +90,9 @@ export const SELECTOR_KEYS = Object.freeze([
   "hasDealtDamage", "hasDealtCombatDamage",
   /* "Permanent cards in your graveyard that were put there from the battlefield this turn" (Brought Back). */
   "fromBattlefieldThisTurn",
+  /* "Target permanent card in your graveyard that was put there from anywhere this turn" (Night Nurse, Healer of Heroes; CR
+     400.7): a card that arrived in the zone it is in on this turn, from whatever zone. */
+  "arrivedThisTurn",
   /* "Counter target spell with {X} in its mana cost" (Frontline Medic; CR 107.3, 202.1). */
   "xInManaCost",
   /* "A permanent of their choice that shares a card type with it" (Braids, Arisen Nightmare; CR 205.2a): with what an effect
@@ -141,6 +144,9 @@ const LAST_KNOWN_KEYS = ["what", "types", "subtypes", "supertypes", "nonTypes", 
   "nonKeywords",
   /* `attacking` (Eomer, Marshal of Rohan: "one or more other attacking legendary creatures you control die"): it was attacking as it left. */
   "attacking",
+  /* `manaValue` (Vindictive Triumph: "if that permanent's mana value was 3 or less"): its mana value as it last existed, at most
+     `max` (rules/layers.mjs, lastKnown). */
+  "manaValue",
   "keywords", "counters", "colors"];
 export function matchesLastKnown(selector, lki, context = {}) {
   if (!lki) return false;
@@ -171,6 +177,11 @@ export function matchesLastKnown(selector, lki, context = {}) {
   if (s.nonKeywords && s.nonKeywords.some((word) => (lki.keywords ?? []).includes(word))) return false;
   if (s.colors && !s.colors.every((color) => (lki.colors ?? []).includes(color))) return false;
   if (s.counters !== undefined && !(s.counters === "any" ? Object.values(lki.counters ?? {}).some((n) => n > 0) : (lki.counters?.[s.counters] ?? 0) > 0)) return false;
+  if (s.manaValue !== undefined) {
+    /* Only a permanent's snapshot carries it: a spell's record as it was cast does not, and is refused, not guessed. */
+    if (lki.manaValue === undefined) throw new Error("A filter on something that has left the battlefield cannot use `manaValue` here: only a permanent's snapshot has it");
+    if (!(lki.manaValue <= s.manaValue.max)) return false;
+  }
   return true;
 }
 
@@ -639,6 +650,9 @@ export function compileSelector(selector) {
     /* "Put there from the battlefield this turn" (Brought Back): a graveyard card that arrived from the battlefield on this
        turn -- the mark only a graveyard card has (state/index.mjs, moveObject). */
     if (selector.fromBattlefieldThisTurn === true && !(object.fromBattlefield === true && object.arrivedTurn === state.turn)) return false;
+    /* "That was put there from anywhere this turn" (Night Nurse, Healer of Heroes): in its zone since this turn, from any zone --
+       a zone change makes a new object, stamped with the turn it arrived (CR 400.7; state/index.mjs, `arrivedTurn`). */
+    if (selector.arrivedThisTurn === true && object.arrivedTurn !== state.turn) return false;
     /* "Target spell with {X} in its mana cost" (Frontline Medic): an {X} among the symbols of the mana cost it has now (CR
        107.3, 202.1) -- a spell's on the stack, its X chosen or not; an Adventure cast as one, the Adventure's (CR 715.3b); a
        copy, the one it copied (CR 707.2). No mana cost, no {X}. */
