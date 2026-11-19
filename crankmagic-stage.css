@@ -1966,3 +1966,11 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 /* The blockers' answering row stays at the foot of the pop-up's list, and what scrolls under it is hidden by it, not seen through it
    (a heading's words showed between Don't block and Confirm). */
 #matrix-v2 .cm-board #cm-decision-slot.cm-required-popup .cm-block-draft .cm-decide-actions{z-index:2;padding:8px 0 4px;background:var(--color-panel);box-shadow:0 -10px 12px -10px #000a}
+/* A CANCELED QUESTION WAITING ON THE PLAYER'S WORD (ROB-205; the stabilization plan of 2026-11-19, section 2: "the collapsed box sits
+   off the mats, not centered on the board"): small, at the foot of the window beside the left drawer, over the hand's edge rather
+   than any mat, so the board can be read before Resume or Confirm cancel. Not modal while it waits. */
+#matrix-v2 .cm-board .cm-required-popup.is-paused{left:calc(var(--drawer-l,0px) + 56px)!important;top:auto!important;bottom:12px!important;transform:none!important;width:min(320px,calc(100vw - 32px))!important}
+#matrix-v2 .cm-board #cm-decision-slot.cm-required-popup.is-paused>#cm-board-decision{padding:12px 14px;box-shadow:0 8px 28px #0008}
+#matrix-v2 .cm-board .cm-required-popup.is-paused h2{font-size:1em;margin:0 0 6px}
+#matrix-v2 .cm-board .cm-required-popup.is-paused .cm-board-cancel-why{margin:0 0 8px}
+@media(max-width:500px){#matrix-v2 .cm-board .cm-required-popup.is-paused{left:16px!important;right:16px!important;width:auto!important}}
