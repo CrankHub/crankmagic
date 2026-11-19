@@ -112,9 +112,17 @@ try {
     await wholeRows(page,`${mode}/${width}/100`);
     const life = await page.locator("#cm-board .cm-seat-header .cm-vitals>b").first().evaluate(el => parseFloat(getComputedStyle(el).fontSize));
     ok(life >= 28, `${mode}/${width}: life is readable (${life}px)`);
-    await page.locator('[data-action="board-stage-rail"]').click();
-    eq(await page.locator('[data-action="board-stage-rail"]').getAttribute("aria-expanded"),"false", `${mode}: folding is announced`);
-    ok(await page.locator("#cm-decision-slot #cm-board-decision").isVisible(), `${mode}/${width}: folded decision is still actionable`);
+    /* A phone starts with the drawer shut, so it does not cover the board (the stabilization plan of 2026-11-19, G6); a desktop
+       starts with it open, and folding it is announced. */
+    if (width < 500) eq(await page.locator('[data-action="board-stage-rail"]').getAttribute("aria-expanded"),"false", `${mode}/${width}: the drawer starts shut on a phone`);
+    else {
+      await page.locator('[data-action="board-stage-rail"]').click();
+      eq(await page.locator('[data-action="board-stage-rail"]').getAttribute("aria-expanded"),"false", `${mode}: folding is announced`);
+    }
+    /* Changed on purpose (the stabilization plan of 2026-11-19, G1): folded, the optional offer does not float over the board;
+       the top bar's pass is how the player acts. */
+    eq(await page.locator("#cm-decision-slot #cm-board-decision").count(),0, `${mode}/${width}: the folded priority offer does not float over the board`);
+    ok(await page.locator('[data-action="board-pass"]:not([disabled])').first().isVisible(), `${mode}/${width}: and the pass still acts`);
     eq(await page.locator("#cm-actions-drawer #cm-board-decision").count(),0, `${mode}: the decision is not duplicated`);
     await page.locator('[data-action="board-camera"]').click();
     const slider = page.locator(".cm-stage-camera [data-play-hud]");
@@ -135,7 +143,7 @@ try {
     await wholeRows(page,`${mode}/${width}/200`);
     const overlaps = await page.locator('.cm-board-field').evaluateAll(fields => fields.flatMap(field => {const label=field.querySelector(':scope>.cm-mat-label');if(!label || !label.getClientRects().length)return [];const r=label.getBoundingClientRect();return [...field.querySelectorAll('.cm-board-group>h3')].filter(h=>{const b=h.getBoundingClientRect();return r.left<b.right && r.right>b.left && r.top<b.bottom && r.bottom>b.top;}).map(h=>h.textContent);}));
     eq(overlaps,[],`${mode}/${width}: zone captions do not overlap group headings at 200%`);
-    const lastChoice = page.locator('#cm-decision-slot button:not([disabled])').last();
+    const lastChoice = page.locator('[data-action="board-pass"]:not([disabled])').first();
     await lastChoice.scrollIntoViewIfNeeded();
     const lastBox = await lastChoice.boundingBox();
     ok(lastBox && lastBox.y >= 0 && lastBox.y + lastBox.height <= (width < 500 ? 792 : 900) + 1, `${mode}/${width}: last decision control remains reachable at 200%`);
