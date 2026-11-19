@@ -137,8 +137,8 @@ function recordCounters(state, events) {
 
 /* HOW MANY TIMES A PERMANENT HAS BECOME TAPPED THIS TURN (CR 701.26a): "if it's the first time that creature has become tapped
    this turn" (Captain America, Living Legend; script/condition.mjs, firstTappedThisTurn) -- by attacking, a {T} cost, a mana
-   ability or an effect, each tap event the rules emit. Kept on the permanent with its turn, so one that changes zones is a new
-   object with none (CR 400.7). */
+   ability or an effect, each tap event the rules emit. Kept on the permanent, so one that changes zones is a new object with
+   none (CR 400.7), and cleared as each turn begins (rules/turn.mjs). */
 function recordTaps(state, events) {
   for (const event of events ?? []) {
     const fields = event.data?.fields ?? {};
@@ -146,7 +146,7 @@ function recordTaps(state, events) {
     /* One tapped for a cost that also sacrificed it (a Treasure) is gone already, and a new object (CR 400.7). */
     const object = state.objects[fields.card?.cardId];
     if (!object) continue;
-    object.tapsThisTurn = {turn: state.turn, count: (object.tapsThisTurn?.turn === state.turn ? object.tapsThisTurn.count : 0) + 1};
+    object.tapsThisTurn = (object.tapsThisTurn ?? 0) + 1;
   }
 }
 

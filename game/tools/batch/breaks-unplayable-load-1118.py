@@ -4,7 +4,9 @@ caught by the load's suite (which runs the scenarios of all 42 cards) or by the 
 
     python -u game/tools/batch/breaks.py game/tools/batch/breaks-unplayable-load-1118.py
 """
-SUITES = ['tests/engine-unplayable-load-1118.mjs', 'tests/engine-deaths.mjs', 'tests/engine-history-records.mjs']
+SUITES = ['tests/engine-unplayable-load-1118.mjs', 'tests/engine-deaths.mjs', 'tests/engine-history-records.mjs', 'tests/room-untap-mana.mjs']
+TURN = 'game/engine/rules/turn.mjs'
+UNTAP = 'game/engine/rules/untap-mana.mjs'
 
 LAYERS = 'game/engine/rules/layers.mjs'
 TRIGGER = 'game/engine/rules/trigger.mjs'
@@ -44,9 +46,12 @@ BREAKS = [
     ('captain: taps are never counted', TRIGGER,
      '  recordTaps(state, events);\n',
      ''),
-    ('captain: the count carries into the next turn', TRIGGER,
-     '(object.tapsThisTurn?.turn === state.turn ? object.tapsThisTurn.count : 0)',
-     '(object.tapsThisTurn?.count ?? 0)'),
+    ('captain: the count carries into the next turn', TURN,
+     '    for (const object of Object.values(state.objects)) if (object.tapsThisTurn) delete object.tapsThisTurn;\n',
+     ''),
+    ('untap: a tap taken back is still counted', UNTAP,
+     '  if (object.tapsThisTurn === 1) delete object.tapsThisTurn;\n',
+     ''),
     ('captain: an untap counts as a tap', TRIGGER,
      'event.kind !== "GameEventCardTapped" || fields.tapped !== true',
      'event.kind !== "GameEventCardTapped"'),
@@ -54,7 +59,7 @@ BREAKS = [
      '    if (!object) continue;\n    object.tapsThisTurn',
      '    object.tapsThisTurn'),
     ('captain: every tap is the first', CONDITION,
-     'if (condition.firstTappedThisTurn === true && state.objects[about?.card]?.tapsThisTurn?.count !== 1) return false;',
+     'if (condition.firstTappedThisTurn === true && state.objects[about?.card]?.tapsThisTurn !== 1) return false;',
      ''),
     # Aerial Doombot, Ultron Drone: power-up, once by this object and cheaper the turn it entered (CR 702.193a-b, 118.7, 601.2f).
     ('power-up: never known', INDEX,

@@ -353,7 +353,7 @@ export function conditionHolds(state, condition, {controller, source = null, abo
      permanent the trigger is about has become tapped once this turn, the tap that triggered it -- counted on the permanent as
      each tap happens (rules/trigger.mjs, recordTaps). Asked again as it resolves: tapped again since, untapped by something
      else in between, and it is no longer the first. */
-  if (condition.firstTappedThisTurn === true && state.objects[about?.card]?.tapsThisTurn?.count !== 1) return false;
+  if (condition.firstTappedThisTurn === true && state.objects[about?.card]?.tapsThisTurn !== 1) return false;
   /* "IF IT WASN'T CAST" (Preston, the Vanisher; CR 601.2): the permanent the trigger is about was cast, by anyone, from anywhere
      -- read on the permanent as castByYou is (rules/stack.mjs); one put onto the battlefield, or a new object since (CR 400.7),
      was not. */
