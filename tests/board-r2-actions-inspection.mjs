@@ -77,10 +77,14 @@ try{
   eq(await page.locator('#cm-card-inspector').count(),0,"Escape closes inspection only");
   eq(await page.locator('#cm-board').getAttribute('data-view'),mode,"Escape does not change view preference");
   await page.locator('[data-action="board-actions-toggle"]').click();
-  ok(await page.locator('#cm-decision-slot #cm-board-decision').isVisible(),"collapsed Actions retains an actionable pending decision");
+  /* Changed on purpose (the stabilization plan of 2026-11-19, G1): a collapsed Actions no longer floats the optional offer over
+     the board, a box with no close that Rob could not get rid of. The top bar's pass and a press on a card are the ways to act. */
+  eq(await page.locator('#cm-decision-slot #cm-board-decision').count(),0,"collapsed Actions: the optional offer does not float over the board");
+  ok(await page.locator('[data-action="board-pass"]:not([disabled])').first().isVisible(),"and the pass in the top bar still acts");
   await page.locator('[data-action="board-actions-open"]').click();
   await page.locator('.cm-stage-left').click();
-  ok(await page.locator('#cm-decision-slot #cm-board-decision').isVisible(),"closed drawer keeps the pending choice reachable");
+  eq(await page.locator('#cm-decision-slot #cm-board-decision').count(),0,"closed drawer: the optional offer does not float either");
+  ok(await page.locator('[data-action="board-pass"]:not([disabled])').first().isVisible(),"and the pass still acts");
   await page.locator('[data-action="board-actions-open"]').click();
  }
  // A draft remains the same question while inspecting and switching views. Three creatures for two, so the pick is the

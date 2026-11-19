@@ -285,7 +285,12 @@ globalThis.CrankBoard = Object.seal({
   }
   const splitOf = (k) => {const raw = stored(SPLIT_KEY[k]), v = Number(raw); return raw !== null && v >= SPLIT[0] && v <= SPLIT[1] ? v : SPLIT_AT[k];};
   let drawerW = {left: 270, right: 340}, gutter = {left: 310, right: 380};
-  let stageSide = false, stageRail = true, cameraOpen = false, stageError = "";
+  /* THE LEFT DRAWER, OPEN OR SHUT, KEPT ON THIS DEVICE (the stabilization plan of 2026-11-19, G1 and G6): a player who shuts it
+     is not reopened on the next game, and only their own press of its tab (or the open arrow) changes what is kept -- the
+     pop-up putting it away for a moment does not. Never set: open on a desktop, shut on a phone, where it covered the board. */
+  const RAIL_KEY = "cm-play-left-drawer";
+  const railAtFirst = () => {const kept = stored(RAIL_KEY); return kept === "open" ? true : kept === "shut" ? false : Math.min(innerWidth, innerHeight) > 500;};
+  let stageSide = false, stageRail = railAtFirst(), cameraOpen = false, stageError = "";
   /* TABLE'S MAX (Rob, 2026-10-28): the boards as large as the drawers leave room, the hand put away; and the hand, put away or shown by its tab. */
   let tableMax = false, handHidden = false;
   let tableMenuOpen = false;
@@ -2275,6 +2280,11 @@ globalThis.CrankBoard = Object.seal({
     return `<section class="cm-board-decision cm-board-went" aria-label="${e(span)}"><h3>${e(span)}</h3>
       <ol class="cm-board-went-list">${rows}</ol><div class="cm-board-decision-foot"><span class="cm-muted">${now}</span>${b("OK", "board-went-close", {}, false, {cls: "compact"})}</div></section>`;
   }
+  /* AN OPTIONAL OFFER NEVER FLOATS (the stabilization plan of 2026-11-19, G1; Rob confirmed it the same day as the pop-up he could
+     not close). With the Actions drawer shut, the priority offer ("Tap for mana", "Cast X") used to move into a box over the
+     opponents' mats that had no close and grew with the turn (297x216 on turn 1, 560x308 by turn 21 at 1440x900; past the
+     bottom of a 390x844 phone). Shut means shut: the tab's badge, the top bar's step button and a press on a card are the ways
+     to act, and a required question still pops up. This reverses the older "a collapsed Actions stays actionable" fallback. */
   /* WHAT THE PLAYER MUST RESOLVE POPS UP; WHAT IS OPTIONAL STAYS IN THE PANE (ROB-208; Rob and Luke, 2026-10-28). A question the
      game is waiting on -- a target, a search, a modal choice, a cost, a scry -- is the pop-up's, with the Actions pane open or shut:
      "you have to resolve this" is the point. A priority offer is optional, so it stays in the pane; and the combat declarations
@@ -2292,7 +2302,7 @@ globalThis.CrankBoard = Object.seal({
     const d = view.decision, side = moduleSide('actions');
     if(decisionPopup())return `<div class="cm-board-ask cm-decision-slot cm-required-popup" id="cm-decision-slot" role="dialog" aria-modal="true" aria-label="${e(d.title)}" tabindex="-1">${decision()}</div>`;
     const visible = !/^mulligan:/.test(d?.id || '') && !mandatory(d) && !actionsShut && (phone() ? stageRail : side === 'left' ? stageRail : side === 'right' ? stageSide : false);
-    const inner = `${went()}${moduleSide('stack') ? '' : stack()}${!visible && d && d.kind !== 'draw' ? decision() : ''}`;
+    const inner = `${went()}${moduleSide('stack') ? '' : stack()}${!visible && d && !['draw', 'priority'].includes(d.kind) ? decision() : ''}`;
     return `<div class="cm-board-ask cm-decision-slot" id="cm-decision-slot" aria-label="Current decision"${inner ? '' : ' hidden'}>${inner}</div>`;
   }
   const alsoCount = () => {const d = view.decision; return d && d.kind === "priority" ? new Set(d.options.filter((o) => o.act !== "pass" && o.act !== "resolve-all" && o.act !== "undo-land").map((o) => `${o.act}|${o.label}`)).size : 0;};
@@ -3947,7 +3957,7 @@ globalThis.CrankBoard = Object.seal({
     const d = view?.decision, index = Number(el.dataset.index);
     if (!sending && /^mulligan:/.test(d?.id || '') && d.options.some(o => o.index === index)) send({indices:[index]});
   };
-  actions["board-actions-open"] = () => {stageRail = true; actionsShut = false; draw(); document.querySelector("[data-action=board-actions-toggle]")?.focus({preventScroll:true});};
+  actions["board-actions-open"] = () => {stageRail = true; keep(RAIL_KEY, "open"); actionsShut = false; draw(); document.querySelector("[data-action=board-actions-toggle]")?.focus({preventScroll:true});};
   actions["board-actions-toggle"] = () => {actionsShut = !actionsShut; draw();};
   actions["board-life-toggle"] = () => {lifeShut = !lifeShut; try {localStorage.setItem("cm-board-life-shut", lifeShut ? "1" : "0");} catch {/* page only */} draw(); document.querySelector("[data-action=board-life-toggle]")?.focus({preventScroll: true});};
   actions["board-pass"] = () => {
@@ -4380,7 +4390,7 @@ globalThis.CrankBoard = Object.seal({
     ids.splice(ids.indexOf(target.dataset.module) + Number(after), 0, id);
     savePaneModules(ids,side);
   });
-  actions["board-stage-rail"] = () => {stageRail = !stageRail; if (phone() && stageRail) stageSide = false; draw();};
+  actions["board-stage-rail"] = () => {stageRail = !stageRail; keep(RAIL_KEY, stageRail ? "open" : "shut"); if (phone() && stageRail) stageSide = false; draw();};
   actions["board-camera"] = () => {cameraOpen = !cameraOpen; tableMenuOpen = false; draw();};
   /* CAMERA ▾ CLOSES ON A PRESS ANYWHERE OUTSIDE IT (Rob, 2026-10-25), as Profile and History do. Taken out where it is,
      not by a redraw, so the press still reaches what it was on; caught on the way down, so a card's own handler that
