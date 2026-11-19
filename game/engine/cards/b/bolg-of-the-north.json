@@ -1,0 +1,99 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Bolg of the North",
+    "oracleId": "88522a0f-5377-4522-97f4-4148bef954af",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Goblin",
+      "Soldier"
+    ],
+    "manaCost": "{3}{B}{R}",
+    "colors": [
+      "B",
+      "R"
+    ],
+    "colorIdentity": [
+      "B",
+      "R"
+    ],
+    "power": 5,
+    "toughness": 5
+  },
+  "oracleText": "When Bolg enters, you may sacrifice another creature. When you do, Bolg deals damage equal to that creature's power to another target creature. If excess damage was dealt this way, amass Goblins X, where X is that excess damage. (Put X +1/+1 counters on an Army you control. It's also a Goblin. If you don't control an Army, create a 0/0 black Goblin Army creature token first.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When Bolg enters, you may sacrifice another creature. When you do, Bolg deals damage equal to that creature's power to another target creature. If excess damage was dealt this way, amass Goblins X, where X is that excess damage. (Put X +1/+1 counters on an Army you control. It's also a Goblin. If you don't control an Army, create a 0/0 black Goblin Army creature token first.)",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "sacrifice",
+          "count": 1,
+          "optional": true,
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "another": true
+          },
+          "remember": true
+        },
+        {
+          "effect": "immediateTrigger",
+          "text": "When you do, Bolg deals damage equal to that creature's power to another target creature. If excess damage was dealt this way, amass Goblins X, where X is that excess damage.",
+          "about": "remembered",
+          "condition": {
+            "about": "remembered",
+            "is": {}
+          },
+          "targets": [
+            {
+              "what": "permanent",
+              "types": [
+                "Creature"
+              ],
+              "another": true
+            }
+          ],
+          "effects": [
+            {
+              "effect": "dealDamage",
+              "amount": {
+                "powerOf": "that card"
+              },
+              "targets": {
+                "target": 0
+              }
+            },
+            {
+              "effect": "amass",
+              "subtype": "Goblin",
+              "count": {
+                "excessDamage": true
+              },
+              "condition": {
+                "compare": {
+                  "count": {
+                    "excessDamage": true
+                  },
+                  "atLeast": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
