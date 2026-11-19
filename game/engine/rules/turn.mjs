@@ -44,7 +44,7 @@ import {destructionChoice, dredgers, dredgeInstead, dredgeWords} from "../script
 import {commanderChoice} from "./commander.mjs";
 import {damageOrderChoice, graveyardBound, placeReplacedCounters} from "./replacement.mjs";
 import {mulliganChoice, resolveMulligan} from "./mulligan.mjs";
-import {answerResolution, answerDeparted, resolutionChoice} from "../script/resolution.mjs";
+import {answerResolution, answerDeparted, resolutionChoice, runResolution} from "../script/resolution.mjs";
 import {finishResolving} from "./stack.mjs";
 import {priorityOrder} from "./priority.mjs";
 import {playerRuleChanged, untapsDuringOthers, ruleChanged, drawForbidden, emptyDrawWins} from "./statics.mjs";
@@ -444,6 +444,99 @@ export function goOnWithout(state, withdrawn) {
   if (withdrawn?.kind === "trigger-targets" || withdrawn?.kind === "choose-targets") askTriggerTargets(state);
   grantStepPriority(state, events);
   return events;
+}
+
+/* CANCEL (Linear ROB-205; Rob, 2026-10-29: every pending decision gets a Cancel that exits the action; Rob, 2026-11-19: "If
+ * I press 'Cancel' that means I'm cancelling the action. I DON'T want to resume it."). What Cancel can do depends on whose
+ * the question is and what it is part of; `cancelWay` says which, and changes nothing:
+ *
+ *   back-out    the player's own cast or activation, stopped to ask its targets or how it is paid. Nothing has moved or
+ *               been paid before that answer (rules/actions.mjs, performOffered: "nothing moved or paid before the
+ *               answer"), so the action ends as if it had never been started, and the player holds priority as before. A
+ *               reversal of an action not yet complete is what CR 727.1 allows; no other player saw it begin.
+ *   confirm     an answer the game owes, which a Confirm cancel ends:
+ *                 trigger      a trigger being aimed leaves the stack, as one with no legal target does (CR 603.3d);
+ *                 resolution   the rest of the player's own spell or ability is not done, and it finishes resolving;
+ *                 declaration  no attackers, or no blockers -- refused, in the rules' words, where a requirement says
+ *                              a creature must attack or block.
+ *   null        the rules need an answer to go on (a mulligan, a discard to hand size, an order of triggers, combat damage,
+ *               the draw, another player's spell's question). Refused, saying what to do instead (AGENTS.md, "Behavior
+ *               that would break a game is refused, with instructions"); the engine never picks the answer for them
+ *               (AGENTS.md, "Decisions inside the game belong to the players"). */
+const NO_CANCEL = {
+  "mulligan-decision": "Your opening hand can't be canceled: keep it or mulligan to begin the game.",
+  "opening-hand": "Your opening hand can't be canceled: keep it or mulligan to begin the game.",
+  "mulligan-bottom": "Your mulligan can't be canceled: choose the cards to put on the bottom of your library.",
+  "discard-to-hand-size": "Discarding to your maximum hand size can't be canceled (CR 514.1): choose the cards to discard.",
+  "order-triggers": "Your triggers need an order to go on the stack (CR 603.3b): put them in order.",
+  "draw-card": "Your draw can't be canceled: draw a card to go on.",
+  "dredge-draw": "Your draw can't be canceled: draw a card, or dredge instead.",
+  "assign-combat-damage": "Combat damage can't be canceled: assign it to go on.",
+  "order-damage": "Combat damage can't be canceled: choose the order to go on.",
+  "legend-rule": "The legend rule can't be canceled (CR 704.5j): choose the legend to keep.",
+};
+const WHY_NOT = "The rules need your answer to this to go on, so it can't be canceled: answer it to continue.";
+
+/**
+ * How the pending question may be canceled, changing nothing: `{way: "back-out"}`, `{way: "confirm", ends}` or
+ * `{way: null, why}`. Null when nothing is pending.
+ */
+export function cancelWay(state) {
+  const awaiting = state.awaiting;
+  if (!awaiting) return null;
+  if ((awaiting.kind === "choose-targets" || awaiting.kind === "choose-cost") && awaiting.stackId === undefined && awaiting.action && !state.resolving)
+    return {way: "back-out"};
+  if ((awaiting.kind === "trigger-targets" || awaiting.kind === "choose-targets") && awaiting.stackId !== undefined)
+    return {way: "confirm", ends: "trigger"};
+  if (awaiting.kind === "effect-choice" && state.resolving && awaiting.departed === undefined) {
+    if (state.resolving.context.controller === awaiting.player) return {way: "confirm", ends: "resolution"};
+    const source = resolvingName(state);
+    return {way: null, why: `This is part of ${source ?? "another player's spell or ability"}, which another player controls: answer it to go on. Only its controller can cancel the rest of it.`};
+  }
+  if (awaiting.kind === "declare-attackers" || awaiting.kind === "declare-blockers") return {way: "confirm", ends: "declaration"};
+  return {way: null, why: NO_CANCEL[awaiting.kind] ?? WHY_NOT};
+}
+const resolvingName = (state) => {
+  const entry = state.stack.findLast((e) => e.stage === "resolving");
+  return entry?.name ?? (entry?.objectId !== undefined && entry?.objectId !== null ? state.objects[entry.objectId]?.card : null) ?? null;
+};
+
+/**
+ * Cancel the pending question as `cancelWay` says it may be canceled. Throws, changing nothing, when it may not.
+ *
+ * @returns {{events: Array, way: string, ends?: string, name: ?string}} events for the caller to journal; `name`, the
+ *          trigger or spell canceled (public: it is on the stack), for the history
+ */
+export function cancelAwaiting(state, rng = null) {
+  const how = cancelWay(state);
+  if (!how) throw new Error("Nothing is being asked, so there is nothing to cancel.");
+  if (!how.way) throw new Error(how.why);
+  const awaiting = state.awaiting;
+  if (how.way === "back-out") {
+    /* The question held priority off (nobody holds it while a player is asked); the player who took the action held it,
+       and holds it again, with nothing else changed (CR 117.3c). */
+    state.awaiting = null;
+    state.priorityPlayer = awaiting.player;
+    return {events: [], way: "back-out", name: null};
+  }
+  if (how.ends === "trigger") {
+    const entry = state.stack.find((e) => e.stackId === awaiting.stackId);
+    const name = entry?.name ?? null;
+    if (entry) state.stack.splice(state.stack.indexOf(entry), 1);
+    state.awaiting = null;
+    askTriggerTargets(state);
+    const events = [];
+    grantStepPriority(state, events);
+    return {events, way: "confirm", ends: "trigger", name};
+  }
+  if (how.ends === "resolution") {
+    const name = resolvingName(state);
+    state.resolving.queue = [];
+    state.awaiting = null;
+    return {events: resolutionAnswered(state, runResolution(state, rng)), way: "confirm", ends: "resolution", name};
+  }
+  /* No attackers, or no blockers: the declaration's own answer, checked by the rules as any other is. */
+  return {events: resolveAwaiting(state, [], null, rng, {indices: []}), way: "confirm", ends: "declaration", name: null};
 }
 
 /**
