@@ -121,9 +121,46 @@ try {
     await page.locator("button.cm-stage-left[data-action=board-stage-rail]").first().click({timeout: 3000});
     await page.waitForTimeout(400);
     ok(!(await where()).paneOpen, `${mode}: the pane is shut`);
+    const shut = await where();
+    ok(!shut.popup && !shut.pane, `${mode}: the optional priority offer does not float over the board with the pane shut (floating ${shut.popup}); the tab, the step button and the cards still act`);
     await ask(MUST.targets);
     ok((await where()).popup, `${mode}: with the pane shut the question is in the pop-up too`);
     ok(errors.length === 0, `${mode}: no page error (${errors[0] || "none"})`);
+    await context.close();
+  }
+
+  /* A PHONE (390x844, the plan of 2026-11-19, G1 and G6): the drawer is not opened over the whole board by default, and a priority
+     offer does not float a box over the board -- the box that ran past the bottom of the screen. A required question still pops up. */
+  {
+    const context = await browser.newContext({viewport: {width: 390, height: 844}, reducedMotion: "reduce", serviceWorkers: "block"});
+    await context.addInitScript(() => {localStorage.setItem("cm-board-view", "focus"); localStorage.setItem("crankmagic-audio-muted", "true");});
+    const page = await context.newPage();
+    if (stub) await stub(page);
+    let sock = null;
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.route(`${base}/index.html*`, (r) => r.fulfill({contentType: "text/html", body: html}));
+    await page.route(`${base}/api/me`, (r) => r.fulfill({json: {email: "rob@example.com"}}));
+    await page.route(`${base}/api/library**`, (r) => r.fulfill({json: {head: null}}));
+    await page.route(`${base}/api/tables**`, (r) => r.fulfill({json: {table, now: Date.now()}}));
+    const first = structuredClone(views[STAYS.priority]); first.matchId = sample.matchId;
+    await page.routeWebSocket(new RegExp(`/api/tables/${TABLE}/connect$`), (ws) => {sock = ws; ws.send(JSON.stringify({type: "view", view: first}));});
+    await page.goto(`${base}/index.html#table?id=${TABLE}`);
+    await page.locator("#cm-board").waitFor({timeout: 20000});
+    await page.waitForTimeout(700);
+    const phoneAt = () => page.evaluate(() => ({
+      floating: !!document.querySelector("#cm-decision-slot #cm-board-decision"),
+      drawerOpen: !!document.querySelector("#cm-actions-drawer.is-open"),
+      popup: !!document.querySelector(".cm-required-popup #cm-board-decision"),
+    }));
+    const p = await phoneAt();
+    ok(!p.drawerOpen, `phone: the Actions drawer is not opened over the whole board by default`);
+    ok(!p.floating, `phone: the priority offer does not float over the board (floating ${p.floating})`);
+    const v = structuredClone(views[MUST.targets]); v.matchId = sample.matchId; v.revision = ++rev; v.decision = {...v.decision, id: `${v.decision.id}:${rev}`};
+    sock.send(JSON.stringify({type: "view", view: v}));
+    await page.waitForTimeout(600);
+    ok((await phoneAt()).popup, "phone: a required question still pops up");
+    ok(errors.length === 0, `phone: no page error (${errors[0] || "none"})`);
     await context.close();
   }
   console.log(`board-mandatory-popup: ${checks} checks passed -- what must be resolved pops up front and center and owns the sequence, the combat declarations included, with the pane open or shut; a priority offer stays in the Actions pane.`);

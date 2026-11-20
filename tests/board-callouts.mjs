@@ -20,6 +20,7 @@ const box = {console};
 box.globalThis = box;
 box.document = {addEventListener() {}, querySelector() {return null;}, querySelectorAll() {return [];}, getElementById() {return null;}, documentElement: {dataset: {}, classList: {add() {}, remove() {}}}, body: {append() {}}, createElement() {return {style: {}, setAttribute() {}, append() {}, remove() {}, animate() {return {finished: Promise.resolve()};}};}};
 box.addEventListener = () => {};
+box.innerWidth = 1440; box.innerHeight = 900; /* the window the board reads when it loads (its drawer opens on a desktop, ROB-534) */
 box.performance = {now: () => 0};
 box.setTimeout = () => 0; box.clearTimeout = () => {};
 vm.runInNewContext(readFileSync(new URL("../crankmagic-board.js", import.meta.url), "utf8"), box);
