@@ -499,6 +499,9 @@ export function tableOn(storage, {cards = basicCards, candidates = () => null, r
       /* An activated ability tapped for too, as a cast is (ROB-317, Rob's playtest 2026-10-29: Ash Barrens's Basic landcycling
          was not offered with a land untapped and nothing floating): new matches only (rules/actions.mjs, `abilityTaps`). */
       abilityTaps: true,
+      /* Monocolored hybrid ({2/W}: one white or two of any kind) tapped for, each way (ROB-354: Spectral Procession, Reigning Victor,
+         Temur Tawnyback): new matches only (rules/actions.mjs, `hybridTaps`). */
+      hybridTaps: true,
       /* A person may yield the rest of an opponent's turn (Linear ROB-13, the Oct 16 handoff): new matches only, so one
          launched before is asked as it was (room.mjs, `yieldTurn`). */
       yieldTurn: true,

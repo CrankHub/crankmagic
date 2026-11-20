@@ -55,7 +55,7 @@
 import {cardsIn, moveObject, usesThisTurn, recordUse, showFace, showAdventure, shownFaceDown, shownFaceUp, turnFaceUp, eventCard, commanderKeyOf, recordDiscard, activationsForbidden, valueCostOf} from "../state/index.mjs";
 import {mayLookAt} from "../projection.mjs";
 import {pushSpell, pushAbility, becameTarget, crimeCommitted} from "./stack.mjs";
-import {spend, parseManaCost, automaticPayment, canPay, chosenPayment, paymentOptions, paymentKey, paymentWords, PAY_CHOICES, manaValue, poolSize, tapPlans, sourceTapPlans, quickTapPlan, phyrexianVariants, convokeCanPay, convokePayments, lessGeneric} from "./mana.mjs";
+import {spend, parseManaCost, automaticPayment, canPay, chosenPayment, paymentOptions, paymentKey, paymentWords, PAY_CHOICES, manaValue, poolSize, tapPlans, sourceTapPlans, quickTapPlan, phyrexianVariants, monohybridVariants, convokeCanPay, convokePayments, lessGeneric} from "./mana.mjs";
 import {commanderTax, recordCommanderCast, commanderIdentity} from "./commander.mjs";
 import {COLORS, MANA_KEYS, manaAbilityNow} from "./mana.mjs";
 import {sickForAbilities, hasFlash, splitSecondOnStack} from "../keywords/timing.mjs";
@@ -1839,7 +1839,23 @@ export const planWords = (state, plan) => [tapWords(state, plan), plan.payment?.
 /* The ways to tap for a cost, each with the payment it makes: from an empty pool and one-mana sources the simple solver
    (tapPlans); with floating mana or a source of more than one mana, the bundled one (sourceTapPlans), where the match
    allows it (`pooledTaps`). */
+/* MONOCOLORED HYBRID TAPPED FOR (`hybridTaps`; ROB-354): {2/W} is one white or two of any kind (CR 107.4e), and the planners take
+   neither, so Spectral Procession, Reigning Victor and Temur Tawnyback were offered only from floating mana -- the interaction
+   census's CAST_ONLY_WHEN_FLOATED baseline. Each plain variant of the cost is planned, the colored ones first; which way is the
+   caster's to say when there is more than one (castCostChoice). Only a match whose pod asks carries the key, so every game
+   launched before offers, and replays, what it did. */
+const hybridTaps = (state) => state.hybridTaps === true && pooledTaps(state);
 function fundingPlans(state, player, id, cost, limit, units = tapUnits(state, player, undefined, pooledTaps(state)), life = 0) {
+  if (!hybridTaps(state) || !cost.symbols.some((s) => s.kind === "monohybrid")) return plainFunding(state, player, id, cost, limit, units, life);
+  const plans = [];
+  for (const variant of monohybridVariants(cost)) {
+    if (plans.length >= limit) break;
+    for (const plan of plainFunding(state, player, id, variant.cost, limit - plans.length, units, life))
+      plans.push(variant.generic.length ? {...plan, key: `${plan.key}|two:${variant.generic.join("")}`} : plan);
+  }
+  return plans;
+}
+function plainFunding(state, player, id, cost, limit, units, life = 0) {
   if (!phyrexianTaps(state) || !cost.symbols.some((s) => s.kind === "phyrexian")) return manaPlans(state, player, id, cost, limit, units);
   /* PHYREXIAN MANA (CR 107.4f; ROB-326): each way to pay the symbols -- {U} or 2 life -- is its own cost to tap for, and each way
      found its own plan, the mana way first. Which is the caster's to say (castCostChoice); a way that costs life says so in its

@@ -96,7 +96,7 @@ export function runScenario(scenario, cards, fixtures = {}) {
   /* `startingLife`: a table's house-rule starting life (game/room/table.mjs) -- "your starting life total" (Happily Ever After). */
   const state = createState({matchId: "scenario", seed: scenario.name, players: names.map((name) => ({name})),
     ...(scenario.skipFirstDraw === false ? {skipFirstDraw: false} : {}), ...(scenario.pooledTaps === true ? {pooledTaps: true} : {}),
-    ...(scenario.xTaps === true ? {xTaps: true} : {}), ...(scenario.phyrexianTaps === true ? {phyrexianTaps: true} : {}), ...(scenario.permittedTaps === true ? {permittedTaps: true} : {}), ...(scenario.abilityTaps === true ? {abilityTaps: true} : {}), ...(Number.isInteger(scenario.startingLife) ? {startingLife: scenario.startingLife} : {})});
+    ...(scenario.xTaps === true ? {xTaps: true} : {}), ...(scenario.phyrexianTaps === true ? {phyrexianTaps: true} : {}), ...(scenario.permittedTaps === true ? {permittedTaps: true} : {}), ...(scenario.abilityTaps === true ? {abilityTaps: true} : {}), ...(scenario.hybridTaps === true ? {hybridTaps: true} : {}), ...(Number.isInteger(scenario.startingLife) ? {startingLife: scenario.startingLife} : {})});
   /* `rolls`: the results of the dice and the coins this game throws, in order, pinned -- a die's result as it is (1 to its sides),
      a flip of a coin as 1 to win it and 2 to lose it. Past the last, the game's own stream (rng.mjs, roll). */
   const base = createRng(scenario.name), pinned = [...(scenario.rolls ?? [])];
