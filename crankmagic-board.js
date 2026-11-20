@@ -184,7 +184,7 @@ globalThis.CrankBoard = Object.seal({
     if(!choiceFlow)choiceFlow=CrankChoiceFlow.create(pathOptions(d.options),flowContext());
     const step=CrankChoiceFlow.step(choiceFlow),source=findCard(attackChoice ?? step.trail.find(n=>n.kind==='source')?.value ?? actionCard ?? d.sourceId),ready=step.status==='confirm';
     const label=node=>e(node.label).replace(/\{[^}]+\}/g,symbol=>C.mana(symbol));
-    const visual=node=>{const id=['mana-source','source','card'].includes(node.kind) ? node.value : node.kind==='target' && node.value?.[0]==='object' ? node.value[1] : null;const c=findCard(id);return c?.name?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="">`:'';};
+    const visual=node=>{const id=['mana-source','source','card'].includes(node.kind) ? node.value : node.kind==='target' && node.value?.[0]==='object' ? node.value[1] : null;const c=findCard(id);return c?.name?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" data-fallback-name="${e(c.name)}">`:'';};
     const duplicates=new Set(step.choices.filter((c,i,all)=>all.some((x,j)=>j!==i && x.label===c.label)).map(c=>c.label));
     const flowRisk=c=>attackChoice!==null ? attackRisk(d.options.find(o=>o.index===c.indices[0])) : null;
     const choiceButton=(c,i)=>`<button type="button" class="v-button cm-flow-option${riskCls(flowRisk(c))}" data-action="board-flow-choice" data-flow-choice="${i}" data-indices="${c.indices.join(" ")}" data-kind="${e(c.kind)}"${['target','card','mana-source'].includes(c.kind)?` data-peek-card="${e(c.kind==='target'?c.value?.[1]:c.value)}"`:""} data-revision="${view.revision}" data-choice="${e(d.id)}" data-match="${e(view.matchId)}"${sending?' disabled':''}>${riskMark(flowRisk(c))}${visual(c)}<span>${label(c)}</span>${duplicates.has(c.label)?` <small>${e(twinMark(Array.isArray(c.value)?c.value.at(-1):c.value) || step.choices.filter(n=>n.label===c.label).indexOf(c)+1)}</small>`:''}</button>`;
@@ -201,7 +201,7 @@ globalThis.CrankBoard = Object.seal({
     }
     const forRun = forRunNote(d);
     return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" data-flow-status="${step.status}" aria-label="${e(d.title)}"><h2>${e(source?.name || (d.kind==='priority' ? d.options.find(o=>o.index===step.index)?.label : d.title) || d.title)}</h2>${forRun}
-      ${source?.name?`<button class="cm-flow-inspect" type="button" data-action="board-combat-inspect" data-card="${source.cardId}" aria-label="Inspect ${e(source.name)}"><img class="cm-flow-card" src="${e(pictureOf(source.name,source))}" alt=""></button>`:''}
+      ${source?.name?`<button class="cm-flow-inspect" type="button" data-action="board-combat-inspect" data-card="${source.cardId}" aria-label="Inspect ${e(source.name)}"><img class="cm-flow-card" src="${e(pictureOf(source.name,source))}" alt="" data-fallback-name="${e(source.name)}"></button>`:''}
       <div class="cm-board-options">${ready?`<ul class="cm-choice-review">${reviewRows.join('')}</ul>${attackChoice!==null?riskMark(attackRisk(d.options.find(o=>o.index===step.index))):''}`:choices}</div>
       <div class="cm-decide-actions">${ready?b('Confirm','board-flow-confirm',{revision:String(view.revision),choice:d.id,match:view.matchId,index:String(step.index)},true,{disabled:sending}).replace('>Confirm</button>',`>${CHEV_PATH('M3 8l3 3 7-7')}<span>Confirm</span></button>`):''}${choiceFlow.selections.length?b('Back','board-flow-back',{},false,{disabled:sending}).replace('>Back</button>',`>${CHEV_LEFT}<span>Back</span></button>`):''}${attackChoice!==null?b("Don't attack",'board-flow-no-attack',{},false,{disabled:sending}):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
   }
@@ -5384,6 +5384,17 @@ globalThis.CrankBoard = Object.seal({
   document.addEventListener("load", event => {const img=event.target;if(img?.matches?.('.cm-bcard[data-card] img') && img.naturalWidth>0)img.dataset.cardLoaded='true';}, true);
   document.addEventListener("error", (event) => {
     const t = event.target;
+    /* The choice pop-up's art (ROB-341): no card frame behind it, so a picture that does not come is a card-shaped tile with the
+       card's name, as a card on the board is, never the browser's broken-image icon. */
+    if (t && t.matches && t.matches("img.cm-flow-card, img.cm-flow-thumb") && t.dataset.fallbackName) {
+      const tile = document.createElement("span");
+      tile.className = `${t.className} is-artless`;
+      tile.setAttribute("role", "img");
+      tile.setAttribute("aria-label", t.dataset.fallbackName);
+      tile.textContent = t.dataset.fallbackName;
+      t.replaceWith(tile);
+      return;
+    }
     if (!(t && t.matches && t.matches(".cm-bcard img, .cm-combat-card img, .cm-block-tile img"))) return;
     /* A token look with no picture of its own (a made-up creature type) is the card's own art, not nothing (ROB-329). */
     const fallback = t.dataset ? t.dataset.lookFallback : "";
