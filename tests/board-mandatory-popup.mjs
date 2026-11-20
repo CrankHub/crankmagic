@@ -39,6 +39,7 @@ const MUST = {targets: 23, search: 15, modal: 18, cost: 6, scry: 31, attackers: 
 const STAYS = {priority: 13};
 let checks = 0, rev = 970000;
 const ok = (c, m) => {assert.ok(c, m); checks += 1;};
+const eq = (a, b, m) => {assert.deepEqual(a, b, m); checks += 1;};
 
 try {
   for (const mode of ["focus", "full", "table"]) {
@@ -161,6 +162,86 @@ try {
     await page.waitForTimeout(600);
     ok((await phoneAt()).popup, "phone: a required question still pops up");
     ok(errors.length === 0, `phone: no page error (${errors[0] || "none"})`);
+    await context.close();
+  }
+
+  /* CANCEL CANCELS (ROB-205; Rob, 2026-11-19: "If I press 'Cancel' that means I'm canceling the action. I DON'T want to resume
+     it. The Resume pop-up would be ok if it included 'Confirm Cancel' button that canceled out of that loop entirely."). The room
+     says how each question may be canceled (game/room/room.mjs, `decision.cancel`; tests/room-cancel-decision.mjs proves what the
+     room does with it). Here, the board:
+       - an owed answer (a trigger's targets): Cancel leaves a small box OFF the mats -- not centered over the board -- with Resume
+         and Confirm cancel; Confirm cancel sends the cancel; Resume brings the question back; Escape is Cancel;
+       - your own cast stopped for its payment ("back-out"): Cancel sends the cancel at once, with no Resume box;
+       - a question the rules need answered (way null): Resume and the room's reason, and no Confirm cancel. */
+  {
+    const context = await browser.newContext({viewport: {width: 1440, height: 900}, reducedMotion: "reduce", serviceWorkers: "block"});
+    await context.addInitScript(() => {localStorage.setItem("cm-board-view", "table"); localStorage.setItem("crankmagic-audio-muted", "true");});
+    const page = await context.newPage();
+    if (stub) await stub(page);
+    let sock = null;
+    const sent = [], errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.route(`${base}/index.html*`, (r) => r.fulfill({contentType: "text/html", body: html}));
+    await page.route(`${base}/api/me`, (r) => r.fulfill({json: {email: "rob@example.com"}}));
+    await page.route(`${base}/api/library**`, (r) => r.fulfill({json: {head: null}}));
+    await page.route(`${base}/api/tables**`, (r) => r.fulfill({json: {table, now: Date.now()}}));
+    await page.routeWebSocket(new RegExp(`/api/tables/${TABLE}/connect$`), (ws) => {sock = ws; ws.onMessage((m) => sent.push(JSON.parse(m))); ws.send(JSON.stringify({type: "view", view: sample}));});
+    await page.goto(`${base}/index.html#table?id=${TABLE}`);
+    await page.locator("#cm-board").waitFor({timeout: 20000});
+    await page.waitForTimeout(700);
+    const question = async (idx, cancel) => {
+      const v = structuredClone(views[idx]);
+      v.matchId = sample.matchId; v.revision = ++rev; v.decision = {...v.decision, id: `${v.decision.id}:${rev}`, cancel};
+      sock.send(JSON.stringify({type: "view", view: v}));
+      await page.waitForTimeout(600);
+      return v.decision.id;
+    };
+    const cancels = () => sent.filter((f) => f.type === "cancel");
+    const box = () => page.evaluate(() => {
+      const slot = document.getElementById("cm-decision-slot"), q = slot?.querySelector("#cm-board-decision"), r = q?.getBoundingClientRect();
+      const mats = [...document.querySelectorAll("#cm-board .cm-mat")].map((m) => m.getBoundingClientRect()).filter((m) => m.width > 40 && m.height > 40);
+      const over = r ? mats.filter((m) => r.left < m.right - 2 && r.right > m.left + 2 && r.top < m.bottom - 2 && r.bottom > m.top + 2).length : -1;
+      return {paused: !!slot?.classList.contains("is-paused"), modal: slot?.getAttribute("aria-modal"), resume: !!q?.querySelector("[data-action=board-flow-resume]"),
+        confirm: !!q?.querySelector("[data-action=board-cancel-confirm]"), why: q?.querySelector(".cm-board-cancel-why")?.textContent ?? null,
+        cx: r ? (r.left + r.right) / 2 : null, bottom: r ? r.bottom : null, inside: r ? r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight : false, over, w: innerWidth, h: innerHeight};
+    });
+
+    let id = await question(MUST.targets, {way: "confirm", ends: "trigger"});
+    await page.locator("#cm-decision-slot [data-action=board-flow-cancel]").first().click();
+    await page.waitForTimeout(300);
+    let b1 = await box();
+    ok(b1.paused && b1.resume && b1.confirm, `an owed answer canceled: Resume and Confirm cancel (paused ${b1.paused}, Resume ${b1.resume}, Confirm cancel ${b1.confirm})`);
+    ok(b1.inside && b1.over === 0, `and the box is inside the window and off the mats (over ${b1.over} mat(s))`);
+    ok(Math.abs(b1.cx - b1.w / 2) > 120 && b1.bottom >= b1.h - 40, `not centered on the board: at the foot of the window, beside the drawer (center ${Math.round(b1.cx)} of ${b1.w}, bottom ${Math.round(b1.bottom)} of ${b1.h})`);
+    eq(b1.modal, "false", "and it does not hold the board while it waits");
+    eq(cancels().length, 0, "nothing is sent until Confirm cancel");
+    await page.locator("[data-action=board-flow-resume]").click();
+    await page.waitForTimeout(300);
+    ok(!(await box()).paused, "Resume brings the question back");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    ok((await box()).paused, "Escape is Cancel");
+    await page.locator("[data-action=board-cancel-confirm]").click();
+    await page.waitForTimeout(300);
+    eq(cancels().map((f) => f.choiceId), [id], "Confirm cancel sends the cancel of this question, once");
+
+    id = await question(MUST.cost, {way: "back-out"});
+    const before = cancels().length;
+    await page.locator("#cm-decision-slot [data-action=board-flow-cancel]").first().click();
+    await page.waitForTimeout(300);
+    eq(cancels().slice(before).map((f) => f.choiceId), [id], "your own cast stopped for its payment: Cancel sends the cancel at once");
+    ok(!(await box()).paused, "with no Resume box");
+
+    const why = "Discarding to your maximum hand size can't be canceled (CR 514.1): choose the cards to discard.";
+    await question(MUST.search, {way: null, why});
+    const n = cancels().length;
+    await page.locator("#cm-decision-slot [data-action=board-flow-cancel]").first().click();
+    await page.waitForTimeout(300);
+    const b3 = await box();
+    ok(b3.paused && b3.resume && !b3.confirm, "a question the rules need answered: Resume, and no Confirm cancel");
+    eq(b3.why, why, "and the room's reason, saying what to do");
+    eq(cancels().length, n, "nothing is sent");
+    ok(errors.length === 0, `cancel: no page error (${errors[0] || "none"})`);
     await context.close();
   }
   console.log(`board-mandatory-popup: ${checks} checks passed -- what must be resolved pops up front and center and owns the sequence, the combat declarations included, with the pane open or shut; a priority offer stays in the Actions pane.`);

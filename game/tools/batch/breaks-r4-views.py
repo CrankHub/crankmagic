@@ -5,7 +5,7 @@ SUITES = ['tests/board-account-keyboard.mjs','tests/board-seat-lifecycle.mjs','t
 # takes both out: the anchor is the first, what lies between them, and the second.
 ACCOUNT = "    if(C.accountMenuOpen?.() || document.querySelector('#cm-user-menu:popover-open'))return;\n"
 POPUP_KEYS = (
- "    const popup=document.querySelector('.cm-required-popup');\n"
+ "    const popup=document.querySelector('.cm-required-popup:not(.is-paused)');\n"
  "    if(popup && !inspection && !coach.open && !cameraOpen && !historyOpen && !profileOpen && !tableMenuOpen && !menuOpen && !tools && !document.querySelector('#cm-card-menu,#cm-dialog[open]')){\n"
  "      if(event.key==='Escape'){event.preventDefault();actions['board-flow-cancel']();return;}\n"
  "      if(event.key==='Tab'){\n"
