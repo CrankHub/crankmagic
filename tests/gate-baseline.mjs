@@ -101,7 +101,9 @@ ok(validateBaseline({schema: "crankmagic.known-red@1"}, {suiteExists: () => true
 const committed = readBaseline();
 const bad = validateBaseline(committed, {suiteExists: (s) => existsSync(new URL("../" + s, import.meta.url))});
 eq(bad, [], "the committed baseline passes every rule above");
-ok(committed.entries.length >= 10, `the committed baseline lists ${committed.entries.length} suites; an emptied file must fail (floor 10)`);
+/* Changed on purpose (ROB-394, 2026-11-20): twelve entries fixed on Actions and removed, two flakes added; the floor follows what is
+   listed, so emptying the file by accident still fails. Lower it only with the comparator's FIXED list in the same change. */
+ok(committed.entries.length >= 8, `the committed baseline lists ${committed.entries.length} suites; an emptied file must fail (floor 8)`);
 ok(committed.entries.every((e) => CATEGORIES.includes(e.category)), "every committed category is a known one");
 ok(typeof committed.basis === "string" && committed.basis.length > 40, "the file says what it was measured on and how sure that is");
 /* The comparator reads the committed file: dropping one entry turns that suite's failure into a NEW one. */
