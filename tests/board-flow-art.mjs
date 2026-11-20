@@ -48,11 +48,13 @@ try{
   await page.locator(`[data-action=board-choose][data-card="${gg}"]`).first().click();
   const big=page.locator('.cm-choice-flow .cm-flow-card.is-artless');
   await big.waitFor();
-  eq([await big.getAttribute('aria-label'),(await big.innerText()).trim()],[GG,GG],`${width}: the source art is a tile with the card's name, not a broken image`);
+  eq([await big.getAttribute('aria-label'),await big.getAttribute('data-name'),await big.evaluate(el=>getComputedStyle(el,'::after').content)],[GG,GG,JSON.stringify(GG)],`${width}: the source art is a tile with the card's name, not a broken image`);
   /* Through to a target layer: each target's thumbnail. */
   for(let n=0;n<4&&!(await page.locator('.cm-choice-flow .cm-flow-thumb').count());n+=1)await page.locator('.cm-required-popup [data-action=board-flow-choice]').first().click();
   await page.locator('.cm-choice-flow .cm-flow-thumb.is-artless').first().waitFor();
-  ok((await page.locator('.cm-choice-flow .cm-flow-thumb.is-artless').allInnerTexts()).some(t=>/Bear/.test(t)),`${width}: a target's thumbnail is its name`);
+  ok((await page.$$eval('.cm-choice-flow .cm-flow-thumb.is-artless',ts=>ts.map(t=>t.dataset.name))).some(t=>/Bear/.test(t)),`${width}: a target's thumbnail is its name`);
+  /* Drawn, not added: the option's own words are what they were (board-r4-decisions, board-target-lands read them). */
+  ok((await page.locator('.cm-required-popup [data-action=board-flow-choice]').allInnerTexts()).every(t=>!/^s*(Bear|Plains)s*(Bear|Plains)/.test(t)),`${width}: and the option's words do not repeat the name`);
   const broken=await page.$$eval('.cm-choice-flow img',imgs=>imgs.filter(i=>i.complete&&i.naturalWidth===0).length);
   eq(broken,0,`${width}: no broken image left in the pop-up`);
   await shot(page,`flow-art-${width}`);

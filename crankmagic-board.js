@@ -5387,11 +5387,13 @@ globalThis.CrankBoard = Object.seal({
     /* The choice pop-up's art (ROB-341): no card frame behind it, so a picture that does not come is a card-shaped tile with the
        card's name, as a card on the board is, never the browser's broken-image icon. */
     if (t && t.matches && t.matches("img.cm-flow-card, img.cm-flow-thumb") && t.dataset.fallbackName) {
+      /* The name is drawn by the style sheet (`data-name`), not added as text: an option's own words stay what they were. A
+         thumbnail's button already says its card, so the tile is hidden from a screen reader; the source art is an image. */
       const tile = document.createElement("span");
       tile.className = `${t.className} is-artless`;
-      tile.setAttribute("role", "img");
-      tile.setAttribute("aria-label", t.dataset.fallbackName);
-      tile.textContent = t.dataset.fallbackName;
+      tile.dataset.name = t.dataset.fallbackName;
+      if (t.matches(".cm-flow-thumb")) tile.setAttribute("aria-hidden", "true");
+      else { tile.setAttribute("role", "img"); tile.setAttribute("aria-label", t.dataset.fallbackName); }
       t.replaceWith(tile);
       return;
     }

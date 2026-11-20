@@ -1980,3 +1980,4 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
   background:#f6f1e4;color:#1f1c18;border:1px solid #c9bfa8;font-weight:600;line-height:1.15;padding:4px;box-sizing:border-box;overflow-wrap:anywhere}
 #matrix-v2 .cm-board .cm-choice-flow .cm-flow-card.is-artless{font-size:12px}
 #matrix-v2 .cm-board .cm-choice-flow .cm-flow-thumb.is-artless{font-size:8px;padding:2px}
+#matrix-v2 .cm-board .cm-choice-flow .is-artless::after{content:attr(data-name)}
