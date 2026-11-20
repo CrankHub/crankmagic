@@ -112,8 +112,8 @@ BREAKS = [
      ': {}),'),
     # The tape, and the table
     ('the store refusing a yield entry', 'game/engine/storage.mjs',
-     '["answer", "leave", "end", "prefer", "yield"]',
-     '["answer", "leave", "end", "prefer"]'),
+     '["answer", "leave", "end", "prefer", "yield", "cancel"]',
+     '["answer", "leave", "end", "prefer", "cancel"]'),
     ('a table\'s new match without Yield turn', 'game/room/table.mjs',
      '      yieldTurn: true,\n',
      '\n'),
