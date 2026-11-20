@@ -1152,7 +1152,14 @@ export const amass = {
    and the payer's plain sources as a generic amount is (rules/mana.mjs, unlessPlans); offered only to a payer who has a way,
    and when there is more than one way, which is the payer's (CR 605.3a). */
 const lifeAsked = (awaiting) => awaiting.life > 0 || (awaiting.life === 0 && !(awaiting.amount > 0));
-const noun = (selector) => (selector?.subtypes?.length ? `a ${selector.subtypes[0]}` : selector?.types?.length ? `a ${selector.types[0].toLowerCase()}` : "a permanent");
+const noun = (selector) => (Array.isArray(selector?.anyOf) && selector.anyOf.length > 1 ? anyOfNoun(selector.anyOf)
+  : selector?.subtypes?.length ? `a ${selector.subtypes[0]}` : selector?.types?.length ? `a ${selector.types[0].toLowerCase()}` : "a permanent");
+/* "Sacrifice a creature or planeswalker" (Winter, Tormented Loner; ROB-323): a choice among kinds says each of them, not "a
+   permanent" -- the options were always only those kinds; the question now says so. A kind it cannot name is said as before. */
+const anyOfNoun = (kinds) => {
+  const words = kinds.map((k) => (k?.subtypes?.length === 1 && !k.types ? k.subtypes[0] : k?.types?.length === 1 && !k.subtypes ? k.types[0].toLowerCase() : null));
+  return words.every(Boolean) ? `${/^[aeiou]/i.test(words[0]) ? "an" : "a"} ${words.join(" or ")}` : "a permanent";
+};
 /* "Another creature you control" (Faerie Impostor): `another` read against the "unless" ability's own source. */
 const otherNoun = (selector) => (selector?.another === true ? noun(selector).replace(/^a /, "another ") : noun(selector));
 /* "Then discard two cards unless you discard a creature card" (Thirst for Identity; CR 118.12, 701.9a): `discard` a selector
