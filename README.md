@@ -1735,3 +1735,4 @@ The `table-tabletop` suite checks the preview geometry and its browser interacti
 - `choice-flow` — conditional decision paths, exact leaf preservation and stale-context guards.
 - `choice-cards` — representative and seeded random card simulations through the decision adapter.
 - `board-choice-flow` — popup routing, dependent choices, mana, combat and responsive screenshots.
+- `board-library-top` — `tests/board-library-top.mjs` (a library's revealed top card on the board: Conspicuous Snoop's Raging Goblin face up in Table, Focus and 3D, to its owner and an opponent, pressed for its cast; an unseen library face down; the held draw still draws, the card on its face (ROB-227))
