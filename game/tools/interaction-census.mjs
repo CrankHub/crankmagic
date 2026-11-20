@@ -282,7 +282,7 @@ const MAX_WAYS = 6, MAX_LANDS = 14;
    plays on -- ROB-339's first run reported 59 spells not offered from untapped lands where the table's configuration leaves 4. Every
    state here is built with these. `preparedTaps` is the table's one other taps flag; the scenario runner does not take it. The suite
    fails if table.mjs sets a `*Taps` flag that is in neither list. */
-export const TABLE_FLAGS = Object.freeze({pooledTaps: true, xTaps: true, phyrexianTaps: true, permittedTaps: true, abilityTaps: true});
+export const TABLE_FLAGS = Object.freeze({pooledTaps: true, xTaps: true, phyrexianTaps: true, permittedTaps: true, abilityTaps: true, hybridTaps: true});
 export const UNPROBED_TABLE_FLAGS = Object.freeze(["preparedTaps"]);
 
 /* What a finding class means for the suite. A "hard" class fails on any finding the baseline does not list. An "advisory" class is
