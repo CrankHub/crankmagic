@@ -5,7 +5,7 @@
  * The decks people sit down with are Rob's D1-D8, read from his MtG Master Table backup of 2026-11-18 -- never from the
  * repository's older bundled decks (a test against a stale list proves only consistency with the wrong source). The backup is
  * private: the lists, the ids and which card is in which deck stay in the ignored game/.local/rob94/; this suite reads only
- * the cards' names (tests/fixtures/live-deck-cards.json), and runs on every PR. For each of the 537 cards:
+ * the cards' names (tests/fixtures/live-deck-names.json), and runs on every PR. For each of the 537 cards:
  *   - the table plays it: the card directory defines it, playable, with no problem recorded (`index.resolve`);
  *   - each scenario of each hand-authored card plays through the rules and passes;
  *   - the interaction census (game/tools/interaction-census.mjs, layers A and B, the table's taps flags) finds nothing about it
@@ -27,7 +27,7 @@ let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks += 1; };
 const eq = (a, b, m) => { assert.deepEqual(a, b, m); checks += 1; };
 
-const {cards} = JSON.parse(readFileSync(new URL("./fixtures/live-deck-cards.json", import.meta.url), "utf8"));
+const {cards} = JSON.parse(readFileSync(new URL("./fixtures/live-deck-names.json", import.meta.url), "utf8"));
 ok(cards.length >= 500 && new Set(cards).size === cards.length, `the eight live decks' cards, each once: ${cards.length}`);
 const index = loadCardIndex();
 

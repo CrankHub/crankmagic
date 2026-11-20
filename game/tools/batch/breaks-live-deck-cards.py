@@ -5,7 +5,7 @@
 """
 SUITES = ['tests/live-deck-cards.mjs']
 BREAKS = [
-    ('a live deck card the table does not play', 'tests/fixtures/live-deck-cards.json',
+    ('a live deck card the table does not play', 'tests/fixtures/live-deck-names.json',
      '  "Absorb",\n',
      '  "Absorb of the Unwritten",\n'),
     # Not here: an ability no longer tapped for. The census files ACTIVATION_ONLY_WHEN_FLOATED as advisory (CLASS_POLICY), so it does
