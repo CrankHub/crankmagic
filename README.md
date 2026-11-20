@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 704 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 705 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1736,3 +1736,4 @@ The `table-tabletop` suite checks the preview geometry and its browser interacti
 - `choice-cards` — representative and seeded random card simulations through the decision adapter.
 - `board-choice-flow` — popup routing, dependent choices, mana, combat and responsive screenshots.
 - `board-library-top` — `tests/board-library-top.mjs` (a library's revealed top card on the board: Conspicuous Snoop's Raging Goblin face up in Table, Focus and 3D, to its owner and an opponent, pressed for its cast; an unseen library face down; the held draw still draws, the card on its face (ROB-227))
+- `board-emblem` — `tests/board-emblem.mjs` (an emblem on the board: Elspeth, Sun's Champion's −7 emblem in Rob's command zone, a tile that says what it does, in Table and Focus, to Rob and to Maya (ROB-192))
