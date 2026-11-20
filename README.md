@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 706 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 707 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 `.claude/skills/crankmagic-refresh` is the judgment around it. There are 705 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
@@ -1375,6 +1375,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-tap-to-cast` — `tests/engine-tap-to-cast.mjs`
 - `engine-phyrexian-taps` — `tests/engine-phyrexian-taps.mjs` (a spell with Phyrexian mana ({U/P}: {U} or 2 life, CR 107.4f) is offered and tapped for in each way, the caster asked which: Tezzeret's Gambit with three untapped Wastes, with blue, with life too low; Gitaxian Probe, Mental Misstep and Vraska, Betrayal's Sting; the AI takes mana before life (ROB-326))
 - `engine-prepared-every-card` — `tests/engine-prepared-every-card.mjs` (every Prepared card in the card data: each that enters prepared offers the copy of its spell as a spell, cast, unprepared and never a permanent; each prepared only on a condition does not enter prepared (ROB-432, RQ-04))
+- `engine-playtest-blink` — `tests/engine-playtest-blink.mjs` (the blink and flicker audit from Luke's playtest (UX-04): Brago with zero, one and three of its own nonland targets, Thassa up to one, Cloudshift and Ephemerate returning control, Flickerwisp's delayed return, and Claim Jumper's conditional Plains searches, on the saved cards (ROB-210))
 - `engine-permitted-taps` — `tests/engine-permitted-taps.mjs` (a card cast through a permission, from exile, a graveyard or the top of a library, is tapped for as from the hand in a table's new matches: Rob's Purphoros exiled by Valakut Exploration and the card after it, an instant in response to Valakut's end step, Conspicuous Snoop and Muldrotha; the cost still counts; Bolas's Citadel still costs life; a match launched before offers what it did (ROB-226))
 - `engine-sacrifice-noun` — `tests/engine-sacrifice-noun.mjs` (a sacrifice question says what may be sacrificed: Winter, Tormented Loner asks for "a creature or planeswalker", its options unchanged; a question with one kind reads as it did (ROB-323))
 - `engine-ability-taps` — `tests/engine-ability-taps.mjs` (an activated ability is tapped for as a cast is, in a table's new matches: Rob's Ash Barrens cycled from the hand with a Wastes untapped -- exactly {1}, discarded once, an ability not a land play, a basic land only, fail-to-find -- which land asked when two could pay, a {T} cost's source never its own mana; a match launched before offers what it did (ROB-317))
