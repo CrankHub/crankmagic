@@ -3456,16 +3456,20 @@ function performOffered(state, player, action, during) {
     const ability = chosenFor(abilitiesOf(state, action.objectId).find((candidate) => candidate.id === action.abilityId), object);
     /* Tapped for (`abilityTaps`): the way picked, or the one there is -- each source's mana ability activated, as its player
        would (CR 602.2b, 601.2g), before the cost is paid from the pool. */
+    let tappedWay;
     if (action.autoTap === true) {
       const ways = abilityTapPlans(state, player, action, TAP_CHOICES);
       const tapped = action.tapPlan !== undefined ? ways.find((w) => w.key === action.tapPlan) : ways.length === 1 ? ways[0] : null;
       if (!tapped) throw new Error(`${object.card}'s ability cannot be tapped for that way now`);
       const units = new Map(tapUnits(state, player, undefined, pooledTaps(state)).map((u) => [u.id, u]));
       for (const tap of tapped.taps) events.push(...perform(state, player, {kind: "activate-mana", objectId: tap.id, label: state.objects[tap.id].card, ...units.get(tap.id).via[tap.color]}));
+      /* What the sources were tapped for pays, as a cast's does: mana already floating can leave the pool more than one way
+         to pay, and the way tapped for is the one taken (a game of Rob's live decks, seed 4: Nylea, Keen-Eyed's {2}{G}). */
+      tappedWay = paymentKey(tapped.payment);
     }
     /* Recomputed, as a cast's payment is: the pool may have moved since the offer. */
     /* With the way its player chose (`payWith`, X8b), when the pool pays it more than one way. */
-    const payment = costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0, action.objectId), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), action.payWith, bentFor(action));
+    const payment = costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0, action.objectId), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), action.payWith ?? tappedWay, bentFor(action));
     if (!payment || payment.payWays || !withinLimit(state, action.objectId, ability)) throw new Error(`${object.card}'s ability cannot be paid for now`);
     /* The artifacts and creatures its waterbend cost taps, as its player picked them (waterbendPicked). */
     const bent = action.waterbend === true ? waterbendPicked(state, player, action) : [];
