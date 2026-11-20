@@ -278,11 +278,11 @@ const FIXTURES = {
 const MAX_WAYS = 6, MAX_LANDS = 14;
 
 /* THE ENGINE CONFIGURATION A PLAYER HAS. A new match starts with the "taps" flags on (game/room/table.mjs: a cast that taps for itself,
-   {X} spells, Phyrexian costs); the scenario runner starts with them off, so a census built on its defaults measures an engine nobody
+   {X} spells, Phyrexian costs, a card cast through a permission); the scenario runner starts with them off, so a census built on its defaults measures an engine nobody
    plays on -- ROB-339's first run reported 59 spells not offered from untapped lands where the table's configuration leaves 4. Every
    state here is built with these. `preparedTaps` is the table's one other taps flag; the scenario runner does not take it. The suite
    fails if table.mjs sets a `*Taps` flag that is in neither list. */
-export const TABLE_FLAGS = Object.freeze({pooledTaps: true, xTaps: true, phyrexianTaps: true});
+export const TABLE_FLAGS = Object.freeze({pooledTaps: true, xTaps: true, phyrexianTaps: true, permittedTaps: true});
 export const UNPROBED_TABLE_FLAGS = Object.freeze(["preparedTaps"]);
 
 /* What a finding class means for the suite. A "hard" class fails on any finding the baseline does not list. An "advisory" class is

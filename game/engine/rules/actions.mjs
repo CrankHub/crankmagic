@@ -1749,9 +1749,23 @@ export function tapUnits(state, player, offered = manaOffers(state, player), bun
 /* A cast that may tap for itself: from the hand or the command zone, its mana cost (and a commander's tax) paid, with
    nothing in the pool -- so the mana tapped is exactly the cost, and paying it is no further choice. */
 /* X paid in life (`payLifeX`, Toxic Deluge) is no X its sources' mana pays: it is tapped for as any other. */
-const tapZone = (state, player, from, id) => ["hand", "command"].includes(from) || (state.preparedTaps === true && from === "exile"
-  && preparedCopyStays(state, id) && controllerOf(state, state.objects[id].prepareOf) === player);
-const tapCastable = (state, player, action) => tapZone(state, player, action.from, action.objectId) && !action.free && !action.flashback
+const tapZone = (state, player, from, id, via = null) => ["hand", "command"].includes(from) || (state.preparedTaps === true && from === "exile"
+  && preparedCopyStays(state, id) && controllerOf(state, state.objects[id].prepareOf) === player) || permittedTap(state, player, from, id, via);
+/* A CARD CAST THROUGH A PERMISSION, TAPPED FOR TOO (`permittedTaps`; ROB-226, Rob's playtest 2026-10-29: "cannot play the card
+   exiled by Valakut Exploration", Purphoros with four Mountains untapped). A card an effect lets its player cast from exile, a
+   graveyard or the top of a library (Valakut Exploration, Conspicuous Snoop, Muldrotha) was offered only when floating mana
+   already paid for it, so a person, who is offered the cast and not "tap first, then cast", could not play it at all. Now it
+   is tapped for as a card from the hand is -- unless the permission changes how it is paid: life instead (Bolas's Citadel),
+   free, another cost in its place, mana of any type (Tinybones), or a cost besides (Exploration Broodship); those are paid as
+   before. Only a match whose pod asks carries the key, so every game launched before offers, and replays, what it did. */
+const permittedTaps = (state) => state.permittedTaps === true && pooledTaps(state);
+function permittedTap(state, player, from, id, via) {
+  if (!permittedTaps(state) || !["exile", "graveyard", "library"].includes(from)) return false;
+  const ability = playPermission(state, player, id, "spell", via)?.ability;
+  return !!ability && ability.payLife === undefined && ability.free !== true && ability.manaInstead === undefined
+    && ability.anyMana !== true && ability.additionalCost === undefined;
+}
+const tapCastable = (state, player, action) => tapZone(state, player, action.from, action.objectId, action.via ?? null) && !action.free && !action.flashback
   && action.escape === undefined && action.alternative === undefined && (action.x === undefined || action.payLifeX === true || xTaps(state))
   && (pooledTaps(state) || poolSize(poolFor(state, player, {spell: action.objectId})) === 0);
 
@@ -2041,7 +2055,7 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     let autoTap = false;
     /* Not with creatures tapped as an additional cost or for escalate: one tapped for mana as the cast taps its sources could
        not then be tapped for it (their mana is paid from the pool first). */
-    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && !way && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id)) {
+    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && !way && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id, via)) {
       const paying = xMana === null ? cost : xCounted(cost, xMana);
       const [plan] = fundingPlans(state, player, id, {...paying, generic: paying.generic + x}, 1, tappable(), lifeLeft);
       if (plan) {
@@ -2053,7 +2067,7 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
        the pool has -- but an untapped Island pays it too, and which is the caster's to say (CR 107.4f; the standing rule that
        decisions belong to the players). So the cast taps for it when a way taps something, and asks which once it is taken. */
     else if (payment?.life > 0 && phyrexianTaps(state) && cost.symbols.some((s) => s.kind === "phyrexian") && (xMana === null || tapsForX)
-      && !freely && !back && !fled && !way && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id)) {
+      && !freely && !back && !fled && !way && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id, via)) {
       const paying = xMana === null ? cost : xCounted(cost, xMana);
       const plans = fundingPlans(state, player, id, {...paying, generic: paying.generic + x}, 2, tappable(), lifeLeft);
       if (plans.some((p) => p.taps.length > 0)) {
