@@ -23,6 +23,6 @@ BREAKS = [
      '{back: true, draw: you && !!view.decision && view.decision.kind === "draw"',
      '{back: true, draw: false && !!view.decision && view.decision.kind === "draw"'),
     ('the library not saying what a click does', B,
-     'aria-label="Draw card: your library, ${zone.count}"',
-     'aria-label="Your library, ${zone.count}"'),
+     'aria-label="Draw card: your library, ${zone.count}${',
+     'aria-label="Your library, ${zone.count}${'),
 ]
