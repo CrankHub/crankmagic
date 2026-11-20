@@ -280,7 +280,7 @@ const MAX_WAYS = 6, MAX_LANDS = 14;
 /* THE ENGINE CONFIGURATION A PLAYER HAS. A new match starts with the "taps" flags on (game/room/table.mjs: a cast that taps for itself,
    {X} spells, Phyrexian costs, a card cast through a permission); the scenario runner starts with them off, so a census built on its defaults measures an engine nobody
    plays on -- ROB-339's first run reported 59 spells not offered from untapped lands where the table's configuration leaves 4. Every
-   state here is built with these. `preparedTaps` is the table's one other taps flag; the scenario runner does not take it. The suite
+   state here is built with these. `preparedTaps` is the table's one other taps flag; the census does not probe it (tests/engine-prepared-every-card.mjs holds every Prepared card to it). The suite
    fails if table.mjs sets a `*Taps` flag that is in neither list. */
 export const TABLE_FLAGS = Object.freeze({pooledTaps: true, xTaps: true, phyrexianTaps: true, permittedTaps: true, abilityTaps: true, hybridTaps: true});
 export const UNPROBED_TABLE_FLAGS = Object.freeze(["preparedTaps"]);
@@ -289,7 +289,8 @@ export const UNPROBED_TABLE_FLAGS = Object.freeze(["preparedTaps"]);
    counted and printed and never fails: the engine behaves that way, but no player has been shown to meet it. Promote one to "hard"
    when a report confirms it or Rob decides the engine should offer it, then baseline what is left. */
 export const CLASS_POLICY = Object.freeze({
-  ACTIVATION_ONLY_WHEN_FLOATED: "advisory",
+  /* None now (ROB-441, Nov 20): ACTIVATION_ONLY_WHEN_FLOATED was advisory while ~890 cards offered a costed ability only from
+     floated mana; abilityTaps (ROB-317, Ash Barrens, a player's report) and its {X} abilities took it to none, so it is enforced. */
 });
 export const isAdvisory = (finding) => CLASS_POLICY[finding.code] === "advisory";
 
@@ -452,7 +453,7 @@ export function againstBaseline(findings, baseline = readBaseline()) {
 
 export const CLASS_OWNERS = {
   CAST_ONLY_WHEN_FLOATED: "ROB-354 (what the table's flags leave; {X} and Phyrexian casts are fixed by xTaps and phyrexianTaps, ROB-326)",
-  ACTIVATION_ONLY_WHEN_FLOATED: "advisory: abilityOffers prices against the pool only and castOffers has an autoTap branch; no player report confirms it (ROB-339, ROB-354)",
+  ACTIVATION_ONLY_WHEN_FLOATED: "ROB-441 (enforced since abilityTaps, ROB-317: Rob's Ash Barrens report; none left Nov 20)",
   PAYMENT_WAY_MISSING: "ROB-326",
   TARGET_UNION_NARROWED: "ROB-323 (Winter) and ROB-300",
   MODES_DROPPED: "ROB-300", MODES_COUNT: "ROB-300", SPREE_DROPPED: "ROB-300", WAY_KEYWORD_DROPPED: "ROB-300", CYCLING_DROPPED: "ROB-317",

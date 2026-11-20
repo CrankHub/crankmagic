@@ -133,7 +133,8 @@ function cardFor(state, id, canSeeFace, viewer = null) {
     ...(object.solved === true ? {solved: true} : {}),
     commander: object.commander === true,
     /* An emblem (CR 114), public in the command zone: what it does, its abilities' words, for the board to show. */
-    ...(object.emblem === true ? {emblem: true, text: (object.abilities ?? []).map((a) => a.text).filter(Boolean).join("\n")} : {}),
+    /* Each sentence once: an emblem whose one sentence is two abilities (Elspeth, Sun's Champion's +2/+2 and flying, ROB-192). */
+    ...(object.emblem === true ? {emblem: true, text: [...new Set((object.abilities ?? []).map((a) => a.text).filter(Boolean))].join("\n")} : {}),
     /* A candidate (card load step 5, Rob's decision 2): written by the card compiler, not yet reviewed, so the board labels
        it and offers "report a wrong card". Said only of a card this seat can name, as its name is. */
     ...(named && object.candidate === true ? {candidate: true} : {}),

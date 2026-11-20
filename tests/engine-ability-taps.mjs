@@ -100,4 +100,14 @@ const poolTotal = (s) => Object.values(s.players[0].pool ?? s.players[0].mana ??
   if (s.awaiting) resolveAwaiting(s, [0], null, rng);
   eq([s.stack.length, zone(s, "battlefield").filter((o) => o.card === "Forest")[0]?.tapped], [1, true], "activated: the Forest tapped and the ability on the stack, paid the way it was tapped for");
 }
+{
+  /* An {X} ability (ROB-441): each X the untapped sources pay, as an {X} spell's (`xTaps`). Shark Typhoon's cycling {X}{1}{U}
+     with an Island and two Wastes: X of 0 or 1, not 2. Kessig Wolf Run's {X}{R}{G}, {T}: never paid with itself. */
+  const xs = (s, card) => offers(s, card).filter((a) => a.autoTap).map((a) => a.x).sort();
+  eq(xs(play(["Island", "Wastes", "Wastes"], ["Shark Typhoon"]), "Shark Typhoon"), [0, 1], "Shark Typhoon cycles for X of 0 or 1 from three lands, tapped for");
+  eq([...new Set(xs(play(["Kessig Wolf Run", "Mountain", "Forest", "Wastes", "Raging Goblin"], []), "Kessig Wolf Run"))], [0, 1],
+    "Kessig Wolf Run pumps a Goblin for X of 0 or 1 from three other lands, never tapping itself for its own mana");
+  eq(offers(play(["Island", "Wastes", "Wastes"], ["Shark Typhoon"], {flags: {...TABLE, xTaps: false}}), "Shark Typhoon").filter((a) => a.autoTap).length, 0,
+    "without xTaps, an {X} ability is not tapped for");
+}
 console.log(`engine-ability-taps: ${checks} checks passed — an activated ability is tapped for as a cast is, in a table's new matches: Rob's Ash Barrens cycled from the hand with a Wastes untapped (exactly {1}, discarded once, an ability not a land play, a basic land only, fail-to-find), which land asked when two could pay, a {T} cost's source never its own mana; a match launched before offers what it did (ROB-317).`);

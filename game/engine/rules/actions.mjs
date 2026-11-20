@@ -1402,7 +1402,15 @@ function abilityXValues(state, player, ability, id) {
   const discardX = (ability.cost ?? []).find((a) => a?.atom === "discard" && a.count === "X" && a.self !== true);
   if (discardX) return Array.from({length: cardsIn(state, "hand", player).filter((c) => c !== id).length + 1}, (_, n) => n);
   const atom = (ability.cost ?? []).find((a) => a?.atom === "mana");
-  return atom ? xValues(poolFor(state, player, {ability: id}), parseManaCost(atom.cost)) : [null];
+  if (!atom) return [null];
+  const pool = poolFor(state, player, {ability: id}), printed = parseManaCost(atom.cost), fromPool = xValues(pool, printed);
+  /* And each X the pool and the untapped sources pay together (`abilityTaps` with `xTaps`; ROB-441: Shark Typhoon's cycling
+     {X}{1}{U}, Kessig Wolf Run's {X}{R}{G}), as an {X} spell's are: each its own offer, its sources tapped as it is activated. */
+  if (printed.variable === 0 || !abilityTaps(state) || !xTaps(state)) return fromPool;
+  const xs = new Set(fromPool.filter((v) => v !== null));
+  const most = poolSize(pool) + tapUnits(state, player, undefined, pooledTaps(state)).filter((u) => u.id !== id).length;
+  for (let X = 0; X <= most; X += 1) if (!xs.has(X) && abilityFunding(state, player, id, ability, X, null, 1).length) xs.add(X);
+  return xs.size ? [...xs].sort((a, b) => a - b) : fromPool;
 }
 /* How many a sacrifice cost takes: its number, or the X announced for it ("Sacrifice X Squirrels"). */
 const sacrificeCount = (atom, X) => (atom?.count === "X" ? X ?? 0 : atom?.count ?? 1);
@@ -1790,8 +1798,12 @@ function abilityFunding(state, player, id, ability, X, aim, limit, costChoice = 
   const cost = costOf(state, player, ability, X, id) ?? [];
   const printed = cost.filter((a) => a?.atom === "mana");
   if (printed.length !== 1 || cost.some((a) => a?.atom === "waterbend")) return [];
-  const bill = parseManaCost(printed[0].cost);
-  if (bill.variable > 0) return [];
+  let bill = parseManaCost(printed[0].cost);
+  /* Its X counted in, in a match that taps for one (`xTaps`), as an {X} spell's is. */
+  if (bill.variable > 0) {
+    if (!xTaps(state)) return [];
+    bill = xCounted(bill, X ?? 0);
+  }
   bill.generic += abilityCostIncrease(state, player);
   bill.generic -= Math.min(bill.generic, Math.max(0, abilityLess(state, player, id, ability, aim)));
   const busy = new Set([id, costChoice?.tap, ...(costChoice?.tapAll ?? []), ...(costChoice?.crew ?? [])].filter((v) => v !== undefined));

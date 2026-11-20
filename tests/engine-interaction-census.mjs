@@ -164,8 +164,10 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
 
   /* An advisory class is still measured: say how many, so a reader sees it, and prove the policy is what the doc says. */
   const advisory = whole.findings.filter(isAdvisory);
-  eq(Object.keys(CLASS_POLICY), ["ACTIVATION_ONLY_WHEN_FLOATED"], "one advisory class: a costed ability offered only once the mana is floated (no player report confirms it)");
-  eq(advisory.every((f) => f.code === "ACTIVATION_ONLY_WHEN_FLOATED"), true, "and only that class is excluded from the ratchet");
+  /* Changed on purpose (ROB-441): no advisory class is left. A costed ability offered only once the mana is floated was advisory
+     until abilityTaps (ROB-317) took it to none; it is enforced now, and a new one fails the ratchet like a cast does. */
+  eq(Object.keys(CLASS_POLICY), [], "no advisory class: an ability offered only once the mana is floated is enforced, as a cast is");
+  eq(advisory, [], "and nothing is excluded from the ratchet");
   console.log(`  advisory, not enforced: ${new Set(advisory.map((f) => f.card)).size} cards offer a costed ability only once the mana is floated (${advisory.length} findings)`);
 
   /* Non-vacuity: a parser that finds nothing would pass the ratchet. */
