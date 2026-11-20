@@ -440,6 +440,15 @@ function costChoice(state, awaiting) {
     return {id: `choose-cost:${action.objectId}${action.kind === "activate" ? `:${action.abilityId}` : ""}`, title: `${name}: which mana pays for it`,
       mode: "one", min: 1, max: 1, cost: "pool", options};
   }
+  /* Tapped for it (`abilityTaps`), more than one way: which sources -- as a cast is asked, below. */
+  if (action.kind === "activate" && action.autoTap === true && action.tapPlan === undefined) {
+    const options = abilityTapPlans(state, player, action, TAP_CHOICES).map((plan, index) => ({index, label: planWords(state, plan), taps: plan.taps, payment: plan.payment}));
+    for (const option of options) {
+      const alike = options.filter((o) => o.label === option.label);
+      if (alike.length > 1) alike.forEach((o, k) => { o.label = `${o.label} (${k + 1})`; });
+    }
+    return {id: `choose-cost:${action.objectId}:${action.abilityId}`, title: `${state.objects[action.objectId]?.card ?? "That card"}: what to tap for it`, mode: "one", min: 1, max: 1, cost: "mana", options};
+  }
   if (action.kind === "activate") return activationCostChoice(state, awaiting);
   const name = state.objects[action.objectId]?.card ?? "That card";
   /* "Tap any number of untapped creatures you control" (Burn at the Stake): which, from none up to all of them. */
@@ -568,7 +577,8 @@ export function resolveCastCost(state, awaiting, indices, amounts = null) {
   /* The ways to tap, read as the question read them: as the card is cast (asCast) -- an Adventure as itself (CR 715.3a), so
      mana in the pool that would pay the creature but not its Adventure (Smaug, the Great Calamity's Spew Flame) is not read
      as paying it, which would leave no way to tap. */
-  const way = choice.cost === "mana" ? asCast(state, awaiting.action, () => castTapPlans(state, awaiting.player, awaiting.action, TAP_CHOICES))[picked[0]] : null;
+  const way = choice.cost === "mana" ? (awaiting.action.kind === "activate" ? abilityTapPlans(state, awaiting.player, awaiting.action, TAP_CHOICES)
+    : asCast(state, awaiting.action, () => castTapPlans(state, awaiting.player, awaiting.action, TAP_CHOICES)))[picked[0]] : null;
   const action = {...structuredClone(awaiting.action), ...(choice.cost === "pool" ? {payWith: choice.options[picked[0]].key, ...(choice.options[picked[0]].riders ? {payRiders: choice.options[picked[0]].riders} : {})} : way ? {tapPlan: way.key} : choice.cost === "tap" ? {flashbackTap: ids}
     : choice.cost === "flashbackSacrifice" ? {flashbackSacrifice: ids} : choice.cost === "delve" ? {delveExile: ids} : choice.cost === "convoke" ? {convokeTap: ids} : choice.cost === "waterbend" ? {waterbendTap: ids} : choice.cost === "tapAny" ? {tapChosen: ids} : choice.cost === "sacrificeAny" ? {sacrificeChosen: ids} : choice.cost === "behold" ? {beheld: ids} : choice.cost === "exileOthers" ? {othersExiled: ids} : choice.cost === "sacrifice" ? {sacrificeSet: ids} : choice.cost === "escalate" ? {escalateTapped: ids}
     : choice.cost === "counters" ? {counterSet: picked.map((i) => ({id: choice.options[i].cardId, counter: choice.options[i].counter}))} : {escapeExile: ids})};
@@ -1765,6 +1775,34 @@ function permittedTap(state, player, from, id, via) {
   return !!ability && ability.payLife === undefined && ability.free !== true && ability.manaInstead === undefined
     && ability.anyMana !== true && ability.additionalCost === undefined;
 }
+/* AN ACTIVATED ABILITY TAPPED FOR TOO (`abilityTaps`; ROB-317, Rob's playtest 2026-10-29: "Ash Barrens ... Basic Land Cycling. 1,
+   discard card and search library for a land card. That option is not presented to me"). An ability was offered only when the
+   pool already paid its mana, so Basic landcycling {1} with an untapped land and nothing floating was never offered -- the same
+   as a cast from exile before `permittedTaps` (the interaction census's ACTIVATION_ONLY_WHEN_FLOATED). Now its mana is tapped
+   for as a cast's is, from the sources that are untapped, never the ability's own source nor a permanent its cost taps, nor
+   for an {X} or a waterbend cost (those are paid as before). Only a match whose pod asks carries the key, so every game
+   launched before offers, and replays, what it did. */
+const abilityTaps = (state) => state.abilityTaps === true && pooledTaps(state);
+/* The ways to tap for an ability's mana (`action.autoTap`): its printed mana with an increase and a reduction applied, as
+   costPayment reckons it; the sources its own cost uses kept out. */
+function abilityFunding(state, player, id, ability, X, aim, limit, costChoice = null) {
+  if (!abilityTaps(state) || !ability) return [];
+  const cost = costOf(state, player, ability, X, id) ?? [];
+  const printed = cost.filter((a) => a?.atom === "mana");
+  if (printed.length !== 1 || cost.some((a) => a?.atom === "waterbend")) return [];
+  const bill = parseManaCost(printed[0].cost);
+  if (bill.variable > 0) return [];
+  bill.generic += abilityCostIncrease(state, player);
+  bill.generic -= Math.min(bill.generic, Math.max(0, abilityLess(state, player, id, ability, aim)));
+  const busy = new Set([id, costChoice?.tap, ...(costChoice?.tapAll ?? []), ...(costChoice?.crew ?? [])].filter((v) => v !== undefined));
+  const units = tapUnits(state, player, undefined, pooledTaps(state)).filter((u) => !busy.has(u.id));
+  return fundingPlans(state, player, id, bill, limit, units, state.players[player].life);
+}
+/** The ways to tap for this activation (`action.autoTap`), up to `limit`. */
+function abilityTapPlans(state, player, action, limit = 2) {
+  const ability = chosenFor(abilitiesOf(state, action.objectId).find((a) => a.id === action.abilityId), state.objects[action.objectId]);
+  return abilityFunding(state, player, action.objectId, ability, action.x ?? 0, action.targets, limit, action.costChoice ?? null);
+}
 const tapCastable = (state, player, action) => tapZone(state, player, action.from, action.objectId, action.via ?? null) && !action.free && !action.flashback
   && action.escape === undefined && action.alternative === undefined && (action.x === undefined || action.payLifeX === true || xTaps(state))
   && (pooledTaps(state) || poolSize(poolFor(state, player, {spell: action.objectId})) === 0);
@@ -2363,7 +2401,11 @@ function abilityOffers(state, player, id, ability) {
     /* Waterbend (CR 701.67a): beside the pool's payment, one offer that taps artifacts and creatures for part of it, when
        some may be -- which ones, and the mana for the rest, asked once it is taken. */
     const bends = (waterbendRange(state, player, id, ability, X ?? 0, abilityLess(state, player, id, ability, aim))?.most ?? 0) > 0;
-    if (!plain && !bends) continue;
+    /* Not from the pool, but by tapping for it (`abilityTaps`): the rest of its cost payable as it is, and its mana by untapped
+       sources -- one offer, the sources tapped as it is activated, which ones asked when more than one way taps. */
+    const rest = !plain && !bends && abilityTaps(state) ? (costOf(state, player, ability, X ?? 0, id) ?? []).filter((a) => a?.atom !== "mana") : null;
+    const tapsFor = rest !== null && costPayment(state, player, id, rest, X ?? 0, 0) !== null && abilityFunding(state, player, id, ability, X ?? 0, aim, 1).length > 0;
+    if (!plain && !bends && !tapsFor) continue;
     /* A sacrifice of X (Chatterfang): the X of this offer, as a number of permanents. */
     const printedAtom = sacrificeAtom(ability.cost), atom = printedAtom?.count === "X" ? {...printedAtom, count: sacrificeCount(printedAtom, X)} : printedAtom;
     const back = returnAtom(ability.cost), tossPrinted = discardAtom(ability.cost);
@@ -2390,14 +2432,16 @@ function abilityOffers(state, player, id, ability) {
       /* A card of the graveyard to exile: one offer each; none there, and it can't be activated (CR 118.3). */
       : grave ? graveyardChoices(state, player, id, grave.selector).map((c) => ({exile: c}))
       : anyCounter ? Object.entries(object.counters ?? {}).filter(([, n]) => n > 0).map(([counter]) => ({counter})) : [null];
-    for (const payment of [...(plain ? [plain] : []), ...(bends ? [{waterbend: true}] : [])])
+    for (const payment of [...(plain ? [plain] : []), ...(bends ? [{waterbend: true}] : []), ...(tapsFor ? [{autoTap: true}] : [])])
     for (const costChoice of fodder)
+    /* Tapped for: not with a source its own cost taps or crews with (abilityFunding keeps them out). */
+    if (!payment.autoTap || abilityFunding(state, player, id, ability, X ?? 0, aim, 1, costChoice).length > 0)
     /* What rider mana it spends, when it must spend some (rules/restricted-mana.mjs, riderChoices). Not a waterbend offer's:
        its mana is known only once the permanents it taps are picked, so the rest is paid as anything but a spell is, the
        plain mana first and the rider mana after (spendFor). */
-    for (const riders of (payment.payWays || payment.waterbend ? null : riderChoices(state, player, {ability: id}, payment.mana?.mana ?? {})) ?? [undefined])
+    for (const riders of (payment.payWays || payment.waterbend || payment.autoTap ? null : riderChoices(state, player, {ability: id}, payment.mana?.mana ?? {})) ?? [undefined])
       actions.push(...withModesOrTargets(state, {kind: "activate", objectId: id, abilityId: ability.id, label: object.card, text: ability.text,
-        ...(payment.waterbend ? {payment: null, waterbend: true} : offeredPayment(payment)), ...(X !== null ? {x: X} : {}), ...ridersOffer(state, riders),
+        ...(payment.waterbend ? {payment: null, waterbend: true} : payment.autoTap ? {payment: null, autoTap: true} : offeredPayment(payment)), ...(X !== null ? {x: X} : {}), ...ridersOffer(state, riders),
         /* A loyalty ability says its loyalty cost (CR 606.4), for a pilot to weigh. */
         ...(ability.loyalty !== undefined ? {loyalty: ability.loyalty === "-X" ? -(X ?? 0) : ability.loyalty} : {}),
         /* What its player picks once it is taken: the permanents to sacrifice, the counters to remove (choose-cost). */
@@ -2974,6 +3018,11 @@ function performOffered(state, player, action, during) {
       state.awaiting = {kind: "choose-cost", player, action: structuredClone(action)};
       return [];
     }
+    /* AN ABILITY THAT TAPS FOR ITSELF (`abilityTaps`), more than one way: which sources, asked the same way. */
+    if (action.kind === "activate" && action.autoTap === true && action.tapPlan === undefined && abilityTapPlans(state, player, action, 2).length > 1) {
+      state.awaiting = {kind: "choose-cost", player, action: structuredClone(action)};
+      return [];
+    }
     /* WATERBEND (CR 701.67a, 601.2h): which artifacts and creatures to tap, then -- the pool paying the rest more than one way --
        which mana; asked before anything is paid. */
     if (action.kind === "activate" && action.waterbend === true && (!Array.isArray(action.waterbendTap) || (action.payWith === undefined && abilityPayments(state, player, action).length > 1))) {
@@ -3405,6 +3454,15 @@ function performOffered(state, player, action, during) {
     const object = state.objects[action.objectId];
     /* With its permanent's choice, as it was offered: the stack entry's targets are the chosen type's. */
     const ability = chosenFor(abilitiesOf(state, action.objectId).find((candidate) => candidate.id === action.abilityId), object);
+    /* Tapped for (`abilityTaps`): the way picked, or the one there is -- each source's mana ability activated, as its player
+       would (CR 602.2b, 601.2g), before the cost is paid from the pool. */
+    if (action.autoTap === true) {
+      const ways = abilityTapPlans(state, player, action, TAP_CHOICES);
+      const tapped = action.tapPlan !== undefined ? ways.find((w) => w.key === action.tapPlan) : ways.length === 1 ? ways[0] : null;
+      if (!tapped) throw new Error(`${object.card}'s ability cannot be tapped for that way now`);
+      const units = new Map(tapUnits(state, player, undefined, pooledTaps(state)).map((u) => [u.id, u]));
+      for (const tap of tapped.taps) events.push(...perform(state, player, {kind: "activate-mana", objectId: tap.id, label: state.objects[tap.id].card, ...units.get(tap.id).via[tap.color]}));
+    }
     /* Recomputed, as a cast's payment is: the pool may have moved since the offer. */
     /* With the way its player chose (`payWith`, X8b), when the pool pays it more than one way. */
     const payment = costPayment(state, player, action.objectId, costOf(state, player, ability, action.x ?? 0, action.objectId), action.x ?? 0, abilityLess(state, player, action.objectId, ability, action.targets), action.payWith, bentFor(action));
