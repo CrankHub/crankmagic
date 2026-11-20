@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 704 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 705 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 `.claude/skills/crankmagic-refresh` is the judgment around it. There are 704 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
@@ -1378,6 +1378,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-sacrifice-noun` — `tests/engine-sacrifice-noun.mjs` (a sacrifice question says what may be sacrificed: Winter, Tormented Loner asks for "a creature or planeswalker", its options unchanged; a question with one kind reads as it did (ROB-323))
 - `engine-ability-taps` — `tests/engine-ability-taps.mjs` (an activated ability is tapped for as a cast is, in a table's new matches: Rob's Ash Barrens cycled from the hand with a Wastes untapped -- exactly {1}, discarded once, an ability not a land play, a basic land only, fail-to-find -- which land asked when two could pay, a {T} cost's source never its own mana; a match launched before offers what it did (ROB-317))
 - `live-deck-cards` — `tests/live-deck-cards.mjs` (the 537 cards of Rob's eight live decks D1-D8, by name only: each defined and playable at the table, every scenario of theirs passing, the interaction census finding nothing about them outside its baseline; the games from the private lists run locally with `tools/fuzz-live.mjs --backup` (ROB-94))
+- `engine-hybrid-taps` — `tests/engine-hybrid-taps.mjs` (monocolored hybrid ({2/W}) tapped for each way in a table's new matches: Spectral Procession from three Plains, from two Plains and two Wastes, from six Wastes, not from three; Temur Tawnyback; a match launched before offers what it did (ROB-354))
 - `engine-pay-choice` — `tests/engine-pay-choice.mjs`
 - `staging-check` — `tests/staging-check.mjs`
 - `engine-cards-pb1` — `tests/engine-cards-pb1.mjs`
