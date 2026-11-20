@@ -174,8 +174,10 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
   ok(whole.directory.subjects >= 6000, `Layer B costed ${whole.directory.subjects} spells and abilities, under the floor 6000`);
   ok(whole.directory.exercised / whole.directory.subjects >= 0.9, `Layer B exercised ${whole.directory.exercised} of ${whole.directory.subjects}: under nine in ten`);
   ok(whole.candidates.exercised >= 90, `Layer B exercised ${whole.candidates.exercised} of the committed candidates' ${whole.candidates.subjects}`);
-  eq([...new Set(whole.findings.filter((f) => !isAdvisory(f)).map((f) => f.card))].sort(), ["Burn at the Stake", "Reigning Victor", "Spectral Procession", "Temur Tawnyback"],
-    "the cast findings the table's flags leave: an additional cost that taps creatures, and three {2/X} symbols in one cost");
+  /* Changed on purpose (ROB-354, hybridTaps): Reigning Victor, Spectral Procession and Temur Tawnyback, three {2/X} symbols in
+     one cost, are tapped for now; the one the table's flags leave is an additional cost that taps creatures. */
+  eq([...new Set(whole.findings.filter((f) => !isAdvisory(f)).map((f) => f.card))].sort(), ["Burn at the Stake"],
+    "the cast finding the table's flags leave: an additional cost that taps creatures");
   ok(!whole.findings.some((f) => f.card === "Tezzeret's Gambit"), "Tezzeret's Gambit, ROB-326, is not among them");
 }
 
