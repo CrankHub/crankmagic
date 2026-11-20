@@ -11,7 +11,7 @@ BREAKS = [
     ('amass makes its subtype a card type again', 'game/engine/script/effects/asking.mjs',
      'apply: {addSubtypes: [params.subtype]}, until: "ever"}', 'apply: {addTypes: [params.subtype]}, until: "ever"}'),
     ('a waterbend offer names its rider mana again', 'game/engine/rules/actions.mjs',
-     '(payment.payWays || payment.waterbend ? null : riderChoices(', '(payment.payWays ? null : riderChoices('),
+     '(payment.payWays || payment.waterbend || payment.autoTap ? null : riderChoices(', '(payment.payWays || payment.autoTap ? null : riderChoices('),
     ('a game that throws ends the run', TOOL,
      '  catch (error) {return {exception: String(error?.message ?? error)};}', '  catch (error) {throw error;}'),
     ('any color identity', TOOL,
