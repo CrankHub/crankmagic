@@ -928,6 +928,9 @@ globalThis.CrankBoard = Object.seal({
     /* WHY NOT (ROB-24): a card of the person's own that nothing offered plays says why, from the room (`why`). */
     const label = `${named}${look ? `, ${lookWords(c.appearance)}` : ""}${controlled ? `, ${controlSummary(c)}` : ""}${state.length ? ", " + state.join(", ") : ""}${bright ? `: ${can.join(" or ")}${opts.length > can.length ? `, ${opts.length} ways` : ""}` : c.why ? `. ${c.why}` : ""}`;
     if (!c.name && !c.faceDown) return `<div class="cm-bcard is-back" role="img" aria-label="${e(label)}"></div>`;
+    /* AN EMBLEM (CR 114; ROB-192: Elspeth, Sun's Champion's −7 left nothing to see): no card and no picture, so a tile that says
+       what it is and what it does, read whole by a screen reader. */
+    if (c.emblem) return `<div class="cm-bcard cm-bcard-emblem" role="img" tabindex="0" aria-label="${e(`${c.name}: ${c.text || ""}`)}"><b>Emblem</b><small>${e(c.text || "")}</small></div>`;
     /* NO NATIVE `title` ON A CARD (ROB-202, Luke's playtest): the browser draws it at the pointer, over the card's type line and
        rules text, and the page cannot move it. What it said is kept: "targeted by" is in the label above, and how to reorder is
        the card's aria-description. The hover pops the card up large, away from the pointer. */

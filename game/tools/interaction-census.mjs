@@ -289,7 +289,8 @@ export const UNPROBED_TABLE_FLAGS = Object.freeze(["preparedTaps"]);
    counted and printed and never fails: the engine behaves that way, but no player has been shown to meet it. Promote one to "hard"
    when a report confirms it or Rob decides the engine should offer it, then baseline what is left. */
 export const CLASS_POLICY = Object.freeze({
-  ACTIVATION_ONLY_WHEN_FLOATED: "advisory",
+  /* None now (ROB-441, Nov 20): ACTIVATION_ONLY_WHEN_FLOATED was advisory while ~890 cards offered a costed ability only from
+     floated mana; abilityTaps (ROB-317, Ash Barrens, a player's report) and its {X} abilities took it to none, so it is enforced. */
 });
 export const isAdvisory = (finding) => CLASS_POLICY[finding.code] === "advisory";
 
@@ -452,7 +453,7 @@ export function againstBaseline(findings, baseline = readBaseline()) {
 
 export const CLASS_OWNERS = {
   CAST_ONLY_WHEN_FLOATED: "ROB-354 (what the table's flags leave; {X} and Phyrexian casts are fixed by xTaps and phyrexianTaps, ROB-326)",
-  ACTIVATION_ONLY_WHEN_FLOATED: "advisory: abilityOffers prices against the pool only and castOffers has an autoTap branch; no player report confirms it (ROB-339, ROB-354)",
+  ACTIVATION_ONLY_WHEN_FLOATED: "ROB-441 (enforced since abilityTaps, ROB-317: Rob's Ash Barrens report; none left Nov 20)",
   PAYMENT_WAY_MISSING: "ROB-326",
   TARGET_UNION_NARROWED: "ROB-323 (Winter) and ROB-300",
   MODES_DROPPED: "ROB-300", MODES_COUNT: "ROB-300", SPREE_DROPPED: "ROB-300", WAY_KEYWORD_DROPPED: "ROB-300", CYCLING_DROPPED: "ROB-317",
