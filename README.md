@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 700 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 701 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1374,6 +1374,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-tap-to-cast` — `tests/engine-tap-to-cast.mjs`
 - `engine-phyrexian-taps` — `tests/engine-phyrexian-taps.mjs` (a spell with Phyrexian mana ({U/P}: {U} or 2 life, CR 107.4f) is offered and tapped for in each way, the caster asked which: Tezzeret's Gambit with three untapped Wastes, with blue, with life too low; Gitaxian Probe, Mental Misstep and Vraska, Betrayal's Sting; the AI takes mana before life (ROB-326))
 - `engine-prepared-every-card` — `tests/engine-prepared-every-card.mjs` (every Prepared card in the card data: each that enters prepared offers the copy of its spell as a spell, cast, unprepared and never a permanent; each prepared only on a condition does not enter prepared (ROB-432, RQ-04))
+- `engine-permitted-taps` — `tests/engine-permitted-taps.mjs` (a card cast through a permission, from exile, a graveyard or the top of a library, is tapped for as from the hand in a table's new matches: Rob's Purphoros exiled by Valakut Exploration and the card after it, an instant in response to Valakut's end step, Conspicuous Snoop and Muldrotha; the cost still counts; Bolas's Citadel still costs life; a match launched before offers what it did (ROB-226))
 - `engine-pay-choice` — `tests/engine-pay-choice.mjs`
 - `staging-check` — `tests/staging-check.mjs`
 - `engine-cards-pb1` — `tests/engine-cards-pb1.mjs`
