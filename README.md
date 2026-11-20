@@ -961,7 +961,8 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 705 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 710 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 709 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1373,7 +1374,10 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-planeswalkers` — `tests/engine-planeswalkers.mjs`
 - `engine-tap-to-cast` — `tests/engine-tap-to-cast.mjs`
 - `engine-phyrexian-taps` — `tests/engine-phyrexian-taps.mjs` (a spell with Phyrexian mana ({U/P}: {U} or 2 life, CR 107.4f) is offered and tapped for in each way, the caster asked which: Tezzeret's Gambit with three untapped Wastes, with blue, with life too low; Gitaxian Probe, Mental Misstep and Vraska, Betrayal's Sting; the AI takes mana before life (ROB-326))
+- `engine-prepared-every-card` — `tests/engine-prepared-every-card.mjs` (every Prepared card in the card data: each that enters prepared offers the copy of its spell as a spell, cast, unprepared and never a permanent; each prepared only on a condition does not enter prepared (ROB-432, RQ-04))
+- `engine-playtest-blink` — `tests/engine-playtest-blink.mjs` (the blink and flicker audit from Luke's playtest (UX-04): Brago with zero, one and three of its own nonland targets, Thassa up to one, Cloudshift and Ephemerate returning control, Flickerwisp's delayed return, and Claim Jumper's conditional Plains searches, on the saved cards (ROB-210))
 - `engine-permitted-taps` — `tests/engine-permitted-taps.mjs` (a card cast through a permission, from exile, a graveyard or the top of a library, is tapped for as from the hand in a table's new matches: Rob's Purphoros exiled by Valakut Exploration and the card after it, an instant in response to Valakut's end step, Conspicuous Snoop and Muldrotha; the cost still counts; Bolas's Citadel still costs life; a match launched before offers what it did (ROB-226))
+- `engine-sacrifice-noun` — `tests/engine-sacrifice-noun.mjs` (a sacrifice question says what may be sacrificed: Winter, Tormented Loner asks for "a creature or planeswalker", its options unchanged; a question with one kind reads as it did (ROB-323))
 - `engine-ability-taps` — `tests/engine-ability-taps.mjs` (an activated ability is tapped for as a cast is, in a table's new matches: Rob's Ash Barrens cycled from the hand with a Wastes untapped -- exactly {1}, discarded once, an ability not a land play, a basic land only, fail-to-find -- which land asked when two could pay, a {T} cost's source never its own mana; a match launched before offers what it did (ROB-317))
 - `live-deck-cards` — `tests/live-deck-cards.mjs` (the 537 cards of Rob's eight live decks D1-D8, by name only: each defined and playable at the table, every scenario of theirs passing, the interaction census finding nothing about them outside its baseline; the games from the private lists run locally with `tools/fuzz-live.mjs --backup` (ROB-94))
 - `engine-hybrid-taps` — `tests/engine-hybrid-taps.mjs` (monocolored hybrid ({2/W}) tapped for each way in a table's new matches: Spectral Procession from three Plains, from two Plains and two Wastes, from six Wastes, not from three; Temur Tawnyback; a match launched before offers what it did (ROB-354))
@@ -1736,4 +1740,6 @@ The `table-tabletop` suite checks the preview geometry and its browser interacti
 - `choice-cards` — representative and seeded random card simulations through the decision adapter.
 - `board-choice-flow` — popup routing, dependent choices, mana, combat and responsive screenshots.
 - `board-flow-art` — `tests/board-flow-art.mjs` (the choice pop-up when a picture does not come: with every card picture refused, Getaway Glamer's source art and its targets' thumbnails are card-shaped tiles with their names, never a broken image, at 1440 and on a phone (ROB-341))
+- `board-spree-flow` — `tests/board-spree-flow.mjs` (a spree card stepped through the board: Getaway Glamer's casts asked as how many modes, then which, then each mode's target, one layer at a time and no mana among them; Confirm sends the room's one option, Back steps back, Cancel sends nothing (ROB-209))
 - `board-library-top` — `tests/board-library-top.mjs` (a library's revealed top card on the board: Conspicuous Snoop's Raging Goblin face up in Table, Focus and 3D, to its owner and an opponent, pressed for its cast; an unseen library face down; the held draw still draws, the card on its face (ROB-227))
+- `board-emblem` — `tests/board-emblem.mjs` (an emblem on the board: Elspeth, Sun's Champion's −7 emblem in Rob's command zone, a tile that says what it does, in Table and Focus, to Rob and to Maya (ROB-192))

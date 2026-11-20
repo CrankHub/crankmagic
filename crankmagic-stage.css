@@ -1975,6 +1975,12 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 #matrix-v2 .cm-board .cm-required-popup.is-paused .cm-board-cancel-why{margin:0 0 8px}
 @media(max-width:500px){#matrix-v2 .cm-board .cm-required-popup.is-paused{left:16px!important;right:16px!important;width:auto!important}}
 
+/* AN EMBLEM (CR 114; ROB-192): a tile in its owner's command zone that says what it is and what it does -- no card, no picture. */
+.cm-bcard.cm-bcard-emblem{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:4px 3px 18px;text-align:center;overflow:hidden;
+  background:linear-gradient(160deg,#3b2f63,#1d1838);border:1px solid #b7a3ff;color:#f3efff}
+.cm-bcard.cm-bcard-emblem b{color:#fff;font-size:clamp(7px,.95vw,11px);letter-spacing:.06em;text-transform:uppercase}
+.cm-bcard.cm-bcard-emblem small{color:#f3efff;font-size:clamp(7px,.8vw,10px);line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cm-bcard-emblem:focus-visible{outline:2px solid #fff;outline-offset:2px}
 /* THE CHOICE POP-UP'S ART WHEN THE PICTURE DOES NOT COME (ROB-341): the card's name on a card-shaped tile, as the board draws it. */
 #matrix-v2 .cm-board .cm-choice-flow .is-artless{display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;
   background:#f6f1e4;color:#1f1c18;border:1px solid #c9bfa8;font-weight:600;line-height:1.15;padding:4px;box-sizing:border-box;overflow-wrap:anywhere}

@@ -141,7 +141,7 @@
       ]
     },
     {
-      "name": "-7 after three turns of +1: Rob's creatures, an Elf cast afterward too, are +2/+2 with flying for the rest of the game; Maya's Bear is not",
+      "name": "-7 after three turns of +1: Rob's creatures, an Elf cast afterward too, are +2/+2 with flying for the rest of the game; Maya's Bear is not; the emblem is in Rob's command zone, where the board shows it",
       "setup": [
         {
           "seat": 0,
@@ -258,6 +258,25 @@
             "turn": 9,
             "phase": "MAIN1"
           }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "command",
+              "cards": [
+                "Elspeth, Sun's Champion emblem"
+              ]
+            },
+            {
+              "seat": 1,
+              "of": 0,
+              "zone": "command",
+              "cards": [
+                "Elspeth, Sun's Champion emblem"
+              ]
+            }
+          ]
         }
       ],
       "expect": [
