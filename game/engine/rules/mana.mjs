@@ -326,6 +326,35 @@ export function phyrexianVariants(cost, life = 0) {
 }
 
 /**
+ * MONOCOLORED HYBRID, EACH WAY (CR 107.4e; ROB-354): `{2/W}` is one white or two mana of any kind, so a cost with them is
+ * tapped for as each of its plain variants -- every such symbol its color or its generic two -- which the tap planners take
+ * (tapPlans leaves the symbol itself alone). Each `{cost, generic}`: the plain cost, and which symbols went generic (their
+ * colors, sorted), so two ways that differ only in which white symbol went generic are one way. The colored ways first: they
+ * tap the fewest sources.
+ */
+export function monohybridVariants(cost) {
+  const symbols = cost.symbols.map((s, i) => [s, i]).filter(([s]) => s.kind === "monohybrid");
+  if (!symbols.length) return [{cost, generic: []}];
+  const seen = new Set(), found = [];
+  for (let mask = 0; mask < 1 << symbols.length; mask += 1) {
+    const two = new Set(symbols.filter((_, bit) => mask & (1 << bit)).map(([, i]) => i));
+    const generic = symbols.filter(([, i]) => two.has(i)).map(([s]) => s.color).sort();
+    if (seen.has(generic.join(""))) continue;
+    seen.add(generic.join(""));
+    const colored = {...cost.colored};
+    let more = 0;
+    const kept = cost.symbols.map((s, i) => {
+      if (s.kind !== "monohybrid") return s;
+      if (two.has(i)) { more += s.amount; return {kind: "generic", amount: s.amount}; }
+      colored[s.color] += 1;
+      return {kind: "colored", color: s.color};
+    });
+    found.push({cost: {...cost, symbols: kept, colored, generic: cost.generic + more}, generic});
+  }
+  return found.sort((a, b) => a.generic.length - b.generic.length || a.generic.join("").localeCompare(b.generic.join("")));
+}
+
+/**
  * The ways to pay `cost` by tapping these units, up to `limit`, each `{taps: [{id, color}], key}`: the units to tap and the
  * color each makes, and the kinds tapped. The least flexible first -- a colorless source before a basic, a basic before a
  * dual, a dual before a source of any color -- so the first way leaves the most choices untapped.
