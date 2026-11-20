@@ -496,6 +496,9 @@ export function tableOn(storage, {cards = basicCards, candidates = () => null, r
          (ROB-226, Rob's playtest 2026-10-29: Valakut Exploration's exiled Purphoros could not be played): new matches only
          (rules/actions.mjs, `permittedTaps`). */
       permittedTaps: true,
+      /* An activated ability tapped for too, as a cast is (ROB-317, Rob's playtest 2026-10-29: Ash Barrens's Basic landcycling
+         was not offered with a land untapped and nothing floating): new matches only (rules/actions.mjs, `abilityTaps`). */
+      abilityTaps: true,
       /* A person may yield the rest of an opponent's turn (Linear ROB-13, the Oct 16 handoff): new matches only, so one
          launched before is asked as it was (room.mjs, `yieldTurn`). */
       yieldTurn: true,
