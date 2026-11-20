@@ -88,4 +88,16 @@ const poolTotal = (s) => Object.values(s.players[0].pool ?? s.players[0].mana ??
   applyAction(s, 0, draw);
   eq([named(s, "graveyard"), zone(s, "battlefield").filter((o) => o.tapped).map((o) => o.card)], [["Mind Stone"], ["Wastes"]], "the Wastes pays, and Mind Stone is sacrificed");
 }
+{
+  /* Mana already floating (a game of Rob's live decks, seed 4: "Nylea, Keen-Eyed's ability cannot be paid for now"). With
+     {W}{U}{R} in the pool and a Forest untapped, Nylea's {2}{G} taps the Forest -- and the pool, {W}{U}{R}{G}, then pays the {2}
+     three ways. What the Forest was tapped for, and the floating mana the plan priced in, is the way taken. */
+  const s = runScenario({name: "floating", ...TABLE, library: ["Forest", "Forest"], setup: [{seat: 0, zone: "battlefield", cards: ["Nylea, Keen-Eyed", "Plains", "Island", "Mountain", "Forest"]}],
+    steps: [{tap: "Plains"}, {tap: "Island"}, {tap: "Mountain"}]}, index.definition, {}).state;
+  const reveal = offers(s, "Nylea, Keen-Eyed").find((a) => a.autoTap);
+  ok(reveal, "{W}{U}{R} floating and a Forest untapped: Nylea's {2}{G} is offered, tapped for");
+  applyAction(s, 0, reveal);
+  if (s.awaiting) resolveAwaiting(s, [0], null, rng);
+  eq([s.stack.length, zone(s, "battlefield").filter((o) => o.card === "Forest")[0]?.tapped], [1, true], "activated: the Forest tapped and the ability on the stack, paid the way it was tapped for");
+}
 console.log(`engine-ability-taps: ${checks} checks passed — an activated ability is tapped for as a cast is, in a table's new matches: Rob's Ash Barrens cycled from the hand with a Wastes untapped (exactly {1}, discarded once, an ability not a land play, a basic land only, fail-to-find), which land asked when two could pay, a {T} cost's source never its own mana; a match launched before offers what it did (ROB-317).`);
