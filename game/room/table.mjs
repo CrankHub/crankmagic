@@ -492,6 +492,16 @@ export function tableOn(storage, {cards = basicCards, candidates = () => null, r
       /* A spell with Phyrexian mana ({U/P}: {U} or 2 life, CR 107.4f) tapped for too, in each way its symbols can be paid, the
          caster asked which (ROB-326, Rob's playtest 2026-10-29: Tezzeret's Gambit): new matches only (rules/actions.mjs, `phyrexianTaps`). */
       phyrexianTaps: true,
+      /* A card an effect lets a player cast from exile, a graveyard or the top of a library tapped for too, as from the hand
+         (ROB-226, Rob's playtest 2026-10-29: Valakut Exploration's exiled Purphoros could not be played): new matches only
+         (rules/actions.mjs, `permittedTaps`). */
+      permittedTaps: true,
+      /* An activated ability tapped for too, as a cast is (ROB-317, Rob's playtest 2026-10-29: Ash Barrens's Basic landcycling
+         was not offered with a land untapped and nothing floating): new matches only (rules/actions.mjs, `abilityTaps`). */
+      abilityTaps: true,
+      /* Monocolored hybrid ({2/W}: one white or two of any kind) tapped for, each way (ROB-354: Spectral Procession, Reigning Victor,
+         Temur Tawnyback): new matches only (rules/actions.mjs, `hybridTaps`). */
+      hybridTaps: true,
       /* A person may yield the rest of an opponent's turn (Linear ROB-13, the Oct 16 handoff): new matches only, so one
          launched before is asked as it was (room.mjs, `yieldTurn`). */
       yieldTurn: true,
