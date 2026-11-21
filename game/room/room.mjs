@@ -83,7 +83,7 @@
  * match keeps the key, so it reopens and replays with the same cards; a pod without it never seats one.
  */
 import {createState, addObject, shownName, shownFaceUp} from "../engine/state/index.mjs";
-import {beginGame, advance, awaitingChoice, resolveAwaiting} from "../engine/rules/turn.mjs";
+import {beginGame, advance, awaitingChoice, resolveAwaiting, cancelWay, cancelAwaiting} from "../engine/rules/turn.mjs";
 import {legalActions, applyAction, nothingToDo, whyNot, explainAbilityless, escapeWays, flashbackCost, tappersInWords, castTapPlans, tapWords, manaSources} from "../engine/rules/actions.mjs";
 import {paymentWords} from "../engine/rules/mana.mjs";
 import {beforeTap, tapTaken, untappable, untapTaken} from "../engine/rules/untap-mana.mjs";
@@ -911,6 +911,16 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
     explainAbilityless(state, projected, seat, actions);
     return projected;
   }
+  /* HOW THE QUESTION MAY BE CANCELED (Linear ROB-205; rules/turn.mjs, cancelWay), on the seat's own decision in its view:
+     `{way: "back-out"}` (its own cast or activation, ended at once), `{way: "confirm", ends}` (an answer the game owes, ended
+     on a second press), or `{way: null, why}` (the rules need the answer; `why` says what to do). Holding priority has none:
+     passing is how a person declines to act. */
+  function withCancel(decision) {
+    if (!decision || pendingActions) return decision;
+    const how = cancelWay(state);
+    if (!how) return decision;
+    return {...decision, cancel: how.way ? {way: how.way, ...(how.ends ? {ends: how.ends} : {})} : {way: null, why: how.why}};
+  }
   /* A person's input that failed part-way, undone (`restore`) and refused: the rules' refusal as they said it, and any other
      failure -- the engine's, in the play that followed -- as the room's, with what the person can still do. */
   async function undone(error) {
@@ -1078,7 +1088,7 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       const keepMana = beats.keepStepMana === true ? {keepStepMana: seats.flatMap((s, seat) => (s.pilot !== "house" ? [seat] : []))} : {};
       /* And whether a cast tapped for tops up floating mana and taps a source for all it makes (`pooledTaps`, rules/actions.mjs):
          a match launched before it lacks the key, and so offers what it offered then. */
-      const pooled = {...(pod && pod.pooledTaps === true ? {pooledTaps: true} : {}), ...(pod && pod.xTaps === true ? {xTaps: true} : {}), ...(pod?.preparedTaps === true ? {preparedTaps: true} : {}), ...(pod?.phyrexianTaps === true ? {phyrexianTaps: true} : {})};
+      const pooled = {...(pod && pod.pooledTaps === true ? {pooledTaps: true} : {}), ...(pod && pod.xTaps === true ? {xTaps: true} : {}), ...(pod?.preparedTaps === true ? {preparedTaps: true} : {}), ...(pod?.phyrexianTaps === true ? {phyrexianTaps: true} : {}), ...(pod?.permittedTaps === true ? {permittedTaps: true} : {}), ...(pod?.abilityTaps === true ? {abilityTaps: true} : {}), ...(pod?.hybridTaps === true ? {hybridTaps: true} : {})};
       pilotPicks = beats.pilotPicks === true;
       try {state = createState({matchId, seed, players: seats.map((s) => ({name: s.name})), ...rules, ...(beats.drawBeat ? {drawBeat: true} : {}), ...pooled, ...anyStep, ...keepMana});}
       catch (error) {throw new RoomError(400, error.message);}
@@ -1127,7 +1137,7 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
         departures: structuredClone(departures),
         seats: api.seats,
         waitingOn: pendingSeat === null ? null : seats[pendingSeat].seatId,
-        decision: mine ? describeDecision(state, combatWords(state, structuredClone(controller.pending)), pendingActions, projected) : null,
+        decision: mine ? withCancel(describeDecision(state, combatWords(state, structuredClone(controller.pending)), pendingActions, projected)) : null,
         state: projected,
         /* What this seat's permanents could tap for (actions.mjs, manaSources): the board's Mana Pool. */
         manaSources: deriving(state, () => manaSources(state, seat)),
@@ -1209,7 +1219,8 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       if (entry.kind === "end") return api.end(entry.seat);
       if (entry.kind === "prefer") return api.prefer(entry.seat, entry);
       if (entry.kind === "yield") return api.yieldTurn(entry.seat, entry);
-      if (entry.kind !== "answer") throw new RoomError(400, `Tape entry ${entry.n} is not an answer, a leave, an end, a way of playing or a yield.`);
+      if (entry.kind === "cancel") return api.cancel(entry.seat, entry);
+      if (entry.kind !== "answer") throw new RoomError(400, `Tape entry ${entry.n} is not an answer, a leave, an end, a way of playing, a yield or a cancel.`);
       const seat = seatIndex(entry.seat);
       if (seat < 0 || pendingSeat !== seat) throw new RoomError(409, `The tape parts from the game at entry ${entry.n}: it answers for ${entry.seat}, and the game is waiting on ${pendingSeat === null ? "no one" : seats[pendingSeat].seatId}.`);
       const decisionId = controller.pending?.id ?? null;
@@ -1311,6 +1322,48 @@ function roomOn(storage, matchId, cards, makePilot = seatPilot, slice = Infinity
       tape({kind: "end", seat: seatId});
       note(`${seats[seat].name} ended the game for everyone · not finished`);
       pendingSeat = null; pendingActions = null;
+      await persist();
+      return api;
+    },
+
+    /**
+     * CANCEL (Linear ROB-205; Rob, 2026-11-19: "If I press 'Cancel' that means I'm canceling the action. I DON'T want to
+     * resume it."): the seat's pending question canceled as the engine says it may be (rules/turn.mjs, cancelWay). Its own
+     * cast or activation, stopped to ask targets or payment, is backed out: nothing of it happened, nobody else saw it begin,
+     * and no history line names the card from their hand. An answer the game owes, confirmed -- a trigger taken off the
+     * stack, the rest of their own spell or ability, no attackers or no blockers -- is said in the history for the table
+     * (Rob's decision 6 of 2026-11-19). On the tape, so a replay cancels where the game did. A question the rules need
+     * answered is refused (422) saying what to do instead; one no longer open, or none, is 409.
+     */
+    async cancel(seatId, {choiceId} = {}) {
+      const seat = seatIndex(seatId);
+      if (seat < 0) throw new RoomError(403, "That seat is not at this table.");
+      if (finished()) throw new RoomError(409, "This game is over.");
+      notWhileContinuing("You can cancel");
+      const pending = controller.pending;
+      if (pendingSeat !== seat || !pending) throw new RoomError(409, "You are not being asked anything, so there is nothing to cancel.");
+      if (choiceId !== undefined && choiceId !== null && choiceId !== pending.id) throw new RoomError(409, "That question is no longer open. Cancel the one your view shows now.");
+      if (pendingActions) throw new RoomError(422, "Holding priority is not a question to cancel: pass, or choose an action.", {refused: true});
+      const how = cancelWay(state);
+      if (!how?.way) throw new RoomError(422, how?.why ?? "There is nothing to cancel.", {refused: true});
+      const decisionId = pending.id, kind = state.awaiting.kind;
+      begin();
+      withdraw();
+      tape({kind: "cancel", seat: seatId, choiceId: decisionId});
+      let done;
+      answering = decisionId;
+      try {done = cancelAwaiting(state, rng);}
+      catch (error) {answering = null; await restore(); throw new RoomError(422, error.message, {refused: true});}
+      try {
+        write(done.events);
+        step.acted = true;
+        const who = seats[seat].name;
+        if (done.way === "back-out") playBack = null;
+        else if (done.ends === "trigger") note(`${who} canceled the ${done.name ?? "triggered ability"} trigger · it left the stack`);
+        else if (done.ends === "resolution") note(`${who} canceled the rest of ${done.name ?? "their spell or ability"}`);
+        else note(`${who} canceled ${kind === "declare-attackers" ? "attacking · no attackers" : "blocking · no blockers"}`);
+      } finally {answering = null;}
+      try {drive();} catch (error) {throw await undone(error);}
       await persist();
       return api;
     },

@@ -136,6 +136,14 @@ export function createState(pod) {
     /* And a spell with Phyrexian mana tapped for too, in each way its symbols can be paid, {U} or 2 life (rules/actions.mjs, `phyrexianTaps`;
        ROB-326). Only a pod that asks carries the key, as above. */
     ...(pod?.phyrexianTaps === true ? {phyrexianTaps: true} : {}),
+    /* And a card cast through a permission, from exile, a graveyard or the top of a library, tapped for as from the hand
+       (rules/actions.mjs, `permittedTaps`; ROB-226, Valakut Exploration). Only a pod that asks carries the key, as above. */
+    ...(pod?.permittedTaps === true ? {permittedTaps: true} : {}),
+    /* And an activated ability tapped for too, as a cast is (rules/actions.mjs, `abilityTaps`; ROB-317, Ash Barrens's Basic landcycling).
+       Only a pod that asks carries the key, as above. */
+    ...(pod?.abilityTaps === true ? {abilityTaps: true} : {}),
+    /* And monocolored hybrid ({2/W}) tapped for, each way (rules/actions.mjs, `hybridTaps`; ROB-354). Only a pod that asks carries the key. */
+    ...(pod?.hybridTaps === true ? {hybridTaps: true} : {}),
     /* And the players who may play their land in any step of their own turn, not only a main phase (rules/actions.mjs,
        `landAnyStep`; Rob, 2026-10-21: "When I am on any step of my turn, I should be able to play a land"): a house rule,
        for the people at a table, never its AI seats. Only a pod that names them carries the key, as above. */
