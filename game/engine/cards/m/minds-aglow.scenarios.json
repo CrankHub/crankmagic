@@ -1,0 +1,704 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Minds Aglow",
+  "scenarios": [
+    {
+      "name": "Rob pays {2}, Maya {1}: the total is 3, so each draws 3 -- asked in turn order from Rob, each paying as they choose",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Pay {0}",
+                  "Pay {1}",
+                  "Pay {2}",
+                  "Pay {3}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {2}"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Pay {0}",
+                  "Pay {1}",
+                  "Pay {2}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {1}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 3
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 3
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Minds Aglow"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 17
+        },
+        {
+          "seat": 1,
+          "zone": "library",
+          "count": 17
+        }
+      ]
+    },
+    {
+      "name": "Nobody pays ({0} each): no card is drawn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Pay {0}"
+          ]
+        },
+        {
+          "choose": [
+            "Pay {0}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 0,
+          "tapped": "Wastes",
+          "is": false
+        },
+        {
+          "seat": 1,
+          "tapped": "Wastes",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "A player with no mana to pay has only {0} to choose, so is not asked: only Rob is, and he pays {2} for both to draw 2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Pay {0}",
+                  "Pay {1}",
+                  "Pay {2}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {2}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 2
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 2
+        },
+        {
+          "seat": 0,
+          "tapped": "Wastes"
+        }
+      ]
+    },
+    {
+      "name": "Nobody can pay anything: nobody is asked, nobody draws",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Mana floating in the pool is mana to pay with: Rob taps two Wastes first and pays {2} from the pool",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Pay {0}",
+                  "Pay {1}",
+                  "Pay {2}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {2}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 2
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 2
+        },
+        {
+          "seat": 0,
+          "pool": {
+            "C": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three players, asked in turn order from the caster: Rob, Maya, Trey -- Rob {1}, Maya {0}, Trey {2}: each draws 3 (Rob has drawn for turn 1 too, in three players, CR 103.8c)",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {1}"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {0}"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {2}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 4
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 3
+        },
+        {
+          "seat": 2,
+          "zone": "hand",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "name": "Cast by Maya in her own turn: starting with her, then Trey, then Rob: {1}, {0}, {1}, so each draws 2 (Rob and Maya have drawn for their turns)",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1",
+            "settle": true
+          }
+        },
+        {
+          "tap": "Island",
+          "seat": 1
+        },
+        {
+          "cast": "Minds Aglow",
+          "seat": 1
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {1}"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 2
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {0}"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {1}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 3
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 3
+        },
+        {
+          "seat": 2,
+          "zone": "hand",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first, then Rob pays {1} choosing the Plains to tap, Maya {0}",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Plains"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Minds Aglow"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Minds Aglow"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Minds Aglow"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Pay {1}"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Tap Plains",
+                  "Tap Wastes"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Tap Plains"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 1,
+                "options": [
+                  "Pay {0}",
+                  "Pay {1}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pay {0}"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Plains"
+        },
+        {
+          "seat": 0,
+          "tapped": "Wastes",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

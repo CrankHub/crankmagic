@@ -12,20 +12,21 @@
  * Faked Cloudflare Access and Resend; nothing here has touched either.
  */
 import {ROB, MAYA, SAM, EVE, ok, eq, count, world, everyString} from "./helpers/lounge-harness.mjs";
+import {fakeAccess, accessVars, NAMES} from "./helpers/fake-access.mjs";
 
-const APP = "aaaaaaaa-0000-0000-0000-000000000001", GEN = "cccccccc-0000-0000-0000-000000000001", INS = "dddddddd-0000-0000-0000-000000000001";
-const policies = new Map([GEN, INS].map((id) => [id, {id, reusable: true, app_count: 1, decision: "allow", name: id, include: []}]));
+/* Cloudflare Access's three rule groups (ROB-440): a guest is written into CrankMagic Invitees, an owner's guest into Game Theory Insiders. */
+const APPS = [{id: "aaaaaaaa-0000-0000-0000-000000000001", name: "CrankMagic", domain: "crankmagic.com", policy: "bbbbbbbb-0000-0000-0000-000000000001"}];
+const access = fakeAccess({apps: APPS, groups: {[NAMES.admin]: [ROB], [NAMES.insiders]: ["seed@example.com"], [NAMES.invitees]: ["seed@example.com"]}});
+const GEN = NAMES.invitees, INS = NAMES.insiders;
 const mail = []; let failAccess = false;
 const fetchStandIn = async (url, args) => {
   if (url === "https://api.resend.com/emails") {mail.push(JSON.parse(args.body)); return Response.json({id: crypto.randomUUID()});}
-  if (url.endsWith(`/apps/${APP}`)) return Response.json({success: true, result: {name: "CrankMagic", domain: "crankmagic.com", policies: [{id: GEN}, {id: INS}]}});
-  const id = [GEN, INS].find((p) => url.endsWith(`/policies/${p}`));
-  if (!id) throw Error(`unexpected call ${url}`);
-  if (args.method === "PUT") {if (failAccess) return Response.json({success: false}, {status: 403}); policies.set(id, {...policies.get(id), ...JSON.parse(args.body)});}
-  return Response.json({success: true, result: policies.get(id)});
+  access.refuse = failAccess ? (path, init) => init.method === "PUT" : null;
+  const answered = await access.fetch(url, args);
+  if (!answered) throw Error(`unexpected call ${url}`);
+  return answered;
 };
-const sharingEnv = {SHARING_ENABLED: "on", RESEND_API_KEY: "test-only", ACCESS_INVITE_TOKEN: "test-only", CLOUDFLARE_ACCOUNT_ID: "0".repeat(32), ACCESS_INVITE_APP_IDS: APP,
-  ACCESS_INVITE_POLICY_ID_GENERAL: GEN, ACCESS_INVITE_POLICY_ID_INSIDER: INS, INVITE_LINK_ORIGIN: "https://crankmagic.com"};
+const sharingEnv = {SHARING_ENABLED: "on", RESEND_API_KEY: "test-only", ...accessVars(APPS), INVITE_LINK_ORIGIN: "https://crankmagic.com"};
 const w = await world({db: true, envExtra: sharingEnv, fetch: fetchStandIn,
   migrations: ["0001_accounts.sql", "0002_ai.sql", "0003_sharing.sql", "0004_mail_retries.sql", "0005_access_invites.sql", "0010_match_results.sql", "0011_invitations.sql"]});
 const sql = (q, ...a) => w.db.raw.prepare(q).all(...a).map((r) => ({...r}));
@@ -35,7 +36,7 @@ const user = (email, name) => {
   if (name) w.db.raw.prepare("INSERT INTO profiles (user_id, name, avatar, updated_at) VALUES (?, ?, '', 't')").run(id, name);
 };
 user(SAM, "Sam Rivera"); user(EVE, "Eve Adams");
-const on = (id) => policies.get(id).include.filter((r) => r.email).map((r) => r.email.email);
+const on = (name) => access.members(name).filter((e) => e !== "seed@example.com");
 const T = (id, path = "") => `/api/tables/${id}${path}`;
 const tablesMade = () => [...w.objects.keys()].filter((k) => !k.includes("-")).length;
 
@@ -49,7 +50,7 @@ ok(![...everyString(made.json)].some((s) => /[\w.+-]+@[\w-]+\.\w+/.test(s)), "an
 eq(mail.map((m) => m.to[0]), ["sam@example.com", "nia@example.com"], "each guest was emailed, the dropdown pick at the address the server holds for them");
 for (const m of mail) ok(m.text.endsWith(`\n\nhttps://crankmagic.com/api/join/${id}`) && m.html.includes(`href="https://crankmagic.com/api/join/${id}"`) && /Maya/.test(m.subject), `the email carries the lobby link and the host (${m.to[0]})`);
 ok(mail[0].text.startsWith("Hi Sam Rivera,") && mail[1].text.startsWith("Hi Nia Park,"), "and each guest's name");
-eq([on(GEN), on(INS)], [["nia@example.com"], []], "the new person is on the General policy (Maya is not the owner); the existing user was not touched");
+eq([on(GEN), on(INS)], [["nia@example.com"], []], "the new person is in CrankMagic Invitees (Maya is not the owner); the existing user was not touched");
 eq(sql("SELECT invitee_email AS to_, inviter_email AS by, grp, source, status, table_id AS tableId FROM invitations"), [{to_: "nia@example.com", by: "maya@example.com", grp: "general", source: "game", status: "admitted", tableId: id}], "one row: who invited whom, from which game, in which group; the person who already had an account costs no slot");
 const lobby = (await w.call("GET", T(id), {as: MAYA})).json.table;
 eq(lobby.seats.map((s) => [s.occupied, s.invited]), [[true, false], [false, true], [false, true], [true, false]], "the host's lobby shows both seats as invited, waiting");
@@ -60,7 +61,7 @@ eq((await w.call("GET", T(id), {as: MAYA})).json.table.seats.map((s) => s.occupi
 /* 2. The owner's guests are Insiders; a non-owner cannot ask for it. */
 const owner = await w.call("POST", "/api/tables", {as: ROB, body: {hostName: "Rob", privacy: "private", seats: [{kind: "human", name: "Ola", email: "ola@example.com"}, {kind: "human", name: "Pat", email: "pat@example.com", group: "general"}]}});
 eq(owner.json.invitations.map((i) => i.status), ["sent", "sent"], "the owner's table sends");
-eq([on(INS), on(GEN).includes("pat@example.com"), sql("SELECT email FROM ai_allowlist").map((r) => r.email)], [["ola@example.com"], true, ["ola@example.com"]], "Ola, a new typed guest, is a Game Theory Insider; Pat, chosen as General, is not");
+eq([on(INS), on(GEN).includes("pat@example.com"), sql("SELECT email FROM ai_allowlist").map((r) => r.email)], [["ola@example.com"], true, []], "Ola, a new typed guest, is a Game Theory Insider; Pat, chosen as General, is not");
 const before = {tables: tablesMade(), mail: mail.length, gen: on(GEN).length};
 const asks = await w.call("POST", "/api/tables", {as: MAYA, body: {hostName: "Maya", seats: [{kind: "human", name: "Quin", email: "quin@example.com", group: "insider"}, {kind: "ai", name: "Ember"}]}});
 eq([asks.status, /Only the CrankMagic owner can give .*AI/.test(asks.json.error)], [403, true], "a non-owner asking for an Insider seat is refused, with the way out");

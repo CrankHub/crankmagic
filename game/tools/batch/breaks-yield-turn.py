@@ -112,8 +112,8 @@ BREAKS = [
      ': {}),'),
     # The tape, and the table
     ('the store refusing a yield entry', 'game/engine/storage.mjs',
-     '["answer", "leave", "end", "prefer", "yield"]',
-     '["answer", "leave", "end", "prefer"]'),
+     '["answer", "leave", "end", "prefer", "yield", "cancel"]',
+     '["answer", "leave", "end", "prefer", "cancel"]'),
     ('a table\'s new match without Yield turn', 'game/room/table.mjs',
      '      yieldTurn: true,\n',
      '\n'),
@@ -121,6 +121,6 @@ BREAKS = [
      '      yieldTurn: true,\n',
      '      yieldTurn: true, passStack: true,\n'),
     ('the G1 harness launching its games otherwise than the table', 'tools/fuzz-live.mjs',
-     'xTaps: true, yieldTurn: true, drawBeat: true,',
-     'xTaps: true, drawBeat: true,'),
+     ' yieldTurn: true, drawBeat: true, passStack: true,',
+     ' drawBeat: true, passStack: true,'),
 ]

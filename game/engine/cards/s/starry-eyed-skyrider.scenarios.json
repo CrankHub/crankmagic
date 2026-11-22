@@ -1,0 +1,330 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Starry-Eyed Skyrider",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{3}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered once",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Starry-Eyed Skyrider"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Starry-Eyed Skyrider"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Starry-Eyed Skyrider"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Starry-Eyed Skyrider",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Starry-Eyed Skyrider",
+            "has": [
+              "Flying"
+            ],
+            "lacks": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attacks: another creature Rob controls, attacking or not, may be the target; the Ogre at home gains flying until end of turn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Starry-Eyed Skyrider",
+            "Bear",
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Starry-Eyed Skyrider",
+            "Bear"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Bear",
+                  "Ogre"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Ogre"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Ogre",
+                "has": [
+                  "Flying"
+                ],
+                "lacks": []
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "has": [],
+                "lacks": [
+                  "Flying"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Ogre",
+            "has": [],
+            "lacks": [
+              "Flying"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attacks alone with no other creature: no target, so the trigger does nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Starry-Eyed Skyrider"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Starry-Eyed Skyrider"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        }
+      ]
+    },
+    {
+      "name": "Attacking tokens have flying: two Soldier tokens from Raise the Alarm fly while they attack, the attacking Bear (no token) does not, and none after combat",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Starry-Eyed Skyrider",
+            "Bear",
+            "Plains",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Raise the Alarm"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Raise the Alarm"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Soldier",
+                "has": [],
+                "lacks": [
+                  "Flying"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Soldier",
+            "Soldier",
+            "Bear"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Soldier",
+                "has": [
+                  "Flying"
+                ],
+                "lacks": []
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "has": [],
+                "lacks": [
+                  "Flying"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Soldier",
+            "has": [],
+            "lacks": [
+              "Flying"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "life": 36
+        }
+      ]
+    }
+  ]
+}

@@ -295,8 +295,9 @@ button.cm-aim.is-card:focus-visible{outline:2px solid #a8dfbf;outline-offset:1px
 #matrix-v2 .cm-board button.cm-card-ref:hover,#matrix-v2 .cm-board button.cm-card-ref:focus-visible{border-bottom-style:solid;background:#ffffff1f}
 #matrix-v2 .cm-board button.cm-card-ref:focus-visible{outline:2px solid #a8dfbf;outline-offset:1px}
 #matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li[data-actor]{box-shadow:inset 3px 0 0 var(--seat);padding-left:8px}
-#matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li:not(.is-turn):not(.cm-history-more){width:auto;min-width:0;align-items:baseline}
-#matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li:not(.is-turn):not(.cm-history-more) span:first-child{flex:1 1 auto;min-width:0;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere}
+/* A line is read in full by scrolling sideways, never wrapped or cut (Rob's r5 rule 19, 2026-10-27; the widths and nowrap are the
+   .cm-board-band rules further down). ROB-332's first styles wrapped the line here, which rule 19's check caught (ROB-380). */
+#matrix-v2 .cm-board :is(.cm-history-list,.cm-history-whole) li:not(.is-turn):not(.cm-history-more){align-items:baseline}
 .cm-history-whole{list-style:none;margin:0;padding:0}
 #matrix-v2 .cm-board .cm-history-whole li.is-turn{justify-content:center;font-weight:700;border-bottom:1px solid #75b895;padding:4px 0}
 .cm-history-more{display:flex;justify-content:center;padding:8px 0}
@@ -443,8 +444,13 @@ body.cm-hand-dragging,body.cm-hand-dragging *{cursor:grabbing!important;user-sel
    card's own mana cost stays in sight (Rob, 2026-10-21: "covering the card's mana value"); never under 10px, light on dark
    in either theme (the theme's ink turns light in dark, a11y-board). The name
    leaves it room (a badge over the name made its letters unreadable, a11y-board), wrapping sooner instead. */
-.cm-bcard.has-tax .cm-bcard-name{right:calc(5% + max(10px,calc(var(--bc,72px) * .13)) * 1.7 + 10px)}
+.cm-bcard.has-tax .cm-bcard-name{right:calc(4% + 15px * var(--hud-scale,1) * 1.2 + 12px)}
 .cm-bcard-tax{position:absolute;right:4%;top:13%;z-index:2;padding:1px 5px;border-radius:5px;background:#0b1d1f;color:#f3fff7;font-size:max(10px,calc(var(--bc,72px) * .13));font-weight:800;line-height:1.2;pointer-events:none}
+/* On the board the badge's text is 15px times the HUD scale (the board's small-text rule, further down), and the name's room above
+   was still reckoned from the 10px it once was: at the default scale the two met edge to edge (16px against 16px on a 45px card),
+   and a pixel of font difference, or a larger HUD scale, laid the badge over the name (ROB-236; Actions' Linux, Focus at 1280x720).
+   The badge is at least 1.2em wide, and the name's rule above leaves exactly that, its padding and 2px. */
+#matrix-v2 .cm-board .cm-bcard-tax{box-sizing:content-box;min-width:1.2em;text-align:center}
 /* PARTNERS (ROB-29): both commanders in the command zone, the second over the first like a small pile, each its own button. */
 .cm-board-pile>.cm-board-partners{position:relative;justify-self:start;display:block;z-index:1}
 .cm-mat:not(.is-bare) .cm-board-pile>.cm-board-partners{margin:-3px 0 0 -3px}
@@ -1960,3 +1966,24 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 /* The blockers' answering row stays at the foot of the pop-up's list, and what scrolls under it is hidden by it, not seen through it
    (a heading's words showed between Don't block and Confirm). */
 #matrix-v2 .cm-board #cm-decision-slot.cm-required-popup .cm-block-draft .cm-decide-actions{z-index:2;padding:8px 0 4px;background:var(--color-panel);box-shadow:0 -10px 12px -10px #000a}
+/* A CANCELED QUESTION WAITING ON THE PLAYER'S WORD (ROB-205; the stabilization plan of 2026-11-19, section 2: "the collapsed box sits
+   off the mats, not centered on the board"): small, at the foot of the window beside the left drawer, over the hand's edge rather
+   than any mat, so the board can be read before Resume or Confirm cancel. Not modal while it waits. */
+#matrix-v2 .cm-board .cm-required-popup.is-paused{left:calc(var(--drawer-l,0px) + 56px)!important;top:auto!important;bottom:12px!important;transform:none!important;width:min(320px,calc(100vw - 32px))!important}
+#matrix-v2 .cm-board #cm-decision-slot.cm-required-popup.is-paused>#cm-board-decision{padding:12px 14px;box-shadow:0 8px 28px #0008}
+#matrix-v2 .cm-board .cm-required-popup.is-paused h2{font-size:1em;margin:0 0 6px}
+#matrix-v2 .cm-board .cm-required-popup.is-paused .cm-board-cancel-why{margin:0 0 8px}
+@media(max-width:500px){#matrix-v2 .cm-board .cm-required-popup.is-paused{left:16px!important;right:16px!important;width:auto!important}}
+
+/* AN EMBLEM (CR 114; ROB-192): a tile in its owner's command zone that says what it is and what it does -- no card, no picture. */
+.cm-bcard.cm-bcard-emblem{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:4px 3px 18px;text-align:center;overflow:hidden;
+  background:linear-gradient(160deg,#3b2f63,#1d1838);border:1px solid #b7a3ff;color:#f3efff}
+.cm-bcard.cm-bcard-emblem b{color:#fff;font-size:clamp(7px,.95vw,11px);letter-spacing:.06em;text-transform:uppercase}
+.cm-bcard.cm-bcard-emblem small{color:#f3efff;font-size:clamp(7px,.8vw,10px);line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cm-bcard-emblem:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* THE CHOICE POP-UP'S ART WHEN THE PICTURE DOES NOT COME (ROB-341): the card's name on a card-shaped tile, as the board draws it. */
+#matrix-v2 .cm-board .cm-choice-flow .is-artless{display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;
+  background:#f6f1e4;color:#1f1c18;border:1px solid #c9bfa8;font-weight:600;line-height:1.15;padding:4px;box-sizing:border-box;overflow-wrap:anywhere}
+#matrix-v2 .cm-board .cm-choice-flow .cm-flow-card.is-artless{font-size:12px}
+#matrix-v2 .cm-board .cm-choice-flow .cm-flow-thumb.is-artless{font-size:8px;padding:2px}
+#matrix-v2 .cm-board .cm-choice-flow .is-artless::after{content:attr(data-name)}

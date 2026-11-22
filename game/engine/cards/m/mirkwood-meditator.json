@@ -1,0 +1,55 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Mirkwood Meditator",
+    "oracleId": "399cd159-7376-421c-b001-c26f1cbadced",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elf",
+      "Druid"
+    ],
+    "manaCost": "{2}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": 2,
+    "toughness": 4
+  },
+  "oracleText": "Landfall — Whenever a land you control enters, you may have this creature's base power and toughness become 4/2 until end of turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Landfall — Whenever a land you control enters, you may have this creature's base power and toughness become 4/2 until end of turn.",
+      "trigger": {
+        "on": "enters",
+        "who": "any",
+        "filter": {
+          "types": [
+            "Land"
+          ],
+          "controller": "you"
+        }
+      },
+      "effects": [
+        {
+          "effect": "effectUntil",
+          "targets": "self",
+          "layer": 7,
+          "sublayer": "b",
+          "apply": {
+            "setPower": 4,
+            "setToughness": 2
+          },
+          "until": "end-of-turn"
+        }
+      ],
+      "optional": true
+    }
+  ]
+}

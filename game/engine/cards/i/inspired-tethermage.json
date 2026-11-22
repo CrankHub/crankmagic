@@ -1,0 +1,66 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Inspired Tethermage",
+    "oracleId": "80c2784b-f27d-4a51-9380-171eb32b961d",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elf",
+      "Warrior"
+    ],
+    "manaCost": "{2}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": 3,
+    "toughness": 2
+  },
+  "oracleText": "Whenever you put one or more loyalty counters on a planeswalker, put a +1/+1 counter on this creature.\n{6}: Empower Jace 2. (Put two loyalty counters on a Jace token you control. If you don't control one, first create a blue Jace planeswalker token with \"[−1]: Surveil 1\" and \"[−3]: Draw a card.\")",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever you put one or more loyalty counters on a planeswalker, put a +1/+1 counter on this creature.",
+      "trigger": {
+        "on": "counter added",
+        "who": "any",
+        "counter": "loyalty",
+        "putBy": "you",
+        "filter": {
+          "types": [
+            "Planeswalker"
+          ]
+        }
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": "self",
+          "counter": "+1/+1",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{6}: Empower Jace 2.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{6}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "empowerJace",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

@@ -68,6 +68,9 @@ instead of failing; they are marked superseded and are the next thing to delete 
    same batch.
 4. **Admission**: `admitAddress` writes the address into the Access policy for the group on every configured application and
    reads it back (§6). Insider: also a row in `ai_allowlist` (the Worker's own AI gate, `groupOf`).
+   *Superseded by ROB-440 (2026-11-03): the address is written into the group's Cloudflare Access rule group (CrankMagic Invitees
+   or Game Theory Insiders), which each application's policies include; no policy and no `ai_allowlist` row is written
+   (`docs/ai-door.md`).*
 5. Row to `admitted`. Then, and only then, the email.
 
 **If admission fails after the row**: the row stays `pending`, no email is sent, the error says so and says what to do
@@ -101,6 +104,10 @@ invitations(id TEXT PK, invitee_email TEXT UNIQUE, invitee_name, inviter_id INTE
 ```
 
 ## 6. Cloudflare configuration (unverified)
+
+> **Superseded by ROB-440 (Rob, 2026-11-03).** The per-group policy lists below are retired: an invitation is written into a
+> Cloudflare Access rule group; the Worker confirms each application's policies include the group, never writes a policy, and
+> configures no policy id. It uses `ACCESS_API_TOKEN`. `docs/ai-door.md`, "Three access groups", is the current text.
 
 Existing: `ACCESS_INVITE_APP_IDS` (comma list of Access application ids) with `ACCESS_INVITE_POLICY_ID` (same-length list of
 reusable policy ids), read in pairs.

@@ -1,0 +1,566 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Inspired Tethermage",
+  "fixtures": {
+    "Jace": {
+      "types": [
+        "Planeswalker"
+      ],
+      "subtypes": [
+        "Jace"
+      ],
+      "colors": [
+        "U"
+      ],
+      "manaCost": null,
+      "token": true,
+      "loyalty": 3,
+      "abilities": [
+        {
+          "id": "jace-surveil",
+          "kind": "activated",
+          "text": "−1: Surveil 1.",
+          "targets": [],
+          "loyalty": -1,
+          "timing": "sorcery",
+          "cost": [
+            {
+              "atom": "removeCounters",
+              "self": true,
+              "counter": "loyalty",
+              "count": 1
+            }
+          ],
+          "effects": [
+            {
+              "effect": "surveil",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "id": "jace-draw",
+          "kind": "activated",
+          "text": "−3: Draw a card.",
+          "targets": [],
+          "loyalty": -3,
+          "timing": "sorcery",
+          "cost": [
+            {
+              "atom": "removeCounters",
+              "self": true,
+              "counter": "loyalty",
+              "count": 3
+            }
+          ],
+          "effects": [
+            {
+              "effect": "draw",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    "Walker": {
+      "types": [
+        "Planeswalker"
+      ],
+      "subtypes": [
+        "Ajani"
+      ],
+      "manaCost": "{2}{W}",
+      "colors": [
+        "W"
+      ],
+      "loyalty": 4,
+      "abilities": [
+        {
+          "id": "aj-life",
+          "kind": "activated",
+          "text": "+1: You gain 1 life.",
+          "targets": [],
+          "loyalty": 1,
+          "timing": "sorcery",
+          "cost": [
+            {
+              "atom": "addCounters",
+              "self": true,
+              "counter": "loyalty",
+              "count": 1
+            }
+          ],
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered once",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Inspired Tethermage"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Inspired Tethermage"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Inspired Tethermage"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Inspired Tethermage",
+            "Forest",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "{6}: Empower Jace 2 with no Jace: a Jace token is made, two loyalty counters put on it, and the Tethermage gets a +1/+1 counter",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Inspired Tethermage",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Inspired Tethermage"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Inspired Tethermage",
+            "Jace",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace",
+            "counter": "loyalty",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Inspired Tethermage",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Inspired Tethermage",
+            "power": 4,
+            "toughness": 3
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "With a Jace already: two more loyalty counters on it (5), and a +1/+1 counter",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Inspired Tethermage",
+            "Jace",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Inspired Tethermage"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace",
+            "counter": "loyalty",
+            "count": 5
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Inspired Tethermage",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A loyalty ability's [+1] puts a loyalty counter on as its cost (CR 606.4): the Walker's +1 triggers it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Inspired Tethermage",
+            "Walker"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Walker"
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Walker",
+            "counter": "loyalty",
+            "count": 5
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Inspired Tethermage",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Removing loyalty counters is no putting: the Jace's -1 does not trigger it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Inspired Tethermage",
+            "Jace"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jace",
+          "ability": "jace-surveil"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": []
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Jace",
+            "counter": "loyalty",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Inspired Tethermage",
+            "counter": "+1/+1",
+            "count": 0
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A planeswalker that enters with loyalty counters has them put on it by its controller (CR 122.6, 306.5b): casting the Walker triggers it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Inspired Tethermage",
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Walker"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Walker"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Walker",
+            "counter": "loyalty",
+            "count": 4
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Inspired Tethermage",
+            "counter": "+1/+1",
+            "count": 1
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Not Rob's: Maya's Walker +1 does not trigger his Tethermage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Inspired Tethermage"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Walker"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Walker",
+          "seat": 1
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "counters": {
+            "card": "Walker",
+            "counter": "loyalty",
+            "count": 5
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Inspired Tethermage",
+            "counter": "+1/+1",
+            "count": 0
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    }
+  ]
+}

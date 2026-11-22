@@ -11,6 +11,7 @@ import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
 import {sharing, ShareError} from "../cloud/sharing.mjs";
 import {createLibrary} from "../cloud/library.mjs";
+import {fakeAccess, accessVars, NAMES} from "./helpers/fake-access.mjs";
 
 let checks = 0;
 const eq = (a, b, m) => {assert.deepEqual(a, b, m); checks += 1;};
@@ -32,35 +33,34 @@ const db = {prepare: (s) => stmt(s), batch: async (list) => list.map((x) => x.sy
 const lib = createLibrary(db);
 const owner = await lib.user("rob@example.com"), maya = await lib.user("maya@example.com"), sam = await lib.user("sam@example.com");
 
-const APP = "aaaaaaaa-0000-0000-0000-000000000001", GEN = "cccccccc-0000-0000-0000-000000000001", INS = "dddddddd-0000-0000-0000-000000000001";
-const env = {INVITE_ADMIN_ID: String(owner.id), OWNER_EMAIL: "rob@example.com", RESEND_API_KEY: "test-only", SHARING_ENABLED: "on", ACCESS_INVITE_TOKEN: "test-only",
-  CLOUDFLARE_ACCOUNT_ID: "0".repeat(32), ACCESS_INVITE_APP_IDS: APP, ACCESS_INVITE_POLICY_ID_GENERAL: GEN, ACCESS_INVITE_POLICY_ID_INSIDER: INS,
+/* Cloudflare Access's three rule groups (ROB-440): an invitee is written into CrankMagic Invitees, an Insider into Game Theory Insiders. */
+const APPS = [{id: "aaaaaaaa-0000-0000-0000-000000000001", name: "CrankMagic", domain: "crankmagic.com", policy: "bbbbbbbb-0000-0000-0000-000000000001"}];
+const access = fakeAccess({apps: APPS, groups: {[NAMES.admin]: ["rob@example.com"], [NAMES.insiders]: ["seed@example.com"], [NAMES.invitees]: ["seed@example.com"]}});
+const GEN = NAMES.invitees, INS = NAMES.insiders;
+const env = {INVITE_ADMIN_ID: String(owner.id), OWNER_EMAIL: "rob@example.com", RESEND_API_KEY: "test-only", SHARING_ENABLED: "on", ...accessVars(APPS),
   INVITE_LINK_ORIGIN: "https://crankmagic.com"};
-const policies = new Map([GEN, INS].map((id) => [id, {id, reusable: true, app_count: 1, decision: "allow", name: id, include: []}]));
 const mail = []; let failMail = false, failAccess = false;
 const fetchImpl = async (url, args) => {
   if (url === "https://api.resend.com/emails") {
     if (failMail) return Response.json({}, {status: 500});
     const body = JSON.parse(args.body); mail.push({...body, key: args.headers["Idempotency-Key"]}); return Response.json({id: crypto.randomUUID()});
   }
-  if (url.endsWith(`/apps/${APP}`)) return Response.json({success: true, result: {name: "CrankMagic", domain: "crankmagic.com", policies: [{id: GEN}, {id: INS}]}});
-  const id = [GEN, INS].find((p) => url.endsWith(`/policies/${p}`));
-  if (args.method === "PUT") {if (failAccess) return Response.json({success: false}, {status: 403}); policies.set(id, {...policies.get(id), ...JSON.parse(args.body)});}
-  return Response.json({success: true, result: policies.get(id)});
+  access.refuse = failAccess ? (path, init) => init.method === "PUT" : null;
+  return (await access.fetch(url, args)) ?? assert.fail(`no network here: ${url}`);
 };
 let clock = Date.parse("2026-10-31T12:00:00Z");
 const svc = sharing(db, env, {now: () => new Date(clock += 1000).toISOString(), fetchImpl, cacheProjections: false});
-const on = (id) => policies.get(id).include.filter((r) => r.email).map((r) => r.email.email);
+const on = (name) => access.members(name).filter((e) => e !== "seed@example.com");
 const rowOf = (to) => ({...raw.prepare("SELECT inviter_email AS by, grp, source, status, table_id AS tableId FROM invitations WHERE invitee_email = ?").get(to)});
 
 /* 1. Who may invite, and as what. */
 eq([(await svc.profile(maya)).canInvite, (await svc.profile(maya)).isAdmin, (await svc.profile(owner)).canInvite, (await svc.profile(owner)).isAdmin], [true, false, true, true], "anyone signed in may invite; only the administrator is the administrator");
 let r = await svc.invite(maya, {name: "Bob Lee", email: "bob@example.com"}, "https://staging.example");
-eq([r.status, r.group, on(GEN), on(INS), rowOf("bob@example.com")], ["sent", "general", ["bob@example.com"], [], {by: "maya@example.com", grp: "general", source: "settings", status: "admitted", tableId: null}], "a non-owner's invitation is General: sent, on the General policy, recorded");
+eq([r.status, r.group, on(GEN), on(INS), rowOf("bob@example.com")], ["sent", "general", ["bob@example.com"], [], {by: "maya@example.com", grp: "general", source: "settings", status: "admitted", tableId: null}], "a non-owner's invitation is General: sent, in CrankMagic Invitees, recorded");
 await rejects(() => svc.invite(maya, {name: "Dan", email: "dan@example.com", group: "insider"}, "https://staging.example"), 403, /Only the CrankMagic owner can give .*AI/, "a non-owner cannot grant AI, the server says so");
 eq([mail.length, raw.prepare("SELECT count(*) AS n FROM invitations WHERE invitee_email = 'dan@example.com'").get().n], [1, 0], "and nothing was sent or recorded for it");
 r = await svc.invite(owner, {name: "Ann Fox", email: "ann@example.com"}, "https://staging.example");
-eq([r.group, on(INS), raw.prepare("SELECT email FROM ai_allowlist").all().map((x) => x.email)], ["insider", ["ann@example.com"], ["ann@example.com"]], "the owner's invitation is Game Theory Insider by default, with the AI roster row");
+eq([r.group, on(INS), on(GEN), raw.prepare("SELECT count(*) AS n FROM ai_allowlist").get().n], ["insider", ["ann@example.com"], ["bob@example.com"], 0], "the owner's invitation is Game Theory Insider by default: in that rule group, and no table row");
 r = await svc.invite(owner, {name: "Cy Hall", email: "cy@example.com", group: "general"}, "https://staging.example");
 eq([r.group, on(GEN).includes("cy@example.com"), on(INS).includes("cy@example.com")], ["general", true, false], "and the owner may choose General");
 eq(mail.at(-1).html.includes("Hi Cy Hall,"), true, "the settings email is the invitation, as before");

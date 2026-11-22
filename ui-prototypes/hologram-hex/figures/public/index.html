@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure proof</title>
+<style>
+:root { --ink: #eef0ee; --dim: #a9b0ad; --ground: #12171a; --panel: rgba(18, 24, 27, .78); --gold: #d9b45a; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.4 system-ui, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; padding: 14px 20px; border-bottom: 1px solid #2a3338; }
+h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: .02em; }
+form { display: flex; gap: 8px; flex: 1 1 320px; max-width: 520px; }
+input[type=text] { flex: 1; min-height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid #47545a; background: #0c1012; color: var(--ink); font: inherit; }
+button { min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid #47545a; background: #1b2327; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+button.primary { background: var(--gold); border-color: var(--gold); color: #1a1408; }
+button[aria-pressed=true] { border-color: var(--gold); color: var(--gold); }
+#status { flex: 1 1 100%; color: var(--dim); min-height: 21px; }
+#wrap { overflow: auto; padding: 8px 0 24px; }
+#scene { position: relative; width: 1200px; height: 740px; margin: 0 auto;
+  background: radial-gradient(ellipse at 50% 62%, #263238 0%, #171d20 58%, #12171a 100%); border-radius: 12px; }
+
+.hex { position: absolute; width: 236px; height: 126px; transform: translate(-50%, -50%);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: rgba(217, 180, 90, .28); }
+.hex::before { content: ""; position: absolute; inset: 2px; clip-path: inherit; background: var(--fill, #20292d); background-size: cover; background-position: center; }
+.hex.land::before { background-image: var(--art); filter: saturate(1.05) brightness(.92); animation: grow 1.6s ease-out both; }
+@keyframes grow { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+
+.fig { position: absolute; transform: translate(-50%, -100%); cursor: pointer; }
+.fig .shadow { position: absolute; left: 50%; bottom: -10px; width: 62%; height: 22px; transform: translateX(-50%); border-radius: 50%; background: rgba(0, 0, 0, .5); filter: blur(5px); }
+.fig .lift { position: relative; display: block; transform-origin: 50% 100%; animation: rise .9s ease-out both; }
+@keyframes rise { from { transform: translateY(40%) scaleY(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+.fig .body { position: relative; display: block; transform-origin: 50% 100%; animation: breathe var(--breath, 3.6s) ease-in-out infinite; }
+.fig img { display: block; height: var(--h); width: auto; max-width: none; -webkit-user-drag: none; user-select: none;
+  -webkit-mask-image: linear-gradient(to top, transparent 0, #000 20%); mask-image: linear-gradient(to top, transparent 0, #000 20%);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .55)); }
+.fig.framed img { width: calc(var(--h) * .82); object-fit: cover; border-radius: 50% 50% 14% 14% / 46% 46% 10% 10%; }
+@keyframes breathe { 0%, 100% { transform: scaleY(1) skewX(0); } 50% { transform: scaleY(1.028) skewX(.7deg); } }
+
+/* states */
+.fig.tapped img { filter: grayscale(1) brightness(.55); }
+.fig.tapped .body, .fig.tapped .fx * { animation-play-state: paused; }
+.fig.tapped .fx { opacity: .25; }
+.showready .fig:not(.tapped) img { animation: ready 1.8s ease-in-out infinite; }
+@keyframes ready { 0%, 100% { filter: drop-shadow(0 0 2px rgba(217, 180, 90, .3)) drop-shadow(0 6px 10px rgba(0, 0, 0, .55)); } 50% { filter: drop-shadow(0 0 14px rgba(240, 205, 110, .95)) drop-shadow(0 6px 10px rgba(0, 0, 0, .55)); } }
+
+/* flying: a different stance, not an overlay */
+.fig.kw-flying .hover { display: block; animation: hover 3.4s ease-in-out infinite; }
+.fig.kw-flying img { -webkit-mask-image: none; mask-image: none; }
+.fig.kw-flying .shadow { width: 40%; opacity: .55; animation: hovershadow 3.4s ease-in-out infinite; }
+@keyframes hover { 0%, 100% { transform: translateY(-44px); } 50% { transform: translateY(-58px); } }
+@keyframes hovershadow { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(.86); } }
+
+.fx { position: absolute; inset: 0; pointer-events: none; }
+/* trample */
+.fig.kw-trample .hover { display: block; animation: stomp 2.6s linear infinite; transform-origin: 50% 100%; }
+@keyframes stomp { 0%, 70% { transform: translateY(0); } 80% { transform: translateY(-12px); } 85% { transform: translateY(0) scale(1.03, .96); } 92%, 100% { transform: none; } }
+.ring { position: absolute; left: 50%; bottom: -14px; width: 150px; height: 46px; margin-left: -75px; border: 2px solid rgba(232, 214, 170, .9); border-radius: 50%; opacity: 0; animation: ring 2.6s linear infinite; }
+.ring.two { animation-delay: .14s; }
+@keyframes ring { 0%, 84% { opacity: 0; transform: scale(.25); } 86% { opacity: .9; } 100% { opacity: 0; transform: scale(1.55); } }
+.grit { position: absolute; left: 50%; bottom: -2px; width: 5px; height: 5px; border-radius: 2px; background: #b9a98a; opacity: 0; animation: grit 2.6s linear infinite; }
+@keyframes grit { 0%, 84% { opacity: 0; transform: translate(0, 0); } 86% { opacity: 1; } 93% { opacity: 1; transform: translate(var(--dx), var(--dy)); } 100% { opacity: 0; transform: translate(calc(var(--dx) * 1.25), 6px); } }
+/* menace */
+.ghost { position: absolute; left: 0; bottom: 0; transform: translate(16px, -3px) scale(1.07); transform-origin: 50% 100%; opacity: .6; animation: ghost 2.8s ease-in-out infinite; }
+.ghost img { filter: brightness(0) drop-shadow(0 0 7px #d0203a) !important; animation: none !important; }
+@keyframes ghost { 0%, 100% { opacity: .62; transform: translate(16px, -3px) scale(1.07); } 50% { opacity: .38; transform: translate(22px, -5px) scale(1.1); } }
+/* deathtouch */
+.vapor { position: absolute; bottom: 12%; width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle, rgba(120, 255, 120, .85), rgba(60, 200, 80, 0) 70%); opacity: 0; animation: vapor 3s ease-out infinite; }
+@keyframes vapor { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: .85; } 100% { opacity: 0; transform: translateY(-110px) scale(1.7); } }
+/* lifelink */
+.mote { position: absolute; left: 50%; top: 45%; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px 2px rgba(255, 255, 255, .8); opacity: 0; animation: mote 3.2s ease-in infinite; }
+@keyframes mote { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-150px, 90px) scale(.5); } }
+/* vigilance */
+.watch { position: absolute; left: 50%; bottom: -12px; width: 128px; height: 38px; margin-left: -64px; border: 2px solid var(--gold); border-radius: 50%; box-shadow: 0 0 10px rgba(217, 180, 90, .7); animation: watch 4s ease-in-out infinite; }
+.eye { position: absolute; left: 50%; top: -18px; width: 12px; height: 12px; margin-left: -6px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 12px 3px rgba(217, 180, 90, .8); }
+@keyframes watch { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+/* monuments (artifacts) and sigils (other permanents) */
+.fig.monument img { width: calc(var(--h) * .8); height: var(--h); object-fit: cover; border-radius: 48% 48% 4px 4px / 34% 34% 4px 4px; border: 3px solid #8d7a4a; -webkit-mask-image: none; mask-image: none; }
+.fig.monument .body { animation: none; }
+.fig.monument .body::after { content: ""; display: block; height: 16px; margin: 0 -10px; background: linear-gradient(#6f6a5e, #403c35); border-radius: 3px; }
+.fig.sigil img { width: var(--h); height: var(--h); object-fit: cover; border-radius: 50%; border: 3px solid #b9a4e6; -webkit-mask-image: none; mask-image: none; opacity: .92; }
+.fig.sigil .body { animation: hover 4s ease-in-out infinite; }
+
+.plate { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 16px; white-space: nowrap; text-align: center; padding: 5px 9px; border-radius: 6px; background: var(--panel); border: 1px solid rgba(217, 180, 90, .45); font-size: 12px; z-index: 50; }
+.plate b { font-size: 13px; }
+.plate .pt { margin-left: 6px; color: var(--gold); font-weight: 700; }
+.plate .chips { display: flex; gap: 4px; justify-content: center; margin-top: 3px; }
+.plate .chip { padding: 0 6px; border-radius: 9px; border: 1px solid #64727a; color: var(--ink); font-size: 11px; }
+.plate .chip.live { border-color: var(--gold); color: var(--gold); }
+.plate .tier { color: var(--dim); font-size: 11px; margin-top: 2px; }
+.hoverplates .plate { display: none; }
+.hoverplates .fig:hover .plate { display: block; }
+footer { max-width: 1200px; margin: 0 auto; padding: 0 20px 28px; color: var(--dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Figure proof: a card name in, a standing figure out</h1>
+  <form id="add">
+    <label for="name" style="position:absolute;left:-9999px">Card name</label>
+    <input id="name" type="text" placeholder="Type any card name" autocomplete="off">
+    <button class="primary" type="submit">Load card</button>
+  </form>
+  <button id="plates" type="button" aria-pressed="true">Nameplates always on</button>
+  <button id="ready" type="button" aria-pressed="false">Show who can act</button>
+  <div id="status" role="status">Starting…</div>
+</header>
+<div id="wrap"><div id="scene"></div></div>
+<footer>Click a figure to tap or untap it. Everything on screen is derived from the card's public data: art, type line, power and toughness, keywords, colors. Nothing is drawn by hand per card.</footer>
+
+<script type="module">
+const scene = document.getElementById('scene');
+const status = document.getElementById('status');
+const say = (t) => { status.textContent = t; };
+
+// 12 hexes, back row first so nearer figures draw over farther ones
+const slots = [];
+[[250, 205], [395, 80], [540, 205]].forEach(([y, x0], row) => {
+  for (let i = 0; i < 4; i++) slots.push({ x: x0 + 150 + i * 250, y, row, used: false });
+});
+const TINT = { W: '#4a4a3c', U: '#22384a', B: '#2a2530', R: '#4a2a22', G: '#24402a' };
+for (const s of slots) {
+  const h = document.createElement('div');
+  h.className = 'hex';
+  h.style.left = s.x + 'px'; h.style.top = s.y + 'px';
+  scene.append(h); s.hex = h;
+}
+
+// body plan from the type line: a lookup table, no AI
+const PLANS = [
+  ['winged', /Dragon|Angel|Bird|Bat|Drake|Demon|Faerie|Sphinx|Griffin|Vampire|Phoenix/, '3.4s'],
+  ['giant', /Dinosaur|Giant|Wurm|Hydra|Troll|Ogre|Elemental|Beast|Treefolk/, '5.2s'],
+  ['quadruped', /Wolf|Bear|Cat|Horse|Elk|Dog|Boar|Ox|Goat/, '3s'],
+  ['crawler', /Spider|Insect|Scorpion|Crab/, '2.2s'],
+  ['serpent', /Snake|Serpent|Leviathan|Eel/, '4.4s'],
+  ['wall', /Wall/, '0s'],
+];
+const plan = (t) => PLANS.find(([, re]) => re.test(t)) || ['biped', null, '3.6s'];
+
+// animated keywords, in priority order; at most two overlays per figure, flying is a stance
+const OVERLAYS = ['Trample', 'Menace', 'Deathtouch', 'Lifelink', 'Vigilance'];
+const rnd = (a, b) => a + Math.random() * (b - a);
+function overlay(kw, fx, lift, src) {
+  const add = (cls, n, each) => { for (let i = 0; i < n; i++) { const e = document.createElement('span'); e.className = cls; each && each(e, i); fx.append(e); } };
+  if (kw === 'Trample') {
+    add('ring', 1); add('ring two', 1);
+    add('grit', 7, (e) => { e.style.setProperty('--dx', rnd(-70, 70) + 'px'); e.style.setProperty('--dy', rnd(-46, -18) + 'px'); });
+  }
+  if (kw === 'Menace') {
+    const g = document.createElement('span'); g.className = 'ghost';
+    const im = document.createElement('img'); im.src = src; im.alt = ''; g.append(im);
+    lift.prepend(g);
+  }
+  if (kw === 'Deathtouch') add('vapor', 7, (e, i) => { e.style.left = rnd(12, 78) + '%'; e.style.animationDelay = (i * .43) + 's'; });
+  if (kw === 'Lifelink') add('mote', 6, (e, i) => { e.style.animationDelay = (i * .53) + 's'; e.style.marginLeft = rnd(-30, 30) + 'px'; });
+  if (kw === 'Vigilance') { add('watch', 1); add('eye', 1); }
+}
+
+function place(card) {
+  const s = slots.find((x) => !x.used);
+  if (!s) { say('The demo realm is full (12 hexes). Reload to start again.'); return null; }
+  s.used = true;
+  const color = (card.colorIdentity[0] || card.colors[0]);
+  s.hex.style.setProperty('--fill', TINT[color] || '#2a3033');
+  const isCreature = /Creature/.test(card.typeLine);
+  if (/Land/.test(card.typeLine) && !isCreature) {
+    s.hex.classList.add('land');
+    s.hex.style.setProperty('--art', `url(${card.art})`);
+    return { card, slot: s, land: true };
+  }
+  const p = Number(card.power), t = Number(card.toughness);
+  const size = isCreature ? ((isNaN(p) ? 3 : p) + (isNaN(t) ? 3 : t)) / 2 : 2;
+  const h = Math.round(120 + Math.min(size, 8) * 14);
+  const [planName, , breath] = isCreature ? plan(card.typeLine) : ['none', null, '0s'];
+
+  const fig = document.createElement('div');
+  fig.className = 'fig framed';
+  fig.style.left = s.x + 'px'; fig.style.top = (s.y + 14) + 'px'; fig.style.zIndex = 10 + s.row;
+  fig.style.setProperty('--h', h + 'px'); fig.style.setProperty('--breath', breath);
+  if (!isCreature) { fig.classList.remove('framed'); fig.classList.add(/Artifact/.test(card.typeLine) ? 'monument' : 'sigil'); }
+
+  const live = [];
+  if (isCreature) {
+    if (card.keywords.includes('Flying')) { fig.classList.add('kw-flying'); live.push('Flying'); }
+    for (const k of OVERLAYS) if (card.keywords.includes(k) && live.filter((x) => x !== 'Flying').length < 2) live.push(k);
+    if (live.includes('Trample')) fig.classList.add('kw-trample');
+  }
+  const chips = card.keywords.map((k) => `<span class="chip${live.includes(k) ? ' live' : ''}">${k}</span>`).join('');
+  fig.innerHTML = `<span class="shadow"></span>
+    <span class="lift"><span class="hover"><span class="body"><img alt="${card.name}" src="${card.art}"></span><span class="fx"></span></span></span>
+    <div class="plate"><b>${card.name}</b>${card.power != null ? `<span class="pt">${card.power}/${card.toughness}</span>` : ''}
+      ${chips ? `<div class="chips">${chips}</div>` : ''}<div class="tier"></div></div>`;
+  const fx = fig.querySelector('.fx'), hover = fig.querySelector('.hover');
+  for (const k of live) overlay(k, fx, hover, card.art);
+  fig.addEventListener('click', () => fig.classList.toggle('tapped'));
+  scene.append(fig);
+  const entry = { card, slot: s, fig, isCreature, planName };
+  label(entry, isCreature ? 'framed art, cutting out…' : 'kit piece skinned from the art');
+  return entry;
+}
+function label(e, what) {
+  e.fig.querySelector('.tier').textContent = (e.isCreature ? `Body plan: ${e.planName} · ` : '') + what;
+}
+function useCutout(e, src) {
+  e.fig.classList.remove('framed');
+  e.fig.querySelectorAll('img').forEach((im) => { im.src = src; });
+  label(e, 'living card (cut-out)');
+}
+
+// cut the subject out of the art in the browser, crop to it, cache it on the server
+let remover = null, removerFailed = null;
+async function getRemover() {
+  if (remover || removerFailed) return remover;
+  try { remover = (await import('https://esm.sh/@imgly/background-removal@1.4.5')).default; }
+  catch (err) { removerFailed = err; console.error('cut-out library failed to load', err); }
+  return remover;
+}
+async function cropToSubject(blob) {
+  const bmp = await createImageBitmap(blob);
+  const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+  const g = c.getContext('2d'); g.drawImage(bmp, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0, n = 0;
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 40) { n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const share = n / (c.width * c.height);
+  if (share < .04 || share > .97) return null; // nothing found, or nothing removed
+  const o = document.createElement('canvas'); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+  o.getContext('2d').drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
+  return new Promise((res) => o.toBlob(res, 'image/png'));
+}
+let chain = Promise.resolve();
+function cut(e) {
+  chain = chain.then(async () => {
+    const t0 = performance.now();
+    const rm = await getRemover();
+    if (!rm) { label(e, 'framed art (cut-out library unavailable)'); return; }
+    try {
+      const art = await (await fetch(e.card.art)).blob();
+      const out = await cropToSubject(await rm(art));
+      if (!out) { label(e, 'framed art (no clear subject found)'); return; }
+      useCutout(e, URL.createObjectURL(out));
+      fetch('/api/cutout?id=' + e.card.id, { method: 'POST', body: out });
+      say(`${e.card.name}: cut out in ${((performance.now() - t0) / 1000).toFixed(1)} s and cached. Next time it is instant.`);
+    } catch (err) { console.error(err); label(e, 'framed art (cut-out failed)'); }
+  });
+  return chain;
+}
+
+async function load(name) {
+  const t0 = performance.now();
+  say(`Looking up "${name}"…`);
+  const r = await fetch('/api/card?name=' + encodeURIComponent(name));
+  const card = await r.json();
+  if (!r.ok) { say(card.error || 'That did not work.'); return; }
+  const e = place(card);
+  if (!e) return;
+  const secs = ((performance.now() - t0) / 1000).toFixed(1);
+  if (e.land) { say(`${card.name}: grown on its hex in ${secs} s.`); return; }
+  if (!e.isCreature) { say(`${card.name}: standing in ${secs} s.`); return; }
+  if (card.cutout) { useCutout(e, card.cutout); say(`${card.name}: standing in ${secs} s (from the cache).`); return; }
+  say(`${card.name}: standing in ${secs} s as framed art; cutting it out…`);
+  cut(e);
+}
+
+document.getElementById('add').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const el = document.getElementById('name');
+  const v = el.value.trim();
+  if (v) { load(v); el.value = ''; }
+});
+const toggle = (id, cls, on, off, invert) => document.getElementById(id).addEventListener('click', (ev) => {
+  const pressed = ev.currentTarget.getAttribute('aria-pressed') !== 'true';
+  ev.currentTarget.setAttribute('aria-pressed', pressed);
+  ev.currentTarget.textContent = pressed ? on : off;
+  document.body.classList.toggle(cls, invert ? !pressed : pressed);
+});
+toggle('plates', 'hoverplates', 'Nameplates always on', 'Nameplates on hover', true);
+toggle('ready', 'showready', 'Showing who can act', 'Show who can act', false);
+
+const starters = ['Forest', 'Serra Angel', 'Colossal Dreadmaw', 'Vampire Nighthawk', 'Boggart Brute', 'Llanowar Elves', 'Shivan Dragon', 'Sol Ring'];
+for (const n of starters) await load(n);
+</script>
+</body>
+</html>

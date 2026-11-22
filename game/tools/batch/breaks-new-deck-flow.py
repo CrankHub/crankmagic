@@ -9,7 +9,7 @@ BREAKS = [
     ('Next before a commander', 'crankmagic-newdeck.js',
      "{label:'Next',action:'flow-next',disabled:!F.commander}", "{label:'Next',action:'flow-next',disabled:false}"),
     ('the selection lost on switching', 'crankmagic-newdeck.js',
-     "actions['flow-nav']=el=>{if(!F)return;if(F.step==='start')F.method=el.dataset.to;", "actions['flow-nav']=el=>{if(!F)return;if(F.step==='start'){F.method=el.dataset.to;F.commander=null;}"),
+     "if(F.step==='start')F.method=el.dataset.to;", "if(F.step==='start'){F.method=el.dataset.to;F.commander=null;}"),
     ('colors widen without asking', 'crankmagic-newdeck.js',
      "{colors:p.colorless?[]:p.colors,include:p.include,colorless:p.colorless}", "{colors:p.colorless?[]:p.colors,include:true,colorless:p.colorless}"),
     ('no default name', 'crankmagic-newdeck.js',

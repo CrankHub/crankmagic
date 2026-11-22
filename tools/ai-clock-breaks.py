@@ -7,10 +7,10 @@
 SUITES = ['tests/agent-seat-table.mjs', 'tests/advisor.mjs', 'tests/ai-door.mjs', 'tests/coach.mjs', 'tests/cloud-worker.mjs']
 WORKER, ROOM, AI = 'cloud/worker.mjs', 'cloud/game-room.mjs', 'cloud/ai.mjs'
 BREAKS = [
-    ("the meter's log on the machine's clock", WORKER, 'createAi(env.DB, {now, everyone: everyone(env)})', 'createAi(env.DB, {everyone: everyone(env)})'),
-    ("the meter route drops the request's clock", WORKER, 'await aiMeter(env, person.email, () => new Date(ms()).toISOString())', 'await aiMeter(env, person.email)'),
+    ("the meter's log on the machine's clock", WORKER, 'createAi(env.DB, {now, owner: env.OWNER_EMAIL, env, fetchImpl})', 'createAi(env.DB, {owner: env.OWNER_EMAIL, env, fetchImpl})'),
+    ("the meter route drops the request's clock", WORKER, 'await aiMeter(env, person.email, () => new Date(ms()).toISOString(), deps.fetchImpl || fetch)', 'await aiMeter(env, person.email, undefined, deps.fetchImpl || fetch)'),
     ("the AI routes' log on the machine's clock", WORKER, 'createAi(env.DB, {now: () => new Date(ms()).toISOString(), ', 'createAi(env.DB, {'),
-    ("the LLM seat's log on the machine's clock", ROOM, 'createAi(this.env.DB, {now: () => new Date(this.now()).toISOString()})', 'createAi(this.env.DB)'),
+    ("the LLM seat's log on the machine's clock", ROOM, 'createAi(this.env.DB, {now: () => new Date(this.now()).toISOString(), env: this.env,', 'createAi(this.env.DB, {env: this.env,'),
     ("the day's window ends at the machine's clock", AI, 'Date.parse(now()) - 24 * 3600 * 1000', 'Date.now() - 24 * 3600 * 1000'),
     ("a call logged at the machine's clock", AI, 'row.outcome, now()).run()', 'row.outcome, new Date().toISOString()).run()'),
 ]

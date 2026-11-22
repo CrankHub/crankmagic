@@ -310,6 +310,9 @@ for (const off of [false, true]) {
   eq(record.pod.pooledTaps, true, "and a table's new match tops floating mana up from its caster's sources (`pooledTaps`, rules/actions.mjs): its pod says so, and the record keeps it");
   eq(record.pod.xTaps, true, "and taps for an {X} spell too, for each X the pool and the sources pay together (`xTaps`): its pod says so, and the record keeps it");
   eq(record.pod.phyrexianTaps, true, "and a spell with Phyrexian mana, {U} or 2 life, is tapped for too, in each way (`phyrexianTaps`, ROB-326): its pod says so, and the record keeps it");
+  eq(record.pod.permittedTaps, true, "and a card cast through a permission, from exile, a graveyard or the top of a library, is tapped for too (`permittedTaps`, ROB-226, Valakut Exploration): its pod says so, and the record keeps it");
+  eq(record.pod.abilityTaps, true, "and an activated ability is tapped for too, as a cast is (`abilityTaps`, ROB-317, Ash Barrens): its pod says so, and the record keeps it");
+  eq(record.pod.hybridTaps, true, "and monocolored hybrid ({2/W}) is tapped for too, each way (`hybridTaps`, ROB-354): its pod says so, and the record keeps it");
   eq([record.pod.yieldTurn, record.pod.passStack], [true, off ? undefined : true], off
     ? "and lets a person yield an opponent's turn (`yieldTurn`); with the host's rule off, its pod has no `passStack`, and every spell is asked about as before"
     : "and lets a person yield an opponent's turn (`yieldTurn`, room.mjs), and passes the stack for a person with no answer to it (`passStack`, ROB-102; the board calls out a spell that came and went): its pod says so");

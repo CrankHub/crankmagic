@@ -1,0 +1,48 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Banshee of the Dread Choir",
+    "oracleId": "282b4dbf-ec00-48ba-8010-73bee489fa7a",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Spirit"
+    ],
+    "manaCost": "{3}{B}{B}",
+    "colors": [
+      "B"
+    ],
+    "colorIdentity": [
+      "B"
+    ],
+    "power": 4,
+    "toughness": 4
+  },
+  "oracleText": "Myriad (Whenever this creature attacks, for each opponent other than defending player, you may create a token copy that's tapped and attacking that player or a planeswalker they control. Exile the tokens at end of combat.)\nWhenever this creature deals combat damage to a player, that player discards a card.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Myriad",
+      "keyword": "myriad"
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever this creature deals combat damage to a player, that player discards a card.",
+      "trigger": {
+        "on": "damage dealt",
+        "who": "self",
+        "combat": true,
+        "to": "player"
+      },
+      "effects": [
+        {
+          "effect": "discard",
+          "who": "that player",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

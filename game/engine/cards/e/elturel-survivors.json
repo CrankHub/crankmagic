@@ -1,0 +1,59 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Elturel Survivors",
+    "oracleId": "373ccd23-5c98-4368-995a-e6503cd0dbd8",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Tiefling",
+      "Peasant"
+    ],
+    "manaCost": "{3}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R"
+    ],
+    "power": 0,
+    "toughness": 4
+  },
+  "oracleText": "Trample, myriad (Whenever this creature attacks, for each opponent other than defending player, you may create a token copy that's tapped and attacking that player or a planeswalker they control. Exile the tokens at end of combat.)\nAs long as this creature is attacking, it gets +X/+0, where X is the number of lands defending player controls.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Trample",
+      "keyword": "trample"
+    },
+    {
+      "kind": "keyword",
+      "text": "myriad",
+      "keyword": "myriad"
+    },
+    {
+      "kind": "static",
+      "text": "As long as this creature is attacking, it gets +X/+0, where X is the number of lands defending player controls.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "self": true,
+        "attacking": true
+      },
+      "apply": {
+        "power": {
+          "count": {
+            "what": "permanent",
+            "types": [
+              "Land"
+            ],
+            "controller": "defending player"
+          }
+        }
+      }
+    }
+  ]
+}

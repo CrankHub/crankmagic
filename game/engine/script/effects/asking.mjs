@@ -1152,7 +1152,14 @@ export const amass = {
    and the payer's plain sources as a generic amount is (rules/mana.mjs, unlessPlans); offered only to a payer who has a way,
    and when there is more than one way, which is the payer's (CR 605.3a). */
 const lifeAsked = (awaiting) => awaiting.life > 0 || (awaiting.life === 0 && !(awaiting.amount > 0));
-const noun = (selector) => (selector?.subtypes?.length ? `a ${selector.subtypes[0]}` : selector?.types?.length ? `a ${selector.types[0].toLowerCase()}` : "a permanent");
+const noun = (selector) => (Array.isArray(selector?.anyOf) && selector.anyOf.length > 1 ? anyOfNoun(selector.anyOf)
+  : selector?.subtypes?.length ? `a ${selector.subtypes[0]}` : selector?.types?.length ? `a ${selector.types[0].toLowerCase()}` : "a permanent");
+/* "Sacrifice a creature or planeswalker" (Winter, Tormented Loner; ROB-323): a choice among kinds says each of them, not "a
+   permanent" -- the options were always only those kinds; the question now says so. A kind it cannot name is said as before. */
+const anyOfNoun = (kinds) => {
+  const words = kinds.map((k) => (k?.subtypes?.length === 1 && !k.types ? k.subtypes[0] : k?.types?.length === 1 && !k.subtypes ? k.types[0].toLowerCase() : null));
+  return words.every(Boolean) ? `${/^[aeiou]/i.test(words[0]) ? "an" : "a"} ${words.join(" or ")}` : "a permanent";
+};
 /* "Another creature you control" (Faerie Impostor): `another` read against the "unless" ability's own source. */
 const otherNoun = (selector) => (selector?.another === true ? noun(selector).replace(/^a /, "another ") : noun(selector));
 /* "Then discard two cards unless you discard a creature card" (Thirst for Identity; CR 118.12, 701.9a): `discard` a selector
@@ -1276,8 +1283,28 @@ function payOptions(state, awaiting) {
 }
 /* Not paid: what follows then, if anything -- the effects of "unless", none of "you may pay. If you do". */
 const unpaid = (awaiting) => (awaiting.ifPaid ? [] : {events: [], splice: structuredClone(awaiting.effects)});
+/* "JOIN FORCES -- STARTING WITH YOU, EACH PLAYER MAY PAY ANY AMOUNT OF MANA" (Minds Aglow; `joinForces`, an ability word, CR 207.2c,
+   so its words are the rule): each player in turn order from the effect's controller (CR 101.4's order of seats), each deciding for
+   themselves how much -- every amount their pool and plain mana sources could pay, from {0} -- and paying it before the next is
+   asked; what follows reads the total as X (`paidX`). A player who could pay nothing has only {0} to choose, so nobody is asked
+   (CR 118.3: a player can't pay more than they have). */
+const joinOrder = (state, first) => state.players.map((p) => p.id).map((_, i, all) => all[(first + i) % all.length]).filter((id) => !state.players[id].lost);
+function joinNext(state, awaiting, events, rest, total) {
+  for (let i = 0; i < rest.length; i += 1) {
+    if (state.players[rest[i]].lost || xOptions(state, rest[i]).length < 2) continue;
+    state.awaiting = {kind: "effect-choice", effect: "unlessPays", player: rest[i], amountX: true, ifPaid: true, joined: {rest: rest.slice(i + 1), total},
+      effects: structuredClone(awaiting.effects), source: awaiting.source};
+    return {events, again: true};
+  }
+  return {events, splice: structuredClone(awaiting.effects), paidX: total};
+}
 export const unlessPays = {
   open(state, params, context) {
+    /* Join forces: the first player with something to pay asked, the rest after them (joinNext). */
+    if (params.joinForces === true) {
+      const first = joinNext(state, {effects: params.effects ?? [], source: context.source ?? null}, [], joinOrder(state, context.controller), 0);
+      return first.again === true;
+    }
     const [payer] = playersFor(state, params.who, context.controller);
     if (payer === undefined) return false;
     /* "You may pay {4}. If you do, ..." (Mana Vault), mana alone, by a player who cannot pay it: no choice to make, and
@@ -1335,6 +1362,9 @@ export const unlessPays = {
       min: awaiting.sacrificeCount, max: awaiting.sacrificeCount, options: payOptions(state, awaiting).map((option, index) => ({index, ...option}))};
     const source = awaiting.source !== null ? state.objects[awaiting.source]?.card : null;
     const pays = payOptions(state, awaiting).map((option, index) => ({index, ...option}));
+    /* Join forces: any amount, {0} among them, so there is no separate "don't pay". */
+    if (awaiting.joined) return {id: `join-forces:${awaiting.player}:${state.turn}:${awaiting.joined.total}`, title: `${source ? `${source}: ` : ""}Join forces: pay any amount of mana (${awaiting.joined.total} paid so far)`,
+      mode: "one", min: 1, max: 1, options: pays};
     return {id: `unless:${awaiting.player}:${state.turn}:${awaiting.amount ?? "X"}`, title: `${source ? `${source}: ` : ""}${costWords(awaiting, state)}?`, mode: "one", min: 1, max: 1,
       options: [...pays, {index: pays.length, label: "Don't pay", pay: false}]};
   },
@@ -1430,6 +1460,8 @@ export const unlessPays = {
   },
   /* Its payer has left the game, deciding or choosing how to pay: the cost is not paid (CR 800.4f). */
   left(state, awaiting) {
+    /* Join forces: a player who has left pays nothing, and the rest are asked (CR 800.4f). */
+    if (awaiting.joined) return joinNext(state, awaiting, [], awaiting.joined.rest, awaiting.joined.total);
     return unpaid(awaiting);
   },
 };
@@ -1466,6 +1498,8 @@ function unlessPaid(state, awaiting, option, events) {
     moveOne(state, option.bounce, "hand", events);
   }
   const remembered = discarded !== null ? {remembered: [discarded]} : {};
+  /* Join forces: what this player paid added to the total, and the next player asked, or all of it read as X (joinNext). */
+  if (awaiting.joined) return joinNext(state, awaiting, events, awaiting.joined.rest, awaiting.joined.total + (awaiting.amount ?? 0));
   if (awaiting.ifPaid) return {events, splice: structuredClone(awaiting.effects), ...(awaiting.amountX ? {paidX: awaiting.amount} : awaiting.timesAny ? {paidX: awaiting.paidTimes} : {}), ...remembered};
   /* "If they do, you create a Lander token" (Divert Disaster): what paying leads to. */
   return awaiting.whenPaid ? {events, splice: structuredClone(awaiting.whenPaid), ...remembered} : events;

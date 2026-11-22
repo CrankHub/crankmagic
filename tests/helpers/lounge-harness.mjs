@@ -72,7 +72,9 @@ export async function world({db = false, migrations, owner = ROB, start = Date.p
   env.TABLES = {idFromName: (name) => name, get: (id) => {
     if (!objects.has(id)) {
       const ctx = objectCtx(); contexts.set(id, ctx);
-      const table = new GameTable(ctx, env, {cards, random, now: () => clock.t});
+      /* A suite that stands in for the network (`fetch`) stands in for the table objects' too: they ask the Access groups who
+         the owner is (cloud/access.mjs groupOf), and must never reach the real API from a suite. */
+      const table = new GameTable(ctx, env, {cards, random, now: () => clock.t, ...(other ? {fetchImpl} : {})});
       /* Node has neither WebSocketPair nor a 101: the socket is the recorded one, and the answer says it was upgraded. */
       table.socketPair = () => [{client: true}, socket()];
       table.upgraded = () => new Response(JSON.stringify({upgraded: true}), {status: 200});

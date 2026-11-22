@@ -1,0 +1,155 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dáin Ironfoot",
+    "oracleId": "9924c189-3c82-431a-b570-7805b2a406f0",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Dwarf",
+      "Warrior"
+    ],
+    "manaCost": "{2}{R}",
+    "colors": [
+      "R"
+    ],
+    "colorIdentity": [
+      "R"
+    ],
+    "power": 1,
+    "toughness": 4
+  },
+  "oracleText": "When Dáin enters, create a colorless Equipment artifact token named Axe with \"Equipped creature gets +1/+0\" and equip {2}. When you do, attach it to target creature you control.\nWhenever Dáin attacks, each equipped attacking creature gains double strike until end of turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When Dáin enters, create a colorless Equipment artifact token named Axe with \"Equipped creature gets +1/+0\" and equip {2}. When you do, attach it to target creature you control.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Axe",
+            "types": [
+              "Artifact"
+            ],
+            "subtypes": [
+              "Equipment"
+            ],
+            "colors": [],
+            "abilities": [
+              {
+                "id": "axe-gets",
+                "kind": "static",
+                "text": "Equipped creature gets +1/+0",
+                "layer": 7,
+                "sublayer": "c",
+                "affects": {
+                  "what": "permanent",
+                  "attachedBy": "self"
+                },
+                "apply": {
+                  "power": 1,
+                  "toughness": 0
+                }
+              },
+              {
+                "id": "axe-equip",
+                "kind": "activated",
+                "text": "Equip {2}",
+                "cost": [
+                  {
+                    "atom": "mana",
+                    "cost": "{2}"
+                  }
+                ],
+                "timing": "sorcery",
+                "targets": [
+                  {
+                    "what": "permanent",
+                    "types": [
+                      "Creature"
+                    ],
+                    "controller": "you"
+                  }
+                ],
+                "effects": [
+                  {
+                    "effect": "attach",
+                    "targets": {
+                      "target": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "remember": true
+        },
+        {
+          "effect": "immediateTrigger",
+          "text": "When you do, attach it to target creature you control.",
+          "about": "remembered",
+          "condition": {
+            "about": "remembered",
+            "is": {}
+          },
+          "targets": [
+            {
+              "what": "permanent",
+              "types": [
+                "Creature"
+              ],
+              "controller": "you"
+            }
+          ],
+          "effects": [
+            {
+              "effect": "attach",
+              "source": "that card",
+              "targets": {
+                "target": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Dáin attacks, each equipped attacking creature gains double strike until end of turn.",
+      "trigger": {
+        "on": "attacks",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "pumpAll",
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "attacking": true,
+            "equipped": true
+          },
+          "power": 0,
+          "toughness": 0,
+          "keywords": [
+            "Double Strike"
+          ],
+          "until": "end-of-turn"
+        }
+      ]
+    }
+  ]
+}

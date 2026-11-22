@@ -269,6 +269,14 @@ try {
     await object.webSocketMessage(other, JSON.stringify({type: "check", choiceId: decision.id, indices: []}));
     eq([other.frames.at(-1).type, other.frames.at(-1).open], ["checked", false], "and by another seat: not open to it");
     eq(counts().map((n, i) => n - mid[i]).filter(Boolean).length, 2, "a check is answered to its sender alone: nothing is broadcast");
+    /* Cancel (ROB-205; room.mjs, cancel): routed to the room, and a cancel the room refuses goes back to its sender alone, with
+       why and their view. What a cancel does is tests/room-cancel-decision.mjs's. */
+    const late = counts();
+    await object.webSocketMessage(other, JSON.stringify({type: "cancel", choiceId: decision.id}));
+    eq([other.frames.at(-1).type, other.frames.at(-1).of, other.frames.at(-1).status], ["refused", "cancel", 409], "a cancel from a seat not being asked: refused, 409");
+    await object.webSocketMessage(asked, JSON.stringify({type: "cancel", choiceId: "not-this-one"}));
+    eq([asked.frames.at(-1).type, asked.frames.at(-1).of, asked.frames.at(-1).status, asked.frames.at(-1).view?.seatId], ["refused", "cancel", 409, waiting], "a cancel of a question no longer open: refused, 409, with the sender's view");
+    eq(counts().map((n, i) => n - late[i]).filter(Boolean).length, 2, "each refused cancel to its sender alone: nothing is broadcast");
   }
   {
     /* And at a table launched with Yield turn: Rob yields an opponent's turn over his socket, and every seat's view moves

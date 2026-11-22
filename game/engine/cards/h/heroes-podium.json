@@ -1,0 +1,98 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Heroes' Podium",
+    "oracleId": "85292bfb-32d7-449e-9ebb-5be828e8ecf6",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [],
+    "manaCost": "{5}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Each legendary creature you control gets +1/+1 for each other legendary creature you control.\n{X}, {T}: Look at the top X cards of your library. You may reveal a legendary creature card from among them and put it into your hand. Put the rest on the bottom of your library in a random order.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Each legendary creature you control gets +1/+1 for each other legendary creature you control.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Creature"
+        ],
+        "supertypes": [
+          "Legendary"
+        ],
+        "controller": "you"
+      },
+      "apply": {
+        "power": {
+          "count": {
+            "types": [
+              "Creature"
+            ],
+            "supertypes": [
+              "Legendary"
+            ],
+            "controller": "you"
+          },
+          "plus": -1
+        },
+        "toughness": {
+          "count": {
+            "types": [
+              "Creature"
+            ],
+            "supertypes": [
+              "Legendary"
+            ],
+            "controller": "you"
+          },
+          "plus": -1
+        }
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "{X}, {T}: Look at the top X cards of your library. You may reveal a legendary creature card from among them and put it into your hand. Put the rest on the bottom of your library in a random order.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{X}"
+        },
+        {
+          "atom": "{T}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "dig",
+          "count": "X",
+          "take": 1,
+          "selector": {
+            "types": [
+              "Creature"
+            ],
+            "supertypes": [
+              "Legendary"
+            ]
+          },
+          "upTo": true,
+          "to": "hand",
+          "reveal": "taken",
+          "rest": "bottom",
+          "random": true
+        }
+      ]
+    }
+  ]
+}

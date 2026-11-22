@@ -1,0 +1,419 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Elturel Survivors",
+  "fixtures": {
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Hero": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Bruiser": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{3}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Smoke Brute": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{3}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Smoke Kill": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Not attacking: a 0/4, whatever the lands on the table",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 0,
+                "toughness": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attacking Maya, who has three lands: a 3/4 as it attacks, and a 0/4 again after combat",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 3,
+                "toughness": 4
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 37
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 0,
+                "toughness": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Three players, attacking Maya (three lands): myriad Yes -- the token copy attacks Trey, who has five lands, so it is a 5/4 and the original stays 3/4",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Elturel Survivors"
+          ],
+          "at": "Maya"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 3,
+                "toughness": 4,
+                "token": false
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 5,
+                "toughness": 4,
+                "token": true
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 37
+            },
+            {
+              "seat": 2,
+              "life": 35
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lands, not other permanents: Maya controls two lands and three creatures, so it is a 2/4 attacking her",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Smoke Bear",
+            "Smoke Bear",
+            "Smoke Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 2,
+                "toughness": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Its own lands are no count: Rob's four lands beside it do not make it bigger attacking a player with none",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Elturel Survivors",
+            "Mountain",
+            "Mountain",
+            "Mountain",
+            "Mountain"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Elturel Survivors"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Elturel Survivors",
+                "power": 0,
+                "toughness": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Elturel Survivors"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Elturel Survivors",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

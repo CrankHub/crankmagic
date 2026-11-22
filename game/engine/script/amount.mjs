@@ -48,6 +48,8 @@
  *                                        mana of any color for each charge counter removed this way", Coalition Relic)
  *   {dieRolled: true}                    the result of the die the rollDie before it in this resolution rolled -- "a number
  *                                        of Treasure tokens equal to the result" (Ancient Copper Dragon; CR 706.2)
+ *   {flipsWon: true}                     how many flips the flipCoin before it in this resolution won -- "for each flip you won,
+ *                                        create a token that's a copy of that creature" (Mirror March; CR 705)
  *   {lesserOf: [amount, amount]}         the least of them: "greater than this creature's power or toughness" (increment)
  *   {tappedThisWay: true}                how many creatures this spell's additional cost tapped as it was cast -- "three times
  *                                        the number of creatures tapped this way" (Burn at the Stake; rules/actions.mjs)
@@ -143,6 +145,8 @@ export const AMOUNT_KINDS = Object.freeze(["x", "attacksThisTurn", "count", "cou
   "startingLife",
   /* Wave 4c: "equal to the result" of a die rolled (CR 706.2; Ancient Copper Dragon). */
   "dieRolled",
+  /* The Rakdos copy deck of 2026-11-05: "for each flip you won" (Mirror March; CR 705). */
+  "flipsWon",
   /* Wave 4d: "if an opponent was dealt 7 or more damage this turn" (Spinerock Knoll). */
   "damageTakenThisTurn",
   /* Wave 4d: "distribute two +1/+1 counters among one or two target creatures you control" (The Earth Crystal; CR 601.2d). */
@@ -209,11 +213,12 @@ export function amountProblems(value) {
   if ("manaSpent" in value && !["that card", "self"].includes(value.manaSpent)) problems.push('manaSpent is "that card" or "self"');
   if ("commanderCasts" in value && !["that card", "you"].includes(value.commanderCasts)) problems.push('commanderCasts is "that card" or "you"');
   if ("colorsSpent" in value && value.colorsSpent !== "self") problems.push('colorsSpent is "self": the colors of mana spent to cast its own object');
-  if ("half" in value && value.half !== true) problems.push("An amount's half is true: halved, rounded down");
+  if ("half" in value && value.half !== true && value.half !== "up") problems.push("An amount's half is true (halved, rounded down) or \"up\" (rounded up)");
   if ("per" in value && !(Number.isInteger(value.per) && value.per > 1)) problems.push("An amount's per is a whole number above 1: \"for every seven\" is per 7");
   if ("countersRemovedThisWay" in value && value.countersRemovedThisWay !== true) problems.push("countersRemovedThisWay is true");
   if ("still" in value && !(value.still === true && "rememberedCount" in value)) problems.push("still is true, beside rememberedCount: those of them still there as a delayed trigger resolves");
   if ("dieRolled" in value && value.dieRolled !== true) problems.push("dieRolled is true: the result of the die rolled before it");
+  if ("flipsWon" in value && value.flipsWon !== true) problems.push("flipsWon is true: how many flips the coin flipped before it won");
   if ("dividedAmong" in value && !(Number.isInteger(value.dividedAmong?.total) && value.dividedAmong.total > 0 && Number.isInteger(value.dividedAmong?.target) && value.dividedAmong.target >= 0))
     problems.push("dividedAmong is {total, target}: a whole amount above 0, divided among the objects chosen for that target");
   if ("countersPut" in value && value.countersPut !== true) problems.push("countersPut is true");
@@ -495,6 +500,8 @@ export function amountOf(state, value, context = {}) {
   else if ("countersRemovedThisWay" in value) n = context.countersRemoved ?? 0;
   /* "Equal to the result" (Ancient Copper Dragon): what the rollDie before it rolled (effects/resources.mjs) -- none rolled, 0. */
   else if ("dieRolled" in value) n = context.rolled ?? 0;
+  /* "For each flip you won" (Mirror March): what the flipCoin before it won (effects/resources.mjs) -- none flipped, 0. */
+  else if ("flipsWon" in value) n = context.flipsWon ?? 0;
   /* "DISTRIBUTE TWO +1/+1 COUNTERS AMONG ONE OR TWO TARGET CREATURES YOU CONTROL" (The Earth Crystal): the total divided as the
      ability was put on the stack, each target chosen then getting at least one (CR 601.2d) -- with one chosen, all of it; with
      as many chosen as the total, one each. That leaves no division to choose (cards/index.mjs refuses one that would), so
@@ -727,6 +734,8 @@ export function amountOf(state, value, context = {}) {
      (Pox Plague), "for every seven cards in your graveyard" (Dark Matter Manipulator): the count divided, rounded down as
      each prints it (CR 107.1a), before anything below. */
   if (value.half === true) n = Math.floor(n / 2);
+  /* "Loses half their life, rounded up" (Shredder, Shadow Master): the same halving, up. */
+  if (value.half === "up") n = Math.ceil(n / 2);
   if (Number.isInteger(value.per)) n = Math.floor(n / value.per);
   /* `atMost`: "{1} less if you control a creature with flying" is the count of them, at most 1. */
   /* `times: "X"`: X for each ("X ... tokens for each opponent who does"), X chosen as it was cast (CR 107.3a). */

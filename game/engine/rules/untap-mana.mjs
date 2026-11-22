@@ -21,7 +21,11 @@ import {hashState} from "../journal.mjs";
 import {event, cardRef} from "../script/effects/zones.mjs";
 
 const unTap = (state, player, take) => {
-  state.objects[take.objectId].tapped = false;
+  const object = state.objects[take.objectId];
+  object.tapped = false;
+  /* And the tap's count (rules/trigger.mjs, recordTaps; Captain America, Living Legend): its first tap this turn taken back,
+     it was never tapped. A second tap this turn keeps its count, so the copy differs and it is not offered (tapTaken). */
+  if (object.tapsThisTurn === 1) delete object.tapsThisTurn;
   const pool = state.players[player].manaPool;
   for (const [key, n] of Object.entries(take.mana)) pool[key] -= n;
 };

@@ -10,7 +10,7 @@ BREAKS = [
     ('deck page badge its own', 'crankmagic-decks.js',
      "stageWord=d.archived?'Archived':stageNow.boxed?'Boxed':", "stageWord=d.archived?'Archived':false?'Boxed':"),
     ('favorite star hides without hover', 'crankmagic.css',
-     ",.cm-deck-tile .cm-tile-tools>.cm-tile-star.is-on{opacity:1}", "{opacity:1}"),
+     ",.cm-deck-tile .cm-tile-star.is-on{opacity:1}", "{opacity:1}"),
     ('Favorites shows every deck', 'crankmagic-decks.js',
      "&&(!fav||favs.has(d.id))).sort(", ").sort("),
     ('selection survives a chip change', 'crankmagic-decks.js',
@@ -32,7 +32,7 @@ BREAKS = [
     ('a tile drops its table line on a redraw', 'crankmagic-decks.js',
      "data-play-for=\"${e(id)}\"${s?' data-play-seen':' hidden'}>${s?e(s.text):''}</span>`", "data-play-for=\"${e(id)}\" hidden></span>`"),
     ('the deck page drops its table line on a redraw', 'crankmagic-decks.js',
-     "id=\"cm-deck-play\" data-deck=\"${e(id)}\"${s?' data-play-seen':' hidden'}>${s?s.html:''}</p>`", "id=\"cm-deck-play\" data-deck=\"${e(id)}\" hidden></p>`"),
+     "id=\"cm-deck-play\" data-deck=\"${e(id)}\"${s?' data-play-seen':' hidden'}>${s?s.html.replace('v-button primary','v-button'):''}</p>`","id=\"cm-deck-play\" data-deck=\"${e(id)}\" hidden></p>`"),
     ('a stale table line kept when the answer skips it', 'crankmagic-decks.js',
      "el.removeAttribute('data-play-seen');el.hidden=true;el.textContent='';", "el.removeAttribute('data-play-seen');"),
 ]

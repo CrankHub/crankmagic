@@ -1,0 +1,597 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Dáin Ironfoot",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{3}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Squire": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Soldier"
+      ],
+      "manaCost": "{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Smoke Murder": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{B}",
+      "colors": [
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered once",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dáin Ironfoot"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dáin Ironfoot"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Dáin Ironfoot"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Dáin Ironfoot"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Dáin Ironfoot"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Axe",
+            "Dáin Ironfoot",
+            "Mountain",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Dáin Ironfoot",
+            "power": 2,
+            "toughness": 4
+          }
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Enters: the Axe is made, and when he does Rob attaches it to his Bear (not Maya's): 3/2; then Equip {2} moves it to Dáin",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dáin Ironfoot"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Dáin Ironfoot"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Dáin Ironfoot",
+                  "Bear"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Bear",
+                "power": 3,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Dáin Ironfoot",
+                "power": 1,
+                "toughness": 4
+              }
+            },
+            {
+              "seat": 1,
+              "stats": {
+                "card": "Their Bear",
+                "power": 2,
+                "toughness": 2
+              }
+            },
+            {
+              "seat": 0,
+              "controls": [
+                "Axe",
+                "Bear",
+                "Dáin Ironfoot",
+                "Mountain",
+                "Wastes",
+                "Wastes",
+                "Wastes",
+                "Wastes"
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Axe",
+          "targets": [
+            {
+              "card": "Dáin Ironfoot"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Dáin Ironfoot",
+            "power": 2,
+            "toughness": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dáin destroyed with his trigger waiting and no other creature: the Axe is still made, but \"when you do\" has no target, so it stays unattached",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dáin Ironfoot",
+            "Smoke Murder"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Swamp"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Dáin Ironfoot"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "tap": "Swamp"
+        },
+        {
+          "cast": "Smoke Murder",
+          "targets": [
+            {
+              "card": "Dáin Ironfoot"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Dáin Ironfoot",
+            "Smoke Murder"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Axe",
+            "Mountain",
+            "Swamp",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attacks: the equipped attacking Bear gains double strike (8 damage); the unequipped Ogre and Dáin do not, nor the equipped Squire at home; gone next turn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dáin Ironfoot",
+            "Bear",
+            "Ogre",
+            "Squire",
+            "Bonesplitter",
+            "Gold Pan",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Bonesplitter",
+          "targets": [
+            {
+              "card": "Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Gold Pan",
+          "targets": [
+            {
+              "card": "Squire"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Dáin Ironfoot",
+            "Bear",
+            "Ogre"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "has": [
+                  "Double Strike"
+                ],
+                "lacks": []
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Ogre",
+                "has": [],
+                "lacks": [
+                  "Double Strike"
+                ]
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Dáin Ironfoot",
+                "has": [],
+                "lacks": [
+                  "Double Strike"
+                ]
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Squire",
+                "has": [],
+                "lacks": [
+                  "Double Strike"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 27
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Bear",
+            "has": [],
+            "lacks": [
+              "Double Strike"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attacks with no equipped creature attacking: nobody gains double strike",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dáin Ironfoot",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Dáin Ironfoot",
+            "Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Bear",
+            "has": [],
+            "lacks": [
+              "Double Strike"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "life": 37
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Hardened Tactician",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Goblin Token": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Goblin"
+      ],
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1,
+      "token": true
+    },
+    "Treasure Token": {
+      "types": [
+        "Artifact"
+      ],
+      "subtypes": [
+        "Treasure"
+      ],
+      "colors": [],
+      "token": true
+    }
+  },
+  "scenarios": [
+    {
+      "name": "With {1} paid from a land and a token sacrificed, one card is drawn; offered once for each token",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hardened Tactician",
+            "Wastes",
+            "Goblin Token",
+            "Treasure Token"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Hardened Tactician"
+              },
+              "count": 2,
+              "costs": [
+                [
+                  "Goblin Token"
+                ],
+                [
+                  "Treasure Token"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Hardened Tactician",
+          "sacrifice": "Goblin Token"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Hardened Tactician",
+            "Treasure Token",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A Treasure token is a token too, and the player may sacrifice the Tactician's other token instead of the Goblin",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hardened Tactician",
+            "Wastes",
+            "Goblin Token",
+            "Treasure Token"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Hardened Tactician",
+          "sacrifice": "Treasure Token"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Hardened Tactician",
+            "Goblin Token",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A nontoken creature is no cost: with only a Bear to sacrifice, the ability is not offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hardened Tactician",
+            "Wastes",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Hardened Tactician"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "Without the {1} to pay, a token in play is not enough",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hardened Tactician",
+            "Goblin Token"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Hardened Tactician"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Hardened Tactician",
+            "Goblin Token"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Garruk, Unleashed",
+    "oracleId": "32ea6b1c-d48e-4663-ad5c-d7f4a85450af",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Garruk"
+    ],
+    "manaCost": "{2}{G}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 4
+  },
+  "oracleText": "+1: Up to one target creature gets +3/+3 and gains trample until end of turn.\n−2: Create a 3/3 green Beast creature token. Then if an opponent controls more creatures than you, put a loyalty counter on Garruk.\n−7: You get an emblem with \"At the beginning of your end step, you may search your library for a creature card, put it onto the battlefield, then shuffle.\"",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "+1: Up to one target creature gets +3/+3 and gains trample until end of turn.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "pump",
+          "targets": {
+            "target": 0
+          },
+          "power": 3,
+          "toughness": 3,
+          "keywords": [
+            "Trample"
+          ],
+          "until": "end-of-turn"
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "count": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−2: Create a 3/3 green Beast creature token. Then if an opponent controls more creatures than you, put a loyalty counter on Garruk.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -2
+        }
+      ],
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Beast",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Beast"
+            ],
+            "colors": [
+              "G"
+            ],
+            "power": 3,
+            "toughness": 3
+          }
+        },
+        {
+          "effect": "putCounter",
+          "targets": "self",
+          "counter": "loyalty",
+          "count": 1,
+          "condition": {
+            "compare": {
+              "count": {
+                "mostAmongOpponents": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "controller": "you"
+                }
+              },
+              "moreThan": {
+                "count": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "controller": "you"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−7: You get an emblem with \"At the beginning of your end step, you may search your library for a creature card, put it onto the battlefield, then shuffle.\"",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -7
+        }
+      ],
+      "effects": [
+        {
+          "effect": "emblem",
+          "abilities": [
+            {
+              "kind": "triggered",
+              "text": "At the beginning of your end step, you may search your library for a creature card, put it onto the battlefield, then shuffle.",
+              "trigger": {
+                "on": "end step"
+              },
+              "effects": [
+                {
+                  "effect": "chooseCard",
+                  "zone": "library",
+                  "selector": {
+                    "types": [
+                      "Creature"
+                    ]
+                  },
+                  "to": "battlefield",
+                  "shuffle": true
+                }
+              ],
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

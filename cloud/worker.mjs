@@ -39,6 +39,7 @@
  *                                  released -> notified, with the issue, PR, release commit and message id
  */
 import {verifyAccess, Unauthorized, groupOf} from "./access.mjs";
+import {setMember, roster, AccessApiError} from "./access-groups.mjs";
 import {createLibrary, Conflict, Invalid, LIMITS} from "./library.mjs";
 import {archidekt, ImportError} from "./import.mjs";
 import {createAi, everyone, settings, explain, coach, advise, readQuestion, Closed} from "./ai.mjs";
@@ -54,33 +55,47 @@ import {createFeedback, FeedbackInvalid, FeedbackRefused, isOwner, feedbackGroup
 /* AI COACH SETTINGS (AI-6): the person's own spending over the last 24 hours against their cap, from the call log, for
    the settings panel's meter; `open` false where the door is shut or they are not on its list. The 24 hours end at
    `now` (an ISO time), the request's clock, so a suite's fixed clock reads the window its calls were logged in. */
-async function aiMeter(env, email, now) {
+async function aiMeter(env, email, now, fetchImpl = fetch) {
   if (!env.DB) return {open: false};
   let config;
   try {config = settings(env, await storedModel(env.DB));} catch {return {open: false};}
-  const ai = createAi(env.DB, {now, owner: env.OWNER_EMAIL});
+  const ai = createAi(env.DB, {now, owner: env.OWNER_EMAIL, env, fetchImpl});
   if (!(await ai.allowed(email))) return {open: false};
   const {mine} = await ai.spent(email);
   return {open: true, spentCents: Math.round(mine / 10000 * 100) / 100, capCents: config.capPerson / 10000};
 }
-async function aiSeatOpen(env, email, flag = "AI_PILOT") {
+async function aiSeatOpen(env, email, flag = "AI_PILOT", fetchImpl = fetch) {
   if (env[flag] !== "on" || !env.DB) return false;
   try {settings(env, await storedModel(env.DB));} catch {return false;}
-  return createAi(env.DB, {owner: env.OWNER_EMAIL}).allowed(email);
+  return createAi(env.DB, {owner: env.OWNER_EMAIL, env, fetchImpl}).allowed(email);
 }
 
-/* THE OWNER'S ROSTER (Rob, 2026-10-26; cloud/access.mjs): who is a Game Theory Insider, read and set by the owner alone.
-   GET lists the roster; PUT {email, group: "insider" | "general", note} adds a person to it or takes them off. A person is
-   general by being on no list, so there is nothing to delete. Anyone but the owner is refused, saying who may. */
-async function adminGroups(request, env, who, ms) {
-  const group = await groupOf(who.email, env, env.DB);
+/* THE OWNER'S ROSTER (Rob, 2026-10-26; since 2026-11-03, ROB-440, the Cloudflare Access rule groups themselves, so the roster
+   and Cloudflare cannot disagree: cloud/access-groups.mjs). GET reads the "Game Theory Insiders" and "CrankMagic Invitees"
+   groups; PUT {email, group: "insider" | "general"} puts a person in Game Theory Insiders, or takes them out of it and into
+   CrankMagic Invitees, so a person made general keeps the app. The Admin group is the dashboard's alone. Anyone but the owner
+   is refused, saying who may; a copy with no Access API token answers 503 and changes nothing. */
+async function adminGroups(request, env, who, ms, fetchImpl) {
+  const group = await groupOf(who.email, env, env.DB, {fetchImpl});
   if (group !== "owner") return reply(403, {error: "Only CrankMagic's owner can manage access groups."});
-  const ai = createAi(env.DB, {now: () => new Date(ms()).toISOString(), owner: env.OWNER_EMAIL});
-  if (request.method === "GET") return reply(200, {owner: true, insiders: await ai.insiders()});
-  if (request.method !== "PUT") return reply(405, {error: "The roster is read with GET and set with PUT."});
-  const input = await body(request);
-  try {return reply(200, await ai.setGroup(input.email, input.group, input.note));}
-  catch (error) {if (error instanceof Closed) return reply(error.status, {error: error.message}); throw error;}
+  const now = () => new Date(ms()).toISOString();
+  try {
+    if (request.method === "GET") return reply(200, {owner: true, ...await roster(env, {fetchImpl})});
+    if (request.method !== "PUT") return reply(405, {error: "The roster is read with GET and set with PUT."});
+    const input = await body(request) || {};
+    if (input.group !== "insider" && input.group !== "general") return reply(400, {error: "A person is an insider or general; the Admin group is kept in the Cloudflare dashboard."});
+    const email = String(input.email || "").trim().toLowerCase(), deps = {now, fetchImpl};
+    if (input.group === "insider") await setMember(env.DB, env, "insiders", email, true, deps);
+    else {
+      /* Into Invitees first, then out of Insiders: a person is never left with no group that signs them in. */
+      await setMember(env.DB, env, "invitees", email, true, deps);
+      await setMember(env.DB, env, "insiders", email, false, deps);
+    }
+    return reply(200, {email, group: input.group});
+  } catch (error) {
+    if (error instanceof AccessApiError) return reply(error.status, {error: error.message});
+    throw error;
+  }
 }
 
 /* THE OWNER'S AI MODEL (ROB-338; cloud/ai-model.mjs, docs/program/admin-pane-contract.md): which Claude model the AI door calls,
@@ -91,7 +106,7 @@ async function adminGroups(request, env, who, ms) {
      POST /api/admin/ai-model/undo   back to the model before the last change */
 async function adminModel(request, env, who, deps, ms) {
   const path = new URL(request.url).pathname, method = request.method;
-  if ((await groupOf(who.email, env, env.DB)) !== "owner") return reply(403, {error: "Only CrankMagic's owner can change the AI model."});
+  if ((await groupOf(who.email, env, env.DB, {fetchImpl: deps.fetchImpl})) !== "owner") return reply(403, {error: "Only CrankMagic's owner can change the AI model."});
   const undoing = path === "/api/admin/ai-model/undo";
   if (undoing ? method !== "POST" : method !== "GET" && method !== "PUT") return reply(405, {error: undoing ? "Undo is a POST." : "The model is read with GET and chosen with PUT."});
   const admin = modelAdmin(env, {now: () => new Date(ms()).toISOString(), fetchImpl: deps.fetchImpl || fetch});
@@ -267,7 +282,7 @@ export async function handle(request, env, deps = {}) {
     const origin = request.headers.get("origin");
     if (method !== "GET" && !fromTheApp(request, url, "play")) return reply(403, {error: "That request did not come from CrankMagic."});
     if (request.headers.get("upgrade") === "websocket" && origin !== url.origin) return reply(403, {error: "That request did not come from CrankMagic."});
-    return tables(request, env, who, {invitations: gameInvitations(env, who, {now: () => new Date(ms()).toISOString(), fetchImpl: deps.fetchImpl ?? fetch, origin: url.origin})});
+    return tables(request, env, who, {fetchImpl: deps.fetchImpl, invitations: gameInvitations(env, who, {now: () => new Date(ms()).toISOString(), fetchImpl: deps.fetchImpl ?? fetch, origin: url.origin})});
   }
   /* FEEDBACK (the feedback loop, PR 1; cloud/feedback.mjs): any signed-in person, from the app's own sheet. The reporter
      is who Access named, never a name in the report; a screenshot is not kept until R2 is on. */
@@ -292,7 +307,7 @@ export async function handle(request, env, deps = {}) {
   const person = await library.user(who.email);
   try {
     /* THE ACCESS GROUPS' ROSTER (adminGroups above) is the owner's and is read and set here, before Admin's own read-only pages. */
-    if (path === "/api/admin/groups") return adminGroups(request, env, who, ms);
+    if (path === "/api/admin/groups") return adminGroups(request, env, who, ms, deps.fetchImpl || fetch);
     if (path === '/api/admin' || path.startsWith('/api/admin/')) {
       if (!administrator(who,person,env)) return reply(403,{error:'Only the CrankMagic administrator can open this page.'});
       if (method !== 'GET') return new Response(JSON.stringify({error:'Administration is read-only in this version.'}),
@@ -318,11 +333,11 @@ export async function handle(request, env, deps = {}) {
     if (joined) return new Response(null, {status: 302, headers: {location: joined, "cache-control": "no-store", "referrer-policy": "no-referrer"}});
     /* WHO IS ASKING, AND THEIR GROUP (cloud/access.mjs): owner, insider or general. The browser hides what a group may not
        press; every route still asks for itself. `admin` is the Admin window's own gate (r4). */
-    if (method === "GET" && path === "/api/me") return reply(200, {email: loginEmail, since: person.createdAt, group: await groupOf(who.email, env, env.DB), head: await library.head(person.id), admin:administrator(who,person,env)});
+    if (method === "GET" && path === "/api/me") return reply(200, {email: loginEmail, since: person.createdAt, group: await groupOf(who.email, env, env.DB, {fetchImpl: deps.fetchImpl}), head: await library.head(person.id), admin:administrator(who,person,env)});
     /* AN AI ON CLAUDE (AI-2): New table offers one only where the table's object would seat it (cloud/game-room.mjs
        `pilotOpen`): the switch on, the door's key, caps and model set, and this person on the allowlist. */
     if (method === "GET" && path === "/api/ai-seat") {
-      const open = await aiSeatOpen(env, person.email);
+      const open = await aiSeatOpen(env, person.email, "AI_PILOT", deps.fetchImpl || fetch);
       /* The levels a table may seat now (lounge contract §2): the roster's open ones. The AI on Claude is `open`'s, unchanged. */
       return reply(200, {open, levels: SEATABLE_LEVELS});
     }
@@ -330,10 +345,10 @@ export async function handle(request, env, deps = {}) {
     if (method === "GET" && path === "/api/users/search") return reply(200, await searchUsers(env.DB, person.email, url.searchParams.get("q")));
     if (method === "GET" && path === "/api/leaderboard") return reply(200, await leaderboard(env.DB, person.email));
     /* THE DECK ADVISOR (AI-4): a deck's page offers Ask the advisor only where the door would answer this person. */
-    if (method === "GET" && path === "/api/ai-advise") return reply(200, {open: await aiSeatOpen(env, person.email, "AI_ADVISE")});
+    if (method === "GET" && path === "/api/ai-advise") return reply(200, {open: await aiSeatOpen(env, person.email, "AI_ADVISE", deps.fetchImpl || fetch)});
     /* The table shows a composer only where the existing Coach switch and this person's AI gates are open. */
-    if (method === "GET" && path === "/api/ai-coach") return reply(200, {open: await aiSeatOpen(env, person.email, "AI_COACH")});
-    if (method === "GET" && path === "/api/ai-meter") return reply(200, await aiMeter(env, person.email, () => new Date(ms()).toISOString()));
+    if (method === "GET" && path === "/api/ai-coach") return reply(200, {open: await aiSeatOpen(env, person.email, "AI_COACH", deps.fetchImpl || fetch)});
+    if (method === "GET" && path === "/api/ai-meter") return reply(200, await aiMeter(env, person.email, () => new Date(ms()).toISOString(), deps.fetchImpl || fetch));
     if (method === "GET" && path === "/api/library") return reply(200, {head: await library.head(person.id)});
     if (method === "PUT" && path === "/api/library") {
       const input = await body(request);
@@ -463,7 +478,7 @@ async function aiDoor(request, env, deps, url, ms) {
   if (!feature) return reply(404, {error: "No such endpoint."});
   if (request.method !== "POST") return reply(405, {error: `${feature} is a POST.`});
   if (!fromTheApp(request, url, "ai")) return reply(403, {error: "That request did not come from CrankMagic."});
-  const ai = createAi(env.DB, {now: () => new Date(ms()).toISOString(), owner: env.OWNER_EMAIL, ...(deps.newId ? {newId: deps.newId} : {})});
+  const ai = createAi(env.DB, {now: () => new Date(ms()).toISOString(), owner: env.OWNER_EMAIL, env, fetchImpl: deps.fetchImpl || fetch, ...(deps.newId ? {newId: deps.newId} : {})});
   if (!(await ai.allowed(who.email))) return reply(403, {error: "Your account is not on CrankMagic's list for AI features. Ask the person who invited you."});
   /* The Coach sends a person's hand and board, which the privacy page must say before it is offered: its own switch. */
   if (feature === "The Coach" && env.AI_COACH !== "on") return reply(503, {error: "The Coach is not switched on here yet."});

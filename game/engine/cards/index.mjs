@@ -204,7 +204,8 @@ const titleCase = (word) => String(word).split(" ").map((w) => w.charAt(0).toUpp
    "when THIS enters", `yours: true` is "at the beginning of YOUR upkeep". */
 const ARRIVALS = ["self", "another", "any"];
 /* The steps whose beginning a card may name (rules/turn.mjs announces each as it arrives). */
-const STEPS = ["UPKEEP", "DRAW", "MAIN1", "COMBAT_BEGIN", "MAIN2", "END_OF_TURN"];
+/* And "at end of combat" (COMBAT_END; Delina's token copy, "At end of combat, exile this token"; CR 511.2). */
+const STEPS = ["UPKEEP", "DRAW", "MAIN1", "COMBAT_BEGIN", "COMBAT_END", "MAIN2", "END_OF_TURN"];
 /* "Whenever this deals combat damage to a player": `who` the source, `combat`, `to` player or opponent (CR 510.2); `to:
    "self"`, damage dealt to this permanent. */
 const damageDealt = (t) => (t.to === "self" ? {on: "GameEventCardDamaged", to: "self", ...(t.combat ? {combat: true} : {})}
@@ -212,7 +213,7 @@ const damageDealt = (t) => (t.to === "self" ? {on: "GameEventCardDamaged", to: "
        is dealt damage": `to` "creature" (`filter` what was dealt it) or "enchanted"; about the creature dealt it. */
     : t.to === "creature" || t.to === "enchanted" ? {on: "GameEventCardDamaged", to: t.to, ...(t.filter ? {filter: t.filter} : {}), ...(t.combat ? {combat: true} : {})}
     /* "Whenever a creature deals combat damage to you" (Strixhaven Stadium): `to: "you"`, this ability's controller. */
-    : ARRIVALS.includes(t.who ?? "self") && ["player", "opponent", "you"].includes(t.to ?? "player")
+    : ARRIVALS.includes(t.who ?? "self") && ["player", "opponent", "you", "anything"].includes(t.to ?? "player")
     ? {on: "GameEventPlayerDamaged", who: t.who ?? "self", to: t.to ?? "player", ...(t.combat ? {combat: true} : {}), ...(t.noncombat ? {noncombat: true} : {}), ...(t.sourceYours ? {sourceYours: true} : {}), ...(t.filter ? {filter: t.filter} : {}),
       /* "Deals combat damage to a player or planeswalker" (Grateful Apparition): damage dealt to a planeswalker counts
          too, about its controller (rules/trigger.mjs). */
@@ -323,7 +324,8 @@ const TRIGGERS = {
     : t.who === "any" && t.each === undefined ? {on: "GameEventCardCounters", counterAdded: true, counter: t.counter, who: "any", ...(t.filter ? {filter: t.filter} : {}),
       ...(t.putBy ? {putBy: t.putBy} : {})} : null),
   /* "Whenever you scry or surveil" (Proft, Consulting Detective; CR 701.22a, 701.25a): once each is done, by `scrier`. */
-  scried: (t) => ({on: "GameEventScried", scrier: t.scrier ?? "you"}),
+  /* "Whenever you scry" alone (Arwen Undómiel; CR 701.22a): `kind: "scry"`, a surveil not among them (CR 701.25a). */
+  scried: (t) => ({on: "GameEventScried", scrier: t.scrier ?? "you", ...(t.kind === "scry" ? {kind: "scry"} : {})}),
   /* "Whenever you proliferate" (Ezuri, Stalker of Spheres; CR 701.34a): once each proliferate is done, by `proliferator`
      you, opponent or any. */
   proliferated: (t) => ({on: "GameEventProliferate", proliferator: t.proliferator ?? "you"}),
@@ -463,6 +465,8 @@ function effectsIn(list, out = []) {
     effectsIn(effect.whenPaid, out);
     /* What follows a sacrifice declined (Braids, Arisen Nightmare). */
     effectsIn(effect.ifNot, out);
+    /* What each row of a rolled die does (Delina, Wild Mage). */
+    for (const row of effect.rows ?? []) effectsIn(row?.effects, out);
   }
   return out;
 }
@@ -474,12 +478,16 @@ function effectsIn(list, out = []) {
    else that adds mana -- a sacrifice, a target, a question -- is a problem until it is built. */
 const MANA = (m) => m && typeof m === "object" && !Array.isArray(m) && Object.keys(m).length > 0
   && Object.entries(m).every(([color, n]) => /^[WUBRGC]$/.test(color) && ((Number.isInteger(n) && n > 0) || isCounted(n)));
+const LIBRARY_MOVERS = Object.freeze(["draw", "mill", "dig", "digUntil", "surveil", "scry", "rearrangeTop", "discover", "shuffle"]);
 function manaAbility(ability, id) {
   if (ability.kind !== "activated") return null;
   /* CR 605.1a: an ability that targets is not a mana ability, whatever it adds -- it goes on the stack like any other, and
      the mana is added as it resolves ("Any number of target players each lose 2 life ... You add {B}{B}", Priest of
      Forgotten Gods). */
   if ((ability.targets ?? []).length) return null;
+  /* Nor is one that moves cards to or from a library (CR 605.1a, as updated): "Parley -- {T}: Each player reveals the top card of
+     their library ... add {G} ... Then each player draws a card" (Selvala, Explorer Returned) uses the stack, and can be responded to. */
+  if ((ability.effects ?? []).some((e) => LIBRARY_MOVERS.includes(e?.effect))) return null;
   /* Nor is a loyalty ability (CR 605.1a): "[+1]: Add {R}" (Way of the Pyromancer) goes on the stack, at sorcery speed. */
   if ((ability.cost ?? []).some((a) => a?.atom === "loyalty")) return null;
   const [first, ...then] = ability.effects ?? [];
@@ -627,6 +635,7 @@ function withDelayedTriggers(abilities, problems) {
     }
     for (const key of ["effects", "then", "otherwise"]) if (Array.isArray(out[key])) out[key] = out[key].map(walk);
     if (Array.isArray(out.modes)) out.modes = out.modes.map((mode) => ({...mode, effects: (mode.effects ?? []).map(walk)}));
+    if (Array.isArray(out.rows)) out.rows = out.rows.map((row) => ({...row, effects: (row.effects ?? []).map(walk)}));
     return out;
   };
   return abilities.map((ability) => (Array.isArray(ability.effects) ? {...ability, effects: ability.effects.map(walk)} : ability));
@@ -684,17 +693,28 @@ function compileGivenIn(effects, text, problems) {
     }
     /* "You get an emblem with '...'" (CR 114.2; effects/permanents.mjs, emblem): its abilities compiled as a card's are, in
        place. What works from the command zone is built (114.4): a triggered ability, a replacement effect, a rule
-       changed for players (rules/statics.mjs, playerRuleChanged), and a static ability in a layer (rules/layers.mjs,
+       changed for players (rules/statics.mjs, playerRuleChanged), a free cast (freeCast), and a static ability in a layer (rules/layers.mjs,
        gatherEffects: Liliana of the Dark Realms' "Swamps you control have ..."). */
     if (effect.effect === "emblem") {
       const list = effect.abilities;
       if (!Array.isArray(list) || !list.length) { problems.push(`${text}: an emblem's abilities are a list, with at least one`); continue; }
+      /* And "you may cast spells from your hand without paying their mana costs" (Tamiyo, Field Researcher's emblem): a static
+         `cast-without-paying`, read from the command zone as a permanent's is (rules/statics.mjs, freeCast). */
       for (const ability of list) if (!(["triggered", "replacement"].includes(ability?.kind) || (ability?.kind === "static" && typeof ability.rule === "string" && ability.affects?.what === "player")
+        || (ability?.kind === "static" && ability.rule === "cast-without-paying")
         || (ability?.kind === "static" && ability.rule === undefined && Number.isInteger(ability.layer))))
         problems.push(`${text}: an emblem's ${ability?.kind ?? "nameless"} ability -- only triggered and replacement abilities, a rule changed for players and a static in a layer work from the command zone yet`);
       const {definition, problems: inner} = compileScript({schema: SCRIPT_SCHEMA, identity: EMBLEM_IDENTITY, oracleText: "", abilities: list});
       problems.push(...inner.map((problem) => `${text}: ${problem}`));
       if (definition) effect.abilities = definition.abilities;
+      continue;
+    }
+    /* "For as long as that creature has a bounty counter on it, it has 'When this creature dies, ...'" (Mathas, Fiend Seeker;
+       CR 611.2b, 613.1f): the abilities an effect gives for a while, compiled as a static's grant is -- a triggered, activated or
+       keyword ability. A mana ability given (Ultima, Origin of Oblivion) is held as written, as it was before. */
+    if (effect.effect === "effectUntil" && Array.isArray(effect.apply?.addAbilities) && effect.apply.addAbilities.length && effect.apply.addAbilities.every((a) => GRANTABLE.includes(a?.kind))) {
+      const given = compileGrant(effect.apply.addAbilities, text, problems);
+      if (given) effect.apply = {...effect.apply, addAbilities: given.abilities, ...(given.keywords.length ? {addKeywords: [...(effect.apply.addKeywords ?? []), ...given.keywords]} : {})};
       continue;
     }
     if (effect.abilities === undefined) continue;
@@ -925,6 +945,25 @@ export function compileScript(script) {
           {effect: "delayedTrigger", at: "end of combat", text: "Exile the tokens at end of combat.", condition: {compare: {count: {rememberedCount: true}, atLeast: 1}},
             effects: [{effect: "moveZone", targets: "remembered", to: "exile"}]}]});
       keywords.push("Myriad");
+      return;
+    }
+    /* SOULBOND (CR 702.95a; Mirage Phalanx): "You may pair this creature with another unpaired creature when either enters" -- the
+       keyword IS two triggered abilities: this creature entering, its controller choosing another unpaired creature of theirs (or
+       none), and another creature of its controller's entering, paired with this one if they both are still unpaired as it
+       resolves (effects/permanents.mjs, pair). They stay paired as long as they are both creatures under one controller
+       (rules/sba.mjs, endPairings). Each ability says which keyword it is (`keyword`), for a copy that loses it. */
+    if (ability.kind === "keyword" && String(ability.keyword).toLowerCase() === "soulbond") {
+      abilities.push(
+        {id, kind: "triggered", keyword: "Soulbond", text: ability.text, trigger: TRIGGERS.enters({who: "self"}),
+          effects: [{effect: "chooseCard", zone: "battlefield", selector: {types: ["Creature"], controller: "you", another: true, paired: false}, count: 1, upTo: true, to: "stay", remember: true},
+            {effect: "pair"}]},
+        {id: `${id}-other`, kind: "triggered", keyword: "Soulbond", text: ability.text,
+          trigger: TRIGGERS.enters({who: "another", filter: {types: ["Creature"], controller: "you", paired: false}}),
+          /* An intervening "if" (CR 603.4): this creature is unpaired as the other enters, and still as the ability resolves. */
+          condition: {present: {what: "permanent", self: true, paired: false}},
+          /* "You may" (CR 603.5), asked as it resolves: the keyword's own, as the optional ability's is wrapped below. */
+          effects: [{effect: "modal", title: ability.text, modes: [{text: "Yes", effects: [{effect: "pair", with: "that card"}]}, {text: "No", effects: []}]}]});
+      keywords.push("Soulbond");
       return;
     }
     /* DETHRONE (CR 702.105a; Scourge of the Throne, precon load lane C): "Whenever this creature attacks the player with the most
@@ -1273,6 +1312,19 @@ export function compileScript(script) {
       if (!(identity.types ?? []).includes("Creature")) problems.push(`${ability.text}: dash on a card that is no creature`);
       abilities.push({id, kind: "static", rule: "alternative-cost", paidFor: "dash", text: ability.text, cost: structuredClone(cost), affects: {what: "card", self: true}});
       keywords.push("Dash");
+      return;
+    }
+    /* BLITZ [COST] (CR 702.152a; Jaxis, the Troublemaker): "You may cast this card by paying [cost] rather than its mana cost" -- an
+       alternative cost (CR 118.9) marked as cast for (`paidFor`), as dash's is -- and, if it was, the permanent it becomes has haste
+       and "When this creature dies, draw a card", and is sacrificed at the beginning of the next end step (rules/stack.mjs). */
+    if (word === "blitz") {
+      const cost = Array.isArray(ability.cost) ? ability.cost : [];
+      let parsed = null;
+      try { parsed = cost.length === 1 && cost[0]?.atom === "mana" ? parseManaCost(cost[0].cost ?? "") : null; } catch { /* refused below */ }
+      if (!parsed || !parsed.symbols.length || parsed.variable > 0) problems.push(`${ability.text}: a blitz cost of mana, once, without X`);
+      if (!(identity.types ?? []).includes("Creature")) problems.push(`${ability.text}: blitz on a card that is no creature`);
+      abilities.push({id, kind: "static", rule: "alternative-cost", paidFor: "blitz", text: ability.text, cost: structuredClone(cost), affects: {what: "card", self: true}});
+      keywords.push("Blitz");
       return;
     }
     /* WARP [COST] (CR 702.185a; All-Fates Stalker, Pinnacle Emissary): "You may cast this card from your hand by paying [cost]
@@ -1960,6 +2012,9 @@ export function compileScript(script) {
         ...(ability.zone === "graveyard" ? {zone: "graveyard"} : {}),
         /* Exhaust (CR 702.177a): "Activate only once" -- this object's, never again; a new object may (CR 400.7). */
         ...(ability.exhaust === true ? {exhaust: true} : {}),
+        /* Power-up (CR 702.193a): known by its words, "Power-up — [Cost]: [Effect]" -- activated only once by this object, and
+           cheaper by the permanent's mana cost the turn it entered (rules/actions.mjs, poweredUp). */
+        ...(/^Power-up\b/.test(ability.text ?? "") ? {powerUp: true} : {}),
         /* Cycling (CR 702.29a): its discard is the card being cycled, for "when you cycle this card" (rules/actions.mjs). */
         ...(ability.cycling === true ? {cycling: true} : {}),
         /* "This ability costs {1} less to activate for each legendary creature you control" (CR 602.2b, 601.2f). */
@@ -2325,6 +2380,12 @@ export function compileScript(script) {
     for (const problem of adventure.problems) problems.push(`Adventure: ${problem}`);
     /* What is cast from exile after it is a permanent spell (715.3d): an adventurer card is a permanent card. */
     if (types.some((t) => t === "Instant" || t === "Sorcery")) problems.push("an adventurer card is a permanent card; its Adventure is the instant or sorcery");
+    /* AN OMEN CARD (CR 720; Scavenger Regent // Exude Toxin): the same two sets of characteristics, cast the same way (720.3,
+       rules/actions.mjs), but an Omen spell is shuffled into its owner's library as the last of its resolution (720.3d) --
+       never exiled, so no permission to cast it from there follows (rules/stack.mjs finds it gone). One that does not
+       resolve goes where any spell would. */
+    if (adventure.definition?.spell && adventure.definition.subtypes.includes("Omen"))
+      adventure.definition.spell.effects = [...adventure.definition.spell.effects, {effect: "moveZone", targets: "self", to: "library", shuffle: true}];
     if (adventure.definition) definition.adventurer = {main: faceOfDefinition(definition, names[0]), adventure: faceOfDefinition(adventure.definition, names[1])};
   }
   /* A PREPARATION CARD (CR 722): "Card // Prepare spell", the prepare spell -- the inset frame's alternative characteristics

@@ -1,0 +1,74 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Arwen Undómiel",
+    "oracleId": "5ffbbce1-fe38-40dc-a7c3-2055ae86c6c5",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Elf",
+      "Noble"
+    ],
+    "manaCost": "{G}{U}",
+    "colors": [
+      "G",
+      "U"
+    ],
+    "colorIdentity": [
+      "G",
+      "U"
+    ],
+    "power": 2,
+    "toughness": 2
+  },
+  "oracleText": "Whenever you scry, put a +1/+1 counter on target creature.\n{4}{G}{U}: Scry 2.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever you scry, put a +1/+1 counter on target creature.",
+      "trigger": {
+        "on": "scried",
+        "kind": "scry"
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": {
+            "target": 0
+          },
+          "counter": "+1/+1",
+          "count": 1
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{4}{G}{U}: Scry 2.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{4}{G}{U}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "scry",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

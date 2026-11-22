@@ -107,7 +107,9 @@ function printed(state, id) {
 export const LAYER_AFFECTS_KEYS = Object.freeze(["anyOf", "what", "ids", "types", "subtypes", "supertypes", "controller", "token", "another", "self", "attachedBy", "colors", "colorless", "countersAtLeast", "tapped", "counters",
   "keywords", "hasDealtDamage", "hasDealtCombatDamage", "attacking", "zone", "modified", "nonTypes", "nonSubtypes", "continued", "nonSupertypes", "commander",
   /* "Commander creatures you OWN have ..." (Agent of the Iron Throne, a Background; Rob's lists P2). */
-  "owner"]);
+  "owner",
+  /* SOULBOND (CR 702.95; Mirage Phalanx): "each of those creatures" -- the source and the creature it is paired with. */
+  "pairedWithSource"]);
 /* MODIFIED (CR 700.15; Kodama of the West Tree, wave 4d L3): a permanent with a counter on it, one that is equipped, or one
    enchanted by an Aura its controller controls. Its attachments read as printed (an Equipment or an Aura subtype, its
    controller) -- what the layers are deriving is the permanent, not them -- so the layer matcher and the selector grammar
@@ -167,6 +169,12 @@ function affects(state, effect, current, sourceController) {
   if (rule.self === true && current.id !== effect.sourceId) return false;
   /* "Equipped creature has haste": the one its source is attached to (CR 301.5). */
   if (rule.attachedBy === "self" && state.objects[effect.sourceId]?.attachedTo !== current.id) return false;
+  /* "As long as Mirage Phalanx is paired with another creature, each of those creatures has ...": the source and its partner, read off
+     the pairing the objects keep (effects/permanents.mjs, pair), which no layer changes. */
+  if (rule.pairedWithSource === true) {
+    const source = state.objects[effect.sourceId];
+    if (!source || source.pairedWith === undefined || (current.id !== effect.sourceId && current.id !== source.pairedWith)) return false;
+  }
   /* "As long as enchanted creature is white" (Steel of the Godhead): its colors as they now are -- layer 5 is done by the
      time layers 6 and 7 ask. */
   /* "Creatures you control of the chosen color get +1/+0" (Heraldic Banner): the color its permanent chose as it entered, by
@@ -383,6 +391,13 @@ function gatherEffects(state) {
         partOf: partOf(id, ability),
       });
     }
+    /* A HONE COUNTER (Dwalin, Weaponmaster): "each hone counter on an Equipment grants +1/+0 to equipped creature" -- the
+       counter's meaning lives on the Equipment that has it (CR 122.1), not on the creature, so it is read here as a
+       modifying effect of the Equipment's in layer 7c (CR 613.4c), reaching what it is attached to (CR 301.5). No ability of
+       the Equipment's: one that loses its abilities still grants it, as a +1/+1 counter still counts. */
+    const hone = holder.counters?.hone ?? 0;
+    if (hone > 0) found.push({layer: 7, sublayer: "c", affects: {what: "permanent", attachedBy: "self"}, apply: {power: hone, toughness: 0},
+      sourceId: id, sourceController: holder.controller, timestamp: holder.timestamp});
   }
   /* AN EMBLEM'S STATIC ABILITIES (CR 114.4), from the command zone, where they function: "Swamps you control have '{T}: Add
      {B}{B}{B}{B}'" (Liliana of the Dark Realms' emblem; CR 113.6) -- read for every permanent as it now is, not fixed as the
@@ -969,9 +984,14 @@ export function lastKnown(state, id) {
     power: current.power ?? null,
     toughness: current.toughness ?? null,
     counters: {...current.counters},
+    /* Its mana value as it last was (CR 202.3, 608.2h): a copy's, the copied cost's (707.2) -- "if that permanent's mana value
+       was 3 or less" (Vindictive Triumph), asked of what left, not of the card it became. X is 0 off the stack (202.3e). */
+    manaValue: valueCostOf(object) ? manaValue(parseManaCost(valueCostOf(object))) : 0,
     damage: object.damage ?? 0,
     tapped: object.tapped === true,
     token: object.token === true,
+    /* Attacking as it left (CR 506.4): "other attacking legendary creatures you control die" (Eomer, Marshal of Rohan). */
+    attacking: (state.combat?.attacks ?? []).some((attack) => attack.attacker === id),
     commander: object.commander === true,
     /* Its abilities as it last was, the ones given it included: "when this creature dies" given by Feign Death. */
     abilities: structuredClone(heldAbilities(object, current)),

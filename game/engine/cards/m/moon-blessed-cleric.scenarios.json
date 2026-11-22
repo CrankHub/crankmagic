@@ -1,0 +1,597 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Moon-Blessed Cleric",
+  "scenarios": [
+    {
+      "name": "It enters, Rob searches: Pacifism is revealed, the library is shuffled, and Pacifism is on top -- his next draw",
+      "library": [
+        "Forest",
+        "Island",
+        "Pacifism",
+        "Rancor",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "options": [
+                  "Yes",
+                  "No"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "min": 0,
+                "options": [
+                  "Pacifism",
+                  "Rancor"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Pacifism"
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Pacifism"
+          ]
+        },
+        {
+          "event": "GameEventCardRevealed",
+          "where": {}
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Two enchantment cards: the one chosen is on top, the other stays in the shuffled library",
+      "library": [
+        "Forest",
+        "Island",
+        "Pacifism",
+        "Rancor",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "choose": [
+            "Rancor"
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rancor"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rob declines the search: nothing is revealed, and his library is not shuffled -- the top card is drawn",
+      "library": [
+        "Forest",
+        "Island",
+        "Pacifism",
+        "Rancor",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "options": [
+                  "Yes",
+                  "No"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            1
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Forest"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Rob searches and finds none (an enchantment card is there, but finding nothing is allowed): the library is shuffled",
+      "library": [
+        "Forest",
+        "Island",
+        "Pacifism",
+        "Rancor",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "answer": []
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "No enchantment card in the library: he may still search, finds nothing, and shuffles",
+      "library": [
+        "Forest",
+        "Sol Ring",
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "options": [],
+                "min": 0
+              }
+            }
+          ]
+        },
+        {
+          "answer": []
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 20
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Moon-Blessed Cleric"
+          ]
+        },
+        {
+          "event": "GameEventShuffle",
+          "where": {
+            "player": {
+              "playerId": 0,
+              "name": "Rob"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "It is found on top with a library of one enchantment card: the same card, on top of a shuffled library",
+      "library": [
+        "Forest",
+        "Rancor",
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "choose": [
+            "Rancor"
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Rancor"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool, as the table's matches are: cast with no mana floated first",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "library": [
+        "Forest",
+        "Island",
+        "Pacifism",
+        "Rancor",
+        "Sol Ring"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Moon-Blessed Cleric"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Moon-Blessed Cleric"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Moon-Blessed Cleric"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "choose": [
+            "Rancor"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Moon-Blessed Cleric"
+          ]
+        },
+        {
+          "event": "GameEventCardRevealed",
+          "where": {}
+        }
+      ]
+    }
+  ]
+}

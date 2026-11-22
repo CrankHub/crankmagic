@@ -5,7 +5,7 @@ import '../collection-exchange.js';
 import {createLibrary, Conflict} from './library.mjs';
 import {ADVISE_CARDS,ADVISE_FIELDS} from './advise-cards.mjs';
 import {mailReady,sendMail} from './mail.mjs';
-import {admitAddress,inviteTargets} from './access-invites.mjs';
+import {admitAddress,accessReady,inviteTargets} from './access-invites.mjs';
 import {INVITE_SUBJECT,inviteText,inviteHtml,gameInviteSubject,gameInviteText,gameInviteHtml} from './invite-email.mjs';
 import {inviteAddress,vetInvitees,GROUP_NAMES,NO_AI} from './invitations.mjs';
 import {groupOf} from './access.mjs';
@@ -174,8 +174,8 @@ export function sharing(db,env,{now=()=>new Date().toISOString(),fetchImpl=fetch
     const invited=await library.user(canonical);await profile(invited);
     await q("UPDATE profiles SET name=? WHERE user_id=? AND name=''",name,invited.id).run();
   }
-  const inviter=async person=>({id:person.id,email:person.email,owner:isAdmin(person)||(await groupOf(person.email,env,db))==='owner'});
-  const configured=group=>mailReady(env)&&!!env.ACCESS_INVITE_TOKEN&&inviteTargets(env,group).length>0&&!!env.CLOUDFLARE_ACCOUNT_ID;
+  const inviter=async person=>({id:person.id,email:person.email,owner:isAdmin(person)||(await groupOf(person.email,env,db,{fetchImpl}))==='owner'});
+  const configured=()=>mailReady(env)&&accessReady(env);
   const notConfigured=()=>fail('Invitations need email delivery and Access invitation permissions configured by the administrator.',503);
   return {profile,list,read,settings,save,edit,queue,delivery,emailDeck,
     async requestEmail(person,input,origin){
@@ -193,7 +193,7 @@ export function sharing(db,env,{now=()=>new Date().toISOString(),fetchImpl=fetch
       const pending=await q('SELECT email FROM profile_email_changes WHERE token_hash=? AND user_id=? AND expires_at>?',hash,person.id,now()).first();if(!pending)fail('This verification expired or belongs to another account. Request a new verification.',400);
       if(await q('SELECT id FROM users WHERE email=? UNION SELECT user_id AS id FROM profiles WHERE email=? UNION SELECT user_id AS id FROM account_identities WHERE email=?',pending.email,pending.email,pending.email).first())fail('That address now belongs to an account. Request another address.',409);
       /* The new address is admitted through the group the person is already in. */
-      await admit(pending.email,['owner','insider'].includes(await groupOf(person.email,env,db))?'insider':'general');const previous=(await profile(person)).email,guard=crypto.randomUUID();
+      await admit(pending.email,['owner','insider'].includes(await groupOf(person.email,env,db,{fetchImpl}))?'insider':'general');const previous=(await profile(person)).email,guard=crypto.randomUUID();
       await db.batch([q('DELETE FROM profile_email_changes WHERE token_hash=? AND user_id=? AND expires_at>?',hash,person.id,now()),q('INSERT INTO share_cas_guard(id,ok) VALUES (?,changes())',guard),q('INSERT INTO account_identities(email,user_id,active) VALUES (?,?,0) ON CONFLICT(email) DO UPDATE SET active=0',previous,person.id),q('INSERT INTO account_identities(email,user_id,active) VALUES (?,?,1)',pending.email,person.id),q('UPDATE profiles SET email=?,updated_at=? WHERE user_id=?',pending.email,now(),person.id),q('DELETE FROM share_cas_guard WHERE id=?',guard)]);
       return {email:pending.email,signOut:true};
     },
@@ -219,7 +219,7 @@ export function sharing(db,env,{now=()=>new Date().toISOString(),fetchImpl=fetch
     /* Create game's plan: every guest checked whole (cap, group, duplicates), nothing written (cloud/invitations.mjs vetInvitees). */
     async planGuests(person,people){
       if(!canInvite(person))fail('Only a signed-in person can invite someone.',403);
-      return vetInvitees(db,env,{inviter:await inviter(person),people,fail});
+      return vetInvitees(db,env,{inviter:await inviter(person),people,fail,fetchImpl});
     },
     async inviteToGame(person,input,origin){
       if(!canInvite(person))fail('Only a signed-in person can invite someone.',403);
@@ -238,7 +238,7 @@ export function sharing(db,env,{now=()=>new Date().toISOString(),fetchImpl=fetch
     async admin(person,origin){
       if(!isAdmin(person))fail('Only the CrankMagic administrator can open Admin.',403);
       const invitations=await q("SELECT count(*) AS total,sum(status='admitted') AS admitted FROM account_invitations").first();
-      return {emailReady:mailReady(env),accessReady:!!env.ACCESS_INVITE_TOKEN&&inviteTargets(env).length>0&&/^[\da-f]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID||''),
+      return {emailReady:mailReady(env),accessReady:accessReady(env),
         accessTargets:inviteTargets(env).length,linkOrigin:env.INVITE_LINK_ORIGIN||origin,aiEveryone:env.AI_EVERYONE==='on',
         invitations:{total:Number(invitations?.total||0),admitted:Number(invitations?.admitted||0)}};
     }

@@ -57,7 +57,7 @@ import {powerOf, toughnessOf, typesOf, keywordsOf, controllerOf, abilitiesOf, de
 import {isCreatureType} from "../keywords/types.mjs";
 import {givePoison, changeLife, infects, addCounters, damagePermanent} from "../script/effects/resources.mjs";
 import {summoningSick} from "../keywords/timing.mjs";
-import {combatDamageOf, ruleChanged, attackTax, blockTax, goadersOf, mustAttackOf, cantAttack as restricted, cantGainLife, lifeGained, attackerCaps, defenderLifted, attacksEachCombat} from "./statics.mjs";
+import {combatDamageOf, ruleChanged, attackTax, blockTax, goadersOf, mustAttackOf, mustAttackPlaneswalkers, cantAttack as restricted, cantGainLife, lifeGained, attackerCaps, defenderLifted, attacksEachCombat} from "./statics.mjs";
 import {paymentUnits, paymentIsAChoice, paymentChoice, payWithUnits} from "./mana.mjs";
 import {recordCommanderDamage} from "./commander.mjs";
 import {damageAssignmentProblem} from "../controller.mjs";
@@ -129,6 +129,24 @@ const capWords = (state, pw, most) => {
     + "and send the rest at a player or another planeswalker, or keep them home.";
 };
 
+/* "ATTACK GIDEON JURA IF ABLE" (CR 508.1d; rules/statics.mjs, mustAttackPlaneswalkers): of the planeswalkers an effect requires this
+   creature to attack, those it can attack now with no cost to pay -- one a defending player controls (CR 506.3) that no restriction
+   keeps it from (508.1c). One it can't attack requires nothing of it: no player is made to pay a cost (508.1d), and "if able"
+   asks no more. */
+const owedPlaneswalkers = (state, id, player) => mustAttackPlaneswalkers(state, id).filter((pw) => {
+  const defender = controllerOf(state, pw);
+  return defendersFor(state, player).includes(defender) && planeswalkersOf(state, defender).includes(pw) && !cantAttack(state, id, defender, pw)
+    && attackTax(state, [{defenderId: defender, planeswalkerId: pw}]) === 0;
+});
+/* The refusal when one is left out, what is wrong and then what to do (AGENTS.md): the creatures, and the planeswalkers. */
+const walkerWords = (state, owed) => {
+  const names = named([...owed.keys()].map((id) => shownName(state.objects[id])));
+  const walkers = named([...new Set([...owed.values()].flat())].map((pw) => state.objects[pw]?.card ?? "a planeswalker"));
+  const one = owed.size === 1;
+  return `${names} ${one ? "has" : "have"} to attack ${walkers} this combat: an effect says ${one ? "it attacks" : "they attack"} ${walkers} if able. `
+    + `Declare ${one ? "it" : "each of them"} attacking ${walkers}.`;
+};
+
 /* "ATTACKS EACH COMBAT IF ABLE" (CR 508.1d; rules/statics.mjs, attacksEachCombat): of the creatures offered, each a static
    requires to attack, and the way it may. One that can attack someone only by paying a cost is required nothing (508.1d:
    no player is made to pay); one that can attack a player, or a planeswalker no cap limits, for free must be declared
@@ -183,6 +201,14 @@ function requirementWords(state, required, most = null, at = []) {
 function requiresOf(state, options) {
   const {each, tight, caps, most} = attackRequirements(state, options);
   const out = [];
+  /* Each creature an effect requires to attack a planeswalker (owedPlaneswalkers): its options are that planeswalker alone, so
+     declaring it at all is declaring it there. */
+  const owed = new Map();
+  for (const id of new Set(options.map((o) => o.cardId))) {
+    const walkers = owedPlaneswalkers(state, id, state.awaiting?.player ?? state.activePlayer);
+    if (walkers.length) owed.set(id, walkers);
+  }
+  if (owed.size) out.push({by: "cardId", values: [...owed.keys()], least: owed.size, why: walkerWords(state, owed)});
   if (each.length) out.push({by: "cardId", values: each.map((r) => r.id), least: each.length, why: requirementWords(state, each)});
   /* CR 508.1d counts requirements, not just creatures: two Rabblemasters require a third Goblin to attack twice, but
      require each other only once. Matchable sets of attackers form a transversal matroid: a maximum-weight matching
@@ -228,6 +254,14 @@ export const attackers = {
       /* REQUIRED TO ATTACK A PLAYER THIS TURN (encore, CR 702.141a, 508.1d): only that player is offered while it can attack
          them with no cost to pay; with a cost, nothing is required of it. */
       const owed = mustAttackOf(state, id).filter((d) => defenders.includes(d) && attackTax(state, [{defenderId: d}]) === 0);
+      /* REQUIRED TO ATTACK A PLANESWALKER ("attack Gideon Jura if able", CR 508.1d): only that planeswalker is offered while it can be
+         attacked with no cost to pay -- a player to choose between is the player's, and here the rules leave none. */
+      const walkers = owedPlaneswalkers(state, id, awaiting.player);
+      if (walkers.length) {
+        for (const pw of walkers) options.push({index: options.length, label: `${shownName(state.objects[id])} → ${state.objects[pw].card} (${state.players[controllerOf(state, pw)].name})`,
+          cardId: id, defenderId: controllerOf(state, pw), planeswalkerId: pw});
+        continue;
+      }
       for (const defender of defenders) {
         if (elsewhere && goaders.includes(defender)) continue;
         if (owed.length && !owed.includes(defender)) continue;

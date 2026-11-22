@@ -1,0 +1,122 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Quintessential Katana",
+    "oracleId": "e9685c61-e33d-4ae0-9dd3-7fd0df5eb46f",
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [
+      "Equipment"
+    ],
+    "manaCost": "{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Equipped creature gets +1/+1 and has \"Whenever this creature deals combat damage, untap it and you gain 2 life.\"\nWhenever a Ninja you control enters, you may attach this Equipment to it.\nEquip {2} ({2}: Attach to target creature you control. Equip only as a sorcery.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Equipped creature gets +1/+1 and has \"Whenever this creature deals combat damage, untap it and you gain 2 life.\"",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "attachedBy": "self"
+      },
+      "apply": {
+        "power": 1,
+        "toughness": 1
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Equipped creature gets +1/+1 and has \"Whenever this creature deals combat damage, untap it and you gain 2 life.\"",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "attachedBy": "self"
+      },
+      "apply": {
+        "addAbilities": [
+          {
+            "kind": "triggered",
+            "text": "Whenever this creature deals combat damage, untap it and you gain 2 life.",
+            "trigger": {
+              "on": "damage dealt once",
+              "who": "self",
+              "to": "anything",
+              "combat": true
+            },
+            "effects": [
+              {
+                "effect": "untap",
+                "targets": "self"
+              },
+              {
+                "effect": "gainLife",
+                "amount": 2
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever a Ninja you control enters, you may attach this Equipment to it.",
+      "trigger": {
+        "on": "enters",
+        "who": "any",
+        "filter": {
+          "subtypes": [
+            "Ninja"
+          ],
+          "controller": "you"
+        }
+      },
+      "effects": [
+        {
+          "effect": "attach",
+          "targets": "that card"
+        }
+      ],
+      "optional": true
+    },
+    {
+      "kind": "activated",
+      "text": "Equip {2}",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}"
+        }
+      ],
+      "timing": "sorcery",
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "you"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "attach",
+          "targets": {
+            "target": 0
+          }
+        }
+      ]
+    }
+  ]
+}

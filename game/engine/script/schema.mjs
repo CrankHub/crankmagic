@@ -65,6 +65,8 @@ const COMPOSERS = {
   /* What follows not paying, and -- "if they do" (Divert Disaster) -- what follows paying. */
   unlessPays: (effect) => [...(effect.effects ?? []), ...(Array.isArray(effect.whenPaid) ? effect.whenPaid : [])],
   delayedTrigger: (effect) => effect.effects ?? [],
+  /* "1-14 | ... 15-20 | ..." (Delina, Wild Mage; CR 706.2): what each row of a rolled die does. */
+  rollDie: (effect) => (Array.isArray(effect.rows) ? effect.rows : []).flatMap((row) => (Array.isArray(row?.effects) ? row.effects : [])),
   /* A reflexive trigger (batch 72): what it does. */
   immediateTrigger: (effect) => effect.effects ?? [],
 };
@@ -143,6 +145,26 @@ function checkEffect(effect, path, errors) {
   /* "Roll a d20" (CR 706.1; effects/resources.mjs): a die of `sides` sides, a whole number 2 or more. */
   if (name === "rollDie" && !(Number.isInteger(effect.sides) && effect.sides >= 2))
     errors.push({path: `${path}.sides`, message: "A die rolled says how many sides it has: sides, a whole number 2 or more (a d20 is 20)"});
+  /* "1-14 | ... 15-20 | ... You may roll again" (Delina, Wild Mage; CR 706.2): `rows`, what each result does, together every result of
+     the die exactly once; a row that sends the roll round again says so (`again`: "may" or "must"). */
+  if (name === "rollDie" && effect.rows !== undefined) {
+    const rows = Array.isArray(effect.rows) ? effect.rows : null;
+    if (!rows || !rows.length) errors.push({path: `${path}.rows`, message: "A die's rows are a list of {from, to, effects}"});
+    else {
+      const seen = new Set();
+      rows.forEach((row, r) => {
+        if (!(Number.isInteger(row?.from) && Number.isInteger(row?.to) && row.from >= 1 && row.to >= row.from && row.to <= (effect.sides ?? 0)))
+          errors.push({path: `${path}.rows[${r}]`, message: "A row says the results it covers: from and to, whole numbers within the die's sides"});
+        else for (let n = row.from; n <= row.to; n += 1) { if (seen.has(n)) errors.push({path: `${path}.rows[${r}]`, message: `Result ${n} is in two rows`}); seen.add(n); }
+        if (!Array.isArray(row?.effects)) errors.push({path: `${path}.rows[${r}].effects`, message: "A row's effects are a list (empty when the row does nothing)"});
+        if (row?.again !== undefined && !["may", "must"].includes(row.again)) errors.push({path: `${path}.rows[${r}].again`, message: "A row that rolls again says \"may\" or \"must\""});
+      });
+      for (let n = 1; n <= (effect.sides ?? 0); n += 1) if (!seen.has(n)) { errors.push({path: `${path}.rows`, message: `Result ${n} is in no row: the rows cover every result of the die`}); break; }
+    }
+  }
+  /* "Flip a coin until you lose a flip" (Mirror March; CR 705; effects/resources.mjs): once, `count` times, or until a flip is lost. */
+  if (name === "flipCoin" && (effect.count !== undefined || effect.until !== undefined) && !((effect.count === undefined || (Number.isInteger(effect.count) && effect.count >= 1)) && (effect.until === undefined || effect.until === "lose")))
+    errors.push({path, message: "A coin is flipped once, `count` times (a whole number, 1 or more), or `until` \"lose\" -- a flip lost"});
   /* "You become the monarch", "its controller becomes the monarch" (CR 725.3; effects/resources.mjs): one player -- its
      controller ("you", or unsaid), a target player, or the controller of what the trigger is about. */
   if (name === "becomeMonarch" && effect.who !== undefined && !["you", "that card's controller"].includes(effect.who) && !Number.isInteger(effect.who?.target))
@@ -236,6 +258,10 @@ function checkEffect(effect, path, errors) {
     errors.push({path: `${path}.timesAny`, message: "\"You may pay a cost any number of times\" is `timesAny: true` with `ifPaid: true` and a `mana` cost, nothing else to pay beside it"});
   if (name === "unlessPays" && effect.amountX !== undefined && !(effect.amountX === true && effect.ifPaid === true && effect.amount === undefined && effect.mana === undefined))
     errors.push({path: `${path}.amountX`, message: "\"You may pay {X}\" is `amountX: true` with `ifPaid: true`, and no amount or mana beside it"});
+  /* "Join forces -- starting with you, each player may pay any amount of mana" (Minds Aglow; effects/asking.mjs): every player,
+     the amount chosen as it is paid -- `amountX` and `ifPaid`, and no payer named, as the controller is first. */
+  if (name === "unlessPays" && effect.joinForces !== undefined && !(effect.joinForces === true && effect.amountX === true && effect.ifPaid === true && effect.who === undefined))
+    errors.push({path: `${path}.joinForces`, message: "\"Join forces\" is `joinForces: true` with `amountX: true` and `ifPaid: true`, and no `who`"});
   if (name === "play" && effect.exileInstead !== undefined && effect.exileInstead !== true)
     errors.push({path: `${path}.exileInstead`, message: "\"If that spell would be put into a graveyard, exile it instead\" is `exileInstead: true`"});
   /* Discover's two ways (Hit the Mother Lode; effects/asking.mjs): what follows no cast, a list, and the spell cast remembered. */
@@ -403,7 +429,8 @@ function checkEffect(effect, path, errors) {
   const children = COMPOSERS[name];
   if (!children) return;
   const nested = children(effect);
-  if (nested.length === 0) errors.push({path, message: `${name} composes other effects and has none`});
+  /* A die with no rows is the plain die of before (Ancient Copper Dragon): it composes nothing, and need not. */
+  if (nested.length === 0 && !(name === "rollDie" && effect.rows === undefined)) errors.push({path, message: `${name} composes other effects and has none`});
   nested.forEach((child, index) => checkEffect(child, `${path}.effects[${index}]`, errors));
 }
 
@@ -422,7 +449,9 @@ function checkSelector(selector, path, errors, {choice = false} = {}) {
 /* A target's count: `min` a whole number (0 when absent), `max` a whole number at least 1 and at least `min`, or absent. */
 /* `x`: "up to that many" -- a reflexive trigger's `max: "X"`, the X it was made with (Bloodthirsty Adversary). */
 const countValid = (count, {x = false} = {}) => Boolean(count) && typeof count === "object" && !Array.isArray(count)
-  && Object.keys(count).every((k) => k === "min" || k === "max")
+  /* `plusKicked` ("another target for each time this spell was kicked", Comet Storm; script/bind.mjs countOf): one more of the
+     whole numbers it names for each kick, a spell's alone. */
+  && Object.keys(count).every((k) => k === "min" || k === "max" || (k === "plusKicked" && count[k] === true && Number.isInteger(count.min) && Number.isInteger(count.max)))
   /* "Exile X target creatures" (Curse of the Swine; script/bind.mjs countOf): exactly X, `{min: "X", max: "X"}`. */
   && (count.min === undefined || (Number.isInteger(count.min) && count.min >= 0) || (count.min === "X" && count.max === "X"))
   && (count.max === undefined || (x && count.max === "X" && (count.min ?? 0) === 0) || (count.min === "X" && count.max === "X") || (Number.isInteger(count.max) && count.max >= 1 && count.max >= (count.min ?? 0)));
@@ -451,6 +480,9 @@ function checkAbility(ability, path, errors, {permanent = false, manaX = false} 
        (CR 601.2b-c). */
     if (count !== undefined && !countValid(count, {x: ability.kind === "spell" && manaX}))
       errors.push({path: `${path}.targets[${index}].count`, message: "A target's count is `{min, max}`: whole numbers, max at least 1 and at least min, or no max for \"any number\""});
+    /* "Another target for each time this spell was kicked" (Comet Storm; script/bind.mjs countOf): a spell's alone. */
+    if (count?.plusKicked !== undefined && ability.kind !== "spell")
+      errors.push({path: `${path}.targets[${index}].count`, message: "\"Another target for each time it was kicked\" (`plusKicked`) is a spell's count"});
     /* "Target artifact a player controls and target artifact card in that player's graveyard" (Goblin Welder; script/bind.mjs,
        `ownedByControllerOf`): an earlier, single target of the same ability, a permanent -- this one a card, uncounted. */
     if (ownedByControllerOf !== undefined && !(Number.isInteger(ownedByControllerOf) && ownedByControllerOf >= 0 && ownedByControllerOf < index && count === undefined
@@ -853,8 +885,9 @@ export function validateScript(script) {
       checkIdentity({...adventure.identity, oracleId: adventure.identity?.oracleId ?? script.identity?.oracleId}, errors);
       for (const e of errors.slice(before)) e.path = `adventure.${e.path}`;
       const types = adventure.identity?.types ?? [];
-      if (!(types.length === 1 && ["Instant", "Sorcery"].includes(types[0])) || !(adventure.identity?.subtypes ?? []).includes("Adventure"))
-        errors.push({path: "adventure.identity", message: "An Adventure is an instant or a sorcery with the subtype Adventure (CR 715.2)"});
+      /* An omen card's Omen (CR 720.2; Scavenger Regent // Exude Toxin) is written the same way, with the subtype Omen. */
+      if (!(types.length === 1 && ["Instant", "Sorcery"].includes(types[0])) || !(adventure.identity?.subtypes ?? []).some((s) => s === "Adventure" || s === "Omen"))
+        errors.push({path: "adventure.identity", message: "An Adventure is an instant or a sorcery with the subtype Adventure (CR 715.2), an Omen one with the subtype Omen (CR 720.2)"});
       adventure.abilities.forEach((ability, index) => checkAbility(ability, `adventure.abilities[${index}]`, errors));
     }
     if (script.back !== undefined) errors.push({path: "adventure", message: "A card is an adventurer card or a double-faced card, not both"});

@@ -1,0 +1,618 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Gorbag of Minas Morgul",
+  "fixtures": {
+    "Orc Grunt": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Orc",
+        "Warrior"
+      ],
+      "manaCost": "{1}{B}",
+      "colors": [
+        "B"
+      ],
+      "power": 2,
+      "toughness": 1
+    },
+    "Smoke Raider": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Goblin"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Orc Army": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Orc",
+        "Army"
+      ],
+      "manaCost": "{0}",
+      "colors": [
+        "B"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands with nothing tapped by hand: offered once",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Gorbag of Minas Morgul"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Gorbag of Minas Morgul"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Gorbag of Minas Morgul"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Gorbag of Minas Morgul",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Rob's Orc Grunt hits Maya: he sacrifices it, and the reflexive trigger's mode -- chosen as it goes on the stack -- is draw a card",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul",
+            "Orc Grunt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Orc Grunt"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Draw a card.",
+                  "Create a Treasure token."
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card."
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Orc Grunt"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gorbag of Minas Morgul"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A Goblin counts too: the Smoke Raider (a Goblin) sacrificed, and Rob chooses a Treasure",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul",
+            "Smoke Raider"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Smoke Raider"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "choose": [
+            "Create a Treasure token."
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Smoke Raider"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gorbag of Minas Morgul",
+            "Treasure"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Gorbag is an Orc himself: he hits, Rob sacrifices him, and still chooses (the Treasure)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Gorbag of Minas Morgul"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "choose": [
+            "Create a Treasure token."
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Gorbag of Minas Morgul"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Treasure"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "\"You may\" declined: the Orc Grunt stays, no reflexive trigger, nothing drawn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul",
+            "Orc Grunt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Orc Grunt"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gorbag of Minas Morgul",
+            "Orc Grunt"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": []
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "An Orc Army (an Army of Orcs is an Orc) sacrificed: one card drawn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul",
+            "Orc Army"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Orc Army"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        },
+        {
+          "choose": [
+            "Draw a card."
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gorbag of Minas Morgul"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Two Orcs hit at once: two triggers, each its own sacrifice and its own mode",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul",
+            "Orc Grunt",
+            "Orc Army"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Orc Grunt",
+            "Orc Army"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Not a Goblin or Orc: Rob's Bear hits Maya and nothing triggers",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Gorbag of Minas Morgul",
+            "Bear"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Not Rob's: Maya's Orc Grunt hits Rob and his Gorbag does not trigger",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Gorbag of Minas Morgul"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Orc Grunt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Orc Grunt"
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 38
+        },
+        {
+          "seat": 1,
+          "controls": [
+            "Orc Grunt"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Shredder, Shadow Master",
+    "oracleId": "ee82947d-1cf0-4c53-84d4-81f81c6201ee",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Ninja"
+    ],
+    "manaCost": "{3}{B}{B}",
+    "colors": [
+      "B"
+    ],
+    "colorIdentity": [
+      "B"
+    ],
+    "power": 5,
+    "toughness": 5
+  },
+  "oracleText": "Whenever Shredder attacks a player, for each other opponent, create a token that's a copy of Shredder tapped and attacking that player, except it isn't legendary. Sacrifice those tokens at end of combat.\nWhenever Shredder deals combat damage to a player, that player loses half their life, rounded up.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever Shredder attacks a player, for each other opponent, create a token that's a copy of Shredder tapped and attacking that player, except it isn't legendary. Sacrifice those tokens at end of combat.",
+      "trigger": {
+        "on": "attacks",
+        "who": "self",
+        "defender": "player"
+      },
+      "effects": [
+        {
+          "effect": "repeatFor",
+          "each": "other opponent",
+          "effects": [
+            {
+              "effect": "copyPermanent",
+              "targets": "self",
+              "lastKnown": true,
+              "tapped": true,
+              "attacking": "that player",
+              "except": {
+                "nonLegendary": true
+              },
+              "rememberMore": true
+            }
+          ]
+        },
+        {
+          "effect": "delayedTrigger",
+          "at": "end of combat",
+          "text": "Sacrifice those tokens at end of combat.",
+          "condition": {
+            "compare": {
+              "count": {
+                "rememberedCount": true
+              },
+              "atLeast": 1
+            }
+          },
+          "effects": [
+            {
+              "effect": "moveZone",
+              "targets": "remembered",
+              "to": "graveyard",
+              "sacrifice": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Shredder deals combat damage to a player, that player loses half their life, rounded up.",
+      "trigger": {
+        "on": "damage dealt",
+        "who": "self",
+        "combat": true,
+        "to": "player"
+      },
+      "effects": [
+        {
+          "effect": "loseLife",
+          "who": "that player",
+          "amount": {
+            "lifeTotal": "that player",
+            "half": "up"
+          }
+        }
+      ]
+    }
+  ]
+}

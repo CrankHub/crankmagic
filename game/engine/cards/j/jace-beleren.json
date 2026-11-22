@@ -1,0 +1,95 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Jace Beleren",
+    "oracleId": "cc2b6e58-2d6f-495e-95f3-9496105c4cba",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Jace"
+    ],
+    "manaCost": "{1}{U}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 3
+  },
+  "oracleText": "+2: Each player draws a card.\n−1: Target player draws a card.\n−10: Target player mills twenty cards.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "+2: Each player draws a card.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 2
+        }
+      ],
+      "effects": [
+        {
+          "effect": "draw",
+          "who": "each",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−1: Target player draws a card.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "draw",
+          "who": {
+            "target": 0
+          },
+          "count": 1
+        }
+      ],
+      "targets": [
+        {
+          "what": "player"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−10: Target player mills twenty cards.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -10
+        }
+      ],
+      "effects": [
+        {
+          "effect": "mill",
+          "who": {
+            "target": 0
+          },
+          "count": 20
+        }
+      ],
+      "targets": [
+        {
+          "what": "player"
+        }
+      ]
+    }
+  ]
+}

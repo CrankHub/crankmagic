@@ -192,13 +192,15 @@ function copiable(object, except = {}) {
       .filter((t) => !except.setCreatureTypes || !isCreatureType(t)), ...(except.setCreatureTypes ?? [])])],
     ...(supertypes.length ? {supertypes} : {}),
     colors: [...new Set([...(except.setColors ?? object.colors ?? []), ...(except.addColors ?? [])])],
-    keywords: [...new Set([...(object.keywords ?? []), ...(except.addKeywords ?? [])])],
+    /* "Except it has haste and loses soulbond" (Mirage Phalanx; CR 707.9b): a keyword it does not have, and the abilities that are it
+       (an ability a keyword compiled to says which: `keyword`, cards/index.mjs). */
+    keywords: [...new Set([...(object.keywords ?? []), ...(except.addKeywords ?? [])])].filter((word) => !(except.removeKeywords ?? []).includes(word)),
     /* "And it has 'When this token leaves the battlefield, ...'" (Hofri Ghostforge; CR 707.9a): abilities the copy has besides
        the original's, part of its copiable values -- compiled with the card (cards/index.mjs), bound as it is made. */
     /* A copy whose power or toughness the effect sets ("except it's 1/1", offspring; "half that creature's power", Saw in
        Half; wave 4c) does not copy a characteristic-defining ability that would define it (CR 707.9d; Saw in Half's ruling):
        "Adeline's power is equal to the number of creatures you control" is no ability of a 1/1 copy of her. */
-    abilities: [...structuredClone((object.abilities ?? []).filter((a) => !definesSetStats(a, except))), ...structuredClone(except.addAbilities ?? [])],
+    abilities: [...structuredClone((object.abilities ?? []).filter((a) => !definesSetStats(a, except) && !(except.removeKeywords ?? []).includes(a.keyword))), ...structuredClone(except.addAbilities ?? [])],
     power: except.setPower ?? object.power ?? null, toughness: except.setToughness ?? object.toughness ?? null,
     /* Its printed loyalty (CR 707.2): a planeswalker copied as it enters has that many loyalty counters (CR 306.5b; Spark
        Double, rules/replacement.mjs ownEntering). */
@@ -380,6 +382,23 @@ function movedCopies(state, params, context) {
   /* Each as it last was (`movedWas`), beside what it became (`remembered`): destroy keeps the two in step (effects/zones.mjs). */
   return (context.movedWas ?? []).map((was, i) => ({id: (context.remembered ?? [])[i], was})).map(({id, was}) => ({id, controller: was.controller,
     original: was.copiable ?? state.objects[id], except: {...(params.except ?? {}), ...(params.halfStats === true ? {setPower: half(was.power), setToughness: half(was.toughness)} : {})}}));
+}
+
+/**
+ * `pair` -- SOULBOND (CR 702.95a): the source creature is paired with another, "that card" (a creature of its controller's that just
+ * entered) or the one an effect before it remembered (`with`). Both must be creatures on the battlefield under the controller of the
+ * effect, neither paired already -- or nothing happens, as a pairing that cannot be made is not made (CR 702.95a). A pairing ends by
+ * itself (rules/sba.mjs, endPairings); "each of those creatures" is a selector's `pairedWithSource` (script/filter.mjs).
+ */
+export function pair(state, params, context) {
+  const id = context.source, other = params.with === "that card" ? context.about?.card : (context.remembered ?? [])[0];
+  if (!Number.isInteger(id) || !Number.isInteger(other) || id === other) return [];
+  const a = state.objects[id], b = state.objects[other];
+  const ok = (object, of) => object?.zone === "battlefield" && object.pairedWith === undefined && controllerOf(state, of) === context.controller && typesOf(state, of).includes("Creature");
+  if (!ok(a, id) || !ok(b, other)) return [];
+  a.pairedWith = other;
+  b.pairedWith = id;
+  return [event("GameEventPaired", state, {card: cardRef(state, id), with: cardRef(state, other), player: {playerId: context.controller, name: state.players[context.controller]?.name}})];
 }
 
 /** `copyPermanent` — "create a token that's a copy of target creature you control" (CR 707.2), or one of each a selector matches ("for each token you control"). */
@@ -882,7 +901,7 @@ export function effectUntil(state, params, context) {
        protection over the permanents it names, fixed as it resolves (`selector`, `targets`), and no player's
        (rules/protection.mjs, protectedFrom). And "you gain hexproof until end of turn" (Dawn's Truce; CR 702.11c): its
        players, read where a target is chosen (script/filter.mjs, playerHasHexproof). */
-    ...(params.until === "their-next-turn" || (["protection", "life-cant-change", "no-maximum-hand-size", "damage-doubled", "look-at-top", "player-hexproof"].includes(params.rule)
+    ...(params.until === "their-next-turn" || params.until === "their-next-end" || (["protection", "life-cant-change", "no-maximum-hand-size", "damage-doubled", "look-at-top", "player-hexproof"].includes(params.rule)
       && !(params.rule === "protection" && (params.targets || params.selector))) ? {players: Array.isArray(params.who) ? [...params.who] : [context.controller]} : {}),
     /* And "you ... gain hexproof from blue and from black until end of turn" (Veil of Summer; CR 702.11d): a hexproof from over
        players (rules/protection.mjs, playerHexproofFrom) -- with no targets and no selector, where Skrelv's is over the
@@ -903,6 +922,11 @@ export function effectUntil(state, params, context) {
     /* "Creatures your opponents control attack this turn if able" (Bident of Thassa; rules/statics.mjs, attacksEachCombat):
        named by its source when a declaration breaks it, as it was then, gone or not (rules/combat.mjs). */
     ...(params.rule === "attacks-each-combat" ? {sourceId: context.source ?? null, sourceName: state.objects[context.source]?.card ?? context.lastKnown?.name ?? null} : {}),
+    /* "During target opponent's next turn, creatures that player controls attack Gideon Jura if able" (Gideon Jura's +2; CR 508.1d):
+       the planeswalker is the source, `who` the player whose creatures they are (as they are in that turn, not as it resolved:
+       a rule changed, not a characteristic, CR 611.2c) -- read where attackers are declared (rules/statics.mjs,
+       mustAttackPlaneswalkers; rules/combat.mjs). Over as that player's next turn ends (`their-next-end`, rules/turn.mjs). */
+    ...(params.rule === "attacks-planeswalker" ? {planeswalker: context.source ?? null} : {}),
     /* A PREVENTION SHIELD OF A PLAYER'S (CR 615; rules/replacement.mjs, preventionsFor): "prevent all combat damage that would
        be dealt to you this turn" (Inkshield) -- `who`, the players it shields -- "the next time a source of your choice
        would deal damage to you this turn" (Deflecting Palm) -- `from`, the sources chosen (CR 609.7a), and `next`, used up
@@ -1245,6 +1269,12 @@ export function immediateTrigger(state, params, context) {
      effect before it kept each as it left (`movedWas`, effects/asking.mjs and effects/zones.mjs), one for each it moved. */
   const was = params.about === "remembered" && (context.movedWas ?? []).length === (context.remembered ?? []).length ? context.movedWas?.[0] : undefined;
   const about = params.about === "remembered" && context.remembered?.[0] !== undefined ? {...(context.about ?? {}), card: context.remembered[0], ...(was ? {lastKnown: structuredClone(was)} : {})} : context.about;
+  /* "When you do, choose one —" (Gorbag of Minas Morgul): a reflexive trigger whose one effect is a modal has its modes chosen
+     as it is put on the stack (CR 603.3c, 700.2b), as a printed trigger's are (cards/index.mjs), never as it resolves. */
+  const lone = (params.effects ?? []).length === 1 && params.effects[0]?.effect === "modal" && params.effects[0].chooser === undefined ? params.effects[0] : null;
+  const script = lone
+    ? {targets: [], effects: [], modal: {choose: lone.choose ?? 1, modes: lone.modes.map((m) => ({text: m.text ?? "", targets: structuredClone(m.targets ?? []), effects: structuredClone(countThisWay(m.effects ?? [], context, state))}))}}
+    : {targets: structuredClone(params.targets ?? []), effects: structuredClone(countThisWay(params.effects, context, state))};
   (state.pendingTriggers ??= []).push({abilityId: "reflexive", text: params.text ?? "When you do", controller: context.controller,
     source: {cardId: source, name: source !== null ? state.objects[source]?.card ?? null : null}, cause: null, optional: false,
     ...(about ? {about: structuredClone(about)} : {}),
@@ -1252,7 +1282,7 @@ export function immediateTrigger(state, params, context) {
        what its targets and effects read as X (rules/trigger.mjs). */
     ...(Number.isInteger(context.x) ? {x: context.x} : {}),
     /* "Put that many +1/+1 counters" (Augusta, Order Returned): what this resolution did, counted now (script/bind.mjs). */
-    script: {targets: structuredClone(params.targets ?? []), effects: structuredClone(countThisWay(params.effects, context, state))}});
+    script});
   return [];
 }
 
@@ -1266,8 +1296,11 @@ export function delayedTrigger(state, params, context) {
     const chosen = context.chosenPlayer;
     params = {...params, player: Number.isInteger(chosen) && !state.players[chosen]?.lost ? chosen : -1};
   }
-  /* "That creature": the object, now; gone already, and the trigger waits on nothing (CR 603.7a's example). */
-  const watch = waits && params.watch !== undefined ? ((bindEffect({targets: params.watch}, context).targets ?? [])[0] ?? null) : undefined;
+  /* "That creature": the object, now; gone already, and the trigger waits on nothing (CR 603.7a's example). "Whenever either of those
+     creatures deals combat damage" (Tamiyo, Field Researcher's +1; `watchEach`): every one it names, as it resolves -- none chosen,
+     and it waits on nothing at all, so none is made. */
+  const watched = waits && params.watch !== undefined ? bindEffect({targets: params.watch}, context).targets ?? [] : undefined;
+  const watch = watched === undefined ? undefined : params.watchEach === true ? [...watched] : (watched[0] ?? null);
   state.delayedTriggers.push({
     ...(waits ? {on: structuredClone(params.on), ...(watch !== undefined ? {watch} : {}), ...(params.thisTurn ? {thisTurn: true} : {}), ...(params.once ? {once: true} : {}),
       /* "Until your next turn, whenever a creature attacks you ..." (Jace, Reality Sculptor): every time, until its controller's

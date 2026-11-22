@@ -14,8 +14,8 @@ BREAKS = [
      'const mana = poolSize(pool) + [...best.values()].reduce((n, v) => n + Math.max(0, v), 0);\n    const tax',
      'const mana = poolSize(pool);\n    const tax'),
     ('the commander tax left out', A,
-     'const {cost, x} = castCost(state, player, id, tax);\n    const need = cost.generic + cost.symbols.filter((s) => s.kind !== "generic" && s.kind !== "variable").length + x;',
-     'const {cost, x} = castCost(state, player, id, 0);\n    const need = cost.generic + cost.symbols.filter((s) => s.kind !== "generic" && s.kind !== "variable").length + x;'),
+     'const {cost, x} = castCost(state, player, id, tax);\n    /* A Phyrexian symbol is paid',
+     'const {cost, x} = castCost(state, player, id, 0);\n    /* A Phyrexian symbol is paid'),
     ('a missing color not said', A,
      'if (missing) return `It needs {${missing}}, and nothing you have untapped makes it.`;',
      'if (false) return "";'),
@@ -31,7 +31,8 @@ BREAKS = [
     ('the board not saying it with the card', B,
      ' : c.why ? `. ${c.why}` : ""}`;',
      ' : ""}`;'),
+    # Since f407c890 (r4 C1) a click opens the card's menu, which says the reason where its actions would be listed.
     ('a click on the card not saying why', B,
-     '    if (!opts.length && findCard(id)?.why) return C.notice(findCard(id).why);\n',
-     ''),
+     '${e(c.why || "No actions now")}',
+     '${e("No actions now")}'),
 ]

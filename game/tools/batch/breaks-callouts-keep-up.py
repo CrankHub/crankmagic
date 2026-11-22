@@ -37,7 +37,7 @@ BREAKS += [
      '    if (!ask || !layer.children.length) return;\n',
      '    return;\n'),
     ('callouts left where a question was', B,
-     '    layer.style.top = "";\n    layer.classList.remove("is-hidden");\n',
+     '    layer.style.top = ""; layer.style.left = ""; layer.style.clipPath = "";\n    layer.classList.remove("is-hidden");\n',
      '    layer.classList.remove("is-hidden");\n'),
     ('callouts under the phone board', 'crankmagic.css',
      '.cm-board[data-phone]~.cm-board-callouts{z-index:61;top:30%}',

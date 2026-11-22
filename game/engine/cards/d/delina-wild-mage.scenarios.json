@@ -1,0 +1,698 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Delina, Wild Mage",
+  "fixtures": {
+    "Smoke Fling": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Target creature you control deals damage equal to its power to target player.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "controller": "you"
+          },
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "from": {
+              "target": 0
+            },
+            "who": {
+              "target": 1
+            },
+            "amount": {
+              "powerOf": {
+                "target": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Zero": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2
+    },
+    "Smoke Priest": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "abilities": [
+        {
+          "id": "p0",
+          "kind": "triggered",
+          "text": "When this creature enters, you gain 3 life.",
+          "trigger": {
+            "on": "enters",
+            "who": "self"
+          },
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 3
+            }
+          ]
+        }
+      ]
+    },
+    "Smoke Token": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "power": 2,
+      "toughness": 2,
+      "token": true
+    },
+    "Smoke Kill": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Smoke Cantrip": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "You gain 1 life.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "gainLife",
+            "amount": 1
+          }
+        ]
+      }
+    },
+    "Smoke Steal": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "spell": {
+        "id": "s",
+        "text": "Gain control of target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "gainControl",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "A 5, copying Delina herself: one tapped, attacking token copy that is not legendary (the legend rule leaves both), exiled at end of combat",
+      "rolls": [
+        5
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Delina, Wild Mage",
+                "Delina, Wild Mage"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Delina, Wild Mage",
+              "token": true,
+              "is": true
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Delina, Wild Mage",
+                "power": 3,
+                "toughness": 2,
+                "token": true
+              }
+            },
+            {
+              "event": "GameEventDieRolled",
+              "where": {
+                "sides": 20,
+                "result": 5
+              }
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 34
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 34
+        }
+      ]
+    },
+    {
+      "name": "Copying another creature: the legendary Smoke Legend is copied as a token that is not legendary, so both stay",
+      "rolls": [
+        1
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage",
+            "Smoke Legend"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Smoke Legend"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage",
+            "Smoke Legend",
+            "Smoke Legend"
+          ]
+        },
+        {
+          "seat": 0,
+          "tapped": "Smoke Legend",
+          "token": true,
+          "is": true
+        }
+      ]
+    },
+    {
+      "name": "A 14 is the last of the first row: one token, no roll again",
+      "rolls": [
+        14
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage",
+            "Delina, Wild Mage"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A 15 makes a token and offers another roll: Stop rolling keeps the one -- as the first row makes it: tapped, attacking, not legendary, exiled at end of combat",
+      "rolls": [
+        15,
+        3
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Roll again",
+                  "Stop rolling"
+                ]
+              }
+            },
+            {
+              "event": "GameEventDieRolled",
+              "where": {
+                "sides": 20,
+                "result": 15
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Stop rolling"
+          ]
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Delina, Wild Mage",
+                "Delina, Wild Mage"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Delina, Wild Mage",
+              "token": true,
+              "is": true
+            },
+            {
+              "stack": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 34
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_END"
+          }
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 34
+        }
+      ]
+    },
+    {
+      "name": "A 15, roll again: a 20 makes another token and offers again; a 3 then makes a third -- no more questions after the first row",
+      "rolls": [
+        15,
+        20,
+        3
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Roll again"
+          ]
+        },
+        {
+          "choose": [
+            "Roll again"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage",
+            "Delina, Wild Mage",
+            "Delina, Wild Mage",
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A 20 and Stop rolling: one token",
+      "rolls": [
+        20
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Stop rolling"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage",
+            "Delina, Wild Mage"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The first row never offers a roll: a 1 makes one token and the ability is done",
+      "rolls": [
+        1
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "choose": [
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Delina, Wild Mage",
+            "Delina, Wild Mage"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Offered from untapped lands with an empty pool",
+      "pooledTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Delina, Wild Mage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Delina, Wild Mage",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

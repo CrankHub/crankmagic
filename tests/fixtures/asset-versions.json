@@ -154,8 +154,8 @@
       "sha": "5dd742bd996b24a6"
     },
     "crankmagic-app.js": {
-      "version": 770,
-      "sha": "2df0dcb34eb3762d"
+      "version": 777,
+      "sha": "90e7be40c72a0cb7"
     },
     "crankmagic-assets.js": {
       "version": 41,
@@ -166,8 +166,8 @@
       "sha": "ddab072cfc45df40"
     },
     "crankmagic-board.js": {
-      "version": 183,
-      "sha": "d3e735585de40f4d"
+      "version": 189,
+      "sha": "20eb18ccba47fda4"
     },
     "crankmagic-brand.js": {
       "version": 6,
@@ -210,8 +210,8 @@
       "sha": "18ed40eacd82dfe3"
     },
     "crankmagic-discover.js": {
-      "version": 81,
-      "sha": "740a3eb6cc197384"
+      "version": 82,
+      "sha": "fa4fc8951d409e43"
     },
     "crankmagic-evidence.js": {
       "version": 4,
@@ -354,20 +354,20 @@
       "sha": "66bbfde592de2d04"
     },
     "crankmagic-stage.css": {
-      "version": 190,
-      "sha": "fbdc9e9bb26b14d4"
+      "version": 195,
+      "sha": "c21bd3ec2765e7e3"
     },
     "crankmagic-stage.js": {
-      "version": 47,
-      "sha": "98a927e3ac912295"
+      "version": 48,
+      "sha": "c33c124f83ba6141"
     },
     "crankmagic-strategies.js": {
       "version": 4,
       "sha": "07440b83396bb9e2"
     },
     "crankmagic-sw.js": {
-      "version": 753,
-      "sha": "04b81453c85ac8a5"
+      "version": 760,
+      "sha": "de91599df4a4551a"
     },
     "crankmagic-table.js": {
       "version": 59,
@@ -390,8 +390,8 @@
       "sha": "ca657a27caa9093d"
     },
     "crankmagic.css": {
-      "version": 318,
-      "sha": "e2b4cdf14bfcf3a9"
+      "version": 319,
+      "sha": "9c86dde27462ebc8"
     },
     "custom-model.js": {
       "version": 3,

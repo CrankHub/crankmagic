@@ -8,14 +8,15 @@
  *
  * THE ORDER, and why it keeps those words true:
  *   1. the cap check and the row are ONE statement (INSERT ... SELECT ... WHERE count < cap), status 'pending';
- *   2. then Cloudflare Access is written and read back (cloud/access-invites.mjs), then the AI roster for an Insider;
+ *   2. then Cloudflare Access is written and read back (cloud/access-invites.mjs): the address goes into the rule group of its
+ *      group (CrankMagic Invitees, or Game Theory Insiders), the only list of either since ROB-440;
  *   3. then the row becomes 'admitted'. The caller sends the email after that, never before.
  * Admission failing leaves the row 'pending'. It is the same invitation when it is sent again: the row is keyed by the invitee
  * (UNIQUE), the Access write reads before it writes, and the retry spends no second slot. Nothing is ever admitted without a row.
  *
  * Imports no game code; storage is the D1 binding. `fail(message, status)` throws the caller's error (ShareError in the Worker).
  */
-import {admitAddress, inviteTargets} from './access-invites.mjs';
+import {admitAddress, accessReady} from './access-invites.mjs';
 import {groupOf} from './access.mjs';
 
 export const INVITE_CAP = 5;
@@ -30,8 +31,8 @@ const rowOf = (db, to) => first(db, 'SELECT * FROM invitations WHERE invitee_ema
 const registered = async (db, to) => !!await first(db, 'SELECT 1 AS yes FROM users WHERE email=? UNION SELECT 1 FROM account_identities WHERE email=?', to, to);
 const slotsUsed = async (db, inviterId) => Number((await first(db, 'SELECT count(*) AS n FROM invitations WHERE inviter_id=?', inviterId))?.n || 0);
 /** The owner: OWNER_EMAIL (cloud/access.mjs), or an inviter the caller already knows is the administrator (`inviter.owner`). */
-const ownerOf = async (db, env, inviter) => inviter.owner === true || (await groupOf(inviter.email, env, db)) === 'owner';
-const hasAi = async (db, env, to) => ['owner', 'insider'].includes(await groupOf(to, env, db));
+const ownerOf = async (db, env, inviter, fetchImpl) => inviter.owner === true || (await groupOf(inviter.email, env, db, {fetchImpl})) === 'owner';
+const hasAi = async (db, env, to, fetchImpl) => ['owner', 'insider'].includes(await groupOf(to, env, db, {fetchImpl}));
 
 const capRefusal = (cap) => `You have already invited ${cap} people, the most one person can invite, so nothing was sent. Pick someone who already has a CrankMagic account (the dropdown), or ask the owner to invite this person or to raise the limit.`;
 export const NO_AI = 'Only the CrankMagic owner can give someone AI access (Game Theory Insider). Invite them as General; the owner can upgrade them later.';
@@ -50,8 +51,8 @@ function asked(group, owner, fail) {
  * @returns {Promise<{to: string, group: string, isNew: boolean}[]>} each person's address, the group they would get, and whether
  *   they would be a new account (the only thing that costs a slot)
  */
-export async function vetInvitees(db, env, {inviter, people, fail}) {
-  const owner = await ownerOf(db, env, inviter), seen = new Set(), out = [];
+export async function vetInvitees(db, env, {inviter, people, fail, fetchImpl}) {
+  const owner = await ownerOf(db, env, inviter, fetchImpl), seen = new Set(), out = [];
   for (const person of people) {
     const to = address(person.to, fail);
     if (to === String(inviter.email).toLowerCase()) fail('That is your own address. You are already at the table.', 400);
@@ -59,7 +60,7 @@ export async function vetInvitees(db, env, {inviter, people, fail}) {
     seen.add(to);
     const group = asked(person.group, owner, fail), row = await rowOf(db, to);
     const isNew = !row && !await registered(db, to);
-    out.push({to, group: group ?? (isNew ? (owner ? 'insider' : 'general') : (row?.grp ?? ((await hasAi(db, env, to)) ? 'insider' : 'general'))), isNew});
+    out.push({to, group: group ?? (isNew ? (owner ? 'insider' : 'general') : (row?.grp ?? ((await hasAi(db, env, to, fetchImpl)) ? 'insider' : 'general'))), isNew});
   }
   const needed = out.filter(p => p.isNew).length;
   if (needed) {
@@ -81,16 +82,16 @@ export async function vetInvitees(db, env, {inviter, people, fail}) {
  */
 export async function inviteAddress(db, env, {inviter, to: given, name, group, source, tableId = null, now, fetchImpl, fail}) {
   const to = address(given, fail), explicit = group !== undefined && group !== null && group !== '';
-  const owner = await ownerOf(db, env, inviter), want = asked(group, owner, fail);
+  const owner = await ownerOf(db, env, inviter, fetchImpl), want = asked(group, owner, fail);
   let row = await rowOf(db, to), created = false, final;
   /* A group chosen by default (the owner's guests are Insiders) is for a NEW account only. Someone already in changes group
      only when the owner explicitly says so: a Create game with an existing General friend must never hand them AI. */
   if (!row) {
-    const known = await registered(db, to), insider = await hasAi(db, env, to);
+    const known = await registered(db, to), insider = await hasAi(db, env, to, fetchImpl);
     if (known && (want !== 'insider' || insider)) return {group: insider ? 'insider' : 'general', created: false, already: true, access: []};
     final = want ?? (owner ? 'insider' : 'general');
     /* Configuration is checked before any row is written: a copy that cannot admit anyone must not fill the table. */
-    if (!env.ACCESS_INVITE_TOKEN || !inviteTargets(env, final).length || !/^[\da-f]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID || ''))
+    if (!accessReady(env))
       fail('Invitations need Access invitation permissions configured by the administrator, for this group. Nothing was sent.', 503);
     const stamp = now(), cap = known ? 1e9 : capOf(env);
     const made = await db.prepare(`INSERT INTO invitations(id,invitee_email,invitee_name,inviter_id,inviter_email,grp,source,table_id,status,created_at)
@@ -110,8 +111,6 @@ export async function inviteAddress(db, env, {inviter, to: given, name, group, s
   let access;
   try { access = await admitAddress(db, env, to, {now, fetchImpl, fail, group: final}); }
   catch (error) { error.message += ' Your invitation is saved: send the same invitation again to finish it (it uses no second slot).'; throw error; }
-  if (final === 'insider')
-    await db.prepare('INSERT OR IGNORE INTO ai_allowlist(email,added_at,note) VALUES (?,?,?)').bind(to, now(), 'Invited as Game Theory Insider by the owner (ROB-320)').run();
   await db.prepare("UPDATE invitations SET status='admitted',admitted_at=? WHERE invitee_email=?").bind(now(), to).run();
   await db.prepare("UPDATE account_invitations SET status='admitted' WHERE email=?").bind(to).run();
   return {group: final, created, already: false, access};

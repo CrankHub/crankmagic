@@ -12,8 +12,8 @@ S = 'crankmagic-stage.css'
 BREAKS = [
     # A deck bundled for everyone again, where nothing is shared with the player.
     ('a bundled deck when nothing is shared', T,
-     '    availableSharedDecks = C.sharingAvailable?.() && C.sharedDecks ? await C.sharedDecks() : [];',
-     '    availableSharedDecks = C.sharingAvailable?.() && C.sharedDecks ? await C.sharedDecks() : [{id: "shared:D6", name: "D6 Krenko", commander: ["Krenko, Mob Boss"], cards: []}];'),
+     '    const sharedDecks = C.sharingAvailable?.() && C.sharedDecks ? await C.sharedDecks() : [];',
+     '    const sharedDecks = C.sharingAvailable?.() && C.sharedDecks ? await C.sharedDecks() : [{id: "shared:D6", name: "D6 Krenko", commander: ["Krenko, Mob Boss"], cards: []}];'),
     # One precon of the six left out.
     ('a precon left out', T,
      '    return latest.decks.map((p) => lists.get(p.id))',

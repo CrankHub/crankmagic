@@ -1,0 +1,1640 @@
+{
+  "schema": "library-bulk-load@1",
+  "measuredAt": "2026-11-05",
+  "of": "The cards no table plays yet, after the Rakdos copy deck load: what the compiler can make candidates of now, what teaching a sentence would add, and the lanes of the most-played Commander cards.",
+  "counts": {
+    "undefinedCommanderCards": 25578,
+    "candidates": 128,
+    "refused": 5,
+    "blocked": 2,
+    "vetoed": 0,
+    "unknownSentence": 24374,
+    "oneSentenceShort": 12086,
+    "anotherLayout": 1069,
+    "ownedAndUnloaded": 1,
+    "mostPlayed80Percent": {
+      "cards": 3239,
+      "alreadyFinal": 2000,
+      "unloaded": 1233,
+      "candidates": 3,
+      "oneSentenceShort": 471,
+      "lanes": 45
+    }
+  },
+  "ownedAndUnloaded": [
+    "Extrapolate the Impossible"
+  ],
+  "candidates": [
+    {
+      "name": "Muddle the Mixture",
+      "templates": [
+        "2:counter target TYPE or TYPE spell",
+        "1:transmute {N}{u}{u}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": 1087
+    },
+    {
+      "name": "Canopy Tactician",
+      "templates": [
+        "1:other elves you control get +N/+N",
+        "1:{t}: add {g}{g}{g}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": 2655
+    },
+    {
+      "name": "Claim the Precious",
+      "templates": [
+        "1:destroy target creature",
+        "1:the ring tempts you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": 2834
+    },
+    {
+      "name": "Accorder Paladin",
+      "templates": [
+        "1:battle cry"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Angel of Renewal",
+      "templates": [
+        "1:flying",
+        "1:when this creature enters, you gain N life for each creature you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Annul",
+      "templates": [
+        "2:counter target TYPE or TYPE spell"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Aven Fogbringer",
+      "templates": [
+        "1:flying",
+        "2:when this TYPE enters, return target TYPE to its owner's hand"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Battering Wurm",
+      "templates": [
+        "1:bloodthirst N",
+        "1:creatures with power less than this creature's power can't block it"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Birthday Escape",
+      "templates": [
+        "1:draw a card",
+        "1:the ring tempts you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Bladestitched Skaab",
+      "templates": [
+        "1:other zombies you control get +N/+N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Blazing Specter",
+      "templates": [
+        "1:flying",
+        "1:haste",
+        "1:whenever this creature deals combat damage to a player, that player discards a card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Blood Reckoning",
+      "templates": [
+        "1:whenever a creature attacks you or a planeswalker you control, that creature's controller loses N life"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Bombadil's Song",
+      "templates": [
+        "1:target creature you control gets +N/+N and gains hexproof until end of turn",
+        "1:the ring tempts you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Broodbirth Viper",
+      "templates": [
+        "1:myriad",
+        "1:whenever this creature deals combat damage to a player, you may draw a card"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Burlfist Oak",
+      "templates": [
+        "1:whenever you draw a card, this creature gets +N/+N until end of turn"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Caller of the Pack",
+      "templates": [
+        "1:trample",
+        "1:myriad"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Celebrate the Mountain-king",
+      "templates": [
+        "1:when this enchantment enters, for each opponent, exile up to N target nonland permanent that player controls until this enchantment leaves the battlefield",
+        "2:when this TYPE enters, recruit"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Chainer's Edict",
+      "templates": [
+        "1:target player sacrifices a creature of their choice",
+        "1:flashback {N}{b}{b}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Chilling Apparition",
+      "templates": [
+        "1:{b}: regenerate this creature",
+        "1:whenever this creature deals combat damage to a player, that player discards a card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Conclave Evangelist",
+      "templates": [
+        "1:myriad",
+        "1:whenever this creature deals combat damage to a player, create a token that's a copy of this creature"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Conclave Phalanx",
+      "templates": [
+        "1:convoke",
+        "1:when this creature enters, you gain N life for each creature you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Crimson Fleet Commodore",
+      "templates": [
+        "1:trample",
+        "1:when this creature enters, you become the monarch"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Crowned Ceratok",
+      "templates": [
+        "1:trample",
+        "1:each creature you control with a +1/+1 counter on it has trample"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Daggerfang Duo",
+      "templates": [
+        "1:deathtouch",
+        "1:when this creature enters, you may mill N cards"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Deathcap Marionette",
+      "templates": [
+        "1:deathtouch",
+        "1:when this creature enters, you may mill N cards"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Dissenter's Deliverance",
+      "templates": [
+        "1:destroy target artifact",
+        "1:cycling {g}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Divinity of Pride",
+      "templates": [
+        "1:flying",
+        "1:lifelink",
+        "1:this creature gets +N/+N as long as you have N or more life"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Dizzy Spell",
+      "templates": [
+        "1:target creature gets -N/-N until end of turn",
+        "1:transmute {N}{u}{u}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Dockworker Drone",
+      "templates": [
+        "1:this creature enters with a +1/+1 counter on it",
+        "1:when this creature dies, put its counters on target creature you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Dreadful as the Storm",
+      "templates": [
+        "1:target creature has base power and toughness N/N until end of turn",
+        "1:the ring tempts you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Dross Golem",
+      "templates": [
+        "2:affinity for BASICs",
+        "1:fear"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Electrickery",
+      "templates": [
+        "1:~ deals N damage to target creature you don't control",
+        "1:overload {N}{r}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Elite Guardmage",
+      "templates": [
+        "1:flying",
+        "1:when this creature enters, you gain N life and draw a card"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Elvish Aberration",
+      "templates": [
+        "1:{t}: add {g}{g}{g}",
+        "1:forestcycling {N}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Enduring Bondwarden",
+      "templates": [
+        "1:backup N",
+        "1:when this creature dies, put its counters on target creature you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Enraged Revolutionary",
+      "templates": [
+        "1:dethrone"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Everdawn Champion",
+      "templates": [
+        "1:prevent all combat damage that would be dealt to this creature"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Farbog Revenant",
+      "templates": [
+        "1:skulk",
+        "1:lifelink"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Filigree Angel",
+      "templates": [
+        "1:flying",
+        "2:when this TYPE enters, you gain N life for each TYPE you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Fortress Kin-Guard",
+      "templates": [
+        "1:when this creature enters, it endures N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Furtive Homunculus",
+      "templates": [
+        "1:skulk"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Galvanizing Sawship",
+      "templates": [
+        "1:station",
+        "1:N+ | flying",
+        "1:haste"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Goblin Wardriver",
+      "templates": [
+        "1:battle cry"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Granite Grip",
+      "templates": [
+        "1:enchant creature",
+        "2:enchanted TYPE gets +N/+N for each BASIC you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Grenzo's Cutthroat",
+      "templates": [
+        "1:first strike",
+        "1:dethrone"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Guard Gomazoa",
+      "templates": [
+        "1:defender",
+        "1:flying",
+        "1:prevent all combat damage that would be dealt to this creature"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Gust of Wind",
+      "templates": [
+        "1:this spell costs {N} less to cast if you control a creature with flying",
+        "1:return target nonland permanent you don't control to its owner's hand",
+        "1:draw a card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Hagra Constrictor",
+      "templates": [
+        "1:this creature enters with N +1/+1 counters on it",
+        "2:each TYPE you control with a +1/+1 counter on it has KW"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Hard-Hitting Question",
+      "templates": [
+        "1:target creature you control deals damage equal to its power to target creature or planeswalker you don't control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Headhunter",
+      "templates": [
+        "1:whenever this creature deals combat damage to a player, that player discards a card",
+        "1:morph {b}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Herald of the Host",
+      "templates": [
+        "1:flying",
+        "1:vigilance",
+        "1:myriad"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Hoard Robber",
+      "templates": [
+        "1:whenever this creature deals combat damage to a player, create a treasure token"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Honor Troll",
+      "templates": [
+        "1:vigilance",
+        "1:if you would gain life, you gain that much life plus N instead",
+        "1:this creature gets +N/+N as long as you have N or more life"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Howlgeist",
+      "templates": [
+        "1:creatures with power less than this creature's power can't block it",
+        "1:undying"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Iron-Shield Elf",
+      "templates": [
+        "2:discard a card: this TYPE gains KW until end of turn. tap it"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Kin-Tree Nurturer",
+      "templates": [
+        "1:lifelink",
+        "1:when this creature enters, it endures N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Kuldotha Ringleader",
+      "templates": [
+        "1:battle cry",
+        "1:this creature attacks each combat if able"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Leyline of Hope",
+      "templates": [
+        "1:if this card is in your opening hand, you may begin the game with it on the battlefield",
+        "1:if you would gain life, you gain that much life plus N instead",
+        "1:as long as you have at least N life more than your starting life total, creatures you control get +N/+N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Library Larcenist",
+      "templates": [
+        "1:whenever this creature attacks, draw a card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Locust Spray",
+      "templates": [
+        "1:target creature gets -N/-N until end of turn",
+        "1:cycling {b}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Looming Spires",
+      "templates": [
+        "1:this land enters tapped",
+        "2:when this TYPE enters, target TYPE gets +N/+N and gains KW until end of turn",
+        "1:{t}: add {r}"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Loxodon Partisan",
+      "templates": [
+        "1:battle cry"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Lurching Rotbeast",
+      "templates": [
+        "1:cycling {b}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Magus of the Disk",
+      "templates": [
+        "1:this creature enters tapped",
+        "1:{N}, {t}: destroy all artifacts, creatures, and enchantments"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Marchesa's Emissary",
+      "templates": [
+        "1:hexproof",
+        "1:dethrone"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Marchesa's Infiltrator",
+      "templates": [
+        "1:dethrone",
+        "1:whenever this creature deals combat damage to a player, draw a card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Master's Rebuke",
+      "templates": [
+        "1:target creature you control deals damage equal to its power to target creature or planeswalker you don't control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Mineshaft Spider",
+      "templates": [
+        "1:reach",
+        "1:when this creature enters, you may mill N cards"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Mizzium Skin",
+      "templates": [
+        "1:target creature you control gets +N/+N and gains hexproof until end of turn",
+        "1:overload {N}{u}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Morbid Hunger",
+      "templates": [
+        "1:~ deals N damage to any target",
+        "1:you gain N life",
+        "1:flashback {N}{b}{b}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Most Valuable Slayer",
+      "templates": [
+        "2:whenever you attack, target attacking TYPE gets +N/+N and gains KW until end of turn"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Multani's Decree",
+      "templates": [
+        "2:destroy all TYPEs. you gain N life for each TYPE destroyed this way"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Mystic Denial",
+      "templates": [
+        "2:counter target TYPE or TYPE spell"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Nightmare",
+      "templates": [
+        "1:flying",
+        "2:~'s power and toughness are each equal to the number of BASICs you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Noggle Bridgebreaker",
+      "templates": [
+        "2:when this TYPE enters, return a TYPE you control to its owner's hand"
+      ],
+      "weakestBand": "10-19",
+      "bandRate": 0.9988,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Orzhov Racketeers",
+      "templates": [
+        "1:whenever this creature deals combat damage to a player, that player discards a card",
+        "1:afterlife N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Oxidda Golem",
+      "templates": [
+        "2:affinity for BASICs",
+        "1:haste"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Palace Sentinels",
+      "templates": [
+        "1:when this creature enters, you become the monarch"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Paraselene",
+      "templates": [
+        "2:destroy all TYPEs. you gain N life for each TYPE destroyed this way"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Phantom General",
+      "templates": [
+        "1:creature tokens you control get +N/+N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Portal Mage",
+      "templates": [
+        "1:flash",
+        "2:when this TYPE enters during the declare attackers step, you may reselect which player or permanent target attacking TYPE is attacking"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Pridemalkin",
+      "templates": [
+        "1:when this creature enters, put a +1/+1 counter on target creature you control",
+        "1:each creature you control with a +1/+1 counter on it has trample"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Prognostic Sphinx",
+      "templates": [
+        "1:flying",
+        "1:discard a card: this creature gains hexproof until end of turn. tap it",
+        "1:whenever this creature attacks, scry N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Prosperous Pirates",
+      "templates": [
+        "1:when this creature enters, create N treasure tokens"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Pteron Ghost",
+      "templates": [
+        "1:flying",
+        "2:sacrifice this TYPE: regenerate target TYPE"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Radioactive Man",
+      "templates": [
+        "1:deathtouch",
+        "1:whenever ~ deals combat damage to a player, that player loses half their life, rounded up"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Rancid Rats",
+      "templates": [
+        "1:skulk",
+        "1:deathtouch"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Ranger's Firebrand",
+      "templates": [
+        "1:~ deals N damage to any target",
+        "1:the ring tempts you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Razaketh's Rite",
+      "templates": [
+        "1:search your library for a card, put that card into your hand, then shuffle",
+        "1:cycling {b}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Riveteers Requisitioner",
+      "templates": [
+        "1:when this creature dies, create a treasure token",
+        "1:blitz {N}{r}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Salvage Slasher",
+      "templates": [
+        "2:this TYPE gets +N/+N for each TYPE card in your graveyard"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Sam's Desperate Rescue",
+      "templates": [
+        "1:return target creature card from your graveyard to your hand",
+        "1:the ring tempts you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Sandskitter Outrider",
+      "templates": [
+        "1:menace",
+        "1:when this creature enters, it endures N"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Sandstone Bridge",
+      "templates": [
+        "1:this land enters tapped",
+        "2:when this TYPE enters, target TYPE gets +N/+N and gains KW until end of turn",
+        "1:{t}: add {w}"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Sapphire Drake",
+      "templates": [
+        "1:flying",
+        "2:each TYPE you control with a +1/+1 counter on it has KW"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Shinra Reinforcements",
+      "templates": [
+        "1:when this creature enters, mill N cards and you gain N life"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Skarrgan Pit-Skulk",
+      "templates": [
+        "1:bloodthirst N",
+        "1:creatures with power less than this creature's power can't block it"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Skyshaper",
+      "templates": [
+        "2:sacrifice this TYPE: TYPEs you control gain KW until end of turn"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Smoldering Spires",
+      "templates": [
+        "1:this land enters tapped",
+        "2:when this TYPE enters, target TYPE can't block this turn",
+        "1:{t}: add {r}"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Soaring Seacliff",
+      "templates": [
+        "1:this land enters tapped",
+        "2:when this TYPE enters, target TYPE gains KW until end of turn",
+        "1:{t}: add {u}"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Somberwald Stag",
+      "templates": [
+        "1:when this creature enters, you may have it fight target creature you don't control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Spiteful Squad",
+      "templates": [
+        "1:deathtouch",
+        "1:this creature enters with N +1/+1 counters on it",
+        "1:when this creature dies, put its counters on target creature you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Squelching Leeches",
+      "templates": [
+        "2:~'s power and toughness are each equal to the number of BASICs you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Star Pupil",
+      "templates": [
+        "1:this creature enters with a +1/+1 counter on it",
+        "1:when this creature dies, put its counters on target creature you control"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Starbreach Whale",
+      "templates": [
+        "1:flying",
+        "1:when this creature enters, surveil N",
+        "1:warp {N}{u}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Staunch Throneguard",
+      "templates": [
+        "1:vigilance",
+        "1:when this creature enters, you become the monarch"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Stormcaller's Boon",
+      "templates": [
+        "2:sacrifice this TYPE: TYPEs you control gain KW until end of turn",
+        "1:cascade"
+      ],
+      "weakestBand": "2-4",
+      "bandRate": 0.9979,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Sumala Rumblers",
+      "templates": [
+        "1:~'s power is equal to the number of creatures you control",
+        "1:myriad"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Tabaxi Toucaneers",
+      "templates": [
+        "1:flying",
+        "1:myriad"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Tangle Golem",
+      "templates": [
+        "2:affinity for BASICs"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Tarnished Citadel",
+      "templates": [
+        "1:{t}: add {c}",
+        "1:{t}: add N mana of any color. this land deals N damage to you"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Teetering Peaks",
+      "templates": [
+        "1:this land enters tapped",
+        "2:when this TYPE enters, target TYPE gets +N/+N until end of turn",
+        "1:{t}: add {r}"
+      ],
+      "weakestBand": "10-19",
+      "bandRate": 0.9988,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Tender Wildguide",
+      "templates": [
+        "1:offspring {N}",
+        "1:{t}: add N mana of any color",
+        "1:{t}: put a +1/+1 counter on this creature"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Thalakos Seer",
+      "templates": [
+        "1:shadow",
+        "1:when this creature leaves the battlefield, draw a card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Thirst for Meaning",
+      "templates": [
+        "2:draw N cards. then discard N cards unless you discard an TYPE card"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Thorn of the Black Rose",
+      "templates": [
+        "1:deathtouch",
+        "1:when this creature enters, you become the monarch"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Tolaria West",
+      "templates": [
+        "1:this land enters tapped",
+        "1:{t}: add {u}",
+        "1:transmute {N}{u}{u}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Topiary Panther",
+      "templates": [
+        "1:trample",
+        "1:basic landcycling {N}{g}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Trollbred Guardian",
+      "templates": [
+        "1:{N}{g}: adapt N",
+        "1:each creature you control with a +1/+1 counter on it has trample"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Turntimber Grove",
+      "templates": [
+        "1:this land enters tapped",
+        "2:when this TYPE enters, target TYPE gets +N/+N until end of turn",
+        "1:{t}: add {g}"
+      ],
+      "weakestBand": "10-19",
+      "bandRate": 0.9988,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Vampire Cutthroat",
+      "templates": [
+        "1:skulk",
+        "1:lifelink"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Wall of Hope",
+      "templates": [
+        "1:defender",
+        "1:whenever this creature is dealt damage, you gain that much life"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Wandering Wolf",
+      "templates": [
+        "1:creatures with power less than this creature's power can't block it"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Warchief Giant",
+      "templates": [
+        "1:haste",
+        "1:myriad"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Weapon Surge",
+      "templates": [
+        "2:target TYPE you control gets +N/+N and gains KW until end of turn",
+        "1:overload {N}{r}"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Windgrace Acolyte",
+      "templates": [
+        "1:flying",
+        "1:when this creature enters, mill N cards and you gain N life"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Wizards of Thay",
+      "templates": [
+        "1:myriad",
+        "1:instant and sorcery spells you cast cost {N} less to cast",
+        "1:you may cast sorcery spells as though they had flash"
+      ],
+      "weakestBand": "1",
+      "bandRate": 0.9922,
+      "mostPlayedRank": null
+    },
+    {
+      "name": "Wyrm's Crossing Patrol",
+      "templates": [
+        "1:myriad"
+      ],
+      "weakestBand": "5-9",
+      "bandRate": 1,
+      "mostPlayedRank": null
+    }
+  ],
+  "sentencesToTeach": [
+    {
+      "sentence": "Swampwalk (This creature can't be blocked as long as defending player controls a Swamp.)",
+      "cards": 24
+    },
+    {
+      "sentence": "Mountainwalk (This creature can't be blocked as long as defending player controls a Mountain.)",
+      "cards": 15
+    },
+    {
+      "sentence": "Wither (This deals damage to creatures in the form of -1/-1 counters.)",
+      "cards": 13
+    },
+    {
+      "sentence": "Horsemanship (This creature can't be blocked except by creatures with horsemanship.)",
+      "cards": 12
+    },
+    {
+      "sentence": "Unleash (You may have this creature enter with a +1/+1 counter on it. It can't block as long as it has a +1/+1 counter on it.)",
+      "cards": 11
+    },
+    {
+      "sentence": "This creature can block an additional creature each combat.",
+      "cards": 10
+    },
+    {
+      "sentence": "This creature can't attack unless defending player controls an Island.",
+      "cards": 10
+    },
+    {
+      "sentence": "This land doesn't untap during your next untap step.",
+      "cards": 10
+    },
+    {
+      "sentence": "This land enters tapped unless a player has 13 or less life.",
+      "cards": 10
+    },
+    {
+      "sentence": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
+      "cards": 9
+    },
+    {
+      "sentence": "Banding (Any creatures with banding, and up to one without, can attack in a band. Bands are blocked as a group. If any creatures with banding you control are bl",
+      "cards": 8
+    },
+    {
+      "sentence": "Renown 1 (When this creature deals combat damage to a player, if it isn't renowned, put a +1/+1 counter on it and it becomes renowned.)",
+      "cards": 8
+    },
+    {
+      "sentence": "Buyback {3} (You may pay an additional {3} as you cast this spell. If you do, put this card into your hand as it resolves.)",
+      "cards": 7
+    },
+    {
+      "sentence": "You may have this creature assign its combat damage as though it weren't blocked.",
+      "cards": 7
+    },
+    {
+      "sentence": "Activate only once each turn.",
+      "cards": 6
+    },
+    {
+      "sentence": "Enlist (As this creature attacks, you may tap a nonattacking creature you control without summoning sickness. When you do, add its power to this creature's unti",
+      "cards": 6
+    },
+    {
+      "sentence": "Intimidate (This creature can't be blocked except by artifact creatures and/or creatures that share a color with it.)",
+      "cards": 6
+    },
+    {
+      "sentence": "Retrace (You may cast this card from your graveyard by discarding a land card in addition to paying its other costs.)",
+      "cards": 6
+    },
+    {
+      "sentence": "This creature can't attack or block alone.",
+      "cards": 6
+    },
+    {
+      "sentence": "Activate no more than twice each turn.",
+      "cards": 5
+    },
+    {
+      "sentence": "Activate only during your turn, before attackers are declared.",
+      "cards": 5
+    },
+    {
+      "sentence": "All creatures able to block this creature do so.",
+      "cards": 5
+    },
+    {
+      "sentence": "As an additional cost to cast this spell, exile a creature card from your graveyard.",
+      "cards": 5
+    },
+    {
+      "sentence": "Cast this spell only during the declare attackers step and only if you've been attacked this step.",
+      "cards": 5
+    },
+    {
+      "sentence": "Creatures without flying can't block this turn.",
+      "cards": 5
+    },
+    {
+      "sentence": "If that spell is countered this way, exile it instead of putting it into its owner's graveyard.",
+      "cards": 5
+    },
+    {
+      "sentence": "Its controller loses 2 life.",
+      "cards": 5
+    },
+    {
+      "sentence": "Jump-start (You may cast this card from your graveyard by discarding a card in addition to paying its other costs. Then exile this card.)",
+      "cards": 5
+    },
+    {
+      "sentence": "Learn. (You may reveal a Lesson card you own from outside the game and put it into your hand, or discard a card to draw a card.)",
+      "cards": 5
+    },
+    {
+      "sentence": "Mountaincycling {2} ({2}, Discard this card: Search your library for a Mountain card, reveal it, put it into your hand, then shuffle.)",
+      "cards": 5
+    },
+    {
+      "sentence": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)",
+      "cards": 5
+    },
+    {
+      "sentence": "Provoke (Whenever this creature attacks, you may have target creature defending player controls untap and block it if able.)",
+      "cards": 5
+    },
+    {
+      "sentence": "Return up to two target creatures to their owners' hands.",
+      "cards": 5
+    },
+    {
+      "sentence": "Tap up to two target creatures.",
+      "cards": 5
+    },
+    {
+      "sentence": "When this creature enters, open an Attraction. (Put the top card of your Attraction deck onto the battlefield.)",
+      "cards": 5
+    },
+    {
+      "sentence": "Whenever this creature deals damage, you gain that much life.",
+      "cards": 5
+    },
+    {
+      "sentence": "You may pay {1} and return a basic land you control to its owner's hand rather than pay this spell's mana cost.",
+      "cards": 5
+    },
+    {
+      "sentence": "{0}: The next 1 damage that would be dealt to this creature this turn is dealt to target creature you control instead.",
+      "cards": 5
+    },
+    {
+      "sentence": "Activate only if this land entered this turn or if you control a basic land.",
+      "cards": 4
+    },
+    {
+      "sentence": "As an additional cost to cast this spell, sacrifice an artifact.",
+      "cards": 4
+    }
+  ],
+  "lanes": [
+    {
+      "lane": "L1-walkers-1",
+      "cards": 26
+    },
+    {
+      "lane": "L2-walkers-2",
+      "cards": 26
+    },
+    {
+      "lane": "L3-walkers-3",
+      "cards": 26
+    },
+    {
+      "lane": "L4-walkers-4",
+      "cards": 26
+    },
+    {
+      "lane": "L5-stack-1",
+      "cards": 25
+    },
+    {
+      "lane": "L6-stack-2",
+      "cards": 25
+    },
+    {
+      "lane": "L7-stack-3",
+      "cards": 25
+    },
+    {
+      "lane": "L8-graveyard-1",
+      "cards": 29
+    },
+    {
+      "lane": "L9-graveyard-2",
+      "cards": 29
+    },
+    {
+      "lane": "L10-graveyard-3",
+      "cards": 29
+    },
+    {
+      "lane": "L11-graveyard-4",
+      "cards": 29
+    },
+    {
+      "lane": "L12-graveyard-5",
+      "cards": 29
+    },
+    {
+      "lane": "L13-graveyard-6",
+      "cards": 29
+    },
+    {
+      "lane": "L14-graveyard-7",
+      "cards": 29
+    },
+    {
+      "lane": "L15-graveyard-8",
+      "cards": 22
+    },
+    {
+      "lane": "L16-combat-1",
+      "cards": 28
+    },
+    {
+      "lane": "L17-combat-2",
+      "cards": 28
+    },
+    {
+      "lane": "L18-combat-3",
+      "cards": 28
+    },
+    {
+      "lane": "L19-combat-4",
+      "cards": 28
+    },
+    {
+      "lane": "L20-combat-5",
+      "cards": 28
+    },
+    {
+      "lane": "L21-combat-6",
+      "cards": 28
+    },
+    {
+      "lane": "L22-combat-7",
+      "cards": 28
+    },
+    {
+      "lane": "L23-combat-8",
+      "cards": 28
+    },
+    {
+      "lane": "L24-combat-9",
+      "cards": 28
+    },
+    {
+      "lane": "L25-combat-10",
+      "cards": 22
+    },
+    {
+      "lane": "L26-mana-1",
+      "cards": 25
+    },
+    {
+      "lane": "L27-mana-2",
+      "cards": 25
+    },
+    {
+      "lane": "L28-mana-3",
+      "cards": 25
+    },
+    {
+      "lane": "L29-mana-4",
+      "cards": 25
+    },
+    {
+      "lane": "L30-mana-5",
+      "cards": 21
+    },
+    {
+      "lane": "L31-tokens-1",
+      "cards": 28
+    },
+    {
+      "lane": "L32-tokens-2",
+      "cards": 28
+    },
+    {
+      "lane": "L33-tokens-3",
+      "cards": 28
+    },
+    {
+      "lane": "L34-tokens-4",
+      "cards": 28
+    },
+    {
+      "lane": "L35-tokens-5",
+      "cards": 28
+    },
+    {
+      "lane": "L36-tokens-6",
+      "cards": 28
+    },
+    {
+      "lane": "L37-tokens-7",
+      "cards": 28
+    },
+    {
+      "lane": "L38-spells-1",
+      "cards": 30
+    },
+    {
+      "lane": "L39-spells-2",
+      "cards": 30
+    },
+    {
+      "lane": "L40-spells-3",
+      "cards": 30
+    },
+    {
+      "lane": "L41-spells-4",
+      "cards": 30
+    },
+    {
+      "lane": "L42-spells-5",
+      "cards": 30
+    },
+    {
+      "lane": "L43-spells-6",
+      "cards": 30
+    },
+    {
+      "lane": "L44-spells-7",
+      "cards": 30
+    },
+    {
+      "lane": "L45-spells-8",
+      "cards": 29
+    }
+  ]
+}

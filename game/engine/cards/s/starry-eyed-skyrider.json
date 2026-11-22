@@ -1,0 +1,80 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Starry-Eyed Skyrider",
+    "oracleId": "04e615e6-4088-4170-904c-f2d4bcebed59",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Scout"
+    ],
+    "manaCost": "{2}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": 1,
+    "toughness": 3
+  },
+  "oracleText": "Flying\nWhenever this creature attacks, another target creature you control gains flying until end of turn.\nAttacking tokens you control have flying.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Flying",
+      "keyword": "flying"
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever this creature attacks, another target creature you control gains flying until end of turn.",
+      "trigger": {
+        "on": "attacks",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "pump",
+          "targets": {
+            "target": 0
+          },
+          "power": 0,
+          "toughness": 0,
+          "keywords": [
+            "Flying"
+          ],
+          "until": "end-of-turn"
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "you",
+          "another": true
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Attacking tokens you control have flying.",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "token": true,
+        "controller": "you",
+        "attacking": true
+      },
+      "apply": {
+        "addKeywords": [
+          "Flying"
+        ]
+      }
+    }
+  ]
+}

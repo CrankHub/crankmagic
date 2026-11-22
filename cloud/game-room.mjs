@@ -20,6 +20,8 @@
  *                             refused with nothing changed, {type:"refused", status, error, view} to the sender alone
  *   ws   {type:"view"}        the sender's view again; with `after` (an event id), the events since it, or `eventsReset`
  *   ws   {type:"yield", on}   Yield turn on, or Stop yielding -> every seat's view; refused as `prefer` is
+ *   ws   {type:"cancel", choiceId}  the seat's pending question canceled (room.mjs, cancel) -> every seat's view; refused
+ *                             (422, what to do instead; 409, no longer open) with the sender's view, `of: "cancel"`
  *   ws   {type:"check", choiceId, indices}  a draft checked, nothing changed -> {type:"checked", ok, open, reasons}
  *                             to the sender alone
  */
@@ -158,6 +160,14 @@ export class GameRoom {
       this.broadcast();
       return this.schedule();
     }
+    /* Cancel (Linear ROB-205; room.mjs, cancel): the seat's own question canceled -- its cast backed out, or, confirmed, a
+       trigger, the rest of its spell, or a declaration ended. The game moves, so every seat's view goes out, as after an act. */
+    if (frame && frame.type === "cancel") {
+      try {await room.cancel(seatId, {choiceId: typeof frame.choiceId === "string" ? frame.choiceId : undefined});}
+      catch (error) {if (!(error instanceof RoomError)) throw error; return send({type: "refused", of: "cancel", status: error.status, error: error.message, view: room.view(seatId)});}
+      this.broadcast();
+      return this.schedule();
+    }
     /* A draft of the seat's answer checked before Confirm (Linear ROB-75; room.mjs, check): to the sender alone, and
        nothing changes, so nothing is broadcast. */
     if (frame && frame.type === "check") {
@@ -274,7 +284,7 @@ export class GameTable extends GameRoom {
   }
 
   /** Whether this address is CrankMagic's owner, the admin (cloud/access.mjs, groupOf). */
-  async isAdmin(email) {return (await groupOf(email, this.env, null)) === "owner";}
+  async isAdmin(email) {return (await groupOf(email, this.env, null, {fetchImpl: this.fetchImpl ?? fetch})) === "owner";}
   /** How many sockets are watching (lounge-contract §4): a number only. */
   watchers() {try {return this.ctx.getWebSockets().filter((s) => this.ctx.getTags(s)[0] === "watch").length;} catch {return 0;}}
 
@@ -472,7 +482,7 @@ export class GameTable extends GameRoom {
   async pilotOpen(email) {
     if (this.env?.AI_PILOT !== "on") return "The AI seat on Claude is not switched on here.";
     try {settings(this.env, await storedModel(this.env.DB));} catch (error) {return error.message;}
-    if (!this.env.DB || !(await createAi(this.env.DB, {owner: this.env.OWNER_EMAIL}).allowed(email))) return "That account is not on CrankMagic's list for AI features.";
+    if (!this.env.DB || !(await createAi(this.env.DB, {owner: this.env.OWNER_EMAIL, env: this.env, fetchImpl: this.fetchImpl ?? fetch}).allowed(email))) return "That account is not on CrankMagic's list for AI features.";
     return null;
   }
 
@@ -487,7 +497,7 @@ export class GameTable extends GameRoom {
     if (spent + pilotWorst(brief, config.model) > cap) return null;
     /* The call log on the table's clock, as the countdown and the away clocks are: a suite's fixed clock logs its calls,
        and reads the day's caps, in its own day. */
-    const ai = createAi(this.env.DB, {now: () => new Date(this.now()).toISOString()});
+    const ai = createAi(this.env.DB, {now: () => new Date(this.now()).toISOString(), env: this.env, fetchImpl: this.fetchImpl ?? fetch});
     let asked;
     try {asked = await pilot({ai, who: {email: host}, brief, config, fetchImpl: this.fetchImpl ?? fetch});}
     catch (error) {if (error instanceof Closed) return null; throw error;}

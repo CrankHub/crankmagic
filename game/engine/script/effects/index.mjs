@@ -33,11 +33,11 @@ import {moveZone, moveZoneAll, draw, destroy, destroyAll, mill, counterSpell, sa
 import {
   addMana, tap, untap, untapAll, gainLife, loseLife, dealDamage,
   putCounter, putCounterAll, removeCounter, proliferate, damageAll, fight, poison, winGame, loseGame, multiplyCounters,
-  exchangeLife, damageEach, moveCounters, becomeMonarch, rollDie,
+  exchangeLife, damageEach, moveCounters, becomeMonarch, rollDie, flipCoin,
 } from "./resources.mjs";
 import {
   createToken, animate, animateAll, pump, pumpAll, effectUntil, delayedTrigger, cleanup, attach, copyPermanent, regenerate, addPhase, gainControl,
-  becomeCopy, earthbend, goad, immediateTrigger, investigate, phaseOut, setState, exchangeControl, incubate, emblem, leaveCombat,
+  becomeCopy, earthbend, goad, immediateTrigger, investigate, phaseOut, setState, exchangeControl, incubate, emblem, leaveCombat, pair,
 } from "./permanents.mjs";
 import {alterAttribute} from "./attributes.mjs";
 import {addTurn} from "./turns.mjs";
@@ -108,12 +108,17 @@ export function eachOf(state, each, context) {
   if (each === "remembered") return (context.remembered ?? []).filter((id) => state.objects[id]).map((card) => ({card, player: state.objects[card].owner}));
   /* "For each opponent other than defending player" (myriad, CR 702.116a): the player the attack trigger is about left out. */
   if (each === "other opponent") return players.filter((player) => player !== context.controller && player !== context.about?.player).map((player) => ({player}));
+  /* "For each opponent who searches a library this way, search your library for a land card" and "then each player who searched a
+     library this way shuffles" (Tempt with Discovery; CR 207.2c, 101.4): the players who did what this resolution offered them (a
+     modal mode's `did`, effects/asking.mjs), in turn order, once each -- not an opponent who declined, nor one who has left the
+     game (CR 800.4a). */
+  if (each === "who did") return players.filter((player) => (context.whoDid ?? []).includes(player)).map((player) => ({player}));
   return [];
 }
 /* The most passes a process repeated "again" makes: more than any library holds, so only a library run out ends it. */
 const REPEAT_LIMIT = 1000;
 /** What `repeatFor` may range over. */
-export const REPEAT_EACH = Object.freeze(["player", "opponent", "creature", "remembered", "other opponent"]);
+export const REPEAT_EACH = Object.freeze(["player", "opponent", "creature", "remembered", "other opponent", "who did"]);
 
 /**
  * `repeatFor` — Forge's RepeatEach: "deals damage to each player equal to twice the number of nonbasic lands that
@@ -136,6 +141,9 @@ function repeatFor(state, params, context, rng = null) {
   for (const about of eachOf(state, params.each, context)) {
     const each = {...context, about: {...(context.about ?? {}), ...about}};
     for (const effect of params.effects ?? []) events.push(...runEffect(state, countEffect(state, bindEffect(effect, each), each), each, rng));
+    /* What the pass remembered (a token made for each opponent, `rememberMore`: Shredder, Shadow Master's "sacrifice those tokens at
+       end of combat") is the resolution's, for the effects after the repetition -- and for the next pass to add to. */
+    if (each.remembered !== context.remembered) context.remembered = each.remembered;
   }
   return events;
 }
@@ -218,6 +226,10 @@ export const EFFECTS = Object.freeze({
   becomeMonarch,
   /* Wave 4c: "roll a d20" (CR 706; Ancient Copper Dragon), its result for what follows. */
   rollDie,
+  /* The Rakdos copy deck of 2026-11-05: "flip a coin until you lose a flip" (Mirror March; CR 705). */
+  flipCoin,
+  /* And soulbond (CR 702.95; Mirage Phalanx): two creatures paired. */
+  pair,
 });
 
 /** Whether the engine can perform this primitive at all, by either route. */

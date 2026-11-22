@@ -64,6 +64,8 @@ try{
     await page.locator('[data-action=board-flow-cancel]').click();
   }
   await page.evaluate(()=>{globalThis.__flowAnnouncements=[];new MutationObserver(()=>__flowAnnouncements.push(document.querySelector('#cm-board-said').textContent)).observe(document.querySelector('#cm-board-said'),{childList:true,subtree:true,characterData:true});});
+  /* A phone starts with the drawer shut (ROB-533, the plan of 2026-11-19, G6): a person opens it to choose the cast. */
+  if(width<500){const rail=page.locator('[data-action=board-stage-rail][aria-expanded=false]');if(await rail.count())await rail.click();}
   await page.locator(`[data-action=board-choose][data-card="${cardId}"]`).first().click();
   await exclusive(page);
   const buttons=page.locator('[data-action=board-flow-choice]');

@@ -172,11 +172,19 @@ globalThis.CrankBoard = Object.seal({
      "Yes to all"; game/room/room.mjs). Said by the pane and the pop-up alike. */
   const forRunNote = d => d.forRun ? `<p class="cm-muted cm-board-for-run">Resolve all: your answer goes for this same question each time the run asks it.</p>` : "";
   function flowDecision(d) {
-    if(flowPaused)return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" aria-label="${e(d.title)}"><h2>${e(d.kind==='priority' ? findCard(actionCard)?.name || d.title : d.title)}</h2>${b('Resume','board-flow-resume')}</section>`;
+    /* CANCELED, AND WAITING ON THE PLAYER'S WORD (ROB-205; Rob, 2026-11-19: "The Resume pop-up would be ok if it included 'Confirm
+       Cancel' button that canceled out of that loop entirely"). The room says how this question may be canceled (game/room/room.mjs,
+       `decision.cancel`): an answer the game owes gets Resume and Confirm cancel; one the rules need answered gets Resume and why,
+       in the room's words. A board on an older room (no `cancel`) keeps Resume alone. */
+    if(flowPaused){
+      const c=d.cancel,why=c&&c.way===null&&c.why?`<p class="cm-muted cm-board-cancel-why">${e(c.why)}</p>`:'';
+      const confirm=c&&c.way==='confirm'?b('Confirm cancel','board-cancel-confirm',{choice:d.id},false,{disabled:sending}):'';
+      return `<section class="cm-board-decision cm-choice-flow is-paused" id="cm-board-decision" aria-label="${e(d.title)}"><h2>${e(d.kind==='priority' ? findCard(actionCard)?.name || d.title : d.title)}</h2>${why}<div class="cm-decide-actions">${b('Resume','board-flow-resume',{},true,{disabled:sending})}${confirm}</div></section>`;
+    }
     if(!choiceFlow)choiceFlow=CrankChoiceFlow.create(pathOptions(d.options),flowContext());
     const step=CrankChoiceFlow.step(choiceFlow),source=findCard(attackChoice ?? step.trail.find(n=>n.kind==='source')?.value ?? actionCard ?? d.sourceId),ready=step.status==='confirm';
     const label=node=>e(node.label).replace(/\{[^}]+\}/g,symbol=>C.mana(symbol));
-    const visual=node=>{const id=['mana-source','source','card'].includes(node.kind) ? node.value : node.kind==='target' && node.value?.[0]==='object' ? node.value[1] : null;const c=findCard(id);return c?.name?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="">`:'';};
+    const visual=node=>{const id=['mana-source','source','card'].includes(node.kind) ? node.value : node.kind==='target' && node.value?.[0]==='object' ? node.value[1] : null;const c=findCard(id);return c?.name?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" data-fallback-name="${e(c.name)}">`:'';};
     const duplicates=new Set(step.choices.filter((c,i,all)=>all.some((x,j)=>j!==i && x.label===c.label)).map(c=>c.label));
     const flowRisk=c=>attackChoice!==null ? attackRisk(d.options.find(o=>o.index===c.indices[0])) : null;
     const choiceButton=(c,i)=>`<button type="button" class="v-button cm-flow-option${riskCls(flowRisk(c))}" data-action="board-flow-choice" data-flow-choice="${i}" data-indices="${c.indices.join(" ")}" data-kind="${e(c.kind)}"${['target','card','mana-source'].includes(c.kind)?` data-peek-card="${e(c.kind==='target'?c.value?.[1]:c.value)}"`:""} data-revision="${view.revision}" data-choice="${e(d.id)}" data-match="${e(view.matchId)}"${sending?' disabled':''}>${riskMark(flowRisk(c))}${visual(c)}<span>${label(c)}</span>${duplicates.has(c.label)?` <small>${e(twinMark(Array.isArray(c.value)?c.value.at(-1):c.value) || step.choices.filter(n=>n.label===c.label).indexOf(c)+1)}</small>`:''}</button>`;
@@ -193,7 +201,7 @@ globalThis.CrankBoard = Object.seal({
     }
     const forRun = forRunNote(d);
     return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" data-flow-status="${step.status}" aria-label="${e(d.title)}"><h2>${e(source?.name || (d.kind==='priority' ? d.options.find(o=>o.index===step.index)?.label : d.title) || d.title)}</h2>${forRun}
-      ${source?.name?`<button class="cm-flow-inspect" type="button" data-action="board-combat-inspect" data-card="${source.cardId}" aria-label="Inspect ${e(source.name)}"><img class="cm-flow-card" src="${e(pictureOf(source.name,source))}" alt=""></button>`:''}
+      ${source?.name?`<button class="cm-flow-inspect" type="button" data-action="board-combat-inspect" data-card="${source.cardId}" aria-label="Inspect ${e(source.name)}"><img class="cm-flow-card" src="${e(pictureOf(source.name,source))}" alt="" data-fallback-name="${e(source.name)}"></button>`:''}
       <div class="cm-board-options">${ready?`<ul class="cm-choice-review">${reviewRows.join('')}</ul>${attackChoice!==null?riskMark(attackRisk(d.options.find(o=>o.index===step.index))):''}`:choices}</div>
       <div class="cm-decide-actions">${ready?b('Confirm','board-flow-confirm',{revision:String(view.revision),choice:d.id,match:view.matchId,index:String(step.index)},true,{disabled:sending}).replace('>Confirm</button>',`>${CHEV_PATH('M3 8l3 3 7-7')}<span>Confirm</span></button>`):''}${choiceFlow.selections.length?b('Back','board-flow-back',{},false,{disabled:sending}).replace('>Back</button>',`>${CHEV_LEFT}<span>Back</span></button>`):''}${attackChoice!==null?b("Don't attack",'board-flow-no-attack',{},false,{disabled:sending}):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
   }
@@ -285,7 +293,12 @@ globalThis.CrankBoard = Object.seal({
   }
   const splitOf = (k) => {const raw = stored(SPLIT_KEY[k]), v = Number(raw); return raw !== null && v >= SPLIT[0] && v <= SPLIT[1] ? v : SPLIT_AT[k];};
   let drawerW = {left: 270, right: 340}, gutter = {left: 310, right: 380};
-  let stageSide = false, stageRail = true, cameraOpen = false, stageError = "";
+  /* THE LEFT DRAWER, OPEN OR SHUT, KEPT ON THIS DEVICE (the stabilization plan of 2026-11-19, G1 and G6): a player who shuts it
+     is not reopened on the next game, and only their own press of its tab (or the open arrow) changes what is kept -- the
+     pop-up putting it away for a moment does not. Never set: open on a desktop, shut on a phone, where it covered the board. */
+  const RAIL_KEY = "cm-play-left-drawer";
+  const railAtFirst = () => {const kept = stored(RAIL_KEY); return kept === "open" ? true : kept === "shut" ? false : Math.min(innerWidth, innerHeight) > 500;};
+  let stageSide = false, stageRail = railAtFirst(), cameraOpen = false, stageError = "";
   /* TABLE'S MAX (Rob, 2026-10-28): the boards as large as the drawers leave room, the hand put away; and the hand, put away or shown by its tab. */
   let tableMax = false, handHidden = false;
   let tableMenuOpen = false;
@@ -915,6 +928,9 @@ globalThis.CrankBoard = Object.seal({
     /* WHY NOT (ROB-24): a card of the person's own that nothing offered plays says why, from the room (`why`). */
     const label = `${named}${look ? `, ${lookWords(c.appearance)}` : ""}${controlled ? `, ${controlSummary(c)}` : ""}${state.length ? ", " + state.join(", ") : ""}${bright ? `: ${can.join(" or ")}${opts.length > can.length ? `, ${opts.length} ways` : ""}` : c.why ? `. ${c.why}` : ""}`;
     if (!c.name && !c.faceDown) return `<div class="cm-bcard is-back" role="img" aria-label="${e(label)}"></div>`;
+    /* AN EMBLEM (CR 114; ROB-192: Elspeth, Sun's Champion's −7 left nothing to see): no card and no picture, so a tile that says
+       what it is and what it does, read whole by a screen reader. */
+    if (c.emblem) return `<div class="cm-bcard cm-bcard-emblem" role="img" tabindex="0" aria-label="${e(`${c.name}: ${c.text || ""}`)}"><b>Emblem</b><small>${e(c.text || "")}</small></div>`;
     /* NO NATIVE `title` ON A CARD (ROB-202, Luke's playtest): the browser draws it at the pointer, over the card's type line and
        rules text, and the page cannot move it. What it said is kept: "targeted by" is in the label above, and how to reorder is
        the card's aria-description. The hover pops the card up large, away from the pointer. */
@@ -1180,8 +1196,12 @@ globalThis.CrankBoard = Object.seal({
     /* PARTNERS (ROB-29, Oct 20): the command zone draws every card in it, the second overlapping the first like a small
        pile, so Kraum is there to see, inspect and cast beside Tymna rather than only under "You can also". */
     const many = label === "Command" && zone.cards.length > 1;
-    const face = many ? `<span class="cm-board-partners">${zone.cards.map((c) => card(c)).join("")}</span>` : top ? card(top) : drawing
-      ? `<button type="button" class="cm-bcard is-back is-bright" data-action="board-draw" aria-label="Draw card: your library, ${zone.count}"${sending ? " disabled" : ""}><b class="cm-bcard-count">${zone.count}</b></button>`
+    /* A library's top card face up when the view shows it (ROB-227: Conspicuous Snoop's "play with the top card of your library
+       revealed", a look at the top): the card itself, with its offers. While the draw waits, the pile is still the draw, the
+       revealed card on its face. */
+    const face = many ? `<span class="cm-board-partners">${zone.cards.map((c) => card(c)).join("")}</span>` : drawing
+      ? `<button type="button" class="cm-bcard ${top?.name ? "is-bright" : "is-back is-bright"}" data-action="board-draw" aria-label="Draw card: your library, ${zone.count}${top?.name ? `, ${e(top.name)} on top` : ""}"${sending ? " disabled" : ""}>${top?.name ? `<img src="${e(pictureOf(top.name, top))}" alt="" referrerpolicy="no-referrer">` : ""}<b class="cm-bcard-count">${zone.count}</b></button>`
+      : top ? card(top)
       : `<div class="cm-bcard is-empty${back && zone.count ? " is-back" : ""}" aria-hidden="true">${back && zone.count ? `<b class="cm-bcard-count">${zone.count}</b>` : ""}</div>`;
     return `<figure class="cm-mat-zone cm-board-pile" data-zone="${e(label.toLowerCase())}" aria-label="${e(label)}, ${zone.count}" title="${e(label)}, ${zone.count}">${face}<figcaption><em>${e(label)}</em><b>${zone.count}</b></figcaption></figure>`;
   }
@@ -1337,7 +1357,7 @@ globalThis.CrankBoard = Object.seal({
         ${you && size!=='focus' ? `<span class="cm-board-chip">${mana} mana open · land drop ${p.landsPlayed ? "used" : "1 left"}</span>` : ""}
         ${pile("Command", z.Command, z.Command.cards[0])}${pile("Exile", z.Exile, z.Exile.cards.at(-1))}
         ${size === "focus" ? historyBand(6) : ""}
-        ${pile("Library", z.Library, null, {back: true, draw: you && !!view.decision && view.decision.kind === "draw" && view.status !== "finished"})}${pile("Graveyard", z.Graveyard, z.Graveyard.cards.at(-1))}
+        ${pile("Library", z.Library, z.Library.cards?.[0] || null, {back: true, draw: you && !!view.decision && view.decision.kind === "draw" && view.status !== "finished"})}${pile("Graveyard", z.Graveyard, z.Graveyard.cards.at(-1))}
       </div>`;
     const cls = `cm-mat ${size === "focus" ? "cm-board-mat" : "cm-seatboard"}${you ? " is-you" : ""}${head === "bottom" ? " is-bottom" : ""}${bare ? " is-bare" : ""}${active ? " is-active" : ""}`;
     return `<section class="${cls}" data-seat="${i}" data-fit="${size}" data-mat="${e(matOf(i))}" style="${backStyle(i)}" aria-label="${e(you ? "Your board" : `${p.name}'s board`)}">${head === "bottom" ? body + header : header + body}</section>`;
@@ -2273,6 +2293,11 @@ globalThis.CrankBoard = Object.seal({
     return `<section class="cm-board-decision cm-board-went" aria-label="${e(span)}"><h3>${e(span)}</h3>
       <ol class="cm-board-went-list">${rows}</ol><div class="cm-board-decision-foot"><span class="cm-muted">${now}</span>${b("OK", "board-went-close", {}, false, {cls: "compact"})}</div></section>`;
   }
+  /* AN OPTIONAL OFFER NEVER FLOATS (the stabilization plan of 2026-11-19, G1; Rob confirmed it the same day as the pop-up he could
+     not close). With the Actions drawer shut, the priority offer ("Tap for mana", "Cast X") used to move into a box over the
+     opponents' mats that had no close and grew with the turn (297x216 on turn 1, 560x308 by turn 21 at 1440x900; past the
+     bottom of a 390x844 phone). Shut means shut: the tab's badge, the top bar's step button and a press on a card are the ways
+     to act, and a required question still pops up. This reverses the older "a collapsed Actions stays actionable" fallback. */
   /* WHAT THE PLAYER MUST RESOLVE POPS UP; WHAT IS OPTIONAL STAYS IN THE PANE (ROB-208; Rob and Luke, 2026-10-28). A question the
      game is waiting on -- a target, a search, a modal choice, a cost, a scry -- is the pop-up's, with the Actions pane open or shut:
      "you have to resolve this" is the point. A priority offer is optional, so it stays in the pane; and the combat declarations
@@ -2288,9 +2313,9 @@ globalThis.CrankBoard = Object.seal({
   };
   function ask() {
     const d = view.decision, side = moduleSide('actions');
-    if(decisionPopup())return `<div class="cm-board-ask cm-decision-slot cm-required-popup" id="cm-decision-slot" role="dialog" aria-modal="true" aria-label="${e(d.title)}" tabindex="-1">${decision()}</div>`;
+    if(decisionPopup())return `<div class="cm-board-ask cm-decision-slot cm-required-popup${flowPaused ? " is-paused" : ""}" id="cm-decision-slot" role="dialog" aria-modal="${flowPaused ? "false" : "true"}" aria-label="${e(d.title)}" tabindex="-1">${decision()}</div>`;
     const visible = !/^mulligan:/.test(d?.id || '') && !mandatory(d) && !actionsShut && (phone() ? stageRail : side === 'left' ? stageRail : side === 'right' ? stageSide : false);
-    const inner = `${went()}${moduleSide('stack') ? '' : stack()}${!visible && d && d.kind !== 'draw' ? decision() : ''}`;
+    const inner = `${went()}${moduleSide('stack') ? '' : stack()}${!visible && d && !['draw', 'priority'].includes(d.kind) ? decision() : ''}`;
     return `<div class="cm-board-ask cm-decision-slot" id="cm-decision-slot" aria-label="Current decision"${inner ? '' : ' hidden'}>${inner}</div>`;
   }
   const alsoCount = () => {const d = view.decision; return d && d.kind === "priority" ? new Set(d.options.filter((o) => o.act !== "pass" && o.act !== "resolve-all" && o.act !== "undo-land").map((o) => `${o.act}|${o.label}`)).size : 0;};
@@ -3286,7 +3311,7 @@ globalThis.CrankBoard = Object.seal({
       if(moduleSide('actions')==='right')stageSide=false;else stageRail=false;
     }else if(popupDrawers){stageRail=popupDrawers.left;stageSide=popupDrawers.right;popupDrawers=null;}
     C.keepFocus(host, () => paint(host));
-    const required=host.querySelector('.cm-required-popup');
+    const required=host.querySelector('.cm-required-popup:not(.is-paused)');
     if(required && !inspection && !coach.open && !cameraOpen && !historyOpen && !profileOpen && !tableMenuOpen && !menuOpen && !tools && !C.accountMenuOpen?.() && !document.querySelector('#cm-dialog[open]') && !required.contains(document.activeElement))required.querySelector('button:not([disabled]),input:not([disabled])')?.focus({preventScroll:true});
     for(const saved of drawerPositions)if(saved.view===host.dataset.view){const drawer=document.getElementById(saved.id);if(drawer&&host.contains(drawer))drawer.scrollTop=saved.top;}
     const nextMain=host.querySelector('.cm-board-main');if(focusPosition&&nextMain?.querySelector('.cm-board-stage>.cm-mat')?.dataset.seat===focusPosition.seat)nextMain.scrollTop=focusPosition.y;
@@ -3821,10 +3846,22 @@ globalThis.CrankBoard = Object.seal({
   actions['board-flow-cancel'] = () => {
     if(sending)return;
     choiceFlow=null;attackChoice=null;picked=[];amounts=[];draftRevision=null;targetReviewing=false;if(blocking()){blockSettled.clear();blockResult=null;}
+    /* Your own cast or activation, stopped by the room to ask its targets or payment (`cancel.way` "back-out"): Cancel ends it there
+       and then, the card back where it was and priority yours again -- no Resume (ROB-205). An action not yet sent ends here, as ever. */
+    if(view.decision.kind!=='priority' && view.decision.cancel?.way==='back-out'){cancelQuestion();return;}
     if(view.decision.kind==='priority'){actionCard=null;inspection=null;}else flowPaused=true;
-    draw();if(view.decision.kind==='priority')C.focusFind(flowFrom)?.focus({preventScroll:true});
+    draw();if(view.decision.kind==='priority')C.focusFind(flowFrom)?.focus({preventScroll:true});else document.querySelector('[data-action=board-flow-resume]')?.focus({preventScroll:true});
   };
   actions['board-flow-resume'] = () => {flowPaused=false;draw();};
+  actions['board-cancel-confirm'] = el => {if(el?.dataset?.choice===view?.decision?.id && view.decision.cancel?.way==='confirm')cancelQuestion();};
+  /* The question canceled at the table (game/room/room.mjs, cancel): every seat's view moves; a refusal comes back with why. */
+  function cancelQuestion() {
+    if (!socket || socket.readyState !== 1) {C.notice("The board is reconnecting; try again in a moment.", true); return;}
+    if (!view?.decision || sending) return;
+    sending = true;
+    socket.send(JSON.stringify({type: "cancel", choiceId: view.decision.id}));
+    draw();
+  }
   actions['board-flow-no-attack'] = () => {
     if(sending || attackChoice===null)return;
     picked=picked.filter(i=>view.decision.options.find(o=>o.index===i)?.cardId!==attackChoice);
@@ -3945,7 +3982,7 @@ globalThis.CrankBoard = Object.seal({
     const d = view?.decision, index = Number(el.dataset.index);
     if (!sending && /^mulligan:/.test(d?.id || '') && d.options.some(o => o.index === index)) send({indices:[index]});
   };
-  actions["board-actions-open"] = () => {stageRail = true; actionsShut = false; draw(); document.querySelector("[data-action=board-actions-toggle]")?.focus({preventScroll:true});};
+  actions["board-actions-open"] = () => {stageRail = true; keep(RAIL_KEY, "open"); actionsShut = false; draw(); document.querySelector("[data-action=board-actions-toggle]")?.focus({preventScroll:true});};
   actions["board-actions-toggle"] = () => {actionsShut = !actionsShut; draw();};
   actions["board-life-toggle"] = () => {lifeShut = !lifeShut; try {localStorage.setItem("cm-board-life-shut", lifeShut ? "1" : "0");} catch {/* page only */} draw(); document.querySelector("[data-action=board-life-toggle]")?.focus({preventScroll: true});};
   actions["board-pass"] = () => {
@@ -4378,7 +4415,7 @@ globalThis.CrankBoard = Object.seal({
     ids.splice(ids.indexOf(target.dataset.module) + Number(after), 0, id);
     savePaneModules(ids,side);
   });
-  actions["board-stage-rail"] = () => {stageRail = !stageRail; if (phone() && stageRail) stageSide = false; draw();};
+  actions["board-stage-rail"] = () => {stageRail = !stageRail; keep(RAIL_KEY, stageRail ? "open" : "shut"); if (phone() && stageRail) stageSide = false; draw();};
   actions["board-camera"] = () => {cameraOpen = !cameraOpen; tableMenuOpen = false; draw();};
   /* CAMERA ▾ CLOSES ON A PRESS ANYWHERE OUTSIDE IT (Rob, 2026-10-25), as Profile and History do. Taken out where it is,
      not by a redraw, so the press still reaches what it was on; caught on the way down, so a card's own handler that
@@ -5047,7 +5084,7 @@ globalThis.CrankBoard = Object.seal({
      (back a step: held, fanned, a menu, the panel, full screen), ⌘/Ctrl + and − (card size). */
   document.addEventListener("keydown", (event) => {
     if(C.accountMenuOpen?.() || document.querySelector('#cm-user-menu:popover-open'))return;
-    const popup=document.querySelector('.cm-required-popup');
+    const popup=document.querySelector('.cm-required-popup:not(.is-paused)');
     if(popup && !inspection && !coach.open && !cameraOpen && !historyOpen && !profileOpen && !tableMenuOpen && !menuOpen && !tools && !document.querySelector('#cm-card-menu,#cm-dialog[open]')){
       if(event.key==='Escape'){event.preventDefault();actions['board-flow-cancel']();return;}
       if(event.key==='Tab'){
@@ -5060,7 +5097,9 @@ globalThis.CrankBoard = Object.seal({
     if(document.getElementById('cm-card-menu'))return;
     if(C.accountMenuOpen?.() || document.querySelector('#cm-user-menu:popover-open'))return;
     if (event.key === "Escape" && coach.open && event.target.closest?.("#cm-board-coach")) {event.preventDefault(); actions["board-coach"](); return;}
-    if (event.key === "Escape" && peekId !== null && !showing) {peek(null); return;}
+    /* Escape closes what is showing. While a card is being inspected no hover preview is drawn, but the card last hovered is
+       still remembered: that memory must not take the Escape meant for the inspection (ROB-236; it took two presses). */
+    if (event.key === "Escape" && peekId !== null && !showing) {peek(null); if (!inspection) return;}
     if (event.key === "Escape" && stackShown !== null) stackPeek(null);
     /* ⌘/Ctrl + and − still size the cards with the Settings window open, as its card-size line says. */
     const sizing = (event.ctrlKey || event.metaKey) && ["+", "=", "-", "_"].includes(event.key);
@@ -5348,6 +5387,19 @@ globalThis.CrankBoard = Object.seal({
   document.addEventListener("load", event => {const img=event.target;if(img?.matches?.('.cm-bcard[data-card] img') && img.naturalWidth>0)img.dataset.cardLoaded='true';}, true);
   document.addEventListener("error", (event) => {
     const t = event.target;
+    /* The choice pop-up's art (ROB-341): no card frame behind it, so a picture that does not come is a card-shaped tile with the
+       card's name, as a card on the board is, never the browser's broken-image icon. */
+    if (t && t.matches && t.matches("img.cm-flow-card, img.cm-flow-thumb") && t.dataset.fallbackName) {
+      /* The name is drawn by the style sheet (`data-name`), not added as text: an option's own words stay what they were. A
+         thumbnail's button already says its card, so the tile is hidden from a screen reader; the source art is an image. */
+      const tile = document.createElement("span");
+      tile.className = `${t.className} is-artless`;
+      tile.dataset.name = t.dataset.fallbackName;
+      if (t.matches(".cm-flow-thumb")) tile.setAttribute("aria-hidden", "true");
+      else { tile.setAttribute("role", "img"); tile.setAttribute("aria-label", t.dataset.fallbackName); }
+      t.replaceWith(tile);
+      return;
+    }
     if (!(t && t.matches && t.matches(".cm-bcard img, .cm-combat-card img, .cm-block-tile img"))) return;
     /* A token look with no picture of its own (a made-up creature type) is the card's own art, not nothing (ROB-329). */
     const fallback = t.dataset ? t.dataset.lookFallback : "";

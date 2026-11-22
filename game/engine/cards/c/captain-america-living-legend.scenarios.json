@@ -1,0 +1,446 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Captain America, Living Legend",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way); the lands it taps are not creatures, and nothing triggers",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Captain America, Living Legend"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Captain America, Living Legend"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Captain America, Living Legend",
+            "Island",
+            "Plains",
+            "Wastes"
+          ]
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "tapped": "Plains",
+          "is": true
+        }
+      ]
+    },
+    {
+      "name": "The Bear attacks: it becomes tapped for the first time this turn on Rob's turn, is untapped, and still deals its 2",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Captain America, Living Legend",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            },
+            {
+              "seat": 0,
+              "tapped": "Bear",
+              "is": true
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Bear",
+              "is": false
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "tapped": "Bear",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Captain America, Living Legend",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "Llanowar Elves tapped for mana is untapped once; tapped again the same turn it stays tapped (not the first time)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Captain America, Living Legend",
+            "Llanowar Elves"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Llanowar Elves"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Llanowar Elves",
+              "is": false
+            }
+          ]
+        },
+        {
+          "tap": "Llanowar Elves"
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "tapped": "Llanowar Elves",
+          "is": true
+        },
+        {
+          "seat": 0,
+          "pool": {
+            "G": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "A {T} cost: Prodigal Pyromancer pings, is untapped, and pings again; the second tap is not the first",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Captain America, Living Legend",
+            "Prodigal Pyromancer"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Prodigal Pyromancer",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Prodigal Pyromancer",
+              "is": false
+            },
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Prodigal Pyromancer",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "tapped": "Prodigal Pyromancer",
+          "is": true
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A new turn is a new first time: tapped twice on Rob's first turn, the Elves are untapped again on his next",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Captain America, Living Legend",
+            "Llanowar Elves"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Llanowar Elves"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Llanowar Elves"
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            },
+            {
+              "seat": 0,
+              "tapped": "Llanowar Elves",
+              "is": true
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Llanowar Elves"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Llanowar Elves",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "pool": {
+            "G": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Not during Rob's turn: his Elves tapped for mana on Maya's turn stay tapped; her creature on his turn is not his",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Captain America, Living Legend",
+            "Llanowar Elves"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Prodigal Pyromancer"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Llanowar Elves",
+          "seat": 0
+        },
+        {
+          "expect": [
+            {
+              "stack": 0
+            },
+            {
+              "seat": 0,
+              "tapped": "Llanowar Elves",
+              "is": true
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "pass": 1
+        },
+        {
+          "activate": "Prodigal Pyromancer",
+          "seat": 1,
+          "targets": [
+            {
+              "player": 0
+            }
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 1,
+          "tapped": "Prodigal Pyromancer",
+          "is": true
+        },
+        {
+          "seat": 0,
+          "life": 39
+        }
+      ]
+    }
+  ]
+}
