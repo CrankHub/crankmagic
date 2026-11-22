@@ -94,6 +94,10 @@ export const PENDING = "pending";
 
 /* Production profiles share one origin, account database and Access audience. Selecting Play
    never creates another library or borrows staging's service identity. */
+/* The Cloudflare account every cloud release names as CLOUDFLARE_ACCOUNT_ID (ROB-440): with the ACCESS_API_TOKEN secret Rob
+   installs on a Worker, it is what lets that Worker read the "Admin" and "Game Theory Insiders" rule groups (cloud/access.mjs
+   groupOf). Without the token nothing changes: the copy keeps OWNER_EMAIL and the old ai_allowlist table. An id, not a secret. */
+const ACCOUNT_ID = "02e7ae6d703281008f546c63378c6ddb";
 const PRODUCTION = {
   worker: "crankmagic", origin: "https://crankmagic.com/", accounts: "on",
   cloud: {database: {name: "crankmagic", id: "131b2c74-70a0-471e-8474-b8d079b0d322"}, limits: {ip: "1001", person: "1002"},
@@ -156,7 +160,7 @@ export const PROFILES = {
        Worker only confirms each application has an Allow policy including that group (Rob's reusable Admin, Insiders and
        Invitees policies, Nov 4). It reads and writes the groups with ACCESS_API_TOKEN, a secret Rob installs on the Worker,
        never a variable here; no policy id is configured. */
-    sharing: {adminId: "1", accountId: "02e7ae6d703281008f546c63378c6ddb",
+    sharing: {adminId: "1",
       accessAppIds: "16fef6e1-0437-4bbd-b7fe-a81419dc09fa,23915d70-d40d-4f6f-9170-d43b3bf412d8",
       linkOrigin: "https://crankmagic.com"}, // Staging only; secret tokens are deployed separately.
   },
@@ -220,7 +224,7 @@ export const HOST_FILES = {
       preview_urls: false,
       ...(profile.cloud ? {
         d1_databases: [{binding: "DB", database_name: profile.cloud.database.name, database_id: profile.cloud.database.id, migrations_dir: "cloud/migrations"}],
-        vars: {...(profile.sharing ? {SHARING_ENABLED: "on", INVITE_ADMIN_ID: profile.sharing.adminId, CLOUDFLARE_ACCOUNT_ID: profile.sharing.accountId, ACCESS_INVITE_APP_IDS: profile.sharing.accessAppIds, ...(profile.sharing.linkOrigin ? {INVITE_LINK_ORIGIN: profile.sharing.linkOrigin} : {})} : {}), ACCESS_TEAM_DOMAIN: profile.cloud.access.team, ACCESS_AUD: profile.cloud.access.aud, ...(profile.tables?.playtest ? {PLAYTEST_TABLES: "on"} : {}), ...(profile.serviceSeats ? {SERVICE_SEATS: "on"} : {}), ...(profile.tables?.closed ? {PLAY_TABLES_CLOSED: "on"} : {}), ...aiVars(profile)},
+        vars: {...(profile.sharing ? {SHARING_ENABLED: "on", INVITE_ADMIN_ID: profile.sharing.adminId, ACCESS_INVITE_APP_IDS: profile.sharing.accessAppIds, ...(profile.sharing.linkOrigin ? {INVITE_LINK_ORIGIN: profile.sharing.linkOrigin} : {})} : {}), CLOUDFLARE_ACCOUNT_ID: ACCOUNT_ID, ACCESS_TEAM_DOMAIN: profile.cloud.access.team, ACCESS_AUD: profile.cloud.access.aud, ...(profile.tables?.playtest ? {PLAYTEST_TABLES: "on"} : {}), ...(profile.serviceSeats ? {SERVICE_SEATS: "on"} : {}), ...(profile.tables?.closed ? {PLAY_TABLES_CLOSED: "on"} : {}), ...aiVars(profile)},
         ratelimits: [
           {name: "LIMIT_IP", namespace_id: profile.cloud.limits.ip, simple: {limit: LIMITS_PER_MINUTE.ip, period: 60}},
           {name: "LIMIT_PERSON", namespace_id: profile.cloud.limits.person, simple: {limit: LIMITS_PER_MINUTE.person, period: 60}},

@@ -38,8 +38,8 @@ rule groups and nothing else, and that they are the list. The Worker keeps no co
   before Rob installs the token), the old table still answers `insider`. Once the token is installed it is never read,
   and nothing writes it any more. Its rows are not copied anywhere: Rob adds those people to Game Theory Insiders himself
   (below).
-- **The configuration is two things, neither of them a list.** `CLOUDFLARE_ACCOUNT_ID` is a Worker variable, already on
-  staging. `ACCESS_API_TOKEN` is a Worker secret Rob installs; it is never in this repository or in a release's
+- **The configuration is two things, neither of them a list.** `CLOUDFLARE_ACCOUNT_ID` is a Worker variable that every
+  cloud release names (`tools/release-pages.mjs`), production's too. `ACCESS_API_TOKEN` is a Worker secret Rob installs; it is never in this repository or in a release's
   variables. The token needs two account permissions: *Access: Organizations, Identity Providers, and Groups: Edit*
   (read the groups, and write an invitation into one) and *Access: Apps and Policies: Read* (confirm each application
   has an Allow policy including the group). The Worker never writes a policy, and no policy id is configured.
@@ -78,8 +78,10 @@ Rob set Access to this end state on 2026-11-04.
    "CrankMagic accounts" and "CrankMagic staging"; *Invitees* (Allow, CrankMagic Invitees) on the same two; and
    *Session checks* (Service Auth), unchanged. No policy names an address. There is no AI application: the AI door
    takes each app's own sign-in, and the group decides who may spend (below).
-3. **Install the token:** `wrangler secret put ACCESS_API_TOKEN` on `crankmagic-staging` (and later `crankmagic`), with
-   the two permissions above. The old `ACCESS_INVITE_TOKEN` secret is no longer read and can be deleted after.
+3. **Install the token:** `wrangler secret put ACCESS_API_TOKEN` on `crankmagic-staging` (done 2026-11-08) and on
+   `crankmagic` (production, still to do), with the two permissions above. Until production has it, production's
+   insiders still come from its own `ai_allowlist` table, not from Game Theory Insiders. The old `ACCESS_INVITE_TOKEN`
+   secret is no longer read and can be deleted after.
 4. **The release branch's configuration:** `ACCESS_INVITE_POLICY_ID` is no longer read or released. The next staging
    release, built by `tools/release-pages.mjs`, drops it from `wrangler.jsonc` on `release/cloud-staging`, so the
    deleted policy id it still names there does no harm meanwhile. `ACCESS_INVITE_APP_IDS` stays: it lists the two
