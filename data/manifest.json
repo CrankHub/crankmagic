@@ -1,16 +1,16 @@
 {
  "schema": "manifest@1",
- "generatedAt": "2026-11-19T05:02:31.040Z",
+ "generatedAt": "2026-11-22T17:44:51.375Z",
  "generator": "tools/data-manifest.mjs",
  "count": 27,
  "files": [
   {
    "file": "data/engine/oracle.json",
    "schema": "engine-oracle@1",
-   "stamp": "2026-10-04T15:37:19.434Z",
+   "stamp": "2026-11-22T17:20:23.273Z",
    "generator": "tools/build-engine-cards.mjs",
-   "bytes": 14320695,
-   "sha256": "f9835d2cfc1006cb1f4042c50055bd42a43ea5b74ad1d83a8ec94965d25ef260",
+   "bytes": 14578558,
+   "sha256": "3481a16327e55f44d81543e2111d05440d908d877a67efe406c352657c8d949a",
    "version": null,
    "served": false,
    "cache": "not served"
@@ -18,10 +18,10 @@
   {
    "file": "data/engine/tokens.json",
    "schema": "engine-tokens@1",
-   "stamp": "2026-10-04T15:37:19.434Z",
+   "stamp": "2026-11-22T17:20:23.273Z",
    "generator": "tools/build-engine-cards.mjs",
-   "bytes": 422926,
-   "sha256": "f05a78a86b7cc1963f80cfb06508c169019431496138cd397807998ac625608c",
+   "bytes": 427907,
+   "sha256": "57b4df8eea4a416947a39cf78764fe5e9cdd7e6594fa25438c05c9a1b4a4ee24",
    "version": null,
    "served": false,
    "cache": "not served"
@@ -29,10 +29,10 @@
   {
    "file": "data/engine/support.json",
    "schema": "engine-support@1",
-   "stamp": "2026-10-04T15:37:19.434Z",
+   "stamp": "2026-11-22T17:20:23.273Z",
    "generator": "tools/build-engine-cards.mjs",
-   "bytes": 3404213,
-   "sha256": "608d04b979a3ec38ed786b7e4c8c60d86199c11f08715c0584e1d5867fd6c69a",
+   "bytes": 3462131,
+   "sha256": "d046c5222ccb0185a3ed33ba1ae60c7ae1b9bffada2529c1a3ab0bcd47262e1c",
    "version": null,
    "served": false,
    "cache": "not served"

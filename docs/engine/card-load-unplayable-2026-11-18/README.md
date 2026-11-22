@@ -16,7 +16,7 @@ with its decks, where it is (the boxes D1-A to D8-A, the designs, or both) and w
 | In the oracle data (2026-10-04) | 42 |
 | Playable before this load | 0 |
 | **Loaded** | **42**: 36 in the first pull request (the six box cards among them), group E's 6 in the second |
-| Not in the oracle data (Star Trek, 2026-11-13; ROB-532) | 4 more, outside the 42 |
+| Star Trek, released 2026-11-13, so not in the oracle data (loaded in ROB-532, 2026-11-22; below) | 4 more, outside the 42 |
 
 Six workers wrote them in parallel, each group on its own branch. The first pull request merged five groups and
 regenerated the shared files once, so the box cards reached staging first; the second merged group E on top of it.
@@ -31,6 +31,35 @@ regenerated the shared files once, so the box cards reached staging first; the s
 | F, statics | **Captain America, Living Legend**; **Rocksteady, Crash Courser**; **Moon-Vigil Adherents**; **Kenrith, the Returned King**; Alesha's Legacy; Mirkwood Meditator; Krotiq Nestguard; Eagles of the North | 43 |
 
 The six in bold are the box cards (D2-A Chulane, D3-A Ghalta, D4-A Felothar, D5-A Tymna + Kraum, D8-A Kenrith twice).
+
+## The four Star Trek cards (ROB-532, 2026-11-22)
+
+Rob, 2026-11-22: *"Go"*, after the 42 reached production (main `8c6dcfd0`, then `a35f884f`). Checked first, against his Master as
+saved 2026-11-21 18:08 and main `a35f884f`: all 542 distinct cards of the eight Dx-A boxes were playable, and of the 846 distinct
+cards in the three series, the two groups, CJ and HG exactly four were not: Federation Probe, Silicate Surveyor, Command
+Subadjunct and Captain's Tutelage, Star Trek cards released after the oracle data (Scryfall bulk of 2026-10-04).
+
+- **The oracle data was refreshed first** (`node tools/build-engine-cards.mjs`, Scryfall's bulk file): 32,116 to 32,642
+  Commander-legal cards, 527 added and one left ("Name Sticker" Goblin, the MTGO-only Unfinity card `tests/catalog-rule.mjs` says
+  waits for a refresh), 1,109 tokens and emblems. Seven existing cards changed: four only in their keyword lists (two reordered, Excalibur,
+  Sword of Eden and Mjölnir, Hammer of Thor now naming Equip), and three in their text (errata, named below). `check-cards` against the new data: 6,538 definitions, 11,750 scenarios, 0 failed.
+- **The errata.** Slagwurm Armor lost the reminder sentence "This card enters unattached and stays on the battlefield if the creature
+  leaves" (its definition's stored text now matches; its rules are unchanged). Face Yourself's token is sacrificed as "this token",
+  not "this creature", and Werewolf Pack Leader's ability makes it a Werewolf rather than "not a Human"; neither card is
+  defined.
+- **The four, written by hand with nine scenarios**, each modelled on a defined card and no engine change:
+
+| Card | Written as | Scenarios |
+| --- | --- | ---: |
+| Federation Probe | flying; a "when this enters, choose one" with a targeted +1/+1 mode and a surveil 1 mode (Yuriko, Hope from the Shadows) | 3 |
+| Silicate Surveyor | reach; exile the top card, may play it until the end of your next turn (Gundabad Opportunist) | 2 |
+| Command Subadjunct | "artifact creatures you control have vigilance" (Vraska, Soul of Stone) | 2 |
+| Captain's Tutelage | a Flash Aura; first strike until end of turn when it enters, then +2/+0 (Aquitect's Defenses) | 2 |
+
+- **Side effect, named.** The refreshed oracle gives the card compiler 39 more playtest-only candidates (149 to 188); they seat at
+  playtest tables only, labeled, until a wave reviews and promotes them.
+- **One ignore, named** (`docs/engine/gameplay-gaps-2026-10-21.md`, section 4): the card Silicate Surveyor exiles is offered only
+  once its mana is floated, as for the three cards of group C.
 
 ## What was built (the Claude · Engine lane)
 

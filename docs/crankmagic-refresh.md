@@ -161,7 +161,7 @@ What else the 2026-10-29 refresh taught:
 - **The Menu's graph row reads the graph's `amplifiersAt`** (when it was last re-classified), falling back to
   `generatedAt` (the corpus bake), and says "not loaded yet" until a page loads the graph (Discover, the Lab, New deck,
   the Play draft). Only the Neo4j ingest moves `generatedAt`, and only it adds a card to the corpus (86 commanders are
-  missing from `graph.json`, ROB-214; "Name Sticker" Goblin is still in the graph and the engine's tables).
+  missing from `graph.json`, ROB-214; "Name Sticker" Goblin is still in the graph; the engine's tables lost it in the 2026-11-22 rebuild, ROB-532).
 
 ### Bumping versions
 

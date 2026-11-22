@@ -125,6 +125,7 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | Rocksteady, Crash Courser; Krotiq Nestguard; Aerial Doombot, Ultron Drone | **Untested edges, named.** A refused second blocker for Rocksteady or a Boar, and Krotiq refused as an attacker without its ability, are not shown (the scenario runner cannot write a refusal; the rules are Safewright Cavalry's and defender's, both proved elsewhere); power-up's reduction by a hybrid, Phyrexian or X symbol, and by a transformed back face, are not shown. | Unplayable Cards load, 2026-11-18 |
 | Arwen Undómiel; Inspired Tethermage | Their activated abilities (Scry 2, Empower Jace 2) are offered only once their mana is floated by hand (ROB-339, ROB-354). | Unplayable Cards load, 2026-11-18 |
 | Arwen Undómiel; Gorbag of Minas Morgul; Scavenger Regent // Exude Toxin | **Untested edges, named.** A scry with an empty library raises no scry event, so Arwen does not trigger; Gorbag sacrificing a creature he no longer controls is not refused; a copy of an Omen spell would also try the shuffle into the library; an Omen whose spell is modal is not built (the shuffle is added to `spell.effects` only). Counters a mana ability's cost puts on still raise no event. | Unplayable Cards load, 2026-11-18 |
+| Silicate Surveyor | **An ignore.** The card it exiles is offered to be played only once its mana is floated (the "casts from exile" row above); its scenarios tap by hand before the offer is checked. | Star Trek load, 2026-11-22 (ROB-532) |
 
 ## 5. Choices the engine makes for the player
 

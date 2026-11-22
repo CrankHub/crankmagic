@@ -7,8 +7,9 @@
  *   "Not in the engine" rows on both sheets. Each one marked `loadedHere` is a definition every table plays
  *   (`tableDefinition`), written by hand, and has its scenarios run here on its own, so a change to one shows at once,
  *   under the name of the card. The first pull request loaded 36 (the six box cards first); the second, group E's six.
- * - The four Star Trek cards of the workbook are not in the oracle data yet (ROB-532); the lane file names them and
- *   this suite holds that none of them is claimed.
+ * - The four Star Trek cards of the workbook (Federation Probe, Silicate Surveyor, Command Subadjunct, Captain's Tutelage)
+ *   were not in the oracle data until it was refreshed (ROB-532, 2026-11-22); the lane file names them under
+ *   `releasedAfterTheOracleData`, and they are loaded and run here with the rest.
  */
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
@@ -30,14 +31,19 @@ const loaded = lane.cards.filter((c) => c.loadedHere);
 eq(loaded.filter((c) => !tableDefinition(c.name)).map((c) => c.name), [], "every card loaded here is a definition the table plays");
 /* The cards not loaded yet are a later pull request's (the lane says so card by card); none may be claimed early. */
 eq(lane.cards.filter((c) => !c.loadedHere && tableDefinition(c.name)).map((c) => c.name), [], "a card marked for later is not a definition yet");
-eq(lane.source.notInTheOracleData.map((c) => c.name).sort(),
-  ["Captain's Tutelage", "Command Subadjunct", "Federation Probe", "Silicate Surveyor"], "the four Star Trek cards wait for the oracle data");
-eq(lane.source.notInTheOracleData.filter((c) => tableDefinition(c.name)).map((c) => c.name), [], "none of the four is claimed");
+/* The four Star Trek cards of the workbook (released 2026-11-13, after the oracle data of 2026-10-04) were loaded in ROB-532,
+   once the engine's oracle data was refreshed (2026-11-22): each is a definition every table plays, and has its scenarios. */
+const trek = lane.source.releasedAfterTheOracleData;
+eq(trek.map((c) => c.name).sort(),
+  ["Captain's Tutelage", "Command Subadjunct", "Federation Probe", "Silicate Surveyor"], "the four Star Trek cards of the workbook");
+eq(trek.filter((c) => !c.loadedHere || c.loadedIn !== "ROB-532").map((c) => c.name), [], "the lane says all four were loaded in ROB-532");
+eq(trek.filter((c) => !tableDefinition(c.name)).map((c) => c.name), [], "each of the four is a definition the table plays");
 
 /* ---- each card's scenarios, run ---- */
 const cards = loadCardIndex();
-const files = loadCardScenarios().map((f) => f.scenarios).filter((f) => loaded.some((c) => c.name === f.card));
-eq(files.map((f) => f.card).sort(), loaded.map((c) => c.name).sort(), "each card loaded here has its scenarios");
+const everyLoaded = [...loaded, ...trek];
+const files = loadCardScenarios().map((f) => f.scenarios).filter((f) => everyLoaded.some((c) => c.name === f.card));
+eq(files.map((f) => f.card).sort(), everyLoaded.map((c) => c.name).sort(), "each card loaded here has its scenarios");
 for (const file of files) {
   ok(file.scenarios.length >= 2, `${file.card}: a way and an edge, two scenarios or more`);
   for (const scenario of file.scenarios) { runScenario(scenario, cards.definition, file.fixtures ?? {}); checks += 1; }
