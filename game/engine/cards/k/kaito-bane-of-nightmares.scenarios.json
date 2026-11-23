@@ -1,0 +1,738 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Kaito, Bane of Nightmares",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Shinobi": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{1}{U}",
+      "colors": [
+        "U"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Bolt": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{0}",
+      "colors": [
+        "R"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Bolt deals 3 damage to any target.",
+        "targets": [
+          {
+            "anyOf": [
+              {
+                "what": "permanent",
+                "types": [
+                  "Creature"
+                ]
+              },
+              {
+                "what": "permanent",
+                "types": [
+                  "Planeswalker"
+                ]
+              },
+              {
+                "what": "player"
+              }
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "dealDamage",
+            "amount": 3,
+            "targets": {
+              "target": 0
+            },
+            "who": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Drain": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{0}",
+      "colors": [
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Target player loses 2 life.",
+        "targets": [
+          {
+            "what": "player"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "loseLife",
+            "amount": 2,
+            "who": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Ninjutsu from untapped lands: the Bear returned, Kaito enters tapped and attacking as a 3/4 Ninja with hexproof, 3 to Maya, his loyalty untouched",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Island",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Kaito, Bane of Nightmares"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Kaito, Bane of Nightmares"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Kaito, Bane of Nightmares"
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Bear"
+              ]
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Kaito, Bane of Nightmares",
+                "power": 3,
+                "toughness": 4
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Kaito, Bane of Nightmares",
+                "has": [
+                  "Hexproof"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 4
+          }
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Kaito, Bane of Nightmares",
+            "Island",
+            "Swamp",
+            "Wastes"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ninjutsu paid by hand, the mana floated once blockers are declared",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Island",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Kaito, Bane of Nightmares"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "On Rob's turn Kaito, there since the turn began, attacks as a creature: 3 to Maya",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Kaito, Bane of Nightmares"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "On Rob's turn Kaito has hexproof: Maya's Bolt may target only the players",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Bolt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "pass": 1
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Bolt",
+                "seat": 1
+              },
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Kaito, Bane of Nightmares",
+            "has": [
+              "Hexproof"
+            ]
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Kaito, Bane of Nightmares",
+            "power": 3,
+            "toughness": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "On Maya's turn Kaito is no creature and has no hexproof: her Bolt may target him, and takes 3 loyalty",
+      "at": {
+        "turn": 2,
+        "phase": "MAIN1"
+      },
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Bolt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Bolt",
+                "seat": 1
+              },
+              "count": 3
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Kaito, Bane of Nightmares",
+                "lacks": [
+                  "Hexproof"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "cast": "Bolt",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "Kaito, Bane of Nightmares"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1: the emblem gives Rob's Ninjas +1/+1 -- the Shinobi and Kaito himself on his turn -- and not the Bear",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares",
+            "Shinobi",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kaito, Bane of Nightmares",
+          "ability": "a4"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Shinobi",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Kaito, Bane of Nightmares",
+            "power": 4,
+            "toughness": 5
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "0: surveil 2, then a card for the one opponent of two who lost life this turn -- and the draw step card, three players",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Drain"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Drain",
+          "targets": [
+            {
+              "player": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Kaito, Bane of Nightmares",
+          "ability": "a5"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 2
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "0: nobody lost life this turn -- surveil 2, and no card drawn",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kaito, Bane of Nightmares",
+          "ability": "a5"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "-2: Maya's Bear tapped, with two stun counters",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Kaito, Bane of Nightmares",
+          "ability": "a6",
+          "targets": [
+            {
+              "card": "Their Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "tapped": "Their Bear"
+        },
+        {
+          "seat": 1,
+          "counters": {
+            "card": "Their Bear",
+            "counter": "stun",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands for {2}{U}{B}: offered, and Kaito enters with 4 loyalty",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Swamp",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kaito, Bane of Nightmares"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Kaito, Bane of Nightmares"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Kaito, Bane of Nightmares"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Kaito, Bane of Nightmares",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    }
+  ]
+}

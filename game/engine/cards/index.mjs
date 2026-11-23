@@ -36,7 +36,7 @@ import {KEYWORD_FAMILIES as TYPE_FAMILIES} from "../keywords/types.mjs";
 import {KEYWORD_FAMILIES as DESIGNATION_FAMILIES} from "../keywords/designations.mjs";
 import {costAtomBuilt} from "../rules/actions.mjs";
 import {compileSelector} from "../script/filter.mjs";
-import {LAYER_AFFECTS_KEYS} from "../rules/layers.mjs";
+import {LAYER_AFFECTS_KEYS, ninjutsuAbility} from "../rules/layers.mjs";
 import {SPEND_ONLY_KEYS} from "../rules/restricted-mana.mjs";
 import {parseManaCost} from "../rules/mana.mjs";
 
@@ -341,6 +341,9 @@ const TRIGGERS = {
   /* "Whenever this creature transforms into Ashling, Rekindled" (CR 701.27e): this permanent transforming, `into` the face
      it then has, by name -- not entering transformed (CR 712.14a), which is no transforming. This one's own alone. */
   transformed: (t) => ((t.who ?? "self") === "self" && typeof t.into === "string" ? {on: "GameEventCardTransformed", who: "self", into: t.into} : null),
+  /* "Whenever you activate a ninjutsu ability" (Satoru Umezawa; CR 702.49a, 702.49d, 602.2): an ability marked `ninjutsu`
+     (ninjutsuAbility) put on the stack by you -- commander ninjutsu among them, and one a permanent gives a card in a hand. */
+  "ninjutsu activated": () => ({on: "GameEventSpellAbilityCast", ninjutsuActivated: true}),
   /* "Whenever you activate a loyalty ability" (Ajani Unrelenting; CR 606, 602.2): a loyalty ability put on the stack by
      you (`activator`), any permanent's; "if you removed two or more loyalty counters to activate it" (`removedAtLeast`,
      its cost, CR 606.4). About the permanent and the player. */
@@ -840,15 +843,14 @@ export function compileScript(script) {
     }
     /* NINJUTSU (CR 702.49a): "{cost}, Return an unblocked attacking creature you control to its owner's hand: Put this card
        onto the battlefield from your hand tapped and attacking" -- an ability of the card in its owner's hand, attacking
-       whom the returned creature attacked (rules/actions.mjs remembers it as the ability goes on the stack). */
+       whom the returned creature attacked (rules/actions.mjs remembers it as the ability goes on the stack); built by
+       rules/layers.mjs, ninjutsuAbility, as one a permanent gives is. */
     /* COMMANDER NINJUTSU (CR 702.49d; Yuriko, batch 79): the same ability, which also works while the card is in the
        command zone (`alsoCommand`, rules/actions.mjs). */
     if (ability.kind === "keyword" && ["ninjutsu", "commander ninjutsu"].includes(String(ability.keyword).toLowerCase())) {
       const cost = Array.isArray(ability.cost) ? ability.cost : [];
       if (!cost.length || !cost.every((atom) => atom?.atom === "mana")) problems.push(`${ability.text}: a ninjutsu cost of mana`);
-      abilities.push({id, kind: "activated", zone: "hand", text: ability.text, ...(String(ability.keyword).toLowerCase() === "commander ninjutsu" ? {alsoCommand: true} : {}),
-        cost: [...structuredClone(cost), {atom: "returnToHand", selector: {what: "permanent", types: ["Creature"], controller: "you", attacking: true, unblocked: true}}],
-        effects: [{effect: "moveZone", targets: "self", to: "battlefield", tapped: true, attacking: "that player"}]});
+      abilities.push(ninjutsuAbility(id, ability.text, cost, String(ability.keyword).toLowerCase() === "commander ninjutsu"));
       keywords.push("Ninjutsu");
       return;
     }

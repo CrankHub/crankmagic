@@ -42,7 +42,7 @@ BREAKS = [
     ('skulk has behavior', KWCOMBAT, '    "Skulk"]),', '    ]),'),
     ('skulk a keyword', VOCAB, '  "devour", "skulk"];', '  "devour"];'),
     # Sam: activated abilities of Foods cost {1} less (CR 602.2b, 601.2f).
-    ('ability reduction read', ACTIONS, '\n  + abilityCostReduction(state, id);', ';'),
+    ('ability reduction read', ACTIONS, '\n  + abilityCostReduction(state, id, ability, player);', ';'),
     ('ability reduction of what it affects', STATICS, '      if (!matchesSelector({...(ability.affects ?? {}), what: "permanent"}, state, objectId, context)) continue;\n', ''),
     ('ability reduction its rule alone', STATICS, '      if (ability.kind !== "static" || ability.rule !== "abilities-cost-less") continue;\n', '      if (ability.kind !== "static") continue;\n'),
     # Bilbo: that much life plus 1.
@@ -73,9 +73,9 @@ BREAKS = [
     # Lobelia: a linked card played free, one only.
     ('may play linked', ZONES, '  const named = params.linked === true ? linkedMoving(state, {}, context) : params.targets ?? [];', '  const named = params.targets ?? [];'),
     ('may play count kept', ZONES, '\n    ...(Number.isInteger(params.count) ? {count: params.count} : {}),\n', '\n'),
-    ('may play count read', ACTIONS, '      ...(Number.isInteger(e.count) ? {count: e.count} : {}),\n      /* "Its owner may cast it', '      /* "Its owner may cast it'),
+    ('may play count read', ACTIONS, '      ...(Number.isInteger(e.count) ? {count: e.count} : {}),\n      /* "Pay life equal', '      /* "Pay life equal'),
     ('may play linked schema', SCHEMA, '  if (name === "mayPlay" && effect.linked !== undefined && !(effect.linked === true', '  if (false && !(effect.linked === true'),
-    ('may play linked count schema', SCHEMA, '  if (name === "mayPlay" && effect.linked === true && effect.count !== undefined', '  if (false && effect.count !== undefined'),
+    ('may play linked count schema', SCHEMA, '  if (name === "mayPlay" && effect.from === undefined && effect.count !== undefined', '  if (false && effect.count !== undefined'),
     # Feasting Hobbit: devour (CR 702.82a, 702.82c).
     ('devour compiled', INDEX, '        change: {devour: {amount: ability.amount ?? 1, of: structuredClone(ability.of ?? {types: ["Creature"]})}}});', '        change: {}});'),
     ('devour number', INDEX, '      if (!(Number.isInteger(ability.amount) && ability.amount >= 1)) problems.push(`${ability.text}: devour needs its number, 1 or more`);\n', ''),

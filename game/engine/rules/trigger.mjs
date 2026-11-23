@@ -206,6 +206,12 @@ function subjects(state, event, condition, sourceId, controller) {
     const proliferator = fields.player?.playerId;
     return whoseIs(condition.proliferator ?? "you", proliferator, controller) ? [{player: proliferator}] : [];
   }
+  /* "Whenever you activate a ninjutsu ability" (Satoru Umezawa; CR 702.49): an ability marked a ninjutsu one, activated by
+     this ability's controller -- about the card and the player. */
+  if (condition.on === "GameEventSpellAbilityCast" && condition.ninjutsuActivated) {
+    if (fields.sa?.ninjutsu !== true || fields.si?.actor?.playerId !== controller) return [];
+    return [{card: fields.card?.cardId, player: controller}];
+  }
   /* "Whenever you activate a loyalty ability" (CR 606): an ability, not a spell, with a loyalty cost, by `activator`; the
      counters its cost removed at least `removedAtLeast`. */
   if (condition.on === "GameEventSpellAbilityCast" && condition.loyaltyActivated) {

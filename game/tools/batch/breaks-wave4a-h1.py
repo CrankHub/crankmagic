@@ -63,7 +63,9 @@ READS = '  "play-from", "cast-self-from",\n'
 WITH_COUNTERS = '["battlefield", "exile"].includes(effect.to) && effect.withCounters'
 MAY_PLAY_ZONES = 'if (!["graveyard", "library-top"].includes(effect.from)) errors.push'
 NAMES_NONE = '    if (effect.targets !== undefined || effect.zone !== undefined || effect.onlyIf !== undefined)\n'
-FROM_ONLY = '["spells", "payLife", ...(effect.linked === true ? [] : ["count"])].some((key) => effect[key] !== undefined)'
+SPELLS_FROM_ONLY = '  if (name === "mayPlay" && effect.from === undefined && effect.spells !== undefined)'
+NAMED_LIFE = '  if (name === "mayPlay" && effect.from === undefined && effect.payLife !== undefined && effect.payLife !== "manaValue")'
+NAMED_COUNT = '  if (name === "mayPlay" && effect.from === undefined && effect.count !== undefined'
 CANT_CAST_SCHEMA = '((effect.named === undefined) === (effect.allSpells !== true) || effect.who === undefined\n    || (effect.allSpells !== undefined && effect.allSpells !== true)))'
 TRUE_KEYS = '["free", "graveyardToLibraryBottom", "perType", "anyMana"]'
 EXTRA_SHAPE = 'Array.isArray(ability.additionalCost) && ability.additionalCost.length && ability.additionalCost.every((a) => ["sacrifice", "discard"].includes(a?.atom) && a.count === undefined)'
@@ -200,9 +202,10 @@ BREAKS = [
     ('schema: mayPlay spells a selector', SCHEMA, '    if (effect.spells !== undefined && effect.spells !== true) checkSelector(effect.spells, `${path}.spells`, errors, {choice: true});\n', ''),
     ('schema: mayPlay life its mana value', SCHEMA, '    if (effect.payLife !== undefined && effect.payLife !== "manaValue") errors.push({path: `${path}.payLife`', '    if (false) errors.push({path: `${path}.payLife`'),
     ('schema: mayPlay count', SCHEMA, '    if (effect.count !== undefined && !(Number.isInteger(effect.count) && effect.count >= 1)) errors.push', '    if (false) errors.push'),
-    ('schema: spells only from a zone', SCHEMA, FROM_ONLY, FROM_ONLY.replace('"spells", ', '')),
-    ('schema: life only from a zone', SCHEMA, FROM_ONLY, FROM_ONLY.replace('"payLife", ', '')),
-    ('schema: count only from a zone', SCHEMA, FROM_ONLY, FROM_ONLY.replace(', ...(effect.linked === true ? [] : ["count"])', '')),
+    ('schema: spells only from a zone', SCHEMA, SPELLS_FROM_ONLY, '  if (false)'),
+    # Named cards take life and a count since Nashi, Moon Sage's Scion (ROB-540): each held to its value.
+    ('schema: life only from a zone', SCHEMA, NAMED_LIFE, '  if (false)'),
+    ('schema: count only from a zone', SCHEMA, NAMED_COUNT, '  if (false && effect.count !== undefined'),
     ("schema: can't cast every spell", SCHEMA, CANT_CAST_SCHEMA, '((effect.named === undefined) || effect.who === undefined\n    || (effect.allSpells !== undefined && effect.allSpells !== true)))'),
     ("schema: can't cast allSpells true", SCHEMA, CANT_CAST_SCHEMA, '((effect.named === undefined) === (effect.allSpells !== true) || effect.who === undefined))'),
     ('schema: solved', SCHEMA, '!["monstrous", "prepared", "solved"].includes(effect.attribute)', '!["monstrous", "prepared"].includes(effect.attribute)'),

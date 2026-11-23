@@ -619,6 +619,10 @@ export function mayPlay(state, params, context) {
        (rules/actions.mjs, anyTypeCost), as a permanent's play-from says it. */
     ...(params.anyMana === true ? {anyMana: true} : {}),
     ...(Number.isInteger(params.count) ? {count: params.count} : {}),
+    /* "Until end of turn, you may play one of those cards. If you cast a spell this way, pay life equal to its mana value
+       rather than paying its mana cost" (Nashi, Moon Sage's Scion; CR 118.9): `count` 1, and `payLife` (rules/actions.mjs,
+       lifeInstead), as a zone's permission says it. */
+    ...(params.payLife ? {payLife: params.payLife} : {}),
     ...(typeof params.manaInstead === "string" ? {manaInstead: params.manaInstead} : {}),
     until: params.until ?? "end-of-turn", madeOnTurn: state.turn, sourceController: player});
   return [];

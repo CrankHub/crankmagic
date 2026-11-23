@@ -1,0 +1,459 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Silver-Fur Master",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Shinobi": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{1}{U}",
+      "colors": [
+        "U"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Rogue": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Rogue"
+      ],
+      "manaCost": "{1}{B}",
+      "colors": [
+        "B"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Shinobi": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{1}{U}",
+      "colors": [
+        "U"
+      ],
+      "power": 1,
+      "toughness": 1
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Ninjutsu {U}{B} from untapped lands: the Bear returned, 2 to Maya",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Island",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Silver-Fur Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Silver-Fur Master"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Silver-Fur Master"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 38
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Other Ninja and Rogue creatures Rob controls get +1/+1; not the Bear, not Silver-Fur himself, not Maya's Ninja",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Silver-Fur Master",
+            "Shinobi",
+            "Rogue",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Shinobi"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Shinobi",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Rogue",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Bear",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Silver-Fur Master",
+            "power": 2,
+            "toughness": 2
+          }
+        },
+        {
+          "seat": 1,
+          "stats": {
+            "card": "Their Shinobi",
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ninjutsu {1}{U} costs {U}: offered from one untapped Island, and the Ninja enters attacking as a 3/3",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Silver-Fur Master",
+            "Bear",
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Ninja of the Deep Hours"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Ninja of the Deep Hours"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Ninja of the Deep Hours"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Island"
+            },
+            {
+              "seat": 0,
+              "stats": {
+                "card": "Ninja of the Deep Hours",
+                "power": 3,
+                "toughness": 3
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 37
+        }
+      ]
+    },
+    {
+      "name": "Only ninjutsu abilities: Walker's {1}{U} is not made {U}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Silver-Fur Master",
+            "Walker of Secret Ways",
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        }
+      ],
+      "expect": [
+        {
+          "offers": {
+            "kind": "activate",
+            "card": "Walker of Secret Ways"
+          },
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "Only those Rob activates: Maya's ninjutsu {1}{U} still costs {1}{U}",
+      "at": {
+        "turn": 2,
+        "phase": "MAIN1"
+      },
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Silver-Fur Master"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Ninja of the Deep Hours"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Their Bear"
+          ],
+          "seat": 1
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "tap": "Island",
+          "seat": 1
+        }
+      ],
+      "expect": [
+        {
+          "offers": {
+            "kind": "activate",
+            "card": "Ninja of the Deep Hours",
+            "seat": 1
+          },
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands for {U}{B}",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Silver-Fur Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Silver-Fur Master"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Silver-Fur Master"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Silver-Fur Master",
+            "Island",
+            "Swamp"
+          ]
+        }
+      ]
+    }
+  ]
+}
