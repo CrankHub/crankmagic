@@ -1,0 +1,77 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Splinter, Radical Rat",
+    "oracleId": "fb2cd508-f5cd-4d5b-b8e7-3cae1f39fd58",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Mutant",
+      "Ninja",
+      "Rat"
+    ],
+    "manaCost": "{1}{W/B}{W/B}",
+    "colors": [
+      "B",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "U",
+      "W"
+    ],
+    "power": 2,
+    "toughness": 4
+  },
+  "oracleText": "If a triggered ability of a Ninja creature you control triggers, that ability triggers an additional time.\n{1}{U}: Target Ninja can't be blocked this turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "If a triggered ability of a Ninja creature you control triggers, that ability triggers an additional time.",
+      "rule": "triggers-again",
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Ninja"
+        ],
+        "controller": "you"
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "{1}{U}: Target Ninja can't be blocked this turn.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}{U}"
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "subtypes": [
+            "Ninja"
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "effect": "effectUntil",
+          "targets": {
+            "target": 0
+          },
+          "rule": "cant-be-blocked",
+          "until": "end-of-turn"
+        }
+      ]
+    }
+  ]
+}

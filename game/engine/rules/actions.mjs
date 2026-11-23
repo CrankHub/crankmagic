@@ -1353,8 +1353,9 @@ function xValues(pool, cost, extra = 0, less = 0) {
 const abilityLess = (state, player, id, ability, targets = null) => (ability.costLess === undefined ? 0 : amountOf(state, ability.costLess, {controller: player, source: id, targets: targets ?? []}))
   + (ability.equip === true ? equipCostReduction(state, player, targets) : 0)
   /* "Activated abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant; rules/statics.mjs,
-     abilityCostReduction): what a permanent's static takes off the abilities of the permanent this one is. */
-  + abilityCostReduction(state, id);
+     abilityCostReduction): what a permanent's static takes off the abilities of the permanent this one is -- or off a
+     ninjutsu ability its player activates (Silver-Fur Master). */
+  + abilityCostReduction(state, id, ability, player);
 /* POWER-UP (CR 702.193a-b; Aerial Doombot, Ultron Drone): the turn this permanent entered, the ability's mana cost is reduced
    by the permanent's mana cost -- its generic mana off the generic, each colored or colorless symbol off one of the same type,
    and one the cost has none of off the generic instead (CR 118.7), never below nothing (CR 601.2f). */
@@ -1497,6 +1498,8 @@ const allPlayPermissions = (state, player) => onceAQuestion(state, `play-permiss
       ...(e.anyMana === true ? {anyMana: true} : {}),
       /* "A card exiled with Lobelia": so many of the named cards before it is spent (spendPermission). */
       ...(Number.isInteger(e.count) ? {count: e.count} : {}),
+      /* "Pay life equal to its mana value rather than paying its mana cost" (Nashi, Moon Sage's Scion; lifeInstead). */
+      ...(e.payLife ? {payLife: e.payLife} : {}),
       /* "Its owner may cast it for {2} rather than its mana cost" (airbend; castOffers). */
       ...(typeof e.manaInstead === "string" ? {manaInstead: e.manaInstead} : {}),
       ...(Number.isInteger(e.afterTurn) ? {afterTurn: e.afterTurn} : {})}}))];
@@ -2383,9 +2386,11 @@ function offers(state, player) {
   /* CR 702.29a and its kin: an ability a card has in its owner's hand -- cycling, "{2}, discard this card: draw a card"
      -- whenever that player has priority, unless it says sorcery speed. */
   /* Commander ninjutsu (CR 702.49d) works from the command zone as well: the hand's abilities that say so (`alsoCommand`). */
+  /* And one a permanent gives a card in a hand ("each creature card in your hand has ninjutsu", Satoru Umezawa;
+     rules/layers.mjs, abilitiesOf). */
   for (const id of [...cardsIn(state, "hand", player), ...cardsIn(state, "command", player)]) {
     const object = state.objects[id];
-    for (const ability of object.abilities ?? []) {
+    for (const ability of abilitiesOf(state, id)) {
       if (ability.kind !== "activated" || ability.zone !== "hand") continue;
       if (object.zone === "command" && ability.alsoCommand !== true) continue;
       if (ability.timing === "sorcery" && !sorceryTime) continue;
@@ -3531,7 +3536,9 @@ function performOffered(state, player, action, during) {
       card,
       sa: {isSpell: false, abilityId: entry.abilityId, stackId: entry.stackId, description: ability.text,
         /* A loyalty ability says its cost (CR 606.4): "whenever you activate a loyalty ability" (rules/trigger.mjs). */
-        ...(ability.loyalty !== undefined ? {loyalty: ability.loyalty === "-X" ? -(action.x ?? 0) : ability.loyalty} : {})},
+        ...(ability.loyalty !== undefined ? {loyalty: ability.loyalty === "-X" ? -(action.x ?? 0) : ability.loyalty} : {}),
+        /* A ninjutsu ability (CR 702.49): "whenever you activate a ninjutsu ability" (rules/trigger.mjs). */
+        ...(ability.ninjutsu === true ? {ninjutsu: true} : {})},
       si: {isTrigger: false, actor: {playerId: player, name: state.players[player].name}},
       targetDescription,
       ...aimsOf(state, entry),

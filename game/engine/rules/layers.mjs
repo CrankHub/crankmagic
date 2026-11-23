@@ -44,6 +44,7 @@ import {chosenFor, CHOSEN_COLOR_LETTER} from "../script/chosen.mjs";
 import {hasSubtype, everyCreatureType, isLandType, isCreatureType, isPlaneswalkerType, isEnchantmentType, BASIC_LAND_MANA} from "../keywords/types.mjs";
 import {parseManaCost, manaValue} from "./mana.mjs";
 import {valueCostOf} from "../state/index.mjs";
+import {matchesSelector} from "../script/filter.mjs";
 
 /** The seven layers of CR 613.1, in order. */
 export const LAYERS = Object.freeze([1, 2, 3, 4, 5, 6, 7]);
@@ -890,8 +891,32 @@ function abilitiesChange(state) {
  */
 export function abilitiesOf(state, id) {
   const object = state.objects[id];
+  if (object.zone === "hand") return [...(object.abilities ?? []), ...ninjutsuGiven(state, id)];
   if (object.zone !== "battlefield" || !abilitiesChange(state)) return object.abilities ?? [];
   return heldAbilities(object, characteristicsOf(state, id));
+}
+
+/* NINJUTSU (CR 702.49a): "{cost}, Return an unblocked attacking creature you control to its owner's hand: Put this card onto
+   the battlefield from your hand tapped and attacking" -- an ability of the card in its owner's hand, attacking whom the
+   returned creature attacked (rules/actions.mjs remembers it as the ability goes on the stack). `ninjutsu` marks it one, for
+   "whenever you activate a ninjutsu ability" (rules/trigger.mjs) and "ninjutsu abilities you activate cost {1} less"
+   (rules/statics.mjs, abilityCostReduction). Commander ninjutsu (CR 702.49d) also works from the command zone (`alsoCommand`).
+   The card's own keyword (cards/index.mjs), or one a permanent gives a card in a hand (ninjutsuGiven). */
+export const ninjutsuAbility = (id, text, cost, alsoCommand = false) => ({id, kind: "activated", zone: "hand", text, ninjutsu: true, ...(alsoCommand ? {alsoCommand: true} : {}),
+  cost: [...structuredClone(cost), {atom: "returnToHand", selector: {what: "permanent", types: ["Creature"], controller: "you", attacking: true, unblocked: true}}],
+  effects: [{effect: "moveZone", targets: "self", to: "battlefield", tapped: true, attacking: "that player"}]});
+
+/* "Each creature card in your hand has ninjutsu {2}{U}{B}" (Satoru Umezawa; CR 702.49a, 611.3a, 613.1f): a permanent's static
+   `grants-ninjutsu` -- `affects` the cards in a hand that have it, `cost` its ninjutsu cost -- read of the permanent's abilities
+   as they are after layer 6, so a Satoru that lost his gives none. One ability for each such static, by its holder. */
+function ninjutsuGiven(state, id) {
+  const held = staticAbilities(state), given = [];
+  for (const holderId of state.zones.battlefield) for (const ability of held(holderId)) {
+    if (ability.kind !== "static" || ability.rule !== "grants-ninjutsu") continue;
+    if (!matchesSelector({...ability.affects, what: "card", zone: "hand"}, state, id, {controller: state.objects[holderId].controller, source: holderId})) continue;
+    given.push(ninjutsuAbility(`ninjutsu:${holderId}:${ability.id}`, ability.text, ability.cost));
+  }
+  return given;
 }
 
 /** Permanents' abilities for one look at a board that does not change while it is read (rules/trigger.mjs, collectTriggers):

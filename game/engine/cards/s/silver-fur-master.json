@@ -1,0 +1,81 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Silver-Fur Master",
+    "oracleId": "60ec735d-c9be-4776-beb7-f603ae22edbf",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Rat",
+      "Ninja"
+    ],
+    "manaCost": "{U}{B}",
+    "colors": [
+      "B",
+      "U"
+    ],
+    "colorIdentity": [
+      "B",
+      "U"
+    ],
+    "power": 2,
+    "toughness": 2
+  },
+  "oracleText": "Ninjutsu {U}{B} ({U}{B}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nNinjutsu abilities you activate cost {1} less to activate.\nOther Ninja and Rogue creatures you control get +1/+1.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Ninjutsu {U}{B}",
+      "keyword": "ninjutsu",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{U}{B}"
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Ninjutsu abilities you activate cost {1} less to activate.",
+      "rule": "abilities-cost-less",
+      "ninjutsu": true,
+      "affects": {
+        "what": "player",
+        "who": "you"
+      },
+      "amount": 1
+    },
+    {
+      "kind": "static",
+      "text": "Other Ninja and Rogue creatures you control get +1/+1.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Creature"
+        ],
+        "controller": "you",
+        "another": true,
+        "anyOf": [
+          {
+            "subtypes": [
+              "Ninja"
+            ]
+          },
+          {
+            "subtypes": [
+              "Rogue"
+            ]
+          }
+        ]
+      },
+      "apply": {
+        "power": 1,
+        "toughness": 1
+      }
+    }
+  ]
+}

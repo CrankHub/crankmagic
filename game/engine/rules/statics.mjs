@@ -96,7 +96,8 @@ export const STATIC_RULES = Object.freeze({
   /** CR 602.2b, 601.2f: "Activated abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant; Rob's
       lists P2): `affects`, a selector of the permanents whose abilities cost less ("you" the static's controller), `amount` generic
       mana -- only generic mana, never below none (CR 601.2f). Read as an activated ability's cost is, beside its own
-      `costLess`: actions.mjs, abilityLess, through abilityCostReduction below. */
+      `costLess`: actions.mjs, abilityLess, through abilityCostReduction below. `ninjutsu: true`, "ninjutsu abilities you
+      activate cost {1} less" (Silver-Fur Master): `affects` then the players activating them, a player selector. */
   "abilities-cost-less": "rules/actions.mjs",
   /** CR 601.2f, the card's own: "This spell costs {1} less to cast for each creature on the battlefield" (Vanquish the
       Horde), "{X} less, where X is the total power of creatures you control" (Ghalta). Read from the card wherever it
@@ -279,6 +280,10 @@ export const STATIC_RULES = Object.freeze({
       mana each card's own mana cost). rules/actions.mjs offers the cast from its owner's graveyard and asks which cards to
       exile; rules/stack.mjs marks what escaped (702.138b). */
   "escape": "rules/actions.mjs",
+  /** Ninjutsu given (CR 702.49a): "each creature card in your hand has ninjutsu {2}{U}{B}" (Satoru Umezawa) -- `affects` the
+      cards in a hand that have it, `cost` its ninjutsu cost. rules/layers.mjs, ninjutsuGiven, reads it as a card in a hand's
+      abilities are read; rules/actions.mjs offers it as the card's own. */
+  "grants-ninjutsu": "rules/layers.mjs",
   /** Storm (CR 702.40a): the keyword kept as this static, read as the spell is cast (cards/index.mjs; batch 77 names it
       here, where every rule a definition carries is named). */
   "storm": "rules/actions.mjs",
@@ -1594,7 +1599,7 @@ export function loyaltyCostIncrease(state, player) {
  * abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant). Generic mana, summed; what the cost has
  * no generic mana to take it from it does not take (rules/actions.mjs, costPayment).
  */
-export function abilityCostReduction(state, objectId) {
+export function abilityCostReduction(state, objectId, activated, player) {
   let total = 0;
   const held = staticAbilities(state);
   for (const holderId of state.zones.battlefield) {
@@ -1602,6 +1607,12 @@ export function abilityCostReduction(state, objectId) {
     for (const ability of held(holderId)) {
       if (ability.kind !== "static" || ability.rule !== "abilities-cost-less") continue;
       const context = {controller: holder.controller, source: holderId};
+      /* "Ninjutsu abilities you activate cost {1} less to activate" (Silver-Fur Master; CR 702.49, 601.2f): `ninjutsu`, of a
+         ninjutsu ability (rules/layers.mjs, ninjutsuAbility) wherever its card is, `affects` the players activating it. */
+      if (ability.ninjutsu === true) {
+        if (activated?.ninjutsu === true && compileSelector({...(ability.affects ?? {}), what: "player"})(state, player, context)) total += amountOf(state, ability.amount ?? 1, context);
+        continue;
+      }
       if (!matchesSelector({...(ability.affects ?? {}), what: "permanent"}, state, objectId, context)) continue;
       total += amountOf(state, ability.amount ?? 1, context);
     }
