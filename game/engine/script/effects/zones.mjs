@@ -1026,6 +1026,11 @@ export function digUntil(state, params, context, rng = null) {
   /* "Then they put the exiled cards on the bottom of their library in a random order" (Tibalt's Trickery): `rememberAll`,
      every card this exiled -- the one found too -- for the effect that names them "the exiled cards" (script/bind.mjs). */
   if (params.rememberAll === true) context.exiledThisWay = [...dug, ...found].filter((id) => state.objects[id]);
+  /* "Each opponent exiles cards from the top of their library until they exile a nonland card" (Krang & Shredder, `link`):
+     every card it exiled -- the nonland one and the lands before it -- exiled with this source (CR 607.2a), for its other
+     ability's "a card exiled with Krang & Shredder" (script/filter.mjs, `exiledWith`), as moveZone's `link` keeps them. */
+  if (params.link === true && linkOf(context) !== null)
+    (state.links ??= {})[linkOf(context)] = [...(state.links[linkOf(context)] ?? []), ...all.filter((id) => state.objects[id]?.zone === "exile")];
   return events;
 }
 

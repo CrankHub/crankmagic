@@ -674,7 +674,7 @@ function escapeExiled(state, player, action, way) {
  */
 export function alternativeCosts(state, player, id) {
   const object = state.objects[id];
-  return (object?.abilities ?? []).flatMap((ability, index) => {
+  const own = (object?.abilities ?? []).flatMap((ability, index) => {
     if (ability.kind !== "static" || ability.rule !== "alternative-cost") return [];
     if (!conditionHolds(state, ability.condition, {controller: player, source: id})) return [];
     const cost = ability.cost ?? [];
@@ -708,6 +708,21 @@ export function alternativeCosts(state, player, id) {
       /* Surge (CR 702.117a), freerunning (CR 702.173a): the keyword whose cost this is, for "if its surge cost was paid". */
       ...(typeof ability.paidFor === "string" ? {paidFor: ability.paidFor} : {})}];
   });
+  /* SNEAK FROM A GRAVEYARD (Ninja Teen's level 3; CR 702.190a, 601.3, 716.2a): "creature cards in your graveyard have sneak
+     {3}{B}" -- a permanent's static giving the cards it describes a sneak cost (`rule: "sneak"`, its `cost` the mana and the
+     unblocked attacker returned) -- and "you may cast creature spells from your graveyard using their sneak abilities"
+     (`rule: "sneak-from-graveyard"`, the cards it lets be cast so). Such a card is cast from its owner's graveyard for a sneak
+     cost alone, the one given or its own (Leonardo, Leader in Blue), each its own way, at sneak's timing -- never for its mana
+     cost there (castOffers, `graveyardCost`). Each static read only while its condition holds: the Class at level 3. */
+  if (object?.zone !== "graveyard" || object.owner !== player || !ruleChanged(state, "sneak-from-graveyard", id)) return own;
+  const held = staticAbilities(state);
+  const given = !conditionHolds(state, {sneak: true}, {controller: player, source: id}) ? []
+    : state.zones.battlefield.flatMap((holder) => held(holder).filter((a) => a.kind === "static" && a.rule === "sneak"
+      && conditionHolds(state, a.condition, {controller: state.objects[holder].controller, source: holder})
+      && matchesSelector(a.affects, state, id, {controller: state.objects[holder].controller, source: holder}))
+      .map((a) => ({index: `sneak:${holder}:${a.id}`, mana: (a.cost ?? []).find((c) => c.atom === "mana")?.cost ?? "", life: 0,
+        extra: (a.cost ?? []).filter((c) => c.atom === "returnToHand"), evoke: false, sneak: true, paidFor: "sneak"})));
+  return [...own, ...given].map((way) => (way.sneak === true ? {...way, fromGraveyard: true} : way));
 }
 
 /* The other cards of the graveyard a graveyard alternative cost exiles, as its caster picked them: that many, none twice,
@@ -2008,7 +2023,8 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     || (player === state.activePlayer && MAIN_PHASES.includes(state.phase) && state.stack.length === 0);
   /* SNEAK (CR 702.190a): "any time you could cast an instant during your declare blockers step" -- a card that could not be
      cast now otherwise is offered for its sneak cost alone (`sneaking`), its condition saying when (alternativeCosts). */
-  const sneaking = !timely && (object.abilities ?? []).some((a) => a.kind === "static" && a.rule === "alternative-cost" && a.sneak === true);
+  /* And from a graveyard (`graveyardCost`) at that timing, only by a sneak cost there (Ninja Teen; alternativeCosts). */
+  const sneaking = !timely && (graveyardCost || (object.abilities ?? []).some((a) => a.kind === "static" && a.rule === "alternative-cost" && a.sneak === true));
   /* Or as though it had flash only for what it targets (Timely Ward; flashIfTargets): its aims, below, those alone. */
   const flashIf = timely ? null : flashIfTargets(object);
   if (!timely && !sneaking && !flashIf) return actions;
@@ -2583,6 +2599,9 @@ function idle(state, player, actions, stack = false) {
      that cost's mana: a Woe Strider that could escape is something to do. */
   const fromGraveyard = cardsIn(state, "graveyard", player).some((id) => {
     const object = state.objects[id];
+    /* Or for a sneak cost there in its caster's declare blockers step (Ninja Teen; CR 702.190a), its way's condition saying
+       when (alternativeCosts): a creature card only sneak can cast is something to do then, as one in the hand is. */
+    if (player === state.activePlayer && state.phase === "COMBAT_DECLARE_BLOCKERS" && alternativeCosts(state, player, id).some((way) => way.fromGraveyard && way.sneak === true && manaValue(parseManaCost(way.mana)) <= mana)) return true;
     if (sorcerySpeed(object) && !hasFlash(state, id) && !flashGranted(state, player, id) && !mainNow) return false;
     const back = flashbackCost(state, player, id);
     const costs = [back && flashbackPayable(state, player, back) ? back.mana : null, ...escapeWays(state, player, id).map((way) => way.mana),
