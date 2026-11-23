@@ -64,6 +64,8 @@ export function beginResolution(state, effects, context = {}, rng = null) {
       ...(context.targetsChosen ? {targetsChosen: context.targetsChosen} : {}),
       /* And the division its caster announced, target by target (CR 601.2d; effects/resources.mjs, damageHits' `divided`). */
       ...(context.division ? {division: context.division} : {}),
+      /* How many times its source's squad cost was paid, as its trigger remembered it (CR 702.157a; script/amount.mjs, `squad`). */
+      ...(context.squad ? {squad: context.squad} : {}),
       /* A triggered ability resolving (rules/stack.mjs): "triggered abilities you control can't cause you to sacrifice or exile
          ..." (rules/statics.mjs, triggerRemovalBlocked). */
       ...(context.triggered === true ? {triggered: true} : {}),

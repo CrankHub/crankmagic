@@ -148,7 +148,7 @@ export function pushSpell(state, objectId, {controller, targets = [], permanent 
  * legal position (CR 113.7a) rather than a bug.
  */
 /* `name`: what an ability with no source is called -- the game's own triggers', their designation (CR 725.2; rules/trigger.mjs). */
-export function pushAbility(state, {sourceId = null, controller, abilityId, kind = "ability", targets = [], script = null, about = null, x = null, lastKnown = null, spent = null, paidFor = null, offspring = false, kicked = 0, sourceTransforms = undefined, name = null} = {}) {
+export function pushAbility(state, {sourceId = null, controller, abilityId, kind = "ability", targets = [], script = null, about = null, x = null, lastKnown = null, spent = null, paidFor = null, offspring = false, squad = 0, kicked = 0, sourceTransforms = undefined, name = null} = {}) {
   if (!abilityId) throw new Error("An ability on the stack needs an abilityId, or nothing can resolve it");
   const source = sourceId === null ? null : state.objects[sourceId];
   const entry = entryFor(state, {
@@ -171,6 +171,9 @@ export function pushAbility(state, {sourceId = null, controller, abilityId, kind
   if (typeof paidFor === "string") entry.paidFor = paidFor;
   /* And whether its source's offspring cost was paid (CR 702.175a; rules/trigger.mjs), for the same reason. */
   if (offspring === true) entry.offspring = true;
+  /* And how many times its source's squad cost was paid (CR 702.157a; rules/trigger.mjs), for the same reason: its token copies
+     are made with the permanent gone (CR 603.4, 608.2h). */
+  if (squad > 0) entry.sourceSquad = squad;
   /* And how many times its source was kicked (CR 702.33d; rules/trigger.mjs), for the same reason: "when Josu Vess enters, if he
      was kicked" (Josu Vess, Lich Knight). Not `kicked`, which on a spell's entry says which script it resolves with. */
   if (Number.isInteger(kicked) && kicked > 0) entry.sourceKicked = kicked;
@@ -327,6 +330,9 @@ export function resolveTop(state, effect = null, rng = null) {
     /* The mana spent to cast its source, as its trigger remembered it: converge's count, its source gone, for its targets
        asked again (CR 608.2b; script/amount.mjs, colorsSpent). */
     ...(entry.spent ? {spent: entry.spent} : {}),
+    /* How many times its source's squad cost was paid, as its trigger remembered it: that many token copies (CR 702.157a;
+       script/amount.mjs, `squad`). */
+    ...(entry.sourceSquad ? {squad: entry.sourceSquad} : {}),
     /* What its permanent chose as it entered: "draw a card for each creature of the chosen type". */
     ...(source !== null && state.objects[source]?.chosen !== undefined ? {chosen: state.objects[source].chosen} : {})};
   /* "Another target" asked again with its source gone (Oblivion Ring destroyed with its trigger waiting): another than the
@@ -345,6 +351,7 @@ export function resolveTop(state, effect = null, rng = null) {
   if (entry.kind === "trigger" && script.condition && !conditionHolds(state, script.condition, {controller: entry.playerId, source, about: entry.about ?? undefined,
     ...(entry.spent ? {spent: entry.spent} : {}), ...(entry.paidFor ? {paidFor: entry.paidFor} : {}), ...(entry.offspring ? {offspring: true} : {}),
     ...(entry.sourceKicked ? {kicked: entry.sourceKicked} : {}),
+    ...(entry.sourceSquad ? {squad: entry.sourceSquad} : {}),
     ...(entry.lastKnown ? {lastKnown: entry.lastKnown} : {})})) return finishTop(state, entry, events, false);
   /* "If this is the first time this ability has resolved this turn" (Nissa, Leyline Tamer): how many times it has before. */
   const resolvedBefore = resolutionsBefore(state, entry, script);
@@ -541,6 +548,9 @@ function finishTop(state, entry, events, fizzled, attachTo = null) {
     /* And how many times it was kicked (CR 702.33d): "when Josu Vess enters, if he was kicked" asks the permanent (script/condition.mjs,
        `kicked`) -- a copy of it was not cast (CR 707.10), and a new object after it moves again (CR 400.7) was kicked never. */
     if (to === "battlefield" && entry.kicked) state.objects[arrived].kicked = entry.kicked;
+    /* And how many times its squad cost was paid (CR 702.157a): its trigger as it enters asks the permanent (script/condition.mjs,
+       `squadPaid`) -- a token copy of it was not cast, and a new object after it moves again (CR 400.7) was paid for never. */
+    if (to === "battlefield" && entry.squad) state.objects[arrived].squad = entry.squad;
     /* And for its surge cost (CR 702.117a), or another that says so (rules/actions.mjs): "if its surge cost was paid"
        (script/condition.mjs, `paidFor`). A new object after it moves again (CR 400.7) was cast for nothing. */
     if (to === "battlefield" && entry.cast?.paidFor) state.objects[arrived].paidFor = entry.cast.paidFor;

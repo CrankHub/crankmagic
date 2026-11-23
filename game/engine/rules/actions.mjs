@@ -756,6 +756,13 @@ function additionalVariants(costs) {
       variants = variants.flatMap((v) => Array.from({length: MULTIKICK_MOST + 1}, (_, k) => ({...v, mana: v.mana + (atom.cost ?? "").repeat(k), replicated: k})));
       continue;
     }
+    /* SQUAD (CR 702.157a; Endless Foot Assault): "you may pay [cost] any number of times" -- as multikicker's, each number of
+       times its own cast, that many times its mana added (`squad`, rules/stack.mjs marks the permanent it becomes, for its
+       trigger's token copies). */
+    if (atom?.atom === "squad") {
+      variants = variants.flatMap((v) => Array.from({length: MULTIKICK_MOST + 1}, (_, k) => ({...v, mana: v.mana + (atom.cost ?? "").repeat(k), squad: k})));
+      continue;
+    }
     /* "YOU MAY BEHOLD A DRAGON" (CR 701.4a, 601.2b; Dispelling Exhale): an optional additional cost, once -- the cast without it,
        and with it (the atom kept, so what is beheld is asked once that cast is taken, and it is offered only while there is
        something to behold: beholdChoices below). Paid, "if this spell's additional cost was paid" (`cast.additionalPaid`). */
@@ -2176,6 +2183,7 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
         ...(payWays && !convoke ? {payWays: true} : {}),
         ...(convoke === true ? {convoke: true} : {}), ...(convoke === "delve" ? {delve: true} : {}), ...(variant.mana ? {extraMana: variant.mana} : {}), ...(extraLife ? {extraLife} : {}), ...(variant.kicked ? {kicked: variant.kicked} : {}),
         ...(variant.replicated ? {replicated: variant.replicated} : {}), ...(gift !== undefined ? {gift} : {}), ...(variant.offspring ? {offspring: true} : {}),
+        ...(variant.squad ? {squad: variant.squad} : {}),
         /* The creature a harmonize cast taps (variants above), named on the offer. */
         ...(variant.harmonize !== undefined ? {harmonize: variant.harmonize, costNames: [state.objects[variant.harmonize].card]} : {}),
         ...(tapsAny ? {tapAny: true} : {}), ...(sacrificesAny ? {sacrificeAny: true} : {}), ...(beholds ? {behold: beholds.count ?? 1} : {}),
@@ -3332,6 +3340,8 @@ function performOffered(state, player, action, during) {
       entry.division = {[dividing.target]: Object.fromEntries(dividedTargets(action, dividing).map((t, i) => [t.id, action.division[i]]))};
     /* Its offspring cost paid (CR 702.175a): the permanent it becomes knows it as it enters (rules/stack.mjs). */
     if (action.offspring === true) entry.offspring = true;
+    /* Its squad cost paid that many times (CR 702.157a): the permanent it becomes knows it as it enters (rules/stack.mjs). */
+    if (action.squad > 0) entry.squad = action.squad;
     /* Cast as an Adventure (CR 715.3): exiled as it resolves, and castable as itself from there (rules/stack.mjs, 715.3d). */
     if (action.adventure === true && object.face === "adventure") entry.adventure = true;
     /* Cast with flashback: exiled, whatever would move it, as it leaves the stack (rules/stack.mjs, effects/zones.mjs). */
