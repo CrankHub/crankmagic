@@ -1,0 +1,516 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Turtle Lair",
+  "fixtures": {
+    "Ninja Kid": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Shell Kid": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Turtle"
+      ],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 1,
+      "toughness": 3
+    },
+    "Blue Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{2}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 3,
+      "toughness": 3
+    },
+    "Ninja Trick": {
+      "types": [
+        "Kindred",
+        "Instant"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "subtypes": [
+        "Ninja"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Draw a card.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "draw",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "{T}: Add {C}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Turtle Lair",
+          "mana": {
+            "C": 1
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "C": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Its blue casts the Ninja, not the Bear",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Ninja Kid",
+            "Blue Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Turtle Lair",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Ninja Kid"
+              },
+              "count": 1
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Blue Bear"
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "cast": "Ninja Kid"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair",
+            "Ninja Kid"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Blue Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Its green casts a Turtle",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Shell Kid"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Turtle Lair",
+          "mana": {
+            "G": 1
+          }
+        },
+        {
+          "cast": "Shell Kid"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair",
+            "Shell Kid"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A Ninja spell that is no creature (a Kindred instant) is a Ninja spell too",
+      "library": [
+        "Mountain"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Ninja Trick"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Turtle Lair",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "cast": "Ninja Trick"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Ninja Trick"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Mountain"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "{3}, {T}: aimed at a Ninja or a Turtle (Maya's Turtle too), never the Ogre; the Ninja attacks unblocked",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Ninja Kid"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre",
+            "Shell Kid"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Turtle Lair"
+              },
+              "count": 2,
+              "targets": [
+                [
+                  "Ninja Kid"
+                ],
+                [
+                  "Shell Kid"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Turtle Lair",
+          "targets": [
+            {
+              "card": "Ninja Kid"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ninja Kid"
+          ]
+        },
+        {
+          "block": [],
+          "blockers": []
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "tapped": "Turtle Lair"
+        }
+      ]
+    },
+    {
+      "name": "Without it, the Ogre may block the Ninja",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair",
+            "Ninja Kid"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Ninja Kid"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Ogre",
+              "Ninja Kid"
+            ]
+          ],
+          "blockers": [
+            "Ogre"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Ninja Kid"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Activated from untapped lands (the table's way): three Wastes pay {3}, and the Turtle can't be blocked",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Turtle Lair",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Shell Kid"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Turtle Lair"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Shell Kid"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Turtle Lair",
+          "targets": [
+            {
+              "card": "Shell Kid"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Shell Kid"
+          ]
+        },
+        {
+          "block": [],
+          "blockers": []
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "tapped": "Turtle Lair"
+        },
+        {
+          "seat": 0,
+          "tapped": "Wastes"
+        }
+      ]
+    }
+  ]
+}

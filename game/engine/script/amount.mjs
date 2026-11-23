@@ -34,6 +34,8 @@
  *                                        Spirit for each card type among cards discarded this way" (Occult Epiphany); or
  *                                        among what a selector matches now, a choice of zones too -- "six or more card types
  *                                        among permanents you control and/or cards in your graveyard" (Happily Ever After)
+ *   {lifeTotal: "fewest"}                the least life any player still in the game has: "if a player's life total is less
+ *                                        than or equal to half their starting life total" (Game Over), with `atMost`
  *   {startingLife: "you"}                the game's starting life total (CR 103.4, 119.1; 40 in Commander, CR 903.7, or the
  *                                        table's house rule; state/index.mjs, startingLifeOf)
  *   {rememberedCount: true}              how many things the effect before it remembered -- "each player shuffles the cards
@@ -545,6 +547,9 @@ export function amountOf(state, value, context = {}) {
     /* "If an opponent has more life than you" (Linvala, the Preserver; CR 119.1): the most life any one opponent still in the
        game has (CR 800.4a), none and it is 0. */
     if (value.lifeTotal === "an opponent") n = Math.max(0, ...state.players.filter((p) => p.id !== context.controller && !p.lost).map((p) => p.life));
+    /* "If a player's life total is less than or equal to half their starting life total" (Game Over; CR 119.1, 800.4a): the
+       least life any player still in the game has, its controller among them -- `atMost` holds for one of them if for this. */
+    else if (value.lifeTotal === "fewest") n = Math.min(...state.players.filter((p) => !p.lost).map((p) => p.life));
     else n = player !== null ? state.players[player]?.life ?? 0 : 0;
   }
   /* "Equal to the life they lost this turn" (Wound Reflection; resources.mjs keeps it, turn.mjs clears it). */

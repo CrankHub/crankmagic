@@ -74,6 +74,9 @@ const RULES_READING_A_CONDITION = ["alternative-cost", "spells-cost-less", "trig
   /* "Can't ... block unless you control seven or more lands" (Topiary Stomper, CR 509.1b): read as each blocker is checked
      (rules/combat.mjs canBlock, through rules/statics.mjs ruleChanged, which asks every rule's condition). */
   "cant-block",
+  /* "This creature can't be blocked if an artifact entered the battlefield under your control this turn" (Fugitive Droid; CR
+     509.1b): read as each blocker is checked (keywords/combat.mjs canBlock, through rules/statics.mjs ruleChanged). */
+  "cant-be-blocked",
   /* "As long as The Wandering Emperor entered this turn, you may activate her loyalty abilities any time you could cast an
      instant" (CR 606.3's timing; rules/actions.mjs, through rules/statics.mjs ruleChanged, which asks every rule's condition). */
   "loyalty-at-instant-speed",
