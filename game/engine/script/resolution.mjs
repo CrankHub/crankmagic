@@ -54,6 +54,9 @@ export function beginResolution(state, effects, context = {}, rng = null) {
       /* The opponent a spell's gift was promised to (CR 702.174k): "the chosen player" (script/bind.mjs), "if the gift was
          promised" (script/condition.mjs, `giftPromised`). */
       ...(context.gift !== undefined ? {gift: context.gift} : {}),
+      /* The alternative cost a trigger's source was cast for, as it triggered (rules/stack.mjs): a branch's "if this creature's
+         sneak cost was paid" with that source gone (Turncoat Kunoichi; CR 608.2h). */
+      ...(context.paidFor ? {paidFor: context.paidFor} : {}),
       /* How many times its source had transformed as the ability went on the stack (CR 701.27f; rules/stack.mjs). */
       ...(context.sourceTransforms !== undefined ? {sourceTransforms: context.sourceTransforms} : {}),
       /* Its source, gone before it reached the stack, for "this card" (Angelic Destiny; rules/stack.mjs, script/bind.mjs). */
@@ -121,7 +124,8 @@ export function runResolution(state, rng = null) {
       const holds = conditionHolds(state, effect.if, {controller: resolving.context.controller, source: resolving.context.source, about: resolving.context.about,
         remembered: resolving.context.remembered, targets: resolving.context.targets, cast: resolving.context.cast, rolled: resolving.context.rolled,
         movedWas: resolving.context.movedWas, searched: resolving.context.searched, lastKnown: resolving.context.lastKnown, resolvedBefore: resolving.context.resolvedBefore,
-        gift: resolving.context.gift});
+        /* "If this creature's sneak cost was paid, instead" (Turncoat Kunoichi): its source gone, as it last was (CR 608.2h; rules/stack.mjs). */
+        gift: resolving.context.gift, paidFor: resolving.context.paidFor});
       resolving.queue.shift();
       resolving.queue.unshift(...structuredClone((holds ? effect.then : effect.otherwise) ?? []));
       continue;

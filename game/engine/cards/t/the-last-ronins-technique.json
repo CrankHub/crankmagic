@@ -1,0 +1,93 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "The Last Ronin's Technique",
+    "oracleId": "6a51bb21-0c01-4ad8-99d7-17685db90b69",
+    "types": [
+      "Instant"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Sneak {1}{W} (You may cast this spell for {1}{W} if you also return an unblocked attacker you control to hand during the declare blockers step.)\nCreate three 1/1 white Ninja Turtle Spirit creature tokens. If this spell's sneak cost was paid, they enter tapped and attacking.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Sneak {1}{W}",
+      "keyword": "sneak",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}{W}"
+        }
+      ]
+    },
+    {
+      "kind": "spell",
+      "text": "Create three 1/1 white Ninja Turtle Spirit creature tokens. If this spell's sneak cost was paid, they enter tapped and attacking.",
+      "effects": [
+        {
+          "effect": "branch",
+          "if": {
+            "paidFor": "sneak"
+          },
+          "then": [
+            {
+              "effect": "createToken",
+              "count": 3,
+              "token": {
+                "name": "Ninja Turtle Spirit",
+                "types": [
+                  "Creature"
+                ],
+                "subtypes": [
+                  "Ninja",
+                  "Turtle",
+                  "Spirit"
+                ],
+                "colors": [
+                  "W"
+                ],
+                "power": 1,
+                "toughness": 1
+              },
+              "tapped": true,
+              "attacking": true
+            }
+          ],
+          "otherwise": [
+            {
+              "effect": "createToken",
+              "count": 3,
+              "token": {
+                "name": "Ninja Turtle Spirit",
+                "types": [
+                  "Creature"
+                ],
+                "subtypes": [
+                  "Ninja",
+                  "Turtle",
+                  "Spirit"
+                ],
+                "colors": [
+                  "W"
+                ],
+                "power": 1,
+                "toughness": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

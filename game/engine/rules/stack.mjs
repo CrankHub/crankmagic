@@ -312,6 +312,9 @@ export function resolveTop(state, effect = null, rng = null) {
   const context = {controller: entry.playerId, source, x, ...(entry.about ? {about: entry.about} : {}), ...(entry.lastKnown ? {lastKnown: entry.lastKnown} : {}), ...(attached !== null ? {attached} : {}),
     /* How the spell was cast, for its own conditions ("if this spell was cast from a graveyard"; rules/actions.mjs). */
     ...(entry.cast ? {cast: entry.cast} : {}),
+    /* The alternative cost its source was cast for, as the trigger recorded it (rules/trigger.mjs): "if this creature's sneak
+       cost was paid, instead ..." (Turncoat Kunoichi) read as the source last was once it is gone (CR 608.2h). */
+    ...(entry.paidFor ? {paidFor: entry.paidFor} : {}),
     /* The opponent its gift was promised to (CR 702.174k): "the chosen player", and "if the gift was promised". */
     ...(entry.gift !== undefined ? {gift: entry.gift} : {}),
     /* The division announced as it was cast (CR 601.2d; rules/actions.mjs): what each target is dealt (effects/resources.mjs). */

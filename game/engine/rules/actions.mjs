@@ -1815,8 +1815,13 @@ function abilityTapPlans(state, player, action, limit = 2) {
   const ability = chosenFor(abilitiesOf(state, action.objectId).find((a) => a.id === action.abilityId), state.objects[action.objectId]);
   return abilityFunding(state, player, action.objectId, ability, action.x ?? 0, action.targets, limit, action.costChoice ?? null);
 }
+/* SNEAK TAPPED FOR (CR 702.190a; ROB-540, Rob's Ninja deck): its cost is mana and an unblocked attacker returned, cast in the
+   declare blockers step -- its caster's untapped sources tapped for the sneak cost's mana as the cast is made, as for a mana
+   cost, rather than tapped by hand first. The one alternative cost tapped for: the way, or null. */
+const sneakWay = (state, player, action) => (action.alternative === undefined ? null
+  : alternativeCosts(state, player, action.objectId).find((w) => w.index === action.alternative && w.sneak === true) ?? null);
 const tapCastable = (state, player, action) => tapZone(state, player, action.from, action.objectId, action.via ?? null) && !action.free && !action.flashback
-  && action.escape === undefined && action.alternative === undefined && (action.x === undefined || action.payLifeX === true || xTaps(state))
+  && action.escape === undefined && (action.alternative === undefined || sneakWay(state, player, action) !== null) && (action.x === undefined || action.payLifeX === true || xTaps(state))
   && (pooledTaps(state) || poolSize(poolFor(state, player, {spell: action.objectId})) === 0);
 
 /* FLOATING MANA AND A SOURCE'S WHOLE OUTPUT TOGETHER (`pooledTaps`, game/room/table.mjs): a cast tapped for tops up what is
@@ -1897,8 +1902,8 @@ function manaPlans(state, player, id, cost, limit, units) {
 export function castTapPlans(state, player, action, limit = 2) {
   if (!tapCastable(state, player, action)) return [];
   const tax = action.from === "command" ? commanderTax(state, player, action.objectId) : 0;
-  /* An Adventure's cost, cast as one (CR 715.3a). */
-  const {cost, x} = asCast(state, action, () => castCost(state, player, action.objectId, tax, false, null, action.extraMana ?? "", action.targets, action.x));
+  /* An Adventure's cost, cast as one (CR 715.3a); a sneak cast's, its sneak cost's mana (CR 702.190a, 118.9). */
+  const {cost, x} = asCast(state, action, () => castCost(state, player, action.objectId, tax, false, sneakWay(state, player, action)?.mana ?? null, action.extraMana ?? "", action.targets, action.x));
   /* Its X, in a match that taps for one (`xTaps`): counted in, as the offer priced it. */
   const xs = xTaps(state) && cost.variable > 0 ? xCounted(cost, action.x ?? 0) : cost;
   /* And what the offer priced for mana that may be spent as any color (anyTypeCost), the colored symbols paid as generic ones are. */
@@ -2121,7 +2126,8 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     let autoTap = false;
     /* Not with creatures tapped as an additional cost or for escalate: one tapped for mana as the cast taps its sources could
        not then be tapped for it (their mana is paid from the pool first). */
-    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && !way && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id, via)) {
+    /* Of the alternative costs, sneak's alone (CR 702.190a; sneakWay). */
+    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && (!way || way.sneak === true) && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id, via)) {
       const paying = xMana === null ? cost : xCounted(cost, xMana);
       const [plan] = fundingPlans(state, player, id, {...paying, generic: paying.generic + x}, 1, tappable(), lifeLeft);
       if (plan) {
