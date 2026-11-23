@@ -1845,7 +1845,10 @@ function abilityTapPlans(state, player, action, limit = 2) {
    cost, rather than tapped by hand first. The one alternative cost tapped for: the way, or null. */
 const sneakWay = (state, player, action) => (action.alternative === undefined ? null
   : alternativeCosts(state, player, action.objectId).find((w) => w.index === action.alternative && w.sneak === true) ?? null);
-const tapCastable = (state, player, action) => tapZone(state, player, action.from, action.objectId, action.via ?? null) && !action.free && !action.flashback
+/* And a graveyard card cast by a sneak way there (Ninja Teen's level 3; alternativeCosts, `fromGraveyard`): tapped for as a card a
+   permission lets be cast from a graveyard is (`permittedTaps`). */
+const graveSneakTap = (state, from, way) => from === "graveyard" && way?.fromGraveyard === true && permittedTaps(state);
+const tapCastable = (state, player, action) => (tapZone(state, player, action.from, action.objectId, action.via ?? null) || graveSneakTap(state, action.from, sneakWay(state, player, action))) && !action.free && !action.flashback
   && action.escape === undefined && (action.alternative === undefined || sneakWay(state, player, action) !== null) && (action.x === undefined || action.payLifeX === true || xTaps(state))
   && (pooledTaps(state) || poolSize(poolFor(state, player, {spell: action.objectId})) === 0);
 
@@ -2153,7 +2156,7 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     /* Not with creatures tapped as an additional cost or for escalate: one tapped for mana as the cast taps its sources could
        not then be tapped for it (their mana is paid from the pool first). */
     /* Of the alternative costs, sneak's alone (CR 702.190a; sneakWay). */
-    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && (!way || way.sneak === true) && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id, via)) {
+    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && (!way || way.sneak === true) && !tapsAny && !variant.escalateTap && (tapZone(state, player, from, id, via) || graveSneakTap(state, from, way))) {
       const paying = xMana === null ? cost : xCounted(cost, xMana);
       const [plan] = fundingPlans(state, player, id, {...paying, generic: paying.generic + x}, 1, tappable(), lifeLeft);
       if (plan) {
