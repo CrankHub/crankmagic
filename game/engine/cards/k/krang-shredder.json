@@ -1,0 +1,101 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Krang & Shredder",
+    "oracleId": "2385c8fb-9c38-4ff3-8f61-4e25a8c7d46b",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Utrom",
+      "Human",
+      "Ninja"
+    ],
+    "manaCost": "{4}{U/B}{U/B}",
+    "colors": [
+      "B",
+      "U"
+    ],
+    "colorIdentity": [
+      "B",
+      "U"
+    ],
+    "power": 6,
+    "toughness": 7
+  },
+  "oracleText": "Whenever Krang & Shredder enter or attack, each opponent exiles cards from the top of their library until they exile a nonland card.\nDisappear — At the beginning of your end step, if a permanent left the battlefield under your control this turn, you may cast a card exiled with Krang & Shredder without paying its mana cost.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever Krang & Shredder enter or attack, each opponent exiles cards from the top of their library until they exile a nonland card.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "digUntil",
+          "who": "opponent",
+          "exile": true,
+          "selector": {
+            "nonTypes": [
+              "Land"
+            ]
+          },
+          "link": true
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Krang & Shredder enter or attack, each opponent exiles cards from the top of their library until they exile a nonland card.",
+      "trigger": {
+        "on": "attacks",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "digUntil",
+          "who": "opponent",
+          "exile": true,
+          "selector": {
+            "nonTypes": [
+              "Land"
+            ]
+          },
+          "link": true
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "Disappear — At the beginning of your end step, if a permanent left the battlefield under your control this turn, you may cast a card exiled with Krang & Shredder without paying its mana cost.",
+      "trigger": {
+        "on": "end step"
+      },
+      "effects": [
+        {
+          "effect": "play",
+          "from": "selector",
+          "selector": {
+            "zone": "exile",
+            "exiledWith": "self"
+          },
+          "free": true
+        }
+      ],
+      "condition": {
+        "compare": {
+          "count": {
+            "permanentsLeftThisTurn": "you"
+          },
+          "atLeast": 1
+        }
+      }
+    }
+  ]
+}

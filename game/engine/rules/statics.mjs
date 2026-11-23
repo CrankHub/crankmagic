@@ -284,6 +284,12 @@ export const STATIC_RULES = Object.freeze({
       cards in a hand that have it, `cost` its ninjutsu cost. rules/layers.mjs, ninjutsuGiven, reads it as a card in a hand's
       abilities are read; rules/actions.mjs offers it as the card's own. */
   "grants-ninjutsu": "rules/layers.mjs",
+  /** Sneak given (CR 702.190a): "creature cards in your graveyard have sneak {3}{B}" (Ninja Teen) -- `affects` which cards,
+      `cost` the mana and the unblocked attacker returned. And "you may cast creature spells from your graveyard using their
+      sneak abilities" (`sneak-from-graveyard`, `affects` which cards; CR 601.3): rules/actions.mjs, alternativeCosts, offers
+      the cast from the graveyard for a sneak cost alone. */
+  "sneak": "rules/actions.mjs",
+  "sneak-from-graveyard": "rules/actions.mjs",
   /** Storm (CR 702.40a): the keyword kept as this static, read as the spell is cast (cards/index.mjs; batch 77 names it
       here, where every rule a definition carries is named). */
   "storm": "rules/actions.mjs",

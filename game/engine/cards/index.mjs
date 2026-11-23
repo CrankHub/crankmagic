@@ -71,6 +71,9 @@ const RULES_READING_A_CONDITION = ["alternative-cost", "spells-cost-less", "trig
   "block-tax",
   /* "Twice that many ... instead" at a Class level (Innkeeper's Talent, CR 716.2a; rules/statics.mjs, countersPlaced). */
   "more-counters",
+  /* Sneak given to the cards in a graveyard, and their cast from there by it, at a Class level (Ninja Teen, CR 716.2a;
+     rules/actions.mjs, alternativeCosts). */
+  "sneak", "sneak-from-graveyard",
   /* "Can't ... block unless you control seven or more lands" (Topiary Stomper, CR 509.1b): read as each blocker is checked
      (rules/combat.mjs canBlock, through rules/statics.mjs ruleChanged, which asks every rule's condition). */
   "cant-block",
