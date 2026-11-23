@@ -756,6 +756,8 @@ export function compileScript(script) {
   let multikicker = null, kicker = null;
   /* Offspring (CR 702.175a): its cost, and its trigger, put on the spell once it is known (below). */
   let offspring = null;
+  /* Squad (CR 702.157a): its cost, and its trigger, put on the spell once it is known (below). */
+  let squad = null;
   /* Replicate's cost (CR 702.56a), put on the spell once it is known (below). */
   let replicate = null;
   /* Escalate's cost (CR 702.120a), put on the spell once its modes are known (below). */
@@ -1592,6 +1594,15 @@ export function compileScript(script) {
       keywords.push("Offspring");
       return;
     }
+    /* SQUAD [cost] (CR 702.157a; Endless Foot Assault): two abilities. "As an additional cost to cast this spell, you may pay
+       [cost] any number of times" -- each number of times its own cast, as multikicker's (rules/actions.mjs, additionalVariants)
+       -- and "when this enters, if its squad cost was paid, create a token that's a copy of it for each time its squad cost was
+       paid", a triggered ability of the permanent's (below). One instance of it (702.157b, two, is not built). */
+    if (ability.kind === "keyword" && String(ability.keyword).toLowerCase() === "squad") {
+      squad = {id, text: ability.text, cost: String(ability.cost ?? "")};
+      keywords.push("Squad");
+      return;
+    }
     /* REPLICATE [cost] (CR 702.56a; Lose Focus, Train E): two abilities. "As an additional cost to cast this spell, you may
        pay [cost] any number of times" -- an additional cost of the spell's, each number of times its own cast, as multikicker's
        (rules/actions.mjs, additionalVariants) -- and "when you cast this spell, if a replicate cost was paid for it, copy it for
@@ -2315,6 +2326,14 @@ export function compileScript(script) {
     spell = {...(spell ?? {id: "offspring", text: offspring.text, targets: [], effects: []}), additionalCost: [...(spell?.additionalCost ?? []), {atom: "offspring", cost: offspring.cost}]};
     abilities.push({id: offspring.id, kind: "triggered", text: offspring.text, trigger: TRIGGERS.enters({who: "self"}), condition: {offspringPaid: true},
       effects: [{effect: "copyPermanent", targets: "self", lastKnown: true, except: {setPower: 1, setToughness: 1}}]});
+  }
+  /* Squad's additional cost, on the spell -- a permanent's, whose spell does nothing else (CR 608.3) -- and its trigger as the
+     permanent enters, its "if" an intervening one (CR 603.4; script/condition.mjs, `squadPaid`): a token copy of it for each
+     time the cost was paid (script/amount.mjs, `squad`), of it as it last existed should it be gone by then (CR 608.2h). */
+  if (squad !== null) {
+    spell = {...(spell ?? {id: "squad", text: squad.text, targets: [], effects: []}), additionalCost: [...(spell?.additionalCost ?? []), {atom: "squad", cost: squad.cost}]};
+    abilities.push({id: squad.id, kind: "triggered", text: squad.text, trigger: TRIGGERS.enters({who: "self"}), condition: {squadPaid: true},
+      effects: [{effect: "copyPermanent", targets: "self", lastKnown: true, count: {squad: true}}]});
   }
   /* Replicate's additional cost, on the spell (an instant or sorcery's, which has one). */
   if (replicate !== null && !spell) problems.push("Replicate is on a spell with something to copy: its spell ability");

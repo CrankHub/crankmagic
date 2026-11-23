@@ -157,6 +157,8 @@ export const AMOUNT_KINDS = Object.freeze(["x", "attacksThisTurn", "count", "cou
   "mostSharingName",
   /* The precon load, lane D: "the greatest mana value among your commanders" (Tangleweave Armor). */
   "commanderManaValue",
+  /* ROB-540: "a token that's a copy of it for each time its squad cost was paid" (squad, CR 702.157a; Endless Foot Assault). */
+  "squad",
   /* The precon load of 2026-10-25, lane A: "investigate once for each opponent who has more cards in hand than you" (Wojek
      Investigator). */
   "opponentsWithMore"]);
@@ -381,6 +383,8 @@ export function amountOf(state, value, context = {}) {
   }, 0);
   /* "A charge counter on it for each time it was kicked" (Everflowing Chalice; multikicker, CR 702.33c). */
   else if ("kicked" in value) n = context.kicked ?? 0;
+  /* How many times its source's squad cost was paid, as its trigger remembered it (CR 702.157a; rules/stack.mjs). */
+  else if ("squad" in value) n = context.squad ?? 0;
   /* "For each time it has attacked this turn" (Moraug, Fury of Akoum; wave 4d L3): the times the object a layer-7 amount is
      counted for (rules/layers.mjs, counted's `affected`) was declared an attacker this turn, each combat (rules/combat.mjs). */
   else if ("attacksThisTurn" in value) n = context.affected !== undefined && context.affected !== null ? usesThisTurn(state, context.affected, "attacked") : 0;
