@@ -788,7 +788,7 @@ function checkAbility(ability, path, errors, {permanent = false, manaX = false} 
       else checkSelector(ability.attackers, `${path}.attackers`, errors, {choice: true});
     }
     if (ability.rule === "cant-be-blocked-by") {
-      if (!ability.by && ability.byPowerBelowSource !== true) errors.push({path, message: "\"Can't be blocked by\" says by what: `by`, or `byPowerBelowSource`"});
+      if (!ability.by && ability.byPowerBelowSource !== true && ability.byPowerAboveSource !== true) errors.push({path, message: "\"Can't be blocked by\" says by what: `by`, `byPowerBelowSource` or `byPowerAboveSource`"});
       if (ability.by) checkSelector(ability.by, `${path}.by`, errors, {choice: true});
     }
   }

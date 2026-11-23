@@ -429,6 +429,11 @@ function objectsOf(value, context) {
   if (value === "convoked") return [...(context.cast?.convoked ?? [])];
   /* "For each of them": everything a "one or more" trigger is about (trigger.mjs, `batch`). */
   if (value === "those cards") return (context.about?.cards ?? []).slice();
+  /* "Exile up to one target artifact you control and up to one target creature you control. Then return them" (Don & Leo,
+     Problem Solvers; CR 608.2c): two targets moved by one instruction, a list of refs, every one exiled and then every one
+     returned together (effects/zones.mjs, moveZone). One object chosen for both (CR 115.3) is moved once: moved, it is a new
+     object (CR 400.7), and the second ref finds nothing. */
+  if (Array.isArray(value) && value.every(isRef)) return value.flatMap((ref) => objectsOf(ref, context));
   if (!isRef(value)) return value;
   const chosen = (context.targets ?? [])[value.target];
   /* A counted target: every one of its chosen that is an object. */
