@@ -1,0 +1,54 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Foot Ninjas",
+    "oracleId": "306652a8-9a9c-4b33-96d7-b59234d148e9",
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Ninja"
+    ],
+    "manaCost": "{4}{W/B}{W/B}",
+    "colors": [
+      "B",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "W"
+    ],
+    "power": 5,
+    "toughness": 5
+  },
+  "oracleText": "Sneak {3}{W/B} (You may cast this spell for {3}{W/B} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhen this creature enters, you gain 3 life.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Sneak {3}{W/B}",
+      "keyword": "sneak",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{3}{W/B}"
+        }
+      ]
+    },
+    {
+      "kind": "triggered",
+      "text": "When this creature enters, you gain 3 life.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "gainLife",
+          "amount": 3
+        }
+      ]
+    }
+  ]
+}

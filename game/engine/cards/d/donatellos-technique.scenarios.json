@@ -1,0 +1,377 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Donatello's Technique",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{3}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Shinobi": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{1}{B}",
+      "colors": [
+        "B"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Cub": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Sneaked for {U} from an untapped Island in the declare blockers step, a sorcery at an instant's timing: the Bear back to hand, two cards drawn",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "library": [
+        "Forest",
+        "Forest",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Donatello's Technique"
+              },
+              "count": 1,
+              "costs": [
+                [
+                  "Bear"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "cast": "Donatello's Technique",
+          "alternative": 0
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Bear"
+              ]
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear",
+            "Forest",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "In the declare blockers step with {2}{U} untapped too: only the sneak cast, never the sorcery for its mana cost",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Donatello's Technique"
+              },
+              "count": 1,
+              "costs": [
+                [
+                  "Bear"
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Its only attacker blocked: no unblocked attacker to return, so no sneak in the declare blockers step",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Ogre",
+              "Bear"
+            ]
+          ]
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Donatello's Technique"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cast for {2}{U} in the main phase, from untapped lands: two cards drawn",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "library": [
+        "Forest",
+        "Forest",
+        "Forest"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Donatello's Technique"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Donatello's Technique"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Forest",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Donatello's Technique"
+          ]
+        }
+      ]
+    }
+  ]
+}

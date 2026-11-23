@@ -1,0 +1,443 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Dark Leo & Shredder",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ogre": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ogre"
+      ],
+      "manaCost": "{3}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "Shinobi": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{1}{B}",
+      "colors": [
+        "B"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Cub": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Sneaked for {W}{B} from untapped lands in the declare blockers step: the unblocked Bear back to hand, Dark Leo & Shredder tapped and attacking Maya; its damage makes a 1/1 black Ninja, and with two Ninjas Maya loses nothing more",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Swamp",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dark Leo & Shredder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DECLARE_BLOCKERS"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dark Leo & Shredder"
+              },
+              "count": 1,
+              "costs": [
+                [
+                  "Bear"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "cast": "Dark Leo & Shredder",
+          "alternative": 0
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "hand",
+              "cards": [
+                "Bear"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Dark Leo & Shredder"
+            },
+            {
+              "seat": 0,
+              "tapped": "Plains"
+            },
+            {
+              "seat": 0,
+              "tapped": "Swamp"
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Dark Leo & Shredder",
+                "has": [
+                  "Deathtouch"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "life": 39
+            },
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Swamp",
+            "Dark Leo & Shredder",
+            "Ninja"
+          ]
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Ninja",
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Five Ninjas once the token is made: Maya, at 39, loses half her life rounded up (20), to 19",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dark Leo & Shredder",
+            "Shinobi",
+            "Shinobi",
+            "Shinobi"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Dark Leo & Shredder"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 19
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Dark Leo & Shredder",
+            "Shinobi",
+            "Shinobi",
+            "Shinobi",
+            "Ninja"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Four Ninjas after the token: Maya loses only the 1 damage",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dark Leo & Shredder",
+            "Shinobi",
+            "Shinobi"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Dark Leo & Shredder"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Dark Leo & Shredder",
+            "Shinobi",
+            "Shinobi",
+            "Ninja"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attacking Ninjas have deathtouch: the attacking Shinobi kills the blocking Ogre; the Ninja at home and the attacking Bear have none",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dark Leo & Shredder",
+            "Shinobi",
+            "Shinobi",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ogre"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Shinobi",
+            "Bear"
+          ]
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Bear",
+                "lacks": [
+                  "Deathtouch"
+                ]
+              }
+            },
+            {
+              "seat": 0,
+              "keywords": {
+                "card": "Dark Leo & Shredder",
+                "lacks": [
+                  "Deathtouch"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "block": [
+            [
+              "Ogre",
+              "Shinobi"
+            ]
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Ogre"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Shinobi"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 38
+        }
+      ]
+    },
+    {
+      "name": "Cast for {W}{B} in the main phase, from untapped lands: no sneak there",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dark Leo & Shredder"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dark Leo & Shredder"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Dark Leo & Shredder"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Dark Leo & Shredder",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Swamp",
+            "Dark Leo & Shredder"
+          ]
+        }
+      ]
+    }
+  ]
+}
