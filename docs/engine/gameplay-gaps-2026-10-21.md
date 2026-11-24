@@ -130,6 +130,7 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | Karai, Future of the Foot | **An ignore.** Sneaked, and gone before her combat damage trigger resolves, she returns the card to hand rather than the battlefield: "her sneak cost was paid this turn" is read with her on the battlefield. | Ninja deck load, 2026-11-23 |
 | Endless Foot Assault (squad); Foot Chopper | **An ignore.** Squad is paid at most ten times (as multikicker and replicate), and a second squad on one card (CR 702.157b) is not built. Under a token doubler, Foot Chopper is attached to the first Ninja made, not one its controller picks (as Dáin Ironfoot's Axe). | Ninja deck load, 2026-11-23 |
 | Satoru Umezawa; ninjutsu; Kaito, Bane of Nightmares | **Untested edges, named.** A copy of Satoru is not shown; which unblocked attacker a ninjutsu returns is not chosen in a scenario (the runner takes the first offer); Kaito with no loyalty counters on his own turn cannot be reached (he is put into the graveyard first). | Ninja deck load, 2026-11-23 |
+| Silicate Surveyor | **An ignore.** The card it exiles is offered to be played only once its mana is floated (the "casts from exile" row above); its scenarios tap by hand before the offer is checked. | Star Trek load, 2026-11-22 (ROB-532) |
 
 ## 5. Choices the engine makes for the player
 
