@@ -1,0 +1,114 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Dark Leo & Shredder",
+    "oracleId": "c3ea6af5-48b9-45d2-9576-46cacb2db5b0",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Mutant",
+      "Ninja",
+      "Turtle",
+      "Human"
+    ],
+    "manaCost": "{W}{B}",
+    "colors": [
+      "B",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "W"
+    ],
+    "power": 1,
+    "toughness": 3
+  },
+  "oracleText": "Sneak {W}{B}\nAttacking Ninjas you control have deathtouch.\nWhenever Dark Leo & Shredder deal combat damage to a player, create a 1/1 black Ninja creature token. Then if you control five or more Ninjas, that player loses half their life, rounded up.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Sneak {W}{B}",
+      "keyword": "sneak",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{W}{B}"
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Attacking Ninjas you control have deathtouch.",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Ninja"
+        ],
+        "controller": "you",
+        "attacking": true
+      },
+      "apply": {
+        "addKeywords": [
+          "Deathtouch"
+        ]
+      }
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever Dark Leo & Shredder deal combat damage to a player, create a 1/1 black Ninja creature token. Then if you control five or more Ninjas, that player loses half their life, rounded up.",
+      "trigger": {
+        "on": "damage dealt",
+        "who": "self",
+        "combat": true,
+        "to": "player"
+      },
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Ninja",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Ninja"
+            ],
+            "colors": [
+              "B"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "effect": "loseLife",
+          "who": "that player",
+          "amount": {
+            "lifeTotal": "that player",
+            "half": "up"
+          },
+          "condition": {
+            "present": {
+              "what": "permanent",
+              "subtypes": [
+                "Ninja"
+              ],
+              "controller": "you"
+            },
+            "atLeast": 5
+          }
+        }
+      ]
+    }
+  ]
+}

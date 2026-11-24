@@ -96,7 +96,8 @@ export const STATIC_RULES = Object.freeze({
   /** CR 602.2b, 601.2f: "Activated abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant; Rob's
       lists P2): `affects`, a selector of the permanents whose abilities cost less ("you" the static's controller), `amount` generic
       mana -- only generic mana, never below none (CR 601.2f). Read as an activated ability's cost is, beside its own
-      `costLess`: actions.mjs, abilityLess, through abilityCostReduction below. */
+      `costLess`: actions.mjs, abilityLess, through abilityCostReduction below. `ninjutsu: true`, "ninjutsu abilities you
+      activate cost {1} less" (Silver-Fur Master): `affects` then the players activating them, a player selector. */
   "abilities-cost-less": "rules/actions.mjs",
   /** CR 601.2f, the card's own: "This spell costs {1} less to cast for each creature on the battlefield" (Vanquish the
       Horde), "{X} less, where X is the total power of creatures you control" (Ghalta). Read from the card wherever it
@@ -279,6 +280,16 @@ export const STATIC_RULES = Object.freeze({
       mana each card's own mana cost). rules/actions.mjs offers the cast from its owner's graveyard and asks which cards to
       exile; rules/stack.mjs marks what escaped (702.138b). */
   "escape": "rules/actions.mjs",
+  /** Ninjutsu given (CR 702.49a): "each creature card in your hand has ninjutsu {2}{U}{B}" (Satoru Umezawa) -- `affects` the
+      cards in a hand that have it, `cost` its ninjutsu cost. rules/layers.mjs, ninjutsuGiven, reads it as a card in a hand's
+      abilities are read; rules/actions.mjs offers it as the card's own. */
+  "grants-ninjutsu": "rules/layers.mjs",
+  /** Sneak given (CR 702.190a): "creature cards in your graveyard have sneak {3}{B}" (Ninja Teen) -- `affects` which cards,
+      `cost` the mana and the unblocked attacker returned. And "you may cast creature spells from your graveyard using their
+      sneak abilities" (`sneak-from-graveyard`, `affects` which cards; CR 601.3): rules/actions.mjs, alternativeCosts, offers
+      the cast from the graveyard for a sneak cost alone. */
+  "sneak": "rules/actions.mjs",
+  "sneak-from-graveyard": "rules/actions.mjs",
   /** Storm (CR 702.40a): the keyword kept as this static, read as the spell is cast (cards/index.mjs; batch 77 names it
       here, where every rule a definition carries is named). */
   "storm": "rules/actions.mjs",
@@ -330,7 +341,8 @@ export const STATIC_RULES = Object.freeze({
   "exile-if-dies": "rules/replacement.mjs",
   /** CR 509.1b: "Slivers can't be blocked except by Slivers", "can't be blocked by creatures with power 2 or less" (`by`, the
       blockers it can't be blocked by), "creatures with power less than this creature's power can't block creatures you
-      control" (`byPowerBelowSource`). keywords/combat.mjs, as each blocker is checked. */
+      control" (`byPowerBelowSource`), "this creature can't be blocked by creatures with greater power" (`byPowerAboveSource`,
+      Prehistoric Pet). keywords/combat.mjs, as each blocker is checked. */
   "cant-be-blocked-by": "keywords/combat.mjs",
   /** CR 509.1b: "This token can block only creatures with flying" (Pinnacle Emissary's Drones): `affects` the blockers, and
       `attackers` the only ones each may block, a selector. keywords/combat.mjs, as each blocker is checked (blocksOnlyOthers). */
@@ -1271,7 +1283,7 @@ export function cantBeCountered(state, spellId) {
 /**
  * Whether this blocker is one a static ability says can't block this attacker (CR 509.1b, "cant-be-blocked-by"): the
  * attacker is one the ability affects, and the blocker is one its `by` describes -- or, for `byPowerBelowSource`, has
- * less power than the ability's source. "You" is the ability's controller throughout.
+ * less power than the ability's source, and for `byPowerAboveSource`, greater. "You" is the ability's controller throughout.
  */
 export function cantBeBlockedBy(state, attackerId, blockerId) {
   /* The Ring's first ability belongs to its emblem (CR 701.54c), even if the bearer loses its abilities. */
@@ -1286,6 +1298,9 @@ export function cantBeBlockedBy(state, attackerId, blockerId) {
       if (!matchesSelector(ability.affects, state, attackerId, context)) continue;
       if (ability.by && matchesSelector(ability.by, state, blockerId, context)) return true;
       if (ability.byPowerBelowSource === true && powerOf(state, blockerId) < powerOf(state, holderId)) return true;
+      /* "This creature can't be blocked by creatures with greater power" (Prehistoric Pet; CR 509.1b): skulk's rule without the
+         keyword (702.118b), each power as it is now. */
+      if (ability.byPowerAboveSource === true && powerOf(state, blockerId) > powerOf(state, holderId)) return true;
     }
   }
   /* And an effect for a while (effectUntil's `rule: "cant-be-blocked-by"`): "it can't be blocked by creatures of that color
@@ -1594,7 +1609,7 @@ export function loyaltyCostIncrease(state, player) {
  * abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant). Generic mana, summed; what the cost has
  * no generic mana to take it from it does not take (rules/actions.mjs, costPayment).
  */
-export function abilityCostReduction(state, objectId) {
+export function abilityCostReduction(state, objectId, activated, player) {
   let total = 0;
   const held = staticAbilities(state);
   for (const holderId of state.zones.battlefield) {
@@ -1602,6 +1617,12 @@ export function abilityCostReduction(state, objectId) {
     for (const ability of held(holderId)) {
       if (ability.kind !== "static" || ability.rule !== "abilities-cost-less") continue;
       const context = {controller: holder.controller, source: holderId};
+      /* "Ninjutsu abilities you activate cost {1} less to activate" (Silver-Fur Master; CR 702.49, 601.2f): `ninjutsu`, of a
+         ninjutsu ability (rules/layers.mjs, ninjutsuAbility) wherever its card is, `affects` the players activating it. */
+      if (ability.ninjutsu === true) {
+        if (activated?.ninjutsu === true && compileSelector({...(ability.affects ?? {}), what: "player"})(state, player, context)) total += amountOf(state, ability.amount ?? 1, context);
+        continue;
+      }
       if (!matchesSelector({...(ability.affects ?? {}), what: "permanent"}, state, objectId, context)) continue;
       total += amountOf(state, ability.amount ?? 1, context);
     }

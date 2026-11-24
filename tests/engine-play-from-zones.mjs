@@ -284,9 +284,12 @@ const lands = (s, seat = 0) => legalActions(s, seat).filter((a) => a.kind === "p
   bad(act([{effect: "mayPlay", from: "graveyard", spells: {hue: "R"}}]), /hue/, "an unknown selector key: no");
   bad(act([{effect: "mayPlay", from: "graveyard", payLife: 3}]), /payLife is "manaValue"/, "life other than its mana value: no");
   bad(act([{effect: "mayPlay", from: "graveyard", count: 0}]), /count is how many/, "a count of none: no");
-  bad(act([{effect: "mayPlay", targets: "remembered", count: 1}]), /from a zone/, "a count on named cards: no");
+  /* "You may play ONE of those cards ... pay life equal to its mana value rather than paying its mana cost" (Nashi, Moon Sage's
+     Scion; card load ROB-540): named cards take a count and life too, held to the same values. */
+  good(act([{effect: "mayPlay", targets: "remembered", count: 1, payLife: "manaValue"}]), "one of the named cards, for life");
+  bad(act([{effect: "mayPlay", targets: "remembered", count: 0}]), /count is how many/, "a count of none on named cards: no");
   bad(act([{effect: "mayPlay", targets: "remembered", spells: {types: ["Creature"]}}]), /from a zone/, "a selector on named cards: no");
-  bad(act([{effect: "mayPlay", targets: "remembered", payLife: "manaValue"}]), /from a zone/, "life for named cards: no");
+  bad(act([{effect: "mayPlay", targets: "remembered", payLife: 3}]), /payLife is "manaValue"/, "life for named cards other than its mana value: no");
   good(play({lands: true, spells: true, perType: true, yourTurn: true}), "Muldrotha's");
   bad(play({spells: true, perType: "yes"}), /perType is true/, "perType: true or nothing");
   bad(play({spells: true, perType: true, limit: 1}), /no other limit/, "kept by type and limited besides: no");

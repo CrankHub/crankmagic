@@ -221,6 +221,16 @@ const tapFive = [{tap: "Plains"}, {tap: "Plains"}, {tap: "Wastes"}, {tap: "Waste
   const x = play([at(0, "hand", PE), at(0, "battlefield", "Island")], [{to: {turn: 2, phase: "UPKEEP"}}, {pass: 1}], {}, FIX);
   eq([x.priorityPlayer, nothingToDo(x, 0)], [0, true], "Maya's upkeep: an Emissary is no instant, and its warp nothing to do then");
 }
+{
+  /* Nor one who could sneak a creature card from the graveyard (Ninja Teen's level 3; rules/actions.mjs, nothingToDo; ROB-540):
+     without the table's taps, the cast is offered only once its mana is floated, so the count is what stops the step. */
+  const NT = "Ninja Teen";
+  const grave = (level3) => play([at(0, "battlefield", NT, "Swamp", "Swamp", "Swamp", "Wastes", "Wastes", "Wastes", "Wastes", "Ogre"), at(0, "graveyard", "Bear")],
+    [{tap: "Swamp"}, {tap: "Wastes"}, {activate: NT}, {resolve: true}, ...(level3 ? [{tap: "Swamp"}, {activate: NT}, {resolve: true}] : []),
+      {attack: ["Ogre"]}, {to: {turn: 1, phase: "COMBAT_DECLARE_BLOCKERS"}}], {}, FIX);
+  eq([nothingToDo(grave(true), 0), nothingToDo(grave(false), 0)], [false, true],
+    "declare blockers, lands untapped: a Bear in the graveyard is something to do at Ninja Teen's level 3, nothing at level 2");
+}
 
 /* ---- Omnath's mana ---- */
 {

@@ -308,10 +308,14 @@ function checkEffect(effect, path, errors) {
      `count`, how many of them -- in place of `targets`. */
   if (name === "mayPlay" && effect.linked !== undefined && !(effect.linked === true && effect.from === undefined && effect.targets === undefined))
     errors.push({path: `${path}.linked`, message: "mayPlay's `linked` is true: the cards this source's other ability exiled, in place of targets or a zone"});
-  if (name === "mayPlay" && effect.linked === true && effect.count !== undefined && !(Number.isInteger(effect.count) && effect.count >= 1))
+  /* "Until end of turn, you may play ONE OF THOSE CARDS. If you cast a spell this way, pay life equal to its mana value rather
+     than paying its mana cost" (Nashi, Moon Sage's Scion): `count` and `payLife` of named cards too. */
+  if (name === "mayPlay" && effect.from === undefined && effect.count !== undefined && !(Number.isInteger(effect.count) && effect.count >= 1))
     errors.push({path: `${path}.count`, message: "count is how many cards it lets be played, 1 or more"});
-  if (name === "mayPlay" && effect.from === undefined && ["spells", "payLife", ...(effect.linked === true ? [] : ["count"])].some((key) => effect[key] !== undefined))
-    errors.push({path, message: "spells, payLife and count are a mayPlay's from a zone (`from`); count also a linked one's"});
+  if (name === "mayPlay" && effect.from === undefined && effect.payLife !== undefined && effect.payLife !== "manaValue")
+    errors.push({path: `${path}.payLife`, message: "payLife is \"manaValue\""});
+  if (name === "mayPlay" && effect.from === undefined && effect.spells !== undefined)
+    errors.push({path, message: "spells is a mayPlay's from a zone (`from`)"});
   /* Amass (CR 701.47a): the creature type its Army is, "Goblin" for "amass Goblins 2"; the Army chosen remembered or not. */
   if (name === "amass") {
     if (!isText(effect.subtype) || !isCreatureType(effect.subtype))
@@ -788,7 +792,7 @@ function checkAbility(ability, path, errors, {permanent = false, manaX = false} 
       else checkSelector(ability.attackers, `${path}.attackers`, errors, {choice: true});
     }
     if (ability.rule === "cant-be-blocked-by") {
-      if (!ability.by && ability.byPowerBelowSource !== true) errors.push({path, message: "\"Can't be blocked by\" says by what: `by`, or `byPowerBelowSource`"});
+      if (!ability.by && ability.byPowerBelowSource !== true && ability.byPowerAboveSource !== true) errors.push({path, message: "\"Can't be blocked by\" says by what: `by`, `byPowerBelowSource` or `byPowerAboveSource`"});
       if (ability.by) checkSelector(ability.by, `${path}.by`, errors, {choice: true});
     }
   }

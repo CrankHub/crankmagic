@@ -1,0 +1,93 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Fugitive Droid",
+    "oracleId": "c04d4fd4-e5aa-431d-824b-8bc94245f103",
+    "types": [
+      "Artifact",
+      "Creature"
+    ],
+    "subtypes": [
+      "Robot",
+      "Scientist"
+    ],
+    "manaCost": "{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": 1,
+    "toughness": 1
+  },
+  "oracleText": "This creature can't be blocked if an artifact entered the battlefield under your control this turn.\n{U}, Sacrifice this creature: Counter target spell that targets an artifact or creature you control.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "This creature can't be blocked if an artifact entered the battlefield under your control this turn.",
+      "rule": "cant-be-blocked",
+      "affects": {
+        "what": "permanent",
+        "self": true
+      },
+      "condition": {
+        "compare": {
+          "count": {
+            "permanentsEnteredThisTurn": "you",
+            "filter": {
+              "types": [
+                "Artifact"
+              ]
+            }
+          },
+          "atLeast": 1
+        }
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "{U}, Sacrifice this creature: Counter target spell that targets an artifact or creature you control.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{U}"
+        },
+        {
+          "atom": "sacrifice",
+          "self": true
+        }
+      ],
+      "targets": [
+        {
+          "what": "spell",
+          "targeting": {
+            "what": "permanent",
+            "controller": "you",
+            "anyOf": [
+              {
+                "types": [
+                  "Artifact"
+                ]
+              },
+              {
+                "types": [
+                  "Creature"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect": "counterSpell",
+          "spells": {
+            "target": 0
+          }
+        }
+      ]
+    }
+  ]
+}

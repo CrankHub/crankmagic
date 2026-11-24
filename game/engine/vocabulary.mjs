@@ -125,6 +125,8 @@ export const TRIGGER_EVENTS = Object.freeze([
   "becomes monstrous", "chapter",
   /* "Whenever you activate a loyalty ability" (CR 606; the live-game plan of 2026-10-04, P4). */
   "loyalty activated",
+  /* "Whenever you activate a ninjutsu ability" (CR 702.49; Satoru Umezawa, card load ROB-540). */
+  "ninjutsu activated",
   /* "Whenever you scry or surveil" (CR 701.22a, 701.25a). */
   "scried",
   /* "Whenever you proliferate" (CR 701.34a; Train C, w2c-hands-triggers). */
@@ -259,6 +261,9 @@ const BEYOND_TIER0 = ["shroud", "ward", "forestwalk",
   /* Wave 4c: offspring (CR 702.175), an optional additional cost and a 1/1 token copy as it enters (cards/index.mjs,
      rules/actions.mjs). */
   "offspring",
+  /* ROB-540: squad (CR 702.157), an additional cost paid any number of times and as many token copies as it enters
+     (cards/index.mjs, rules/actions.mjs). */
+  "squad",
   /* Wave 4c, k2: fabricate (CR 702.123a; Marionette Apprentice), a triggered ability -- +1/+1 counters or Servo tokens, its
      controller's choice as it resolves (cards/index.mjs). */
   "fabricate",

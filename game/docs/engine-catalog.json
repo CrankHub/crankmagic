@@ -9,17 +9,17 @@
  },
  "top": {
   "cards": 3238,
-  "defined": 2014,
+  "defined": 2017,
   "provisional": 0,
-  "everyRule": 2924
+  "everyRule": 2926
  },
  "sections": {
   "Keyword abilities (CR 702)": {
    "tally": {
     "built": 86,
     "partial": 0,
-    "named": 15,
-    "missing": 93
+    "named": 16,
+    "missing": 92
    },
    "entries": [
     {
@@ -1251,7 +1251,7 @@
      "rule": "702.157",
      "name": "Squad",
      "engine": null,
-     "status": "missing",
+     "status": "named",
      "forge": "Squad",
      "top": 1,
      "all": 15,
@@ -5753,8 +5753,8 @@
      "forge": "AbilityCast",
      "top": 5,
      "all": 42,
-     "blocks": 5,
-     "alone": 5
+     "blocks": 4,
+     "alone": 4
     },
     {
      "kind": "trigger",
@@ -8925,7 +8925,7 @@
      "forge": "RememberChanged",
      "top": 124,
      "all": 1168,
-     "blocks": 44,
+     "blocks": 43,
      "alone": 3
     },
     {
@@ -8949,7 +8949,7 @@
      "forge": "RememberObjects",
      "top": 123,
      "all": 1460,
-     "blocks": 43,
+     "blocks": 42,
      "alone": 8
     },
     {
@@ -9009,7 +9009,7 @@
      "forge": "MayPlay",
      "top": 99,
      "all": 625,
-     "blocks": 31,
+     "blocks": 30,
      "alone": 1
     },
     {

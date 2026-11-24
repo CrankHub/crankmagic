@@ -1,0 +1,349 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Splinter, Radical Rat",
+  "fixtures": {
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Their Shinobi": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Human",
+        "Ninja"
+      ],
+      "manaCost": "{1}{U}",
+      "colors": [
+        "U"
+      ],
+      "power": 1,
+      "toughness": 1
+    }
+  },
+  "scenarios": [
+    {
+      "name": "The Ninja's combat damage trigger triggers twice -- two cards -- and the Dinosaur's once",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Splinter, Radical Rat",
+            "Ninja of the Deep Hours",
+            "Curious Altisaur"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Ninja of the Deep Hours",
+            "Curious Altisaur"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 36
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "name": "Maya's Ninja's trigger triggers once",
+      "at": {
+        "turn": 2,
+        "phase": "MAIN1"
+      },
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Splinter, Radical Rat"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Ninja of the Deep Hours"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Ninja of the Deep Hours"
+          ],
+          "seat": 1
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "settle": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 38
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "{1}{U}: the Ninja can't be blocked this turn -- Maya's Bear may not block it",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Splinter, Radical Rat",
+            "Ninja of the Deep Hours",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Splinter, Radical Rat"
+              },
+              "count": 2,
+              "targets": [
+                [
+                  "Splinter, Radical Rat"
+                ],
+                [
+                  "Ninja of the Deep Hours"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Splinter, Radical Rat",
+          "targets": [
+            {
+              "card": "Ninja of the Deep Hours"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ninja of the Deep Hours"
+          ]
+        },
+        {
+          "block": [],
+          "blockers": []
+        }
+      ],
+      "expect": []
+    },
+    {
+      "name": "Without it, Maya's Bear may block the Ninja",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Splinter, Radical Rat",
+            "Ninja of the Deep Hours"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Ninja of the Deep Hours"
+          ]
+        },
+        {
+          "block": [],
+          "blockers": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "expect": []
+    },
+    {
+      "name": "{1}{U} from untapped lands on Maya's Ninja: any Ninja is a target",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Splinter, Radical Rat",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Shinobi"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Splinter, Radical Rat"
+              },
+              "count": 2
+            }
+          ]
+        },
+        {
+          "activate": "Splinter, Radical Rat",
+          "targets": [
+            {
+              "card": "Their Shinobi"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands for {1}{W/B}{W/B}, a Plains and a Swamp for the hybrid",
+      "pooledTaps": true,
+      "preparedTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Splinter, Radical Rat"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Splinter, Radical Rat"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Splinter, Radical Rat"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Splinter, Radical Rat",
+            "Plains",
+            "Swamp",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}

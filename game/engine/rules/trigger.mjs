@@ -206,6 +206,12 @@ function subjects(state, event, condition, sourceId, controller) {
     const proliferator = fields.player?.playerId;
     return whoseIs(condition.proliferator ?? "you", proliferator, controller) ? [{player: proliferator}] : [];
   }
+  /* "Whenever you activate a ninjutsu ability" (Satoru Umezawa; CR 702.49): an ability marked a ninjutsu one, activated by
+     this ability's controller -- about the card and the player. */
+  if (condition.on === "GameEventSpellAbilityCast" && condition.ninjutsuActivated) {
+    if (fields.sa?.ninjutsu !== true || fields.si?.actor?.playerId !== controller) return [];
+    return [{card: fields.card?.cardId, player: controller}];
+  }
   /* "Whenever you activate a loyalty ability" (CR 606): an ability, not a spell, with a loyalty cost, by `activator`; the
      counters its cost removed at least `removedAtLeast`. */
   if (condition.on === "GameEventSpellAbilityCast" && condition.loyaltyActivated) {
@@ -893,6 +899,8 @@ export function collectTriggers(state, events) {
                paid" is asked again as it resolves (CR 603.4), its creature perhaps gone -- a token copy is made all the same
                (Coruscation Mage's ruling). */
             ...(object.offspring === true ? {offspring: true} : {}),
+            /* And how many times its squad cost was paid (CR 702.157a; rules/stack.mjs), as it triggers, for the same reason. */
+            ...(object.squad > 0 ? {squad: object.squad} : {}),
             /* And how many times it was kicked (CR 702.33d; rules/stack.mjs), as it triggers: "if he was kicked" (Josu Vess, Lich
                Knight) is asked again as it resolves (CR 603.4), its creature perhaps gone. */
             ...(Number.isInteger(object.kicked) && object.kicked > 0 ? {kicked: object.kicked} : {}),
@@ -1351,6 +1359,7 @@ function putOnStack(state, triggers) {
       spent: trigger.spent ?? null,
       paidFor: trigger.paidFor ?? null,
       offspring: trigger.offspring === true,
+      squad: trigger.squad ?? 0,
       kicked: trigger.kicked ?? 0,
       x: trigger.x ?? null,
       /* A delayed trigger's source, as it was when the trigger was made (CR 701.27f). */

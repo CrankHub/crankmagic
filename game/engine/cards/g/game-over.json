@@ -1,0 +1,62 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Game Over",
+    "oracleId": "e326b5a1-f8ce-471b-8663-ec1ba649b24f",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}{B}{B}",
+    "colors": [
+      "B"
+    ],
+    "colorIdentity": [
+      "B"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "This spell costs {2} less to cast if a player's life total is less than or equal to half their starting life total.\nDestroy all creatures.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "This spell costs {2} less to cast if a player's life total is less than or equal to half their starting life total.",
+      "rule": "this-costs-less",
+      "affects": {
+        "self": true
+      },
+      "amount": {
+        "if": {
+          "compare": {
+            "count": {
+              "lifeTotal": "fewest"
+            },
+            "atMost": {
+              "startingLife": "you",
+              "half": true
+            }
+          }
+        },
+        "then": 2
+      }
+    },
+    {
+      "kind": "spell",
+      "text": "Destroy all creatures.",
+      "targets": [],
+      "effects": [
+        {
+          "effect": "destroyAll",
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

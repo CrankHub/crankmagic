@@ -36,7 +36,7 @@ import {KEYWORD_FAMILIES as TYPE_FAMILIES} from "../keywords/types.mjs";
 import {KEYWORD_FAMILIES as DESIGNATION_FAMILIES} from "../keywords/designations.mjs";
 import {costAtomBuilt} from "../rules/actions.mjs";
 import {compileSelector} from "../script/filter.mjs";
-import {LAYER_AFFECTS_KEYS} from "../rules/layers.mjs";
+import {LAYER_AFFECTS_KEYS, ninjutsuAbility} from "../rules/layers.mjs";
 import {SPEND_ONLY_KEYS} from "../rules/restricted-mana.mjs";
 import {parseManaCost} from "../rules/mana.mjs";
 
@@ -71,9 +71,15 @@ const RULES_READING_A_CONDITION = ["alternative-cost", "spells-cost-less", "trig
   "block-tax",
   /* "Twice that many ... instead" at a Class level (Innkeeper's Talent, CR 716.2a; rules/statics.mjs, countersPlaced). */
   "more-counters",
+  /* Sneak given to the cards in a graveyard, and their cast from there by it, at a Class level (Ninja Teen, CR 716.2a;
+     rules/actions.mjs, alternativeCosts). */
+  "sneak", "sneak-from-graveyard",
   /* "Can't ... block unless you control seven or more lands" (Topiary Stomper, CR 509.1b): read as each blocker is checked
      (rules/combat.mjs canBlock, through rules/statics.mjs ruleChanged, which asks every rule's condition). */
   "cant-block",
+  /* "This creature can't be blocked if an artifact entered the battlefield under your control this turn" (Fugitive Droid; CR
+     509.1b): read as each blocker is checked (keywords/combat.mjs canBlock, through rules/statics.mjs ruleChanged). */
+  "cant-be-blocked",
   /* "As long as The Wandering Emperor entered this turn, you may activate her loyalty abilities any time you could cast an
      instant" (CR 606.3's timing; rules/actions.mjs, through rules/statics.mjs ruleChanged, which asks every rule's condition). */
   "loyalty-at-instant-speed",
@@ -338,6 +344,9 @@ const TRIGGERS = {
   /* "Whenever this creature transforms into Ashling, Rekindled" (CR 701.27e): this permanent transforming, `into` the face
      it then has, by name -- not entering transformed (CR 712.14a), which is no transforming. This one's own alone. */
   transformed: (t) => ((t.who ?? "self") === "self" && typeof t.into === "string" ? {on: "GameEventCardTransformed", who: "self", into: t.into} : null),
+  /* "Whenever you activate a ninjutsu ability" (Satoru Umezawa; CR 702.49a, 702.49d, 602.2): an ability marked `ninjutsu`
+     (ninjutsuAbility) put on the stack by you -- commander ninjutsu among them, and one a permanent gives a card in a hand. */
+  "ninjutsu activated": () => ({on: "GameEventSpellAbilityCast", ninjutsuActivated: true}),
   /* "Whenever you activate a loyalty ability" (Ajani Unrelenting; CR 606, 602.2): a loyalty ability put on the stack by
      you (`activator`), any permanent's; "if you removed two or more loyalty counters to activate it" (`removedAtLeast`,
      its cost, CR 606.4). About the permanent and the player. */
@@ -747,6 +756,8 @@ export function compileScript(script) {
   let multikicker = null, kicker = null;
   /* Offspring (CR 702.175a): its cost, and its trigger, put on the spell once it is known (below). */
   let offspring = null;
+  /* Squad (CR 702.157a): its cost, and its trigger, put on the spell once it is known (below). */
+  let squad = null;
   /* Replicate's cost (CR 702.56a), put on the spell once it is known (below). */
   let replicate = null;
   /* Escalate's cost (CR 702.120a), put on the spell once its modes are known (below). */
@@ -837,15 +848,14 @@ export function compileScript(script) {
     }
     /* NINJUTSU (CR 702.49a): "{cost}, Return an unblocked attacking creature you control to its owner's hand: Put this card
        onto the battlefield from your hand tapped and attacking" -- an ability of the card in its owner's hand, attacking
-       whom the returned creature attacked (rules/actions.mjs remembers it as the ability goes on the stack). */
+       whom the returned creature attacked (rules/actions.mjs remembers it as the ability goes on the stack); built by
+       rules/layers.mjs, ninjutsuAbility, as one a permanent gives is. */
     /* COMMANDER NINJUTSU (CR 702.49d; Yuriko, batch 79): the same ability, which also works while the card is in the
        command zone (`alsoCommand`, rules/actions.mjs). */
     if (ability.kind === "keyword" && ["ninjutsu", "commander ninjutsu"].includes(String(ability.keyword).toLowerCase())) {
       const cost = Array.isArray(ability.cost) ? ability.cost : [];
       if (!cost.length || !cost.every((atom) => atom?.atom === "mana")) problems.push(`${ability.text}: a ninjutsu cost of mana`);
-      abilities.push({id, kind: "activated", zone: "hand", text: ability.text, ...(String(ability.keyword).toLowerCase() === "commander ninjutsu" ? {alsoCommand: true} : {}),
-        cost: [...structuredClone(cost), {atom: "returnToHand", selector: {what: "permanent", types: ["Creature"], controller: "you", attacking: true, unblocked: true}}],
-        effects: [{effect: "moveZone", targets: "self", to: "battlefield", tapped: true, attacking: "that player"}]});
+      abilities.push(ninjutsuAbility(id, ability.text, cost, String(ability.keyword).toLowerCase() === "commander ninjutsu"));
       keywords.push("Ninjutsu");
       return;
     }
@@ -1584,6 +1594,15 @@ export function compileScript(script) {
       keywords.push("Offspring");
       return;
     }
+    /* SQUAD [cost] (CR 702.157a; Endless Foot Assault): two abilities. "As an additional cost to cast this spell, you may pay
+       [cost] any number of times" -- each number of times its own cast, as multikicker's (rules/actions.mjs, additionalVariants)
+       -- and "when this enters, if its squad cost was paid, create a token that's a copy of it for each time its squad cost was
+       paid", a triggered ability of the permanent's (below). One instance of it (702.157b, two, is not built). */
+    if (ability.kind === "keyword" && String(ability.keyword).toLowerCase() === "squad") {
+      squad = {id, text: ability.text, cost: String(ability.cost ?? "")};
+      keywords.push("Squad");
+      return;
+    }
     /* REPLICATE [cost] (CR 702.56a; Lose Focus, Train E): two abilities. "As an additional cost to cast this spell, you may
        pay [cost] any number of times" -- an additional cost of the spell's, each number of times its own cast, as multikicker's
        (rules/actions.mjs, additionalVariants) -- and "when you cast this spell, if a replicate cost was paid for it, copy it for
@@ -2307,6 +2326,14 @@ export function compileScript(script) {
     spell = {...(spell ?? {id: "offspring", text: offspring.text, targets: [], effects: []}), additionalCost: [...(spell?.additionalCost ?? []), {atom: "offspring", cost: offspring.cost}]};
     abilities.push({id: offspring.id, kind: "triggered", text: offspring.text, trigger: TRIGGERS.enters({who: "self"}), condition: {offspringPaid: true},
       effects: [{effect: "copyPermanent", targets: "self", lastKnown: true, except: {setPower: 1, setToughness: 1}}]});
+  }
+  /* Squad's additional cost, on the spell -- a permanent's, whose spell does nothing else (CR 608.3) -- and its trigger as the
+     permanent enters, its "if" an intervening one (CR 603.4; script/condition.mjs, `squadPaid`): a token copy of it for each
+     time the cost was paid (script/amount.mjs, `squad`), of it as it last existed should it be gone by then (CR 608.2h). */
+  if (squad !== null) {
+    spell = {...(spell ?? {id: "squad", text: squad.text, targets: [], effects: []}), additionalCost: [...(spell?.additionalCost ?? []), {atom: "squad", cost: squad.cost}]};
+    abilities.push({id: squad.id, kind: "triggered", text: squad.text, trigger: TRIGGERS.enters({who: "self"}), condition: {squadPaid: true},
+      effects: [{effect: "copyPermanent", targets: "self", lastKnown: true, count: {squad: true}}]});
   }
   /* Replicate's additional cost, on the spell (an instant or sorcery's, which has one). */
   if (replicate !== null && !spell) problems.push("Replicate is on a spell with something to copy: its spell ability");

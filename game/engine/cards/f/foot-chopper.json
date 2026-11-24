@@ -1,0 +1,136 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Foot Chopper",
+    "oracleId": "1eed017a-342a-47a8-9395-890ef0bd1eb2",
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [
+      "Equipment"
+    ],
+    "manaCost": "{1}{B}",
+    "colors": [
+      "B"
+    ],
+    "colorIdentity": [
+      "B"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "When this Equipment enters, create a 1/1 black Ninja creature token, then attach this Equipment to it.\nEquipped creature has flying.\nWhenever equipped creature deals combat damage to a player, you may sacrifice it. If you do, draw cards equal to its power.\nEquip {2}",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When this Equipment enters, create a 1/1 black Ninja creature token, then attach this Equipment to it.",
+      "trigger": {
+        "on": "enters",
+        "who": "self"
+      },
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "remember": true,
+          "token": {
+            "name": "Ninja",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Ninja"
+            ],
+            "colors": [
+              "B"
+            ],
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "effect": "attach",
+          "targets": "remembered"
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Equipped creature has flying.",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "attachedBy": "self"
+      },
+      "apply": {
+        "addKeywords": [
+          "Flying"
+        ]
+      }
+    },
+    {
+      "kind": "triggered",
+      "text": "Whenever equipped creature deals combat damage to a player, you may sacrifice it. If you do, draw cards equal to its power.",
+      "trigger": {
+        "on": "damage dealt",
+        "who": "any",
+        "combat": true,
+        "to": "player",
+        "filter": {
+          "attachedBy": "self"
+        }
+      },
+      "effects": [
+        {
+          "effect": "moveZone",
+          "targets": "that card",
+          "sacrifice": true,
+          "remember": true,
+          "only": {
+            "controller": "you"
+          }
+        },
+        {
+          "effect": "draw",
+          "count": {
+            "powerOf": "remembered"
+          },
+          "condition": {
+            "about": "remembered",
+            "is": {}
+          }
+        }
+      ],
+      "optional": true
+    },
+    {
+      "kind": "activated",
+      "text": "Equip {2}",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "attach",
+          "targets": {
+            "target": 0
+          }
+        }
+      ],
+      "timing": "sorcery",
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "you"
+        }
+      ]
+    }
+  ]
+}

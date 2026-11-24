@@ -1,0 +1,68 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Satoru Umezawa",
+    "oracleId": "ed1d21ba-ddfe-4f82-9e37-93f9e2c7ba33",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Human",
+      "Ninja"
+    ],
+    "manaCost": "{1}{U}{B}",
+    "colors": [
+      "B",
+      "U"
+    ],
+    "colorIdentity": [
+      "B",
+      "U"
+    ],
+    "power": 2,
+    "toughness": 4
+  },
+  "oracleText": "Whenever you activate a ninjutsu ability, look at the top three cards of your library. Put one of them into your hand and the rest on the bottom of your library in any order. This ability triggers only once each turn.\nEach creature card in your hand has ninjutsu {2}{U}{B}.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever you activate a ninjutsu ability, look at the top three cards of your library. Put one of them into your hand and the rest on the bottom of your library in any order. This ability triggers only once each turn.",
+      "trigger": {
+        "on": "ninjutsu activated"
+      },
+      "effects": [
+        {
+          "effect": "dig",
+          "count": 3,
+          "take": 1,
+          "to": "hand",
+          "rest": "bottom"
+        }
+      ],
+      "limit": 1
+    },
+    {
+      "kind": "static",
+      "text": "Each creature card in your hand has ninjutsu {2}{U}{B}.",
+      "rule": "grants-ninjutsu",
+      "affects": {
+        "what": "card",
+        "zone": "hand",
+        "controller": "you",
+        "types": [
+          "Creature"
+        ]
+      },
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}{U}{B}"
+        }
+      ]
+    }
+  ]
+}

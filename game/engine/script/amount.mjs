@@ -34,6 +34,8 @@
  *                                        Spirit for each card type among cards discarded this way" (Occult Epiphany); or
  *                                        among what a selector matches now, a choice of zones too -- "six or more card types
  *                                        among permanents you control and/or cards in your graveyard" (Happily Ever After)
+ *   {lifeTotal: "fewest"}                the least life any player still in the game has: "if a player's life total is less
+ *                                        than or equal to half their starting life total" (Game Over), with `atMost`
  *   {startingLife: "you"}                the game's starting life total (CR 103.4, 119.1; 40 in Commander, CR 903.7, or the
  *                                        table's house rule; state/index.mjs, startingLifeOf)
  *   {rememberedCount: true}              how many things the effect before it remembered -- "each player shuffles the cards
@@ -155,6 +157,8 @@ export const AMOUNT_KINDS = Object.freeze(["x", "attacksThisTurn", "count", "cou
   "mostSharingName",
   /* The precon load, lane D: "the greatest mana value among your commanders" (Tangleweave Armor). */
   "commanderManaValue",
+  /* ROB-540: "a token that's a copy of it for each time its squad cost was paid" (squad, CR 702.157a; Endless Foot Assault). */
+  "squad",
   /* The precon load of 2026-10-25, lane A: "investigate once for each opponent who has more cards in hand than you" (Wojek
      Investigator). */
   "opponentsWithMore"]);
@@ -379,6 +383,8 @@ export function amountOf(state, value, context = {}) {
   }, 0);
   /* "A charge counter on it for each time it was kicked" (Everflowing Chalice; multikicker, CR 702.33c). */
   else if ("kicked" in value) n = context.kicked ?? 0;
+  /* How many times its source's squad cost was paid, as its trigger remembered it (CR 702.157a; rules/stack.mjs). */
+  else if ("squad" in value) n = context.squad ?? 0;
   /* "For each time it has attacked this turn" (Moraug, Fury of Akoum; wave 4d L3): the times the object a layer-7 amount is
      counted for (rules/layers.mjs, counted's `affected`) was declared an attacker this turn, each combat (rules/combat.mjs). */
   else if ("attacksThisTurn" in value) n = context.affected !== undefined && context.affected !== null ? usesThisTurn(state, context.affected, "attacked") : 0;
@@ -545,6 +551,9 @@ export function amountOf(state, value, context = {}) {
     /* "If an opponent has more life than you" (Linvala, the Preserver; CR 119.1): the most life any one opponent still in the
        game has (CR 800.4a), none and it is 0. */
     if (value.lifeTotal === "an opponent") n = Math.max(0, ...state.players.filter((p) => p.id !== context.controller && !p.lost).map((p) => p.life));
+    /* "If a player's life total is less than or equal to half their starting life total" (Game Over; CR 119.1, 800.4a): the
+       least life any player still in the game has, its controller among them -- `atMost` holds for one of them if for this. */
+    else if (value.lifeTotal === "fewest") n = Math.min(...state.players.filter((p) => !p.lost).map((p) => p.life));
     else n = player !== null ? state.players[player]?.life ?? 0 : 0;
   }
   /* "Equal to the life they lost this turn" (Wound Reflection; resources.mjs keeps it, turn.mjs clears it). */
