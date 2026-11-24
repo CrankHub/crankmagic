@@ -961,8 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 710 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 709 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 711 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1647,6 +1646,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-rakdos-copy-load` - `tests/engine-rakdos-copy-load.mjs`: the card load of Rob's Rakdos copy and legends list (2026-11-05) -- all 81 cards of it but Deadpool (left out, by name) playable, the 23 the engine lacked through their scenarios, blitz held to a mana cost without X on a creature, the legend rule turned off for a controller's permanents (Mirror Box) or creature tokens (The Master, Multiplied) and a trigger's sacrifice or exile of those tokens stopped (and a spell's not), a coin flipped until a flip is lost and counted by flipsWon, a die's rows covering every result once with a row that must or may roll again, half a life total rounded up, soulbond pairs made, kept and ended by themselves (control, type, leaving), "the lands defending player controls", and "attacking as it died"
 - `engine-boxes-load-1115` - `tests/engine-boxes-load-1115.mjs`: the card load of Rob's box and upgrade cards for D1, D3, D4, D5, D6 and D8 (2026-11-15) -- all 28 cards playable and each through its scenarios, a spell's target count that grows with its kicks (Comet Storm) and refused on an ability, join forces held to its one shape (Minds Aglow), "for each player who did" (Tempt with Discovery), and the static rules goaded (Bloodthirsty Blade) and spend-as-any-color (Oath of Nissa)
 - `engine-unplayable-load-1118` - `tests/engine-unplayable-load-1118.mjs`: the card load of Rob's "Unplayable Cards 2026-11-18" workbook (ROB-531) -- the 42 cards of his boxes and designs the engine could not play, each one loaded here a definition the table plays and run through its scenarios, the ones marked for a later pull request not claimed early, and the four Star Trek cards the oracle data lacks named and not claimed
+- `engine-ninja-deck-load-1123` - `tests/engine-ninja-deck-load-1123.mjs`: the card load of Rob's Ninja deck (ROB-540, 2026-11-23) -- all 80 names of the list, read as the deck importer reads them (a flavor name its card), definitions the table plays, and the 29 the engine lacked run through their scenarios: sneak tapped for from untapped lands and given to graveyard creature cards (Ninja Teen), ninjutsu given (Satoru Umezawa) and reduced (Silver-Fur Master), squad, a permission paid with life equal to mana value (Nashi), and a dig's exiled card linked to its source (Krang & Shredder)
 
 ## Design and execution record
 

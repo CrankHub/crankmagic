@@ -1,0 +1,45 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Donatello, the Brains",
+    "oracleId": "1ba2f763-5895-4663-b38f-95591ebb2ef4",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Mutant",
+      "Ninja",
+      "Turtle"
+    ],
+    "manaCost": "{2}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": 2,
+    "toughness": 4
+  },
+  "oracleText": "If one or more tokens would be created under your control, those tokens plus a Mutagen token are created instead.\nPartner—Character select (You can have two commanders if both have this ability.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "If one or more tokens would be created under your control, those tokens plus a Mutagen token are created instead.",
+      "rule": "tokens-plus",
+      "affects": {},
+      "token": {
+        "predefined": "Mutagen"
+      }
+    },
+    {
+      "kind": "keyword",
+      "text": "Partner—Character select",
+      "keyword": "partner"
+    }
+  ]
+}

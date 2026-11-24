@@ -54,6 +54,9 @@ export function beginResolution(state, effects, context = {}, rng = null) {
       /* The opponent a spell's gift was promised to (CR 702.174k): "the chosen player" (script/bind.mjs), "if the gift was
          promised" (script/condition.mjs, `giftPromised`). */
       ...(context.gift !== undefined ? {gift: context.gift} : {}),
+      /* The alternative cost a trigger's source was cast for, as it triggered (rules/stack.mjs): a branch's "if this creature's
+         sneak cost was paid" with that source gone (Turncoat Kunoichi; CR 608.2h). */
+      ...(context.paidFor ? {paidFor: context.paidFor} : {}),
       /* How many times its source had transformed as the ability went on the stack (CR 701.27f; rules/stack.mjs). */
       ...(context.sourceTransforms !== undefined ? {sourceTransforms: context.sourceTransforms} : {}),
       /* Its source, gone before it reached the stack, for "this card" (Angelic Destiny; rules/stack.mjs, script/bind.mjs). */
@@ -64,6 +67,8 @@ export function beginResolution(state, effects, context = {}, rng = null) {
       ...(context.targetsChosen ? {targetsChosen: context.targetsChosen} : {}),
       /* And the division its caster announced, target by target (CR 601.2d; effects/resources.mjs, damageHits' `divided`). */
       ...(context.division ? {division: context.division} : {}),
+      /* How many times its source's squad cost was paid, as its trigger remembered it (CR 702.157a; script/amount.mjs, `squad`). */
+      ...(context.squad ? {squad: context.squad} : {}),
       /* A triggered ability resolving (rules/stack.mjs): "triggered abilities you control can't cause you to sacrifice or exile
          ..." (rules/statics.mjs, triggerRemovalBlocked). */
       ...(context.triggered === true ? {triggered: true} : {}),
@@ -118,7 +123,9 @@ export function runResolution(state, rng = null) {
        instead" -- its own condition (`if`) asked now, as it reaches the head (CR 608.2c), and the effects of the way it goes
        put in front of whatever follows, so one of them may stop to ask (Composer of Spring's "you may put a card"). */
     if (effect?.effect === "branch") {
-      const holds = conditionHolds(state, effect.if, {controller: resolving.context.controller, source: resolving.context.source, about: resolving.context.about,
+      /* `paidFor`: "if this creature's sneak cost was paid, instead" (Turncoat Kunoichi), its source gone, as it last was
+         (CR 608.2h; rules/stack.mjs). */
+      const holds = conditionHolds(state, effect.if, {controller: resolving.context.controller, source: resolving.context.source, about: resolving.context.about, paidFor: resolving.context.paidFor,
         remembered: resolving.context.remembered, targets: resolving.context.targets, cast: resolving.context.cast, rolled: resolving.context.rolled,
         movedWas: resolving.context.movedWas, searched: resolving.context.searched, lastKnown: resolving.context.lastKnown, resolvedBefore: resolving.context.resolvedBefore,
         gift: resolving.context.gift});

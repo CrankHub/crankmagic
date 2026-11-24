@@ -93,12 +93,15 @@ for (const [lands, may] of [[6, false], [7, true]]) {
 /* The compiler: a condition on "can't block" is read, so it is taken; on a rule that reads none, still refused. */
 {
   const script = (rule) => ({schema: "CrankCardScript@1", identity: {name: "Test", oracleId: "t", types: ["Creature"], manaCost: "{1}", power: 1, toughness: 1}, oracleText: "x",
-    abilities: [{kind: "static", text: "x", rule, affects: {what: "permanent", self: true}, condition: {present: {what: "permanent", types: ["Land"], controller: "you"}, atMost: 6}}]});
+    abilities: [{kind: "static", text: "x", rule, affects: {what: "permanent", self: true}, ...(rule === "cant-be-blocked-by" ? {by: {what: "permanent", types: ["Creature"]}} : {}),
+      condition: {present: {what: "permanent", types: ["Land"], controller: "you"}, atMost: 6}}]});
   const block = compileScript(script("cant-block"));
   eq([block.problems, block.definition?.abilities[0].condition.atMost], [[], 6], "cant-block on a condition: compiled, its condition kept");
-  const unblockable = compileScript(script("cant-be-blocked"));
+  /* "Can't be blocked" reads its condition now (Fugitive Droid, ROB-540; rules/statics.mjs ruleChanged): "can't be blocked by"
+     still reads none (cantBeBlockedBy). */
+  const unblockable = compileScript(script("cant-be-blocked-by"));
   eq([unblockable.definition, unblockable.problems.some((p) => /condition or a graveyard on a rule static/.test(p))], [null, true],
-    "cant-be-blocked on a condition, which nothing reads: refused");
+    "cant-be-blocked-by on a condition, which nothing reads: refused");
   ok(index.resolve(TS)?.playable === true, "Topiary Stomper is playable");
 }
 

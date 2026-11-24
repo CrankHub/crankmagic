@@ -98,6 +98,9 @@
  *                                      as it triggered (rules/trigger.mjs keeps it)
  *   {offspringPaid: true|false}        its own permanent was cast with its offspring cost paid, or was not (CR 702.175a;
  *                                      Coruscation Mage) -- asked again as the trigger resolves, as it triggered
+ *   {squadPaid: true}                  its own permanent was cast with its squad cost paid one or more times (CR 702.157a;
+ *                                      Endless Foot Assault) -- asked again as the trigger resolves, as it triggered; the
+ *                                      keyword's own trigger's (cards/index.mjs), not a card script's
  *   {ringBearer: true}                 its own permanent is its controller's Ring-bearer (CR 701.54; Frodo, Adventurous Hobbit)
  *   {ringTemptedAtLeast: n}            the Ring has tempted its controller n or more times this game (CR 701.54d)
  *   {descended: true}                  its controller descended this turn: a permanent card was put into their graveyard from
@@ -283,13 +286,13 @@ function castHolds(rule, cast) {
 
 /** Whether a condition holds now, for an ability controlled by `controller` on object `source`. No condition holds. */
 export function conditionHolds(state, condition, {controller, source = null, about = undefined, remembered = undefined, targets = undefined, cast = undefined, x = undefined, spent = undefined, excessDamage = undefined, rememberedControllers = undefined,
-  movedWas = undefined, searched = undefined, lastKnown = undefined, paidFor = undefined, resolvedBefore = undefined, gift = undefined, offspring = undefined, kicked = undefined, rolled = undefined} = {}) {
+  movedWas = undefined, searched = undefined, lastKnown = undefined, paidFor = undefined, resolvedBefore = undefined, gift = undefined, offspring = undefined, squad = undefined, kicked = undefined, rolled = undefined} = {}) {
   if (!condition) return true;
   /* "IF there are five colors among permanents you control, there are six or more card types among ..., AND your life total is
      greater than or equal to your starting life total" (Happily Ever After): every one of them, each a condition of its own --
      two counted comparisons cannot share one `compare`. Asked with what this one is asked with. */
   if (Array.isArray(condition.allOf) && !condition.allOf.every((one) => conditionHolds(state, one, {controller, source, about, remembered, targets, cast, x, spent,
-    excessDamage, rememberedControllers, movedWas, searched, lastKnown, paidFor, resolvedBefore, gift, offspring, kicked, rolled}))) return false;
+    excessDamage, rememberedControllers, movedWas, searched, lastKnown, paidFor, resolvedBefore, gift, offspring, squad, kicked, rolled}))) return false;
   /* "WHEN JOSU VESS ENTERS, IF HE WAS KICKED" (CR 702.33d, 603.4): its own permanent was cast kicked -- or, asked again as its
      trigger resolves, its source as it triggered, which may be gone (rules/trigger.mjs keeps it, `kicked`). */
   if (condition.kicked !== undefined
@@ -299,6 +302,10 @@ export function conditionHolds(state, condition, {controller, source = null, abo
      same (the card's ruling; rules/trigger.mjs keeps it, `offspring`). */
   if (condition.offspringPaid !== undefined
     && ((offspring ?? (source !== null && source !== undefined ? state.objects[source]?.offspring : undefined)) === true) !== condition.offspringPaid) return false;
+  /* "IF ITS SQUAD COST WAS PAID" (CR 702.157a; Endless Foot Assault): its own permanent was cast with it paid once or more -- or,
+     asked again as its trigger resolves (CR 603.4), its source as it triggered, which may be gone (rules/trigger.mjs keeps it,
+     `squad`). */
+  if (condition.squadPaid === true && !((squad ?? (source !== null && source !== undefined ? state.objects[source]?.squad : undefined) ?? 0) > 0)) return false;
   /* "IF BOTH TARGETS ARE STILL LEGAL AS THIS ABILITY RESOLVES" (Goblin Welder; CR 608.2b): every target its ability chose is
      legal still, as the resolution rechecked them (rules/stack.mjs, script/bind.mjs recheckTargets: an illegal one is null) --
      one illegal, and what it says is not done at all, to the other either. */

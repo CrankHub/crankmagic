@@ -1,0 +1,333 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Hidden Lair",
+  "fixtures": {
+    "Tower": {
+      "types": [
+        "Land"
+      ],
+      "manaCost": null,
+      "colors": []
+    },
+    "Dark Thought": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{U}{B}",
+      "colors": [
+        "U",
+        "B"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Draw a card.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "draw",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Played this turn, no basic land: it taps for {U}, and {B} and {C} are offered too",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Hidden Lair"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Tower"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "play": "Hidden Lair"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Hidden Lair"
+              },
+              "count": 3,
+              "mana": [
+                {
+                  "C": 1
+                },
+                {
+                  "U": 1
+                },
+                {
+                  "B": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Hidden Lair",
+          "mana": {
+            "U": 1
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "U": 1,
+            "B": 0,
+            "C": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Played this turn: it taps for {B}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Hidden Lair"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "play": "Hidden Lair"
+        },
+        {
+          "tap": "Hidden Lair",
+          "mana": {
+            "B": 1
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "B": 1,
+            "U": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "A later turn and no basic land (the Tower is none): only {C}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hidden Lair",
+            "Tower"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Hidden Lair"
+              },
+              "count": 1,
+              "mana": [
+                {
+                  "C": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Hidden Lair"
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "C": 1,
+            "U": 0,
+            "B": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "A later turn with a basic Swamp: it taps for {U}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hidden Lair",
+            "Swamp"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Hidden Lair",
+          "mana": {
+            "U": 1
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "U": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maya's basic land is not Rob's: a later turn, only {C}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hidden Lair"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Hidden Lair"
+              },
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "U": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands (the table's way): Hidden Lair's {U} and a Swamp pay a {U}{B} sorcery",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "library": [
+        "Mountain"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Hidden Lair",
+            "Swamp"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dark Thought"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dark Thought"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Dark Thought"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Hidden Lair"
+        },
+        {
+          "seat": 0,
+          "tapped": "Swamp"
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Dark Thought"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Kaito, Cunning Infiltrator",
+    "oracleId": "f6d3f145-00e0-47cd-91d8-0381c19a000d",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Kaito"
+    ],
+    "manaCost": "{1}{U}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 3
+  },
+  "oracleText": "Whenever a creature you control deals combat damage to a player, put a loyalty counter on Kaito.\n+1: Up to one target creature you control can't be blocked this turn. Draw a card, then discard a card.\n−2: Create a 2/1 blue Ninja creature token.\n−9: You get an emblem with \"Whenever a player casts a spell, you create a 2/1 blue Ninja creature token.\"",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "Whenever a creature you control deals combat damage to a player, put a loyalty counter on Kaito.",
+      "trigger": {
+        "on": "damage dealt",
+        "who": "any",
+        "combat": true,
+        "to": "player",
+        "filter": {
+          "types": [
+            "Creature"
+          ],
+          "controller": "you"
+        }
+      },
+      "effects": [
+        {
+          "effect": "putCounter",
+          "targets": "self",
+          "counter": "loyalty",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "+1: Up to one target creature you control can't be blocked this turn. Draw a card, then discard a card.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "effectUntil",
+          "targets": {
+            "target": 0
+          },
+          "rule": "cant-be-blocked",
+          "until": "end-of-turn"
+        },
+        {
+          "effect": "draw",
+          "count": 1
+        },
+        {
+          "effect": "discard",
+          "count": 1
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "you",
+          "count": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−2: Create a 2/1 blue Ninja creature token.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -2
+        }
+      ],
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 1,
+          "token": {
+            "name": "Ninja",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Ninja"
+            ],
+            "colors": [
+              "U"
+            ],
+            "power": 2,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−9: You get an emblem with \"Whenever a player casts a spell, you create a 2/1 blue Ninja creature token.\"",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -9
+        }
+      ],
+      "effects": [
+        {
+          "effect": "emblem",
+          "abilities": [
+            {
+              "kind": "triggered",
+              "text": "Whenever a player casts a spell, you create a 2/1 blue Ninja creature token.",
+              "trigger": {
+                "on": "spell cast",
+                "caster": "any"
+              },
+              "effects": [
+                {
+                  "effect": "createToken",
+                  "count": 1,
+                  "token": {
+                    "name": "Ninja",
+                    "types": [
+                      "Creature"
+                    ],
+                    "subtypes": [
+                      "Ninja"
+                    ],
+                    "colors": [
+                      "U"
+                    ],
+                    "power": 2,
+                    "toughness": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

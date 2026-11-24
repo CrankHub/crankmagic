@@ -149,7 +149,7 @@ const pw = JSON.parse(built.get("wrangler.jsonc").toString("utf8"));
 eq([pw.name, pw.main, pw.assets, pw.routes], ["crankmagic", "cloud/worker.mjs", {directory: "./", binding: "ASSETS", run_worker_first: ["/api/*"]}, [{pattern: "crankmagic.com", custom_domain: true}]],
   "production: the Worker crankmagic on crankmagic.com, its API script run for /api/* only, every page still served as a file");
 eq(pw.d1_databases, [{binding: "DB", database_name: "crankmagic", database_id: "131b2c74-70a0-471e-8474-b8d079b0d322", migrations_dir: "cloud/migrations"}], "production's own database");
-eq(pw.vars, {ACCESS_TEAM_DOMAIN: "crankmagic.cloudflareaccess.com", ACCESS_AUD: "ff51f3bcda0f6f50d2f48bb9d3d96b76530c128a23cdb1cc33aa4fa6d68611a3"},
+eq(pw.vars, {CLOUDFLARE_ACCOUNT_ID: "02e7ae6d703281008f546c63378c6ddb", ACCESS_TEAM_DOMAIN: "crankmagic.cloudflareaccess.com", ACCESS_AUD: "ff51f3bcda0f6f50d2f48bb9d3d96b76530c128a23cdb1cc33aa4fa6d68611a3"},
   "and it trusts the CrankMagic accounts application (crankmagic.com/api/*, the invite list), read from its sign-in redirect");
 const staging = build({source: worktreeSource(), profileName: "cloud-staging"});
 eq(staging.problems, [], "the staging build is complete, its Access application's team and audience included");
@@ -276,6 +276,8 @@ for (const name of ["cloud-production", "cloud-production-standby"]) {
   eq([c.name, c.d1_databases, c.ratelimits, c.vars.ACCESS_TEAM_DOMAIN, c.vars.ACCESS_AUD],
     [pw.name, pw.d1_databases, pw.ratelimits, pw.vars.ACCESS_TEAM_DOMAIN, pw.vars.ACCESS_AUD], `${name} retains the same production account resources`);
   eq([c.main, c.durable_objects, c.migrations], [sw2.main, sw2.durable_objects, sw2.migrations], `${name} keeps the exact table class and migration`);
+  /* ROB-440: production names the account, so the rule groups are its list once Rob installs ACCESS_API_TOKEN on it. */
+  eq(c.vars.CLOUDFLARE_ACCOUNT_ID, sw2.vars.CLOUDFLARE_ACCOUNT_ID, `${name} names the account whose Access rule groups it reads`);
   eq([c.vars.PLAYTEST_TABLES, c.vars.SERVICE_SEATS, c.vars.PLAY_TABLES_CLOSED], [undefined, undefined, closed ? "on" : undefined], `${name} has no service seats or full-record exposure`);
   eq(b.has("crankmagic-board.js"), !closed, `${name} public Play modules match its entry state`);
   eq(JSON.parse(b.get("version.json")).profile, name, `${name} is identified for exact readback`);
