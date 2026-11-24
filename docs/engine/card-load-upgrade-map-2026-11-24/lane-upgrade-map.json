@@ -18,7 +18,7 @@
       ],
       "slotStatus": "Buy local",
       "group": "D",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Brokers Ascendancy",
@@ -31,7 +31,7 @@
       ],
       "slotStatus": "Buy local",
       "group": "A",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Clock of Omens",
@@ -43,7 +43,7 @@
       ],
       "slotStatus": "Buy online",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Coalition Victory",
@@ -56,7 +56,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "E",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Drogskol Reaver",
@@ -69,7 +69,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "E",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Dross Scorpion",
@@ -81,7 +81,7 @@
       ],
       "slotStatus": "Buy online",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Felidar Guardian",
@@ -94,7 +94,7 @@
       ],
       "slotStatus": "Buy local",
       "group": "E",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Fertile Ground",
@@ -106,7 +106,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "E",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Firdoch Core",
@@ -119,7 +119,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Illusionist's Bracers",
@@ -132,7 +132,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "B",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Invasion of Dominaria",
@@ -144,7 +144,7 @@
       ],
       "slotStatus": "Buy online",
       "group": "D",
-      "loadedHere": false,
+      "loadedHere": true,
       "oracleName": "Invasion of Dominaria // Serra Faithkeeper"
     },
     {
@@ -157,7 +157,7 @@
       ],
       "slotStatus": "Buy online",
       "group": "D",
-      "loadedHere": false,
+      "loadedHere": true,
       "oracleName": "Invasion of Zendikar // Awakened Skyclave"
     },
     {
@@ -171,7 +171,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Leyline of the Guildpact",
@@ -184,7 +184,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "E",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Marionette Master",
@@ -195,7 +195,7 @@
       ],
       "slotStatus": "In cart, keep",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Oni-Cult Anvil",
@@ -207,7 +207,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Queen Marchesa",
@@ -220,7 +220,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "E",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Rings of Brighthearth",
@@ -231,7 +231,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "B",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Sting, the Glinting Dagger",
@@ -244,7 +244,7 @@
       ],
       "slotStatus": "Buy local, Ordered",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Teferi, Temporal Archmage",
@@ -256,7 +256,7 @@
       ],
       "slotStatus": "Buy local",
       "group": "A",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Teferi, Who Slows the Sunset",
@@ -269,7 +269,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "A",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Tempered Steel",
@@ -281,7 +281,7 @@
       ],
       "slotStatus": "Buy online",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "The Chain Veil",
@@ -292,7 +292,7 @@
       ],
       "slotStatus": "Buy local, Ordered",
       "group": "A",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "The Peregrine Dynamo",
@@ -303,7 +303,7 @@
       ],
       "slotStatus": "Buy online",
       "group": "B",
-      "loadedHere": false
+      "loadedHere": true
     },
     {
       "name": "Transguild Courier",
@@ -316,7 +316,7 @@
       ],
       "slotStatus": "Ordered",
       "group": "C",
-      "loadedHere": false
+      "loadedHere": true
     }
   ]
 }
