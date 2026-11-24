@@ -131,6 +131,8 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | Endless Foot Assault (squad); Foot Chopper | **An ignore.** Squad is paid at most ten times (as multikicker and replicate), and a second squad on one card (CR 702.157b) is not built. Under a token doubler, Foot Chopper is attached to the first Ninja made, not one its controller picks (as Dáin Ironfoot's Axe). | Ninja deck load, 2026-11-23 |
 | Satoru Umezawa; ninjutsu; Kaito, Bane of Nightmares | **Untested edges, named.** A copy of Satoru is not shown; which unblocked attacker a ninjutsu returns is not chosen in a scenario (the runner takes the first offer); Kaito with no loyalty counters on his own turn cannot be reached (he is put into the graveyard first). | Ninja deck load, 2026-11-23 |
 | Silicate Surveyor | **An ignore.** The card it exiles is offered to be played only once its mana is floated (the "casts from exile" row above); its scenarios tap by hand before the offer is checked. | Star Trek load, 2026-11-22 (ROB-532) |
+| Every token that shares its name with another (107 of the 161 the definitions make: Spirit, Elemental, Dragon, Goblin, Zombie, Inkling, Treasure...) | **Open.** The board draws a token from Scryfall by its name alone, so the picture is of some token of that name, or of a card: a 1/1 Inkling for Shadrix's 2/1, a colorless 4/4 Dragon for the red 5/5, the Dinosaur side of a Dinosaur // Treasure token, an Unfinity card for a Goblin. The rules are right; the picture is not. The view must say which token it is. **Checked** against Scryfall, 2026-11-24. | ROB-542 |
+| Draconic Visitor beside a creature token (Shadrix's Inkling) | **Right, and silent.** It replaces artifact tokens only, so the Inkling stays an Inkling; nothing on the board says why, and it was reported as a bug. | ROB-542 |
 
 ## 5. Choices the engine makes for the player
 
@@ -154,7 +156,8 @@ is decided in code today.
 
 Not rules gaps, but a card the AI never uses plays differently at a table of four. The house AI never sacrifices for
 Plumb the Forbidden, never plots (Blacksnag Buzzard), never attacks planeswalkers, and does not value the monarch
-(#829, #597, #721).
+(#829, #597, #721). It never blocks a creature with menace: both pilots block one for one, so against AI seats a menace
+creature is never blocked at all (`house-pilot.mjs`, `scored-pilot.mjs`; ROB-542).
 
 ## 7. Checks that step around a card (ignores in suites and tools)
 

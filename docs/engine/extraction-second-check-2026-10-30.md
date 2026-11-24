@@ -96,6 +96,32 @@ is never baselined: it would otherwise fail every new card with a costed ability
 Promote it to hard (`CLASS_POLICY` in the tool) when a report confirms it or Rob decides the engine should offer it, then baseline
 what is left. Tezzeret's Gambit, found in the first run, is clean here: ROB-326 fixed it under `phyrexianTaps`.
 
+### Tokens and "choose N", added 2026-11-24 (ROB-542)
+
+Rob, 2026-11-24: *"There are some issues related to tokens, the images used on tokens, that the artwork is correct for the type
+of token created, as well as certain card mechanics related to tokens ... other edge cases related to multi-select on certain
+cards, to have 3 options and similar."* Layer A now reads two more things from the text:
+
+- **Each token the text makes** ("a 2/1 white and black Inkling creature token with flying"): its size, colors, subtypes,
+  whether it is an artifact or an enchantment too, and exactly the keywords of its "with" clause, against the tokens the
+  definition makes (a predefined one as the engine expands it). `TOKEN_DROPPED`, `TOKEN_DIFFERS`.
+- **How many modes may be taken** ("choose two", "one or both", "up to two", "one or more") against the modal's `choose`
+  and `chooseUpTo`. `CHOOSE_COUNT_DIFFERS`.
+
+On `main` that day: 312 token phrases and 96 headers read across 6,571 definitions and the committed candidates, and no
+difference found. So what players report about tokens is not the extraction. What was found instead:
+
+| Report | What it was |
+| --- | --- |
+| The token's picture is wrong | **A defect.** The board asks Scryfall for a token by its name alone (`pictureOf`, `crankmagic-board.js`). 107 of the 161 different tokens the definitions make share a name with another token, and 276 of the 368 token-making effects use one of those. Asked on 2026-11-24, "Inkling" drew a 1/1 (Shadrix's is 2/1), "Dragon" a colorless 4/4, "Treasure" the Dinosaur side of a two-sided token, "Goblin" an Unfinity card, "Shapeshifter" the Antiquities card, "Spirit" an ad card. |
+| Shadrix's Inkling beside Draconic Visitor was not made a Dragon | **The game was right, and silent** (pattern 6). The Visitor replaces *artifact* tokens; an Inkling is a creature token. |
+| Menace "may not fire" | Enforced for a person's block (`tests/engine-keywords.mjs`), and all 106 keyword words the definitions carry are read by the engine. The AI seats never block a creature with menace with two, so against AI it is never blocked. No reproduced defect yet: it needs the card and the moment. |
+
+What these two checks do not see: a token a card makes without saying its size and colors in one phrase (a copy, "a Treasure
+token", amass), a keyword counter, a quoted ability a token is made with, and a header that does not end its line with a dash
+(Shadrix's "you may choose two. Each mode must target a different player." is one). Whether the right token then *enters*
+under a doubler or a replacement is behavior, and is the scenarios' job until the check ROB-542 names is built.
+
 ### What it does not see (so do not read "clean" as "proven")
 
 - 439 of the 6,889 spells and abilities were offered in no state: the probe supplies no sacrifice fodder, no discard, no
