@@ -752,19 +752,36 @@ export function manaTriggered(state, event, picks = []) {
  * produced (those types), and one for each that adds one mana "of any color" (Fertile Ground; the five). `event`: what the tap
  * would say, `{data: {fields: {player, source, produced, tapped}}}`. Empty when the tap asks for none.
  */
-export function manaPicks(state, event) {
+export function manaPicks(state, event, watchers = manaWatchers(state)) {
   const fields = event?.data?.fields ?? {};
   const kinds = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
-  const held = abilitiesReader(state);
   const picks = [];
+  for (const {id, ability} of watchers) {
+    const mana = ability.trigger.manaAbility;
+    if (!tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) continue;
+    if (mana.produced && kinds.length > 1) picks.push(kinds);
+    else if (mana.anyColor === true) picks.push([...COLORS]);
+  }
+  return picks;
+}
+
+/* The triggered mana abilities on the battlefield that may ask a tap for a pick (manaPicks): "of any type that land produced"
+   and "of any color", each `{id, ability}`. Read once for all of a player's mana offers -- usually there are none, and then no
+   tap asks anything. */
+export function manaWatchers(state) {
+  /* None can be held unless one is a permanent's own -- a copy's own too, its copied abilities (CR 707.2): read what each
+     holds only then, since that derives every permanent. No card gives one (`addAbilities` gives mana and activated
+     abilities, Ultima's and Thranduil's); a card that gives a triggered mana ability is read here too. */
+  const watches = (ability) => ability?.kind === "triggered" && Boolean(ability.trigger?.manaAbility?.produced || ability.trigger?.manaAbility?.anyColor === true);
+  if (!state.zones.battlefield.some((id) => (state.objects[id].abilities ?? []).some(watches))) return [];
+  const held = abilitiesReader(state);
+  const watchers = [];
   for (const id of state.zones.battlefield)
     for (const ability of held(id)) {
       const mana = ability.kind === "triggered" ? ability.trigger?.manaAbility : null;
-      if (!mana || !tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) continue;
-      if (mana.produced && kinds.length > 1) picks.push(kinds);
-      else if (mana.anyColor === true) picks.push([...COLORS]);
+      if (mana && (mana.produced || mana.anyColor === true)) watchers.push({id, ability});
     }
-  return picks;
+  return watchers;
 }
 
 /**

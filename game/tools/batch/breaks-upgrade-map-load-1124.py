@@ -92,7 +92,7 @@ BREAKS = [
      '|| adds.chosenColor === true || adds.anyColor === true)) {',
      '|| adds.chosenColor === true)) {'),
     ('any color: no pick asked', TRIGGER,
-     '      else if (mana.anyColor === true) picks.push([...COLORS]);\n',
+     '    else if (mana.anyColor === true) picks.push([...COLORS]);\n',
      ''),
     ('any color: the pick adds nothing', TRIGGER,
      'const adds = mana.produced || mana.anyColor === true ? (kind ? {[kind]: 1} : null)',
@@ -100,6 +100,13 @@ BREAKS = [
     ('any color: the same mana offered twice', ACTIONS,
      '    if (!kept.has(key) || (ordered && !kept.get(key).ordered)) kept.set(key, {way, ordered});',
      '    kept.set(key + kept.size, {way, ordered});'),
+    # The mana watchers, read once for all of a player's mana offers, and only when a permanent has one (rules/trigger.mjs).
+    ('mana watchers: none read from the permanents\' own abilities', TRIGGER,
+     'if (!state.zones.battlefield.some((id) => (state.objects[id].abilities ?? []).some(watches))) return [];',
+     'if (!state.zones.battlefield.some((id) => (state.objects[id].abilities ?? []).some(() => false))) return [];'),
+    ('mana watchers: an any-color one not watching', TRIGGER,
+     'if (mana && (mana.produced || mana.anyColor === true)) watchers.push({id, ability});',
+     'if (mana && mana.produced) watchers.push({id, ability});'),
     # Queen Marchesa: "if an opponent is the monarch" (CR 725.1).
     ('monarch opponent: always', CONDITION,
      '  if (condition.monarch === "opponent" && !(Number.isInteger(state.monarch) && state.monarch !== controller)) return false;\n',

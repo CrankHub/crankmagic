@@ -75,7 +75,7 @@ import {lastKnown, characteristicsOf, abilitiesOf, deriving, derivingAfresh, onc
 import {namesChosen, withChosen, chosenFor} from "../script/chosen.mjs";
 import {poolFor, spendFor, addRestricted, addRider, riderChoices, addProvenance, addPoolMana} from "./restricted-mana.mjs";
 import {askEntering} from "./entering.mjs";
-import {collectTriggers, openTriggers, manaTriggered, manaPicks} from "./trigger.mjs";
+import {collectTriggers, openTriggers, manaTriggered, manaPicks, manaWatchers} from "./trigger.mjs";
 
 const MAIN_PHASES = ["MAIN1", "MAIN2"];
 /* A LAND IN ANY STEP OF YOUR OWN TURN (`landAnyStep`; Rob, 2026-10-21): a house rule, not CR 305.1's main phase -- the
@@ -1649,9 +1649,9 @@ function playableElsewhere(state, player, kind) {
  * `[null]`: no pick, the tap makes one type or nothing asks. Never for an ability with no {T} of its own: it is "tapped for mana"
  * only when its source is tapped (the event's `tapped`).
  */
-function manaPickable(state, player, id, ability, mana) {
-  if (!ability.tapSelf) return [null];
-  const picks = manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced: mana, source: {cardId: id}}}});
+function manaPickable(state, player, id, ability, mana, watchers) {
+  if (!ability.tapSelf || !watchers.length) return [null];
+  const picks = manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced: mana, source: {cardId: id}}}}, watchers);
   if (!picks.length) return [null];
   let ways = [[]];
   for (const options of picks) ways = ways.flatMap((way) => MANA_KEYS.filter((k) => options.includes(k)).map((k) => [...way, k]));
@@ -1668,6 +1668,8 @@ function manaPickable(state, player, id, ability, mana) {
 /** Its mana abilities' activations, each an offer (CR 605.3a): any time the player has priority, whatever the step. */
 function manaOffers(state, player) {
   const actions = [];
+  /* The triggered mana abilities that may ask a tap for a pick, read once for every offer (manaPickable). */
+  const watchers = manaWatchers(state);
   for (const id of state.zones.battlefield) {
     const object = state.objects[id];
     if (object.controller !== player) continue;
@@ -1697,7 +1699,7 @@ function manaOffers(state, player) {
       for (const costChoice of fodder) alternatives.forEach((mana, produce) => {
         /* "Add one mana of any type that land produced" with more than one type made (Heartbeat of Spring): each pick the tapping
            player may make, an offer of its own (manaPickable). */
-        for (const extra of manaPickable(state, player, id, ability, mana)) actions.push({
+        for (const extra of manaPickable(state, player, id, ability, mana, watchers)) actions.push({
           kind: "activate-mana", objectId: id, abilityId: ability.id, label: object.card, mana,
           /* A fixed ability is one offer and looks as it always has; a choice says which it is. */
           ...(alternatives.length > 1 || Array.isArray(ability.produces) || ability.anyColor || ability.reflect || ability.among ? {produce} : {}),

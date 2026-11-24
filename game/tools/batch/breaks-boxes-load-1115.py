@@ -128,7 +128,7 @@ BREAKS = [
      'kind = pending.shift();\n        if (!kinds.includes(kind))',
      'kind = kinds[0];\n        if (!kinds.includes(kind))'),
     ('heartbeat: no offer for each pick', ACTIONS,
-     'if (!ability.tapSelf) return [null];',
+     'if (!ability.tapSelf || !watchers.length) return [null];',
      'if (true) return [null];'),
     ('heartbeat: the pick offers are spent as plain taps', ACTIONS,
      'if (offer.costChoice || offer.extra) continue;',
