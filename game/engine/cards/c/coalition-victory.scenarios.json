@@ -1,0 +1,506 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Coalition Victory",
+  "fixtures": {
+    "Pale Page": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{1}",
+      "colors": [
+        "W"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Blue Page": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{1}",
+      "colors": [
+        "U"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Black Page": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{1}",
+      "colors": [
+        "B"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Red Page": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{1}",
+      "colors": [
+        "R"
+      ],
+      "power": 1,
+      "toughness": 1
+    },
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "manaCost": "{1}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Red Gate": {
+      "types": [
+        "Land"
+      ],
+      "abilities": [
+        {
+          "id": "r",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "R": 1
+          }
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "name": "With Leyline of the Guildpact, eight Wastes and one Bear: the Wastes are every basic land type and tap for its colors, the Bear is every color -- Rob wins",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Leyline of the Guildpact",
+            "Bear",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Coalition Victory"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "B": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "R": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "G": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "cast": "Coalition Victory"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "event": "GameEventGameOutcome",
+          "where": {
+            "winner": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped basic lands with a creature of each color: Rob wins",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island",
+            "Swamp",
+            "Mountain",
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Pale Page",
+            "Blue Page",
+            "Black Page",
+            "Red Page",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Coalition Victory"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Coalition Victory"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "event": "GameEventGameOutcome",
+          "where": {
+            "winner": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prismatic Omen supplies every land type, but no creature is green: nothing happens, and the sorcery is in the graveyard",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Prismatic Omen",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Pale Page",
+            "Blue Page",
+            "Black Page",
+            "Red Page"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Coalition Victory"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "B": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "R": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "G": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "cast": "Coalition Victory"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Coalition Victory"
+          ]
+        },
+        {
+          "seat": 0,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A creature of each color but no Mountain (the red is from a nonbasic land with no type): nothing happens",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island",
+            "Swamp",
+            "Forest",
+            "Red Gate",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Pale Page",
+            "Blue Page",
+            "Black Page",
+            "Red Page",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Coalition Victory"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Red Gate"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Coalition Victory"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Coalition Victory"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Every land type and a creature of each color, with Prismatic Omen supplying the types to eight Wastes: Rob wins",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Prismatic Omen",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Pale Page",
+            "Blue Page",
+            "Black Page",
+            "Red Page",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Coalition Victory"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "U": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "B": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "R": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "G": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "cast": "Coalition Victory"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "event": "GameEventGameOutcome",
+          "where": {
+            "winner": 0
+          }
+        }
+      ]
+    }
+  ]
+}

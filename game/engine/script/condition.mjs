@@ -73,6 +73,8 @@
  *   {monarch: "you"}                   "if you're the monarch" (CR 725; Ginger, Queen of Sweets): its controller is the
  *                                      monarch now (`state.monarch`, effects/resources.mjs) -- with no monarch in the game, nobody
  *                                      is (725.1)
+ *   {monarch: "opponent"}              "if an opponent is the monarch" (CR 725; Queen Marchesa): a player other than its
+ *                                      controller is the monarch now -- with no monarch in the game, no opponent is
  *   {solved: true|false}               its own permanent, a Case, is solved, or is not (CR 719.3b): "To solve" asks it as its
  *                                      end step begins (719.3a), and "Solved -- [ability]" is that ability's condition (719.3c)
  *   {sacrificedNontokenThisTurn: true}  its controller has sacrificed a nontoken permanent this turn (Evendo Brushrazer;
@@ -506,6 +508,8 @@ export function conditionHolds(state, condition, {controller, source = null, abo
     && Number.isInteger(gift ?? (source !== null && source !== undefined ? state.objects[source]?.gift : undefined)) !== condition.giftPromised) return false;
   /* "If you're the monarch" (CR 725.1, 725.3): its controller holds the game's designation now. */
   if (condition.monarch === "you" && state.monarch !== controller) return false;
+  /* "If an opponent is the monarch" (Queen Marchesa; CR 725.1, 725.3): some other player holds it now -- nobody does, and none is. */
+  if (condition.monarch === "opponent" && !(Number.isInteger(state.monarch) && state.monarch !== controller)) return false;
   /* "IF FRODO IS YOUR RING-BEARER" (CR 701.54e; Frodo, Adventurous Hobbit): its own permanent is the creature its
      controller chose as their Ring-bearer, still on the battlefield under their control (keywords/ring.mjs). */
   if (condition.ringBearer === true && !isRingBearer(state, source, controller)) return false;
@@ -656,7 +660,7 @@ export function conditionProblems(condition) {
   if ("void" in condition && condition.void !== true) problems.push("void is true");
   if ("sneak" in condition && condition.sneak !== true) problems.push("sneak is true");
   if ("duringStep" in condition && condition.duringStep !== "COMBAT_DECLARE_ATTACKERS") problems.push("duringStep is \"COMBAT_DECLARE_ATTACKERS\": the step the game is in");
-  if ("monarch" in condition && condition.monarch !== "you") problems.push("monarch is \"you\": its controller is the monarch");
+  if ("monarch" in condition && !["you", "opponent"].includes(condition.monarch)) problems.push("monarch is \"you\" (its controller is the monarch) or \"opponent\" (another player is)");
   if ("descended" in condition && condition.descended !== true) problems.push("descended is true: its controller descended this turn");
   if ("combatDamagedBy" in condition && !(typeof condition.combatDamagedBy?.named === "string" && Object.keys(condition.combatDamagedBy).length === 1))
     problems.push("combatDamagedBy is {named}: the name of the creature that dealt the player the effect is about combat damage this game");
