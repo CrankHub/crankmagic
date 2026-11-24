@@ -1,55 +1,58 @@
 {
  "schema": "precons-latest@1",
- "generatedAt": "2026-10-31T19:35:59.599Z",
+ "generatedAt": "2026-11-24T23:10:56.031Z",
  "generator": "tools/build-precons.mjs",
- "count": 6,
+ "count": 8,
  "source": "the newest release date in data/precons.json; set names from MTGJSON SetList.json",
- "releaseDate": "2026-10-02",
+ "releaseDate": "2026-11-13",
  "decks": [
   {
-   "id": "CallingAllAngels_FDC",
-   "code": "FDC",
-   "setName": "Foundations Commander",
-   "name": "Calling All Angels",
-   "releaseDate": "2026-10-02",
+   "id": "FederationFleet_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "Federation Fleet",
+   "releaseDate": "2026-11-13",
    "commander": [
     {
-     "name": "Giada, Font of Hope",
-     "colorIdentity": [
-      "W"
-     ]
-    }
-   ],
-   "total": 100
-  },
-  {
-   "id": "KeenEngineering_FDC",
-   "code": "FDC",
-   "setName": "Foundations Commander",
-   "name": "Keen Engineering",
-   "releaseDate": "2026-10-02",
-   "commander": [
-    {
-     "name": "Sai, Master Thopterist",
-     "colorIdentity": [
-      "U"
-     ]
-    }
-   ],
-   "total": 100
-  },
-  {
-   "id": "MultiverseReforged_FRC",
-   "code": "FRC",
-   "setName": "Reality Fracture Commander",
-   "name": "Multiverse Reforged",
-   "releaseDate": "2026-10-02",
-   "commander": [
-    {
-     "name": "Jace, Multiverse Architect",
+     "name": "Jean-Luc Picard, Luminary",
      "colorIdentity": [
       "W",
       "U",
+      "R"
+     ]
+    }
+   ],
+   "total": 100
+  },
+  {
+   "id": "FederationFleetCollectorSEdition_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "Federation Fleet Collector's Edition",
+   "releaseDate": "2026-11-13",
+   "commander": [
+    {
+     "name": "Jean-Luc Picard, Luminary",
+     "colorIdentity": [
+      "W",
+      "U",
+      "R"
+     ]
+    }
+   ],
+   "total": 100
+  },
+  {
+   "id": "KlingonFury_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "Klingon Fury",
+   "releaseDate": "2026-11-13",
+   "commander": [
+    {
+     "name": "Worf, Defiant Commander",
+     "colorIdentity": [
+      "W",
       "B",
       "R"
      ]
@@ -58,15 +61,17 @@
    "total": 100
   },
   {
-   "id": "ReignOfDragons_FDC",
-   "code": "FDC",
-   "setName": "Foundations Commander",
-   "name": "Reign of Dragons",
-   "releaseDate": "2026-10-02",
+   "id": "KlingonFuryCollectorSEdition_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "Klingon Fury Collector's Edition",
+   "releaseDate": "2026-11-13",
    "commander": [
     {
-     "name": "Lathliss, Dragon Queen",
+     "name": "Worf, Defiant Commander",
      "colorIdentity": [
+      "W",
+      "B",
       "R"
      ]
     }
@@ -74,15 +79,17 @@
    "total": 100
   },
   {
-   "id": "TramplesaurusRex_FDC",
-   "code": "FDC",
-   "setName": "Foundations Commander",
-   "name": "Tramplesaurus Rex",
-   "releaseDate": "2026-10-02",
+   "id": "LandingParty_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "Landing Party",
+   "releaseDate": "2026-11-13",
    "commander": [
     {
-     "name": "Ghalta, Primal Hunger",
+     "name": "Commander Spock",
      "colorIdentity": [
+      "W",
+      "U",
       "G"
      ]
     }
@@ -90,15 +97,53 @@
    "total": 100
   },
   {
-   "id": "WretchedRanks_FDC",
-   "code": "FDC",
-   "setName": "Foundations Commander",
-   "name": "Wretched Ranks",
-   "releaseDate": "2026-10-02",
+   "id": "LandingPartyCollectorSEdition_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "Landing Party Collector's Edition",
+   "releaseDate": "2026-11-13",
    "commander": [
     {
-     "name": "Ghoulcaller Gisa",
+     "name": "Commander Spock",
      "colorIdentity": [
+      "W",
+      "U",
+      "G"
+     ]
+    }
+   ],
+   "total": 100
+  },
+  {
+   "id": "WeAreTheBorg_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "We Are the Borg",
+   "releaseDate": "2026-11-13",
+   "commander": [
+    {
+     "name": "The Borg Queen",
+     "colorIdentity": [
+      "W",
+      "U",
+      "B"
+     ]
+    }
+   ],
+   "total": 100
+  },
+  {
+   "id": "WeAreTheBorgCollectorSEdition_TRC",
+   "code": "TRC",
+   "setName": "Star Trek Commander",
+   "name": "We Are the Borg Collector's Edition",
+   "releaseDate": "2026-11-13",
+   "commander": [
+    {
+     "name": "The Borg Queen",
+     "colorIdentity": [
+      "W",
+      "U",
       "B"
      ]
     }
