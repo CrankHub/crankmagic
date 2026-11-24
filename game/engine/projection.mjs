@@ -98,6 +98,8 @@ function cardFor(state, id, canSeeFace, viewer = null) {
        a zone change makes a new object, and an Aura in a hidden zone must never gain an identity through its old host. */
     ...(object.zone === "battlefield" ? {
       ...(object.token === true ? {token: true} : {}),
+      /* A battle's protector (CR 310.9): public, the player who blocks for it and may never attack it. */
+      ...(Number.isInteger(object.protector) ? {protector: object.protector} : {}),
       /* WHICH FACE IS UP (ROB-207; the UI's request #5): the back face of a double-faced permanent, said with its name. A name
          cannot say which side of one picture to draw (a modal double-faced land played as its back face, Mistgate Pathway).
          The front is the default and says nothing; `face` is only ever "back" here (an adventure's face is not a permanent's). */
@@ -275,7 +277,9 @@ function project(state, viewer) {
         attackingPlayerId: state.combat.attackingPlayerId,
         defenders: [...state.combat.defenders],
         attacks: state.combat.attacks.map((a) => ({
-          attacker: a.attacker, defender: a.defender, ...(a.planeswalker !== undefined ? {planeswalker: a.planeswalker} : {}), blocked: a.blocked, blockers: [...a.blockers],
+          attacker: a.attacker, defender: a.defender, ...(a.planeswalker !== undefined ? {planeswalker: a.planeswalker} : {}),
+          /* The battle attacked, `defender` its protector (CR 310.9d). */
+          ...(a.battle !== undefined ? {battle: a.battle} : {}), blocked: a.blocked, blockers: [...a.blockers],
         })),
       }
       : null,

@@ -55,7 +55,7 @@ import {pushAbility, becameTarget, crimeCommitted} from "./stack.mjs";
 import {objectsAfterMove, cardsIn, usesThisTurn, recordUse} from "../state/index.mjs";
 import {playerStatics, ruleChanged} from "./statics.mjs";
 import {matchesSelector, matchesLastKnown} from "../script/filter.mjs";
-import {abilitiesOf, abilitiesReader, characteristicsOf} from "./layers.mjs";
+import {abilitiesOf, abilitiesReader, characteristicsOf, controllerOf} from "./layers.mjs";
 import {chosenFor, CHOSEN_COLOR_LETTER} from "../script/chosen.mjs";
 import {targetChoices, targetName, isHostile, isChoosing, targetCandidates, countedChoice, modalScript, differentControllersProblem, shareProblem} from "../script/bind.mjs";
 
@@ -288,22 +288,25 @@ function subjects(state, event, condition, sourceId, controller) {
   /* "Whenever this creature attacks", "whenever a creature you control attacks" (CR 508.1m): each attacker, and the
      player it attacks. */
   /* "Whenever you attack" ("attackers declared"): the attack as a whole, by whom, with how many, at whom. */
+  /* An attack on a player, as the event says it: not on a planeswalker of theirs, nor on a battle they protect (CR 506.3,
+     310.9) -- the protector is that attack's defending player (310.9d), but it is no attack on them. */
+  const atPlayer = (a) => !a.defender?.planeswalker && !a.defender?.battle;
   if (condition.on === "GameEventAttackersDeclared" && condition.declared) {
     const attacker = fields.player?.playerId, attacks = fields.attackers ?? [];
     if (!attacks.length || !whoseIs(condition.attacker ?? "you", attacker, controller)) return [];
     /* "Attacks you with two or more creatures" (Trouble in Pairs; CR 506.3): the creatures attacking this ability's controller
        counted, never one attacking a planeswalker of theirs. */
-    if (condition.atLeast && (condition.attacksYou ? attacks.filter((a) => a.defender?.playerId === controller && !a.defender.planeswalker) : attacks).length < condition.atLeast) return [];
+    if (condition.atLeast && (condition.attacksYou ? attacks.filter((a) => a.defender?.playerId === controller && atPlayer(a)) : attacks).length < condition.atLeast) return [];
     /* "Whenever you attack with one or more non-Gnome creatures" (Anim Pakal): an attacker the filter fits. */
     if (condition.filter && !attacks.some((a) => fits(state, a.card?.cardId, {filter: condition.filter}, sourceId, controller))) return [];
     /* "Each player mills that many cards" (The Ur-Sphinx): the attackers the filter fits, as "those cards". */
     const those = condition.filter ? attacks.filter((a) => fits(state, a.card?.cardId, {filter: condition.filter}, sourceId, controller)).map((a) => a.card?.cardId) : null;
     /* Attacking a planeswalker of a player's is not attacking that player (CR 506.3): not "attacking you", and no player
        attacked for "that player". */
-    if (condition.notAttacking === "you" && attacks.some((a) => a.defender?.playerId === controller && !a.defender.planeswalker)) return [];
+    if (condition.notAttacking === "you" && attacks.some((a) => a.defender?.playerId === controller && atPlayer(a))) return [];
     /* Each player attacked, "that player"; the attacking player is `attacker` ("that attacking player creates ..."). One of
        this ability's controller's opponents only, when it says so (CR 508.3e). */
-    if (condition.eachDefender) return [...new Set(attacks.filter((a) => !a.defender?.planeswalker).map((a) => a.defender?.playerId))]
+    if (condition.eachDefender) return [...new Set(attacks.filter(atPlayer).map((a) => a.defender?.playerId))]
       .filter((player) => condition.defender !== "opponent" || player !== controller).map((player) => ({player, attacker}));
     return [{player: attacker, ...(those ? {cards: those} : {})}];
   }
@@ -320,14 +323,14 @@ function subjects(state, event, condition, sourceId, controller) {
       /* "Attack one of your opponents": the player attacked is not this ability's controller. A planeswalker of theirs only
          when it says "or a planeswalker they control" (`planeswalkers`, Frontier Warmonger; CR 506.3). */
       .filter((a) => condition.defender !== "opponent" || (a.defender?.playerId !== undefined && a.defender.playerId !== controller
-        && (!a.defender.planeswalker || condition.planeswalkers === true)))
+        && !a.defender.battle && (!a.defender.planeswalker || condition.planeswalkers === true)))
       /* "Whenever a creature attacks you or a planeswalker you control" (Jace, Reality Sculptor): `defender` "you". */
-      .filter((a) => condition.defender !== "you" || (a.defender?.playerId === controller && (!a.defender.planeswalker || condition.planeswalkers === true)))
+      .filter((a) => condition.defender !== "you" || (a.defender?.playerId === controller && !a.defender.battle && (!a.defender.planeswalker || condition.planeswalkers === true)))
       /* "Attacks a player alone" (Jiang Yanggu, Alone; Yuriko): a player, not a planeswalker of theirs (CR 506.3). */
-      .filter((a) => condition.defender !== "player" || (a.defender?.playerId !== undefined && !a.defender.planeswalker))
+      .filter((a) => condition.defender !== "player" || (a.defender?.playerId !== undefined && atPlayer(a)))
       /* Dethrone's "attacks the player with the most life or tied for most life" (CR 702.105a; cards/index.mjs): that player, as
          it attacks -- a planeswalker of theirs is not them (CR 506.3). */
-      .filter((a) => condition.defenderMostLife !== true || (a.defender?.playerId !== undefined && !a.defender.planeswalker && hasMostLife(state, a.defender.playerId)));
+      .filter((a) => condition.defenderMostLife !== true || (a.defender?.playerId !== undefined && atPlayer(a) && hasMostLife(state, a.defender.playerId)));
     /* "Whenever a player attacks with three or more creatures" (Aurelia): the attack as a whole, counted -- one event
        declares every attacker (CR 508.1). */
     if (condition.atLeast && matched.length < condition.atLeast) return [];
@@ -960,6 +963,19 @@ export function collectTriggers(state, events) {
         controller: card.owner, source: {cardId: id, name: card.card}, cause: null, optional: false, about: {card: id, player: card.owner},
         script: {targets: [], effects: [{effect: "removeCounter", targets: "that card", counter: "time", count: 1},
           {effect: "play", from: "targets", targets: "that card", free: true, condition: {compare: {count: {countersOn: "that card", counter: "time"}, atMost: 0}}}]}});
+    }
+    /* A SIEGE'S OWN TRIGGER (CR 310.12b): "when the last defense counter is removed from this permanent, exile it, then you may
+       cast it transformed without paying its mana cost" -- an ability every Siege has, its controller's. While it waits, the
+       Siege at defense 0 is not put into its owner's graveyard (CR 704.5v; rules/sba.mjs). Cast so, it is put on the stack
+       with its back face up (CR 712.11a; effects/asking.mjs, `play`'s `transformed`); or not cast, it stays in exile. */
+    if (event.kind === "GameEventCardCounters" && event.data?.fields?.type === "defense" && (event.data.fields.oldValue ?? 0) > 0 && (event.data.fields.newValue ?? 0) <= 0) {
+      const siege = event.data.fields.card?.cardId;
+      const object = state.objects[siege];
+      if (object && characteristicsOf(state, siege).subtypes.includes("Siege"))
+        state.pendingTriggers.push({abilityId: "siege", text: "When the last defense counter is removed from this Siege, exile it, then you may cast it transformed without paying its mana cost.",
+          controller: controllerOf(state, siege), source: {cardId: siege, name: object.card}, cause: null, optional: false, about: {card: siege, player: controllerOf(state, siege)},
+          script: {targets: [], effects: [{effect: "moveZone", targets: "that card", to: "exile", remember: true},
+            {effect: "play", from: "targets", targets: "remembered", free: true, transformed: true}]}});
     }
     if (moment && (state.delayedTriggers ?? []).length) {
       /* "At the beginning of your next upkeep" (rebound, `yours`) and "at the beginning of your precombat main phase" (paradigm,

@@ -1222,6 +1222,8 @@ export function isGoaded(state, id) {
 export function attackTax(state, picked) {
   let total = 0;
   const held = staticAbilities(state);
+  /* An attack on a battle is no attack on its protector (CR 506.3, 310.9): "creatures can't attack you unless" asks nothing of it. */
+  picked = picked.filter((o) => o.battleId === undefined);
   for (const {defenderId, planeswalkerId} of picked) for (const holderId of state.zones.battlefield) {
     const holder = state.objects[holderId];
     if (holder.controller !== defenderId) continue;

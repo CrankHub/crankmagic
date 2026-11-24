@@ -593,10 +593,10 @@ export function conditionHolds(state, condition, {controller, source = null, abo
     if (!them || them.lost || state.players.some((p) => p.id !== them.id && !p.lost && measure(p.id) >= measure(them.id))) return false;
   }
   /* "IF IT'S ATTACKING THE PLAYER WITH THE MOST LIFE OR TIED FOR MOST LIFE" (Scourge of the Throne; CR 702.105a's player): this
-     creature attacking a player -- not a planeswalker of theirs (CR 506.3) -- who has at least as much life as each other
+     creature attacking a player -- not a planeswalker of theirs, nor a battle they protect (CR 506.3) -- who has at least as much life as each other
      player still in the game (CR 800.4a). Removed from combat, it attacks nobody. */
   if (condition.attackingMostLife === true) {
-    const attack = (state.combat?.attacks ?? []).find((a) => a.attacker === source && a.planeswalker === undefined);
+    const attack = (state.combat?.attacks ?? []).find((a) => a.attacker === source && a.planeswalker === undefined && a.battle === undefined);
     if (!attack || !hasMostLife(state, attack.defender)) return false;
   }
   /* PACK TACTICS (Minion of the Mighty): "if you attacked with creatures with total power 6 or greater this combat" -- their

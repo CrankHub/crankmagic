@@ -44,7 +44,8 @@
  * WHAT IS STILL DEFERRED AND NAMED: protection and landwalk are keywords with an ARGUMENT — "from
  * black", "Islandwalk" — and the card script has to express the quality before either can be
  * enforced. Infect and wither change what damage does rather than who may block and go with the
- * counters family. Planeswalkers and battles as defenders arrive with those card types.
+ * counters family. A planeswalker may be attacked (CR 506.3), and a battle (CR 310.9; `battle` on the attack, its protector
+ * the defending player who blocks for it, 310.9c-d).
  *
  * Creatures dying is still a state-based action (CR 704.5g, 704.5h) and belongs to `sba.mjs`. This
  * file marks damage and destroys nothing.
@@ -113,9 +114,19 @@ const planeswalkersOf = (state, player) =>
    controller unchanged. Gone, the creature still attacks, but unblocked deals no combat damage (506.4c). */
 const planeswalkerInCombat = (state, attack) => attack.planeswalker !== undefined && Boolean(state.objects[attack.planeswalker])
   && typesOf(state, attack.planeswalker).includes("Planeswalker") && controllerOf(state, attack.planeswalker) === attack.defender;
-/* Combat damage to what it attacks: the player, or the planeswalker while it is in combat; or none. */
+/* The battles a player protects (CR 310.9): any attacking player for whom that player is a defending player may attack them
+   (310.9b) -- never their protector, who is no defending player of their own. */
+const battlesProtectedBy = (state, player) =>
+  state.zones.battlefield.filter((id) => typesOf(state, id).includes("Battle") && state.objects[id].protector === player);
+/* Whether the battle an attack is on is still in combat (CR 506.4): on the battlefield. Gone -- defeated in the first-strike
+   damage step, say -- the creature still attacks, but unblocked deals no combat damage (506.4c, 510.1b). */
+const battleInCombat = (state, attack) => state.objects[attack.battle]?.zone === "battlefield";
+/* Whether an attack is on a player: not on a planeswalker of theirs, nor on a battle they protect (CR 506.3). */
+const atPlayer = (attack) => attack.planeswalker === undefined && attack.battle === undefined;
+/* Combat damage to what it attacks: the player, or the planeswalker or battle while it is in combat (CR 510.1b); or none. */
 /* None to a player who has left the game (CR 800.4e). */
-const toAttacked = (state, attack, amount) => (attack.planeswalker === undefined ? (state.players[attack.defender].lost ? null : {toPlayer: attack.defender, amount, source: attack.attacker})
+const toAttacked = (state, attack, amount) => (attack.battle !== undefined ? (battleInCombat(state, attack) ? {toCard: attack.battle, amount, source: attack.attacker} : null)
+  : attack.planeswalker === undefined ? (state.players[attack.defender].lost ? null : {toPlayer: attack.defender, amount, source: attack.attacker})
   : planeswalkerInCombat(state, attack) ? {toCard: attack.planeswalker, amount, source: attack.attacker} : null);
 
 /* ---- declare attackers ---- */
@@ -281,6 +292,15 @@ export const attackers = {
         options.push({index: options.length, label: `${shownName(state.objects[id])} → ${state.objects[pw].card} (${state.players[defender].name})`,
           cardId: id, defenderId: defender, planeswalkerId: pw});
       }
+      /* A BATTLE (CR 310.9b, 508.1b): each one a defending player protects -- a Siege its own controller's too, when another
+         player protects it -- the protector the defending player for it (310.9d). Attacking it is not attacking that player
+         (CR 506.3), so only a restriction on attacking at all keeps a creature from it (rules/statics.mjs, cantAttack, with no
+         player named). */
+      for (const defender of defendersFor(state, awaiting.player)) for (const battle of battlesProtectedBy(state, defender)) {
+        if (cantAttack(state, id, null, battle)) continue;
+        options.push({index: options.length, label: `${shownName(state.objects[id])} → ${state.objects[battle].card} (${state.players[defender].name})`,
+          cardId: id, defenderId: defender, battleId: battle});
+      }
     }
     /* "NO MORE THAN ONE CREATURE CAN ATTACK THE ETERNAL WANDERER EACH COMBAT" (CR 508.1c; rules/statics.mjs, attackerCaps):
        the most options that may name each such planeswalker, and what to do instead, said in the record -- so every
@@ -425,7 +445,8 @@ function declareAttacks(state, player, picked, events) {
     attackingPlayerId: player,
     defenders: [...new Set(picked.map((o) => o.defenderId))],
     /* `defender` the defending player (CR 506.2) -- the one who blocks -- and `planeswalker` the one attacked, when it is. */
-    attacks: picked.map((o) => ({attacker: o.cardId, defender: o.defenderId, ...(o.planeswalkerId !== undefined ? {planeswalker: o.planeswalkerId} : {}), blocked: false, blockers: []})),
+    attacks: picked.map((o) => ({attacker: o.cardId, defender: o.defenderId, ...(o.planeswalkerId !== undefined ? {planeswalker: o.planeswalkerId} : {}),
+      ...(o.battleId !== undefined ? {battle: o.battleId} : {}), blocked: false, blockers: []})),
     /* Whether the first-strike damage step happens is read from the creatures as the combat damage step begins (CR 510.4;
        rules/turn.mjs), not kept here: first strike given after the declarations counts (Interjection, Train E). */
   };
@@ -439,14 +460,14 @@ function declareAttacks(state, player, picked, events) {
      you during their last turn" (Weathered Sentinels; rules/statics.mjs, defenderLifted), from none as their turn began
      (rules/turn.mjs). */
   const attackedPlayers = (state.players[player].attackedPlayers ??= []);
-  for (const attack of state.combat.attacks) if (attack.planeswalker === undefined && !attackedPlayers.includes(attack.defender)) attackedPlayers.push(attack.defender);
+  for (const attack of state.combat.attacks) if (atPlayer(attack) && !attackedPlayers.includes(attack.defender)) attackedPlayers.push(attack.defender);
   /* And with what: "if you attacked with two or more creatures this turn" (Minas Tirith, wave 4b; script/amount.mjs,
      creaturesAttackedWithThisTurn) -- each creature declared as an attacker this turn (CR 508.1), once however many combats it
      attacked in, kept against the turn it was declared in. */
   const attackedWith = state.players[player].attackedWith?.turn === state.turn ? state.players[player].attackedWith : (state.players[player].attackedWith = {turn: state.turn, ids: []});
   for (const attack of state.combat.attacks) if (!attackedWith.ids.includes(attack.attacker)) attackedWith.ids.push(attack.attacker);
   /* And whom it attacked: "a player it has already attacked this turn" (Port Razer; rules/statics.mjs, cantAttack). */
-  for (const attack of state.combat.attacks) if (attack.planeswalker === undefined) recordUse(state, attack.attacker, `attacked:${attack.defender}`);
+  for (const attack of state.combat.attacks) if (atPlayer(attack)) recordUse(state, attack.attacker, `attacked:${attack.defender}`);
 
   /* CR 508.1f: attacking creatures become tapped. CR 702.20b: vigilance does not. */
   for (const attack of state.combat.attacks) {
@@ -460,7 +481,9 @@ function declareAttacks(state, player, picked, events) {
     player: {playerId: player, name: state.players[player].name},
     attackers: state.combat.attacks.map((a) => ({
       card: cardRef(state, a.attacker),
-      defender: {playerId: a.defender, name: state.players[a.defender].name, ...(a.planeswalker !== undefined ? {planeswalker: cardRef(state, a.planeswalker)} : {})},
+      defender: {playerId: a.defender, name: state.players[a.defender].name, ...(a.planeswalker !== undefined ? {planeswalker: cardRef(state, a.planeswalker)} : {}),
+        /* A battle attacked, its protector the defending player (CR 310.9d): no attack on that player (rules/trigger.mjs). */
+        ...(a.battle !== undefined ? {battle: cardRef(state, a.battle)} : {})},
     })),
   }));
   state.awaiting = null;

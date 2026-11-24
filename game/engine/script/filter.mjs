@@ -673,10 +673,11 @@ export function compileSelector(selector) {
     /* "Target creature attacking you" (Lulu, Stern Guardian; `attacking: "you directly"`): declared as an attacker of this combat
        at this selector's controller -- one attacking a planeswalker of theirs is not attacking them (CR 506.3). */
     if (selector.attacking === "you directly" && !(state.combat?.attacks ?? []).some((attack) => attack.attacker === id
-      && attack.planeswalker === undefined && attack.defender === context.controller)) return false;
+      && attack.planeswalker === undefined && attack.battle === undefined && attack.defender === context.controller)) return false;
     if (selector.attacking === "you" && !(state.combat?.attacks ?? []).some((attack) => attack.attacker === id && (attack.planeswalker !== undefined
       ? state.objects[attack.planeswalker]?.zone === "battlefield" && controllerOf(state, attack.planeswalker) === context.controller
-      : attack.defender === context.controller))) return false;
+      /* Nor a battle they protect (CR 506.3, 310.9): attacking it is not attacking them. */
+      : attack.battle === undefined && attack.defender === context.controller))) return false;
     /* "Target attacking or blocking creature" (Gideon's Memorial; CR 509.1g): declared as a blocker in this combat, and still
        one -- a blocking creature until it is removed from combat or combat ends (CR 506.4), whatever became of what it
        blocks. */

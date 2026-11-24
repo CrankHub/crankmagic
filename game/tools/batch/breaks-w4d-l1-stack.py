@@ -68,9 +68,10 @@ BREAKS = [
      'const backSpell = (object) => object?.mdfc !== undefined && object.mdfc.transforming !== true && object.face',
      'const backSpell = (object) => object?.mdfc !== undefined && object.face'),
     ('a back face left up in the hand', ACTIONS,
-     '  finally { if (state.objects[id]?.face === "back") showFace(state, id, "front"); }', '  finally { }'),
+     '  if (!backSpell(state.objects[id])) return fn();\n  showFace(state, id, "back");\n  try { return derivingAfresh(state, fn); }\n  finally { if (state.objects[id]?.face === "back") showFace(state, id, "front"); }',
+     '  if (!backSpell(state.objects[id])) return fn();\n  showFace(state, id, "back");\n  try { return derivingAfresh(state, fn); }\n  finally { }'),
     ('a back face cast arrives on the stack as its front', 'game/engine/state/index.mjs',
-     '      || (zone === "stack" && from.face === "back" && from.mdfc.transforming !== true) ? "back" : undefined} : {}),', '      ? "back" : undefined} : {}),'),
+     '      || (zone === "stack" && from.face === "back" && from.mdfc.transforming !== true)\n', ''),
     # Strionic Resonator, Return the Favor
     ('any ability a triggered one', 'game/engine/script/filter.mjs',
      '    if (selector.abilityKind === "triggered" && entry.kind !== "trigger") return false;\n', ''),
