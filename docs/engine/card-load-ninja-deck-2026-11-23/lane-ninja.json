@@ -1,0 +1,209 @@
+{
+ "schema": "library-load-lane@1",
+ "lane": "Rob's Ninja deck, 2026-11-23: the cards of the pasted list the engine could not play",
+ "source": {
+  "list": "Rob's pasted Commander deck, 2026-11-23: 79 distinct names (99 cards with the basics) and Splinter, Radical Rat set apart at the bottom",
+  "main": "59b9f862",
+  "distinct": 80,
+  "playableBefore": [
+   "An Offer You Can't Refuse",
+   "April O'Neil, Live on the Scene",
+   "Arcane Denial",
+   "Arcane Signet",
+   "Ash Barrens",
+   "Caves of Koilos",
+   "Changeling Outcast",
+   "Chromatic Lantern",
+   "Command Tower",
+   "Counterspell",
+   "Cover of Darkness",
+   "Darksteel Mutation",
+   "Duty Beyond Death",
+   "Exotic Orchard",
+   "Fabled Passage",
+   "Feed the Swarm",
+   "Fellwar Stone",
+   "Gloomlake Verge",
+   "Grand Coliseum",
+   "Grounded for Life",
+   "Hallowed Fountain",
+   "Island",
+   "Lightning Greaves",
+   "Mistblade Shinobi",
+   "Moon-Circuit Hacker",
+   "Path of Ancestry",
+   "Path to Exile",
+   "Plains",
+   "Prosperous Thief",
+   "Secluded Courtyard",
+   "Shattered Sanctum",
+   "Shredder, Shadow Master",
+   "Sinister Sabotage",
+   "Slither Blade",
+   "Sol Ring",
+   "Spark Double",
+   "Splinter, Hamato Yoshi",
+   "Splinter, Vengeful Sensei",
+   "Splinter, the Mentor",
+   "Sunken Hollow",
+   "Swamp",
+   "Swiftfoot Boots",
+   "Talisman of Dominance",
+   "Talisman of Hierarchy",
+   "Talisman of Progress",
+   "Terramorphic Expanse",
+   "Thousand-Faced Shadow",
+   "Throat Slitter",
+   "Toxic Deluge",
+   "Triton Shorestalker",
+   "Yuriko, the Tiger's Shadow"
+  ]
+ },
+ "cards": [
+  {
+   "name": "Arcade Cabinet",
+   "group": "C",
+   "loadedHere": true
+  },
+  {
+   "name": "Dark Leo & Shredder",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Don & Leo, Problem Solvers",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "Donatello's Technique",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Donatello, the Brains",
+   "group": "C",
+   "loadedHere": true
+  },
+  {
+   "name": "Endless Foot Assault",
+   "group": "C",
+   "loadedHere": true
+  },
+  {
+   "name": "Foot Chopper",
+   "group": "C",
+   "loadedHere": true
+  },
+  {
+   "name": "Foot Ninjas",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Fugitive Droid",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "Game Over",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "Hidden Lair",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "Kaito, Bane of Nightmares",
+   "group": "B",
+   "loadedHere": true
+  },
+  {
+   "name": "Kaito, Cunning Infiltrator",
+   "group": "C",
+   "loadedHere": true
+  },
+  {
+   "name": "Karai, Future of the Foot",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Krang & Shredder",
+   "group": "E",
+   "loadedHere": true
+  },
+  {
+   "name": "Momo, Playful Pet",
+   "group": "C",
+   "loadedHere": true
+  },
+  {
+   "name": "Nashi, Moon Sage's Scion",
+   "group": "B",
+   "loadedHere": true
+  },
+  {
+   "name": "Ninja Teen",
+   "group": "E",
+   "loadedHere": true
+  },
+  {
+   "name": "Oroku Saki, Shredder Rising",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Prehistoric Pet",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "Satoru Umezawa",
+   "group": "B",
+   "loadedHere": true
+  },
+  {
+   "name": "Shark Shredder, Killer Clone",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Silver-Fur Master",
+   "group": "B",
+   "loadedHere": true
+  },
+  {
+   "name": "Splinter, Radical Rat",
+   "group": "B",
+   "loadedHere": true
+  },
+  {
+   "name": "Taeko, the Patient Avalanche",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "The Last Ronin's Technique",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Turncoat Kunoichi",
+   "group": "A",
+   "loadedHere": true
+  },
+  {
+   "name": "Turtle Lair",
+   "group": "D",
+   "loadedHere": true
+  },
+  {
+   "name": "Walker of Secret Ways",
+   "group": "B",
+   "loadedHere": true
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 {
  "schema": "manifest@1",
- "generatedAt": "2026-11-19T05:02:31.040Z",
+ "generatedAt": "2026-11-24T00:01:53.740Z",
  "generator": "tools/data-manifest.mjs",
  "count": 27,
  "files": [
@@ -31,8 +31,8 @@
    "schema": "engine-support@1",
    "stamp": "2026-10-04T15:37:19.434Z",
    "generator": "tools/build-engine-cards.mjs",
-   "bytes": 3404213,
-   "sha256": "608d04b979a3ec38ed786b7e4c8c60d86199c11f08715c0584e1d5867fd6c69a",
+   "bytes": 3404126,
+   "sha256": "d13edb34afb0d5a9d7fb7d4b28450257e829bfbb28eda30657c7f73cc6ff847f",
    "version": null,
    "served": false,
    "cache": "not served"
