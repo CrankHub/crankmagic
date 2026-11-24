@@ -674,7 +674,7 @@ function escapeExiled(state, player, action, way) {
  */
 export function alternativeCosts(state, player, id) {
   const object = state.objects[id];
-  return (object?.abilities ?? []).flatMap((ability, index) => {
+  const own = (object?.abilities ?? []).flatMap((ability, index) => {
     if (ability.kind !== "static" || ability.rule !== "alternative-cost") return [];
     if (!conditionHolds(state, ability.condition, {controller: player, source: id})) return [];
     const cost = ability.cost ?? [];
@@ -708,6 +708,21 @@ export function alternativeCosts(state, player, id) {
       /* Surge (CR 702.117a), freerunning (CR 702.173a): the keyword whose cost this is, for "if its surge cost was paid". */
       ...(typeof ability.paidFor === "string" ? {paidFor: ability.paidFor} : {})}];
   });
+  /* SNEAK FROM A GRAVEYARD (Ninja Teen's level 3; CR 702.190a, 601.3, 716.2a): "creature cards in your graveyard have sneak
+     {3}{B}" -- a permanent's static giving the cards it describes a sneak cost (`rule: "sneak"`, its `cost` the mana and the
+     unblocked attacker returned) -- and "you may cast creature spells from your graveyard using their sneak abilities"
+     (`rule: "sneak-from-graveyard"`, the cards it lets be cast so). Such a card is cast from its owner's graveyard for a sneak
+     cost alone, the one given or its own (Leonardo, Leader in Blue), each its own way, at sneak's timing -- never for its mana
+     cost there (castOffers, `graveyardCost`). Each static read only while its condition holds: the Class at level 3. */
+  if (object?.zone !== "graveyard" || object.owner !== player || !ruleChanged(state, "sneak-from-graveyard", id)) return own;
+  const held = staticAbilities(state);
+  const given = !conditionHolds(state, {sneak: true}, {controller: player, source: id}) ? []
+    : state.zones.battlefield.flatMap((holder) => held(holder).filter((a) => a.kind === "static" && a.rule === "sneak"
+      && conditionHolds(state, a.condition, {controller: state.objects[holder].controller, source: holder})
+      && matchesSelector(a.affects, state, id, {controller: state.objects[holder].controller, source: holder}))
+      .map((a) => ({index: `sneak:${holder}:${a.id}`, mana: (a.cost ?? []).find((c) => c.atom === "mana")?.cost ?? "", life: 0,
+        extra: (a.cost ?? []).filter((c) => c.atom === "returnToHand"), evoke: false, sneak: true, paidFor: "sneak"})));
+  return [...own, ...given].map((way) => (way.sneak === true ? {...way, fromGraveyard: true} : way));
 }
 
 /* The other cards of the graveyard a graveyard alternative cost exiles, as its caster picked them: that many, none twice,
@@ -754,6 +769,13 @@ function additionalVariants(costs) {
        times its own cast, that many times its mana added (`replicated`, the copies its trigger makes). */
     if (atom?.atom === "replicate") {
       variants = variants.flatMap((v) => Array.from({length: MULTIKICK_MOST + 1}, (_, k) => ({...v, mana: v.mana + (atom.cost ?? "").repeat(k), replicated: k})));
+      continue;
+    }
+    /* SQUAD (CR 702.157a; Endless Foot Assault): "you may pay [cost] any number of times" -- as multikicker's, each number of
+       times its own cast, that many times its mana added (`squad`, rules/stack.mjs marks the permanent it becomes, for its
+       trigger's token copies). */
+    if (atom?.atom === "squad") {
+      variants = variants.flatMap((v) => Array.from({length: MULTIKICK_MOST + 1}, (_, k) => ({...v, mana: v.mana + (atom.cost ?? "").repeat(k), squad: k})));
       continue;
     }
     /* "YOU MAY BEHOLD A DRAGON" (CR 701.4a, 601.2b; Dispelling Exhale): an optional additional cost, once -- the cast without it,
@@ -1353,8 +1375,9 @@ function xValues(pool, cost, extra = 0, less = 0) {
 const abilityLess = (state, player, id, ability, targets = null) => (ability.costLess === undefined ? 0 : amountOf(state, ability.costLess, {controller: player, source: id, targets: targets ?? []}))
   + (ability.equip === true ? equipCostReduction(state, player, targets) : 0)
   /* "Activated abilities of Foods you control cost {1} less to activate" (Sam, Loyal Attendant; rules/statics.mjs,
-     abilityCostReduction): what a permanent's static takes off the abilities of the permanent this one is. */
-  + abilityCostReduction(state, id);
+     abilityCostReduction): what a permanent's static takes off the abilities of the permanent this one is -- or off a
+     ninjutsu ability its player activates (Silver-Fur Master). */
+  + abilityCostReduction(state, id, ability, player);
 /* POWER-UP (CR 702.193a-b; Aerial Doombot, Ultron Drone): the turn this permanent entered, the ability's mana cost is reduced
    by the permanent's mana cost -- its generic mana off the generic, each colored or colorless symbol off one of the same type,
    and one the cost has none of off the generic instead (CR 118.7), never below nothing (CR 601.2f). */
@@ -1497,6 +1520,8 @@ const allPlayPermissions = (state, player) => onceAQuestion(state, `play-permiss
       ...(e.anyMana === true ? {anyMana: true} : {}),
       /* "A card exiled with Lobelia": so many of the named cards before it is spent (spendPermission). */
       ...(Number.isInteger(e.count) ? {count: e.count} : {}),
+      /* "Pay life equal to its mana value rather than paying its mana cost" (Nashi, Moon Sage's Scion; lifeInstead). */
+      ...(e.payLife ? {payLife: e.payLife} : {}),
       /* "Its owner may cast it for {2} rather than its mana cost" (airbend; castOffers). */
       ...(typeof e.manaInstead === "string" ? {manaInstead: e.manaInstead} : {}),
       ...(Number.isInteger(e.afterTurn) ? {afterTurn: e.afterTurn} : {})}}))];
@@ -1815,8 +1840,16 @@ function abilityTapPlans(state, player, action, limit = 2) {
   const ability = chosenFor(abilitiesOf(state, action.objectId).find((a) => a.id === action.abilityId), state.objects[action.objectId]);
   return abilityFunding(state, player, action.objectId, ability, action.x ?? 0, action.targets, limit, action.costChoice ?? null);
 }
-const tapCastable = (state, player, action) => tapZone(state, player, action.from, action.objectId, action.via ?? null) && !action.free && !action.flashback
-  && action.escape === undefined && action.alternative === undefined && (action.x === undefined || action.payLifeX === true || xTaps(state))
+/* SNEAK TAPPED FOR (CR 702.190a; ROB-540, Rob's Ninja deck): its cost is mana and an unblocked attacker returned, cast in the
+   declare blockers step -- its caster's untapped sources tapped for the sneak cost's mana as the cast is made, as for a mana
+   cost, rather than tapped by hand first. The one alternative cost tapped for: the way, or null. */
+const sneakWay = (state, player, action) => (action.alternative === undefined ? null
+  : alternativeCosts(state, player, action.objectId).find((w) => w.index === action.alternative && w.sneak === true) ?? null);
+/* And a graveyard card cast by a sneak way there (Ninja Teen's level 3; alternativeCosts, `fromGraveyard`): tapped for as a card a
+   permission lets be cast from a graveyard is (`permittedTaps`). */
+const graveSneakTap = (state, from, way) => from === "graveyard" && way?.fromGraveyard === true && permittedTaps(state);
+const tapCastable = (state, player, action) => (tapZone(state, player, action.from, action.objectId, action.via ?? null) || graveSneakTap(state, action.from, sneakWay(state, player, action))) && !action.free && !action.flashback
+  && action.escape === undefined && (action.alternative === undefined || sneakWay(state, player, action) !== null) && (action.x === undefined || action.payLifeX === true || xTaps(state))
   && (pooledTaps(state) || poolSize(poolFor(state, player, {spell: action.objectId})) === 0);
 
 /* FLOATING MANA AND A SOURCE'S WHOLE OUTPUT TOGETHER (`pooledTaps`, game/room/table.mjs): a cast tapped for tops up what is
@@ -1897,8 +1930,8 @@ function manaPlans(state, player, id, cost, limit, units) {
 export function castTapPlans(state, player, action, limit = 2) {
   if (!tapCastable(state, player, action)) return [];
   const tax = action.from === "command" ? commanderTax(state, player, action.objectId) : 0;
-  /* An Adventure's cost, cast as one (CR 715.3a). */
-  const {cost, x} = asCast(state, action, () => castCost(state, player, action.objectId, tax, false, null, action.extraMana ?? "", action.targets, action.x));
+  /* An Adventure's cost, cast as one (CR 715.3a); a sneak cast's, its sneak cost's mana (CR 702.190a, 118.9). */
+  const {cost, x} = asCast(state, action, () => castCost(state, player, action.objectId, tax, false, sneakWay(state, player, action)?.mana ?? null, action.extraMana ?? "", action.targets, action.x));
   /* Its X, in a match that taps for one (`xTaps`): counted in, as the offer priced it. */
   const xs = xTaps(state) && cost.variable > 0 ? xCounted(cost, action.x ?? 0) : cost;
   /* And what the offer priced for mana that may be spent as any color (anyTypeCost), the colored symbols paid as generic ones are. */
@@ -2008,7 +2041,8 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     || (player === state.activePlayer && MAIN_PHASES.includes(state.phase) && state.stack.length === 0);
   /* SNEAK (CR 702.190a): "any time you could cast an instant during your declare blockers step" -- a card that could not be
      cast now otherwise is offered for its sneak cost alone (`sneaking`), its condition saying when (alternativeCosts). */
-  const sneaking = !timely && (object.abilities ?? []).some((a) => a.kind === "static" && a.rule === "alternative-cost" && a.sneak === true);
+  /* And from a graveyard (`graveyardCost`) at that timing, only by a sneak cost there (Ninja Teen; alternativeCosts). */
+  const sneaking = !timely && (graveyardCost || (object.abilities ?? []).some((a) => a.kind === "static" && a.rule === "alternative-cost" && a.sneak === true));
   /* Or as though it had flash only for what it targets (Timely Ward; flashIfTargets): its aims, below, those alone. */
   const flashIf = timely ? null : flashIfTargets(object);
   if (!timely && !sneaking && !flashIf) return actions;
@@ -2121,7 +2155,8 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
     let autoTap = false;
     /* Not with creatures tapped as an additional cost or for escalate: one tapped for mana as the cast taps its sources could
        not then be tapped for it (their mana is paid from the pool first). */
-    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && !way && !tapsAny && !variant.escalateTap && tapZone(state, player, from, id, via)) {
+    /* Of the alternative costs, sneak's alone (CR 702.190a; sneakWay). */
+    if (!payment && (pooledTaps(state) ? !canPay(pool, cost, {life: lifeLeft, x: x + (xMana ?? 0) * cost.variable}) : poolSize(pool) === 0) && (xMana === null || tapsForX) && !freely && !back && !fled && (!way || way.sneak === true) && !tapsAny && !variant.escalateTap && (tapZone(state, player, from, id, via) || graveSneakTap(state, from, way))) {
       const paying = xMana === null ? cost : xCounted(cost, xMana);
       const [plan] = fundingPlans(state, player, id, {...paying, generic: paying.generic + x}, 1, tappable(), lifeLeft);
       if (plan) {
@@ -2176,6 +2211,7 @@ function castOffers(state, player, {id, from, flashback, escape, via = null, asT
         ...(payWays && !convoke ? {payWays: true} : {}),
         ...(convoke === true ? {convoke: true} : {}), ...(convoke === "delve" ? {delve: true} : {}), ...(variant.mana ? {extraMana: variant.mana} : {}), ...(extraLife ? {extraLife} : {}), ...(variant.kicked ? {kicked: variant.kicked} : {}),
         ...(variant.replicated ? {replicated: variant.replicated} : {}), ...(gift !== undefined ? {gift} : {}), ...(variant.offspring ? {offspring: true} : {}),
+        ...(variant.squad ? {squad: variant.squad} : {}),
         /* The creature a harmonize cast taps (variants above), named on the offer. */
         ...(variant.harmonize !== undefined ? {harmonize: variant.harmonize, costNames: [state.objects[variant.harmonize].card]} : {}),
         ...(tapsAny ? {tapAny: true} : {}), ...(sacrificesAny ? {sacrificeAny: true} : {}), ...(beholds ? {behold: beholds.count ?? 1} : {}),
@@ -2383,9 +2419,11 @@ function offers(state, player) {
   /* CR 702.29a and its kin: an ability a card has in its owner's hand -- cycling, "{2}, discard this card: draw a card"
      -- whenever that player has priority, unless it says sorcery speed. */
   /* Commander ninjutsu (CR 702.49d) works from the command zone as well: the hand's abilities that say so (`alsoCommand`). */
+  /* And one a permanent gives a card in a hand ("each creature card in your hand has ninjutsu", Satoru Umezawa;
+     rules/layers.mjs, abilitiesOf). */
   for (const id of [...cardsIn(state, "hand", player), ...cardsIn(state, "command", player)]) {
     const object = state.objects[id];
-    for (const ability of object.abilities ?? []) {
+    for (const ability of abilitiesOf(state, id)) {
       if (ability.kind !== "activated" || ability.zone !== "hand") continue;
       if (object.zone === "command" && ability.alsoCommand !== true) continue;
       if (ability.timing === "sorcery" && !sorceryTime) continue;
@@ -2583,6 +2621,9 @@ function idle(state, player, actions, stack = false) {
      that cost's mana: a Woe Strider that could escape is something to do. */
   const fromGraveyard = cardsIn(state, "graveyard", player).some((id) => {
     const object = state.objects[id];
+    /* Or for a sneak cost there in its caster's declare blockers step (Ninja Teen; CR 702.190a), its way's condition saying
+       when (alternativeCosts): a creature card only sneak can cast is something to do then, as one in the hand is. */
+    if (player === state.activePlayer && state.phase === "COMBAT_DECLARE_BLOCKERS" && alternativeCosts(state, player, id).some((way) => way.fromGraveyard && way.sneak === true && manaValue(parseManaCost(way.mana)) <= mana)) return true;
     if (sorcerySpeed(object) && !hasFlash(state, id) && !flashGranted(state, player, id) && !mainNow) return false;
     const back = flashbackCost(state, player, id);
     const costs = [back && flashbackPayable(state, player, back) ? back.mana : null, ...escapeWays(state, player, id).map((way) => way.mana),
@@ -3332,6 +3373,8 @@ function performOffered(state, player, action, during) {
       entry.division = {[dividing.target]: Object.fromEntries(dividedTargets(action, dividing).map((t, i) => [t.id, action.division[i]]))};
     /* Its offspring cost paid (CR 702.175a): the permanent it becomes knows it as it enters (rules/stack.mjs). */
     if (action.offspring === true) entry.offspring = true;
+    /* Its squad cost paid that many times (CR 702.157a): the permanent it becomes knows it as it enters (rules/stack.mjs). */
+    if (action.squad > 0) entry.squad = action.squad;
     /* Cast as an Adventure (CR 715.3): exiled as it resolves, and castable as itself from there (rules/stack.mjs, 715.3d). */
     if (action.adventure === true && object.face === "adventure") entry.adventure = true;
     /* Cast with flashback: exiled, whatever would move it, as it leaves the stack (rules/stack.mjs, effects/zones.mjs). */
@@ -3531,7 +3574,9 @@ function performOffered(state, player, action, during) {
       card,
       sa: {isSpell: false, abilityId: entry.abilityId, stackId: entry.stackId, description: ability.text,
         /* A loyalty ability says its cost (CR 606.4): "whenever you activate a loyalty ability" (rules/trigger.mjs). */
-        ...(ability.loyalty !== undefined ? {loyalty: ability.loyalty === "-X" ? -(action.x ?? 0) : ability.loyalty} : {})},
+        ...(ability.loyalty !== undefined ? {loyalty: ability.loyalty === "-X" ? -(action.x ?? 0) : ability.loyalty} : {}),
+        /* A ninjutsu ability (CR 702.49): "whenever you activate a ninjutsu ability" (rules/trigger.mjs). */
+        ...(ability.ninjutsu === true ? {ninjutsu: true} : {})},
       si: {isTrigger: false, actor: {playerId: player, name: state.players[player].name}},
       targetDescription,
       ...aimsOf(state, entry),
