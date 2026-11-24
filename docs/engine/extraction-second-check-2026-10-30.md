@@ -113,7 +113,7 @@ difference found. So what players report about tokens is not the extraction. Wha
 
 | Report | What it was |
 | --- | --- |
-| The token's picture is wrong | **A defect.** The board asks Scryfall for a token by its name alone (`pictureOf`, `crankmagic-board.js`). 107 of the 161 different tokens the definitions make share a name with another token, and 276 of the 368 token-making effects use one of those. Asked on 2026-11-24, "Inkling" drew a 1/1 (Shadrix's is 2/1), "Dragon" a colorless 4/4, "Treasure" the Dinosaur side of a two-sided token, "Goblin" an Unfinity card, "Shapeshifter" the Antiquities card, "Spirit" an ad card. |
+| The token's picture is wrong | **A defect, fixed the same day** (`tokenArt`, `docs/ui-lane/token-art-contract.md`). The board asks Scryfall for a token by its name alone (`pictureOf`, `crankmagic-board.js`). 107 of the 161 different tokens the definitions make share a name with another token, and 276 of the 368 token-making effects use one of those. Asked on 2026-11-24, "Inkling" drew a 1/1 (Shadrix's is 2/1), "Dragon" a colorless 4/4, "Treasure" the Dinosaur side of a two-sided token, "Goblin" an Unfinity card, "Shapeshifter" the Antiquities card, "Spirit" an ad card. |
 | Shadrix's Inkling beside Draconic Visitor was not made a Dragon | **The game was right, and silent** (pattern 6). The Visitor replaces *artifact* tokens; an Inkling is a creature token. |
 | Menace "may not fire" | Enforced for a person's block (`tests/engine-keywords.mjs`), and all 106 keyword words the definitions carry are read by the engine. The AI seats never block a creature with menace with two, so against AI it is never blocked. No reproduced defect yet: it needs the card and the moment. |
 

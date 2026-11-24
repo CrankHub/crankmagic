@@ -41,7 +41,10 @@ for (const target of ["Rock", "Bear"]) {
   const s = oko(target);
   for (const viewer of [0, 1]) {
     const c = card(s, viewer, target);
-    eq(c.appearance, ELK, `Oko's +1 on ${target}: seat ${viewer} is told it looks like a 3/3 green Elk`);
+    /* Changed on purpose (ROB-542, docs/ui-lane/token-art-contract.md): the look also names which Elk's picture, `art`. */
+    const {art, ...look} = c.appearance ?? {};
+    eq(look, ELK, `Oko's +1 on ${target}: seat ${viewer} is told it looks like a 3/3 green Elk`);
+    eq(typeof art?.scryfallId, "string", `and which Elk's picture to draw`);
     eq([c.name, c.types.includes("Creature"), c.power, c.toughness], [target, true, 3, 3], `${target} keeps its own name and its current 3/3`);
   }
   eq(card(s, 0, "Oko, Thief of Crowns").appearance, undefined, "Oko himself looks like his card");
