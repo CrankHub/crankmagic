@@ -60,7 +60,9 @@ files once.
   Sting, the Glinting Dagger. **"Is all colors"** (`rules/statics.mjs`, rule `all-colors`; CR 604.3, 105.2):
   Transguild Courier.
 - **"An additional one mana of any color"** (`cards/index.mjs`, `rules/trigger.mjs` `manaPicks`, `rules/actions.mjs`
-  `manaPickable`; CR 106.1a, 605.1b): Fertile Ground, its color picked by the tapping player.
+  `manaPickable`; CR 106.1a, 605.1b): Fertile Ground, its color picked by the tapping player. The triggered mana abilities
+  that may ask a tap for a pick are read once for all of a player's mana offers, and only when a permanent has one
+  (`manaWatchers`): read for every land's offer, they made `engine-room-games` up to 2.7 times slower.
   **"If an opponent is the monarch"** (`script/condition.mjs`, `monarch: "opponent"`; CR 725.1): Queen Marchesa.
 
 No new effect primitive, so the vocabulary count is unchanged. `vocabulary.mjs` gains the trigger event
