@@ -82,6 +82,9 @@ export const SELECTOR_KEYS = Object.freeze([
   "prepared",
   /* "Target attacking or blocking creature" (Gideon's Memorial): declared as a blocker in this combat (CR 509.1g). */
   "blocking",
+  /* "Blocking or blocked by a Goblin or Orc" (Sting, the Glinting Dagger; CR 509.1g, 509.1h): in a block with the creature
+     this selector's source is attached to. */
+  "blockingOrBlockedByAttached",
   /* "Creatures your opponents control without flying or reach" (Sidar Kondo of Jamuraa), "a creature without flanking"
      (CR 702.25a): none of these keywords, through the layers. */
   "nonKeywords",
@@ -681,6 +684,14 @@ export function compileSelector(selector) {
        one -- a blocking creature until it is removed from combat or combat ends (CR 506.4), whatever became of what it
        blocks. */
     if (selector.blocking === true && !(state.combat?.attacks ?? []).some((attack) => (attack.blockers ?? []).includes(id))) return false;
+    /* "As long as it's blocking or blocked by a Goblin or Orc" (Sting, the Glinting Dagger; CR 509.1g, 509.1h, 506.4): a
+       creature blocking the one this selector's source is attached to, or an attacker that one blocks -- in this combat's
+       blocks as they now stand, so one removed from combat no longer is. */
+    if (selector.blockingOrBlockedByAttached === true) {
+      const host = state.objects[context.source]?.attachedTo;
+      if (!(state.combat?.attacks ?? []).some((attack) => (attack.attacker === host && (attack.blockers ?? []).includes(id))
+        || (attack.attacker === id && (attack.blockers ?? []).includes(host)))) return false;
+    }
     /* "An unblocked attacking creature" (CR 509.1h): its blockers declared -- from the declare blockers step on -- and
        none blocking it. */
     if (selector.unblocked === true && !(BLOCKERS_DECLARED.includes(state.phase) && (state.combat?.attacks ?? []).some((attack) => attack.attacker === id && !attack.blocked))) return false;

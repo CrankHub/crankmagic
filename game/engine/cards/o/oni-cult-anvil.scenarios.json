@@ -1,0 +1,293 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Oni-Cult Anvil",
+  "fixtures": {
+    "Relic A": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Relic B": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Artifact Exile": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Exile target artifact.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Artifact"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "moveZone",
+            "targets": {
+              "target": 0
+            },
+            "to": "exile"
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way), then tapped with Relic A sacrificed: a Construct, each of two opponents dealt 1, and Rob gains 1",
+      "pooledTaps": true,
+      "abilityTaps": true,
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Mountain",
+            "Relic A"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Oni-Cult Anvil"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Oni-Cult Anvil"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Oni-Cult Anvil",
+          "sacrifice": "Relic A"
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Oni-Cult Anvil",
+            "Swamp",
+            "Mountain",
+            "Construct"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 2,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Construct",
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Once each turn: a second artifact of Rob's leaving that turn makes no second Construct",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Oni-Cult Anvil",
+            "Relic A",
+            "Relic B",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Artifact Exile"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Oni-Cult Anvil",
+          "sacrifice": "Relic A"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Artifact Exile",
+          "targets": [
+            {
+              "card": "Relic B"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Oni-Cult Anvil",
+            "Wastes",
+            "Construct"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "During Maya's turn, Rob's artifact leaving makes nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Oni-Cult Anvil",
+            "Relic A"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Artifact Exile"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Artifact Exile",
+          "seat": 1,
+          "targets": [
+            {
+              "card": "Relic A"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Oni-Cult Anvil"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "It sacrifices itself: it still sees itself leave (CR 603.10a) -- a Construct, Maya dealt 1, Rob gains 1",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Oni-Cult Anvil"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Oni-Cult Anvil",
+          "sacrifice": "Oni-Cult Anvil"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Construct"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 39
+        },
+        {
+          "seat": 0,
+          "life": 41
+        }
+      ]
+    }
+  ]
+}
