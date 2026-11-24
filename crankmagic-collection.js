@@ -302,9 +302,15 @@ const bandPage=(params,tab,shop)=>`<div class="cm-band">${bandRow1(params,tab)}<
   +`<div id="cm-filter-chips"></div>${shop?'<div id="cm-shop-strip"></div>':''}<div id="cm-roster-table"></div>`;
 C.cardsHead=cardsHead;
 C.SUBNAV.cards=()=>{const n=tabCounts(),r=C.route(),tab=r.view==='cards'?(r.params.get('tab')||'library'):tabOf(),sheet=r.view==='cards'&&r.params.get('view')==='sheet';
-  return [{label:'Library',hash:'#cards',count:n.library,current:tab==='library'&&!sheet},{label:'To buy',hash:'#cards?tab=buy',count:n.buy,current:tab==='buy'},{label:'Orders',hash:'#cards?tab=orders',count:n.orders,current:tab==='orders'},{label:'Sheet',hash:'#cards?view=sheet',current:sheet},{label:'Upload cards',hash:'#cards',action:'import-list'},
+  return [{label:'Library',hash:'#cards',count:n.library,current:tab==='library'&&!sheet},{label:'To buy',hash:'#cards?tab=buy',count:n.buy,current:tab==='buy'},{label:'Orders',hash:'#cards?tab=orders',count:n.orders,current:tab==='orders'},{label:'Sheet',hash:'#cards?view=sheet',current:sheet},{label:'Groups',hash:'#cards',count:moveChoices().length-1,action:'library-groups'},{label:'Upload cards',hash:'#cards',action:'import-list'},
     /* SHARED LIBRARIES live under Library (the Decks requirements' Q9): the Decks nav's Shared is decks only. */
     ...(C.sharingAvailable?.()?[{label:'Shared Libraries',hash:'#shared?kind=library',current:r.view==='shared'&&r.params.get('kind')==='library'}]:[])];};
+/* GROUPS UNDER LIBRARY (Rob, 2026-11-24, ROB-547: "I don't see 'Groups' in the left side under Library"). The rail's entry
+   opens the groups as a list, each with what it holds; a press opens that group in the Library, and New group is at the foot. */
+actions['library-groups']=()=>{const rows=moveChoices().filter(([id])=>id!=='__new').map(([id,label])=>{const g=C.state.groups.find(x=>x.id===id),meta=String(groupMeta(g));
+    return `<button type="button" class="cm-wizard-path" data-action="library-group-open" data-group="${e(id)}"><strong>${e(label)}</strong><span>${/boxed/.test(meta)?meta:`${meta} cards`}</span></button>`;}).join('');
+  modal('Groups',`<div class="cm-new-deck-wizard"><div class="cm-wizard-paths">${rows}</div><div class="cm-actions">${b('New group…','new-group')}</div></div>`).classList.add('cm-new-deck-dialog');};
+actions['library-group-open']=el=>{actions.close();C.go('cards',{group:el.dataset.group});};
 /* UPLOAD CARDS (Rob, 2026-09-28): every card you have, straight into the library, without going through a deck.
    It is the same reviewed import as everywhere else, reached from the Library's own menu. */
 /* Library and To buy each have a List and a Table; the Sheet reads the library only; Orders has its list. */

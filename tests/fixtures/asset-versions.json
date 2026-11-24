@@ -198,12 +198,12 @@
       "sha": "8f21d8c3e5d43cb6"
     },
     "crankmagic-collection.js": {
-      "version": 115,
-      "sha": "a2c9b8437993dc8c"
+      "version": 116,
+      "sha": "a3258535155f91b7"
     },
     "crankmagic-decks.js": {
       "version": 125,
-      "sha": "f9590904f7122630"
+      "sha": "327f3b76d5ec9209"
     },
     "crankmagic-design.css": {
       "version": 28,
@@ -367,7 +367,7 @@
     },
     "crankmagic-sw.js": {
       "version": 761,
-      "sha": "02f5f5fcbacdd1d6"
+      "sha": "61069a60595bbfde"
     },
     "crankmagic-table.js": {
       "version": 59,

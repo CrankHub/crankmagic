@@ -660,12 +660,23 @@ actions['new-deck']=()=>{
         <strong>From a precon</strong>
         <span>One of Wizards' Commander decks</span>
       </button>
+      <button type="button" class="cm-wizard-path" data-action="wizard-group">
+        <strong>From a group</strong>
+        <span>The cards in one of your collection groups</span>
+      </button>
       <button type="button" class="cm-wizard-path" data-action="wizard-load">
         <strong>Load</strong>
         <span>Start from one of your own decks</span>
       </button>
     </div><div class="cm-actions">${b('Restore a backup','restore')}</div></div>`).classList.add('cm-new-deck-dialog');
 };
+/* FROM A GROUP (Rob, 2026-11-24, ROB-547: "I also don't see, when I click 'Create new Deck' the option to 'Create from
+   Group'"). The road NEW-3 took off this window is back on it: pick a group that holds cards and is no deck's own, and
+   the window that follows names the deck and its commander. */
+const deckableGroups=()=>C.state.groups.filter(g=>g.template!=='bench'&&!C.state.decks.some(d=>d.groupId===g.id)&&groupRows(g).length);
+actions['wizard-group']=()=>{const groups=deckableGroups();
+  if(!groups.length)throw Error('No collection group holds cards yet. Import a list, or make a group in the Library, then start a deck from it.');
+  return form('New deck from a group',s('Collection group','groupId',groups.map(g=>[g.id,C.groupLabel(g)]),groups[0].id),v=>groupDeck(v.groupId),'Continue',()=>actions['new-deck']());};
 /* LOAD PATH: start from one of Rob's own decks.
  *
  * Rob, 2026-09-24: "Create and Lab should be the same thing... that should be 'Load' which provides
