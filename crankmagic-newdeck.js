@@ -28,7 +28,10 @@ function frame(title,nav,current,canvas,primary,{back=null,cls='',head=''}={}){
 actions['flow-nav']=el=>{if(!F)return;F.colorAsk=null;if(F.step==='start')F.method=el.dataset.to;else F.section=el.dataset.to;draw();};
 
 /* ── START FROM ─────────────────────────────────────────────────────────────────────────────────────────────── */
-const METHODS=[['pick','Pick a commander'],['colors','Choose colors'],['style','Choose play style'],['mechanics','Choose mechanics']];
+/* FROM A GROUP (Rob, 2026-11-24, ROB-547: "Within the 'Create' option ... the user can choose either Group or Commander. If they
+   choose group, then they get a dropdown with the existing groups."). The fifth way in starts from a group's cards: Next
+   lets the empty shell go and opens New deck from that group, where the commander is one of the group's own. */
+const METHODS=[['pick','Pick a commander'],['colors','Choose colors'],['style','Choose play style'],['mechanics','Choose mechanics'],['group','From a group']];
 /* Opening Start from saves the shell (SHL-1 to SHL-3): the deck and its own group, no commander, no cards. Opening it
    on a deck that has no commander yet reopens it (SHL-4). */
 actions['start-from']=async el=>{const id=el?.dataset?.deck||'',query=el?.dataset?.query||'';
@@ -66,6 +69,8 @@ function startCanvas(){
     body=`<div class="cm-flow-colors"${lead?' data-locked="commander"':''} role="group" aria-label="Colors${lead?`, from ${e(F.commander.name)}`:''}">${[...V.COLORS,'C'].map(x=>chip('flow-color',x,`<span class="cm-pip-letter">${x}</span>`,on(x),` aria-label="${COLOR_NAME[x]}" title="${COLOR_NAME[x]}${lead?' (set by the commander)':''}"`)).join('')}</div>${ask}<label class="cm-checkbox"><input type="checkbox" data-flow-include${p.include?' checked':''}${p.colorless||lead?' disabled':''}>Include more colors</label><div id="cm-flow-list">${!lead&&(p.colors.length||p.colorless)?results(matching()):''}</div>`;
   }
   if(m==='style')body=`<div class="cm-flow-chips" role="group" aria-label="Play styles">${(index?.styles||[]).map(s=>chip('flow-style',s.id,e(s.label),p.styles.includes(s.id))).join('')}</div><div id="cm-flow-list">${p.styles.length?results(matching()):''}</div>`;
+  if(m==='group'){const groups=C.groupDeckChoices?.()||[];
+    return groups.length?`<label class="cm-flow-field">Collection group<select id="cm-flow-group">${groups.map(g=>`<option value="${e(g.id)}"${g.id===F.group?' selected':''}>${e(C.groupLabel(g))}</option>`).join('')}</select></label>`:'<p class="cm-muted" role="status">No group holds cards yet.</p>';}
   if(m==='mechanics')body=`<div class="cm-flow-chips" role="group" aria-label="Mechanics">${(index?.mechanics||[]).map(x=>chip('flow-mech',x.id,e(x.label),p.mechanics.includes(x.id))).join('')}</div><div id="cm-flow-list">${p.mechanics.length?results(matching()):''}</div>`;
   /* STF-9, Q14: a second commander when the first allows one, limited to legal pairs; optional. */
   const pair=F.commander&&index?index.rows.find(r=>r.name===F.commander.name)?.pair:'';
@@ -77,7 +82,8 @@ function secondChoices(kind){const want={'partner':['partner'],'partner-with':['
   return (index?.rows||[]).filter(r=>want.includes(r.pair)&&r.name!==F.commander?.name).sort((a,b)=>(a.rank||1e9)-(b.rank||1e9)||a.name.localeCompare(b.name,'en-US'));}
 function drawStart(){
   const nameField=`<label class="cm-flow-name">Deck name<input id="cm-flow-name" maxlength="160" value="${e(F.name)}" placeholder="${e(F.commander?`${short(F.commander.name)} deck`:'New deck')}"></label>`;
-  const d=frame('Start from',METHODS,F.method,startCanvas(),{label:'Next',action:'flow-next',disabled:!F.commander},{head:nameField});
+  const byGroup=F.method==='group',d=frame('Start from',METHODS,F.method,startCanvas(),byGroup?{label:'Next',action:'flow-group-next',disabled:!(C.groupDeckChoices?.()||[]).length}:{label:'Next',action:'flow-next',disabled:!F.commander},{head:nameField});
+  d.querySelector('#cm-flow-group')?.addEventListener('change',ev=>{F.group=ev.target.value;});
   const q=d.querySelector('#cm-flow-query');
   if(q){const show=()=>{F.query=q.value;const list=d.querySelector('#cm-flow-list');const owned=ownedNames();
       const rows=q.value.trim()?C.catalog.search(q.value,{commander:true,limit:40}).map(c=>({name:c.name,ci:(c.colorIdentity||[]).join(''),owned:owned.has(c.name)})).sort((a,b)=>b.owned-a.owned):[];
@@ -86,6 +92,11 @@ function drawStart(){
   d.querySelector('[data-flow-include]')?.addEventListener('change',ev=>{F.picks.include=ev.target.checked;draw();});
   d.querySelector('#cm-flow-second')?.addEventListener('change',ev=>{const v=ev.target.value.trim();F.second=v?secondChoices(index.rows.find(r=>r.name===F.commander.name).pair).find(r=>r.name===v)||null:null;if(v&&!F.second)ev.target.setCustomValidity('Choose a commander from the list.');else ev.target.setCustomValidity('');});
   d.addEventListener('close',()=>{if(F&&F.step==='start'){const n=d.querySelector('#cm-flow-name')?.value.trim();if(n&&n!==M.deck(C.state,F.deckId).name)commit({type:'editDeck',deckId:F.deckId,name:n},{renderView:false}).catch(()=>{});}},{once:true});}
+actions['flow-group-next']=async()=>{if(!F)return;const gid=document.getElementById('cm-flow-group')?.value||F.group;if(!gid)return;
+  const name=(document.getElementById('cm-flow-name')?.value||F.name||'').trim(),shell=M.deck(C.state,F.deckId);
+  /* The shell Start from saved is let go while it is still empty: the deck is made from the group, with the group. */
+  if(shell&&!shell.commanders.length&&!shell.slots.length)await commit({type:'deleteDeck',deckId:shell.id,confirmed:true},{renderView:false});
+  F=null;return C.groupDeck(gid,name);};
 const toggle=(list,id)=>list.includes(id)?list.filter(x=>x!==id):[...list,id];
 /* A chosen commander sets the colors: pressing one asks first (flow-color-yes / flow-color-no), and only a yes lets the commander go. */
 actions['flow-color-yes']=()=>{const x=F?.colorAsk;if(!x)return;const p=F.picks,lead=String(F.commander.ci||'').split('').filter(Boolean);F.colorAsk=null;F.commander=null;F.second=null;

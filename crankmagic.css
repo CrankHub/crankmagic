@@ -2547,6 +2547,8 @@ button.cm-pill:hover{filter:brightness(1.15)}
    already flattening the 18px the wizard asked for -- which is why "Create" sat against the line
    above it. Trap 1 in INDEX-where-things-live.md: carry the id, never !important. */
 #matrix-v2 .cm-new-deck-wizard>p{margin-bottom:18px}
+.cm-group-row{display:flex;gap:8px;align-items:center}.cm-group-row .cm-wizard-path{flex:1}
+.cm-delete-group{display:grid;gap:10px;border:0;padding:0;margin:0}#matrix-v2 .cm-delete-group .cm-checkbox{display:flex;align-items:flex-start;gap:10px;text-align:left}#matrix-v2 .cm-delete-group input[type=radio]{width:16px;height:16px;min-height:0;flex:0 0 16px;padding:0;margin:3px 0 0}
 .cm-wizard-path{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 16px;
   text-align:left;background:var(--v-raised);border:1px solid var(--v-line);border-radius:var(--v-radius-card);
   cursor:pointer;transition:background .12s ease,border-color .12s ease}

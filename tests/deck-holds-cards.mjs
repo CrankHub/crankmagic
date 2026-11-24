@@ -72,17 +72,21 @@ try {
   await page.waitForFunction((gid) => location.hash.includes(encodeURIComponent(gid)) || location.hash.includes(gid), before.gid, {timeout: 30000});
   ok(!(await page.locator("#cm-dialog[open]").count()), "and a press on it opens that group in the Library");
 
-  /* DECK: a deck from the group's own cards, by New deck's From a group (ROB-547: the road the Decks requirements' NEW-3
-     took off that window on 2026-10-23 is back on it). */
+  /* DECK: a deck from the group's own cards, by New deck › Create › From a group (ROB-547: the road the Decks requirements'
+     NEW-3 took off New deck on 2026-10-23 is back, as Start from's fifth way in). Next lets the empty shell go. */
   await page.goto(`${base}/index.html#decks`);
   await page.locator("[data-action=new-deck]").first().waitFor({timeout: 60000});
   await page.locator("[data-action=new-deck]").first().click();
-  await page.locator("#cm-dialog [data-action=wizard-group]").click();
-  await page.locator("#cm-dialog[open] h2", {hasText: "New deck from a group"}).waitFor();
+  const decksBefore = await page.evaluate(() => globalThis.__cm.state.decks.length);
+  await page.locator("#cm-dialog [data-action=start-from]").click();
+  await page.locator(".cm-flow-dialog").waitFor({timeout: 30000});
+  await page.locator(".cm-flow-nav button", {hasText: "From a group"}).click();
+  await page.locator("#cm-flow-group").waitFor();
   await shot(page, "new-deck-from-a-group-1280");
-  eq(await page.locator("#cm-dialog [name=groupId] option").allInnerTexts(), ["Quintorius pile"], "New deck › From a group offers the groups that hold cards and are no deck's own");
-  await page.click("#cm-dialog button[type=submit]");
+  eq(await page.locator("#cm-flow-group option").allInnerTexts(), ["Quintorius pile"], "Create › From a group offers the groups that hold cards and are no deck's own");
+  await page.locator("[data-action=flow-group-next]").click();
   await page.locator("#cm-dialog[open] h2", {hasText: "New deck from Quintorius pile"}).waitFor();
+  eq(await page.evaluate(() => globalThis.__cm.state.decks.length), decksBefore, "and Next let the empty shell go: no stray New deck is left behind");
   const move = page.locator("#cm-dialog [name=move]");
   ok(await move.isChecked() && /Put the 9 copies you own from Quintorius pile \(now on the Bench\) in the deck's box/.test(await page.locator("#cm-dialog label.cm-checkbox").innerText()), "New deck from the group offers, ticked, to put the 9 copies in the deck's box");
   await shot(page, "new-deck-from-group-1280");
