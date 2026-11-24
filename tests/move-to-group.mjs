@@ -172,6 +172,10 @@ try {
   await del("Drop pile", "drop");
   eq(await after(made["Drop pile"]), {group: false, lot: null, watched: dropBefore}, "Delete the cards too: the group, its owned copy and its planned card leave the Library");
   ok(await page.evaluate(() => globalThis.__cm.state.groups.some((g) => g.template === "bench")), "the Bench is still there");
+  await page.locator(".cm-subnav a", {hasText: "Groups"}).click();
+  await page.locator("#cm-dialog[open] h2", {hasText: "Groups"}).waitFor();
+  eq(await page.locator("#cm-dialog .cm-group-row", {hasText: /^(To Buy|To Trade|Bench)/}).count(), 0, "the Bench, To Buy and To Trade, the app's own groups, offer no Delete");
+  await page.locator("#cm-dialog [data-action=close]").first().click();
   await context.close();
 
 } finally {

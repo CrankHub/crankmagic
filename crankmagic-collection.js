@@ -1917,7 +1917,9 @@ actions['manage-group']=el=>{const g=C.state.groups.find(g=>g.id===el.dataset.gr
    planned cards become Watched. Delete the cards too: the group goes with its planned cards, its copies on the Bench and the
    ones not owned yet. A copy in a deck's box, reserved for a deck, offered, or filed in another group too stays where it is.
    The Bench, and a deck's own group, are not deleted here. */
-const deletable=g=>g&&g.template!=='bench'&&!C.state.decks.some(d=>d.groupId===g.id&&!d.archived);
+/* The app's own groups (the Bench, To Buy, To Trade) are looked up by id elsewhere, so they stay too. */
+const builtIn=g=>(M.starterGroups?.()||[]).some(x=>x.id===g.id);
+const deletable=g=>g&&g.template!=='bench'&&!builtIn(g)&&!C.state.decks.some(d=>d.groupId===g.id&&!d.archived);
 function groupDeletion(g){const lots=C.state.lots.filter(l=>(l.groupIds||[]).includes(g.id)),busy=l=>l.allocation||l.chosenFor||l.location?.kind==='deck'||(l.offer||'none')!=='none'||(l.groupIds||[]).length>1;
   const gone=lots.filter(l=>!busy(l)),stay=lots.filter(busy),n=list=>list.reduce((k,x)=>k+x.quantity,0),entries=g.entries||[];
   const keep=[...entries.map(r=>({type:'acquire',cards:[C.card(r.cardId)].filter(Boolean),lot:{cardId:r.cardId,quantity:r.quantity,source:'watching',printing:{...(r.printing||{})},notes:r.notes||''}})),{type:'deleteGroup',groupId:g.id}];
@@ -1926,6 +1928,7 @@ function groupDeletion(g){const lots=C.state.lots.filter(l=>(l.groupIds||[]).inc
 actions['delete-group']=el=>{const g=C.state.groups.find(x=>x.id===el.dataset.group);
   if(!g)throw Error('That group no longer exists.');
   if(g.template==='bench')throw Error('The Bench stays: it is where owned cards that are in no deck live.');
+  if(builtIn(g))throw Error(`${g.name} is one of the app's own groups, and it stays. Move its cards elsewhere instead.`);
   if(!deletable(g))throw Error(`${g.name} is a deck's own group. Delete the deck to delete its group.`);
   const x=groupDeletion(g),plural=k=>`${num(k)} card${k===1?'':'s'}`;
   form(`Delete ${g.name}`,`<fieldset class="cm-full cm-delete-group"><legend>What happens to its cards</legend>
