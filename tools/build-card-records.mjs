@@ -74,7 +74,9 @@ function fetchRecords(names) {
   const out = [];
   for (let i = 0; i < names.length; i += 75) {
     const body = JSON.stringify({identifiers: names.slice(i, i + 75).map((name) => ({name: name.split(" // ")[0]}))});
-    const text = execFileSync("curl", ["-sS", "--fail", "--max-time", "60", "-H", "Content-Type: application/json", "-d", body, "https://api.scryfall.com/cards/collection"], {encoding: "utf8", maxBuffer: 64 * 1024 * 1024});
+    /* The body goes to curl on stdin, never as an argument: on Windows an argument passes through the ANSI code page, so
+       "Dáin, Lord of the Iron Hills" arrived as invalid UTF-8 and Scryfall answered 400 (ROB-548, 2026-11-24). */
+    const text = execFileSync("curl", ["-sS", "--fail", "--max-time", "60", "-H", "Content-Type: application/json", "--data-binary", "@-", "https://api.scryfall.com/cards/collection"], {encoding: "utf8", input: body, maxBuffer: 64 * 1024 * 1024});
     const data = JSON.parse(text);
     for (const card of data.data || []) out.push(fromScryfall(card));
     for (const miss of data.not_found || []) console.warn(`  Scryfall does not know ${miss.name}`);
