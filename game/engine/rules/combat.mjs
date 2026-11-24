@@ -57,7 +57,7 @@ import {powerOf, toughnessOf, typesOf, keywordsOf, controllerOf, abilitiesOf, de
 import {isCreatureType} from "../keywords/types.mjs";
 import {givePoison, changeLife, infects, addCounters, damagePermanent} from "../script/effects/resources.mjs";
 import {summoningSick} from "../keywords/timing.mjs";
-import {combatDamageOf, ruleChanged, attackTax, blockTax, goadersOf, mustAttackOf, mustAttackPlaneswalkers, cantAttack as restricted, cantGainLife, lifeGained, attackerCaps, defenderLifted, attacksEachCombat} from "./statics.mjs";
+import {combatDamageOf, ruleChanged, attackTax, blockTax, goadersOf, mustAttackOf, mustAttackPlaneswalkers, cantAttack as restricted, cantGainLife, lifeGained, attackerCaps, defenderLifted, attacksEachCombat, blocksAllowed} from "./statics.mjs";
 import {paymentUnits, paymentIsAChoice, paymentChoice, payWithUnits} from "./mana.mjs";
 import {recordCommanderDamage} from "./commander.mjs";
 import {damageAssignmentProblem} from "../controller.mjs";
@@ -548,7 +548,14 @@ export const blockers = {
     /* "CAN'T BE BLOCKED BY MORE THAN ONE CREATURE" (CR 509.1b; Safewright Cavalry): at most one option naming it, said in the
        record with what to do instead, as an attack cap is -- every answerer held to it by controller.mjs. */
     const one = [...new Set(options.map((o) => o.attackerId))].filter((id) => ruleChanged(state, "blocked-by-one-at-most", id));
-    const capped = one.length ? {by: "attackerId", most: Object.fromEntries(one.map((id) => [id, 1])), why: Object.fromEntries(one.map((id) => [id, oneBlockerWords(state, id)]))} : null;
+    /* "CAN BLOCK AN ADDITIONAL CREATURE EACH COMBAT" (CR 509.1a; Brave the Sands, rules/statics.mjs blocksAllowed): how many
+       attackers each blocker may block, as many as it is offered at most. One that may block more than one is offered so
+       (`exclusiveBy` is dropped), and the most for each blocker said in the record -- unless an attacker's own cap is there,
+       which the record says instead; `check` refuses either broken. */
+    const allowed = new Map([...by].map(([blocker, list]) => [blocker, Math.min(list.length, blocksAllowed(state, blocker))]));
+    const many = [...allowed.values()].some((n) => n > 1);
+    const capped = one.length ? {by: "attackerId", most: Object.fromEntries(one.map((id) => [id, 1])), why: Object.fromEntries(one.map((id) => [id, oneBlockerWords(state, id)]))}
+      : many ? {by: "cardId", most: Object.fromEntries(allowed), why: Object.fromEntries([...allowed].map(([id, n]) => [id, blockLimitWords(state, id, n)]))} : null;
     const requires = blockRequirements(state, options);
     /* WHAT BLOCKING COSTS (Archangel of Tithes; CR 509.1d, 509.1f): each option's tax, and every unit of mana the player could pay
        with, said in the record as an attack tax's are (taxBudget) -- so every answerer declares only what can be paid for. */
@@ -560,9 +567,9 @@ export const blockers = {
       title: "Declare blockers",
       mode: "many",
       min: 0,
-      max: new Set(options.map((o) => o.cardId)).size,
-      /* One option per blocker per attacker, so the same rule applies (CR 509.1a). */
-      exclusiveBy: "cardId",
+      max: [...allowed.values()].reduce((sum, n) => sum + n, 0),
+      /* One option per blocker per attacker, so the same rule applies (CR 509.1a) -- while no blocker may block more. */
+      ...(many ? {} : {exclusiveBy: "cardId"}),
       ...(budget ? {budget} : {}),
       ...(capped ? {capped} : {}),
       ...(requires.length ? {requires} : {}),
@@ -627,10 +634,13 @@ export const blockers = {
     const picked = indices.map((index) => choice.options[index]);
     const each = new Map(choice.blockReasons.map(a => [a.attackerId, []]));
     const add = (attackerId, why) => {if (!each.has(attackerId)) each.set(attackerId, []); each.get(attackerId).push(why);};
-    /* CR 509.1a: one creature blocks one attacker, unless an effect says otherwise. */
-    const twice = new Set(picked.filter((o, i) => picked.findIndex((p) => p.cardId === o.cardId) !== i).map((o) => o.cardId));
-    for (const id of twice) {
-      const why = `${shownName(state.objects[id])} can block only one attacker. Choose one attacker for it to block.`;
+    /* CR 509.1a: one creature blocks one attacker, unless an effect says otherwise (blocksAllowed). */
+    const counts = new Map();
+    for (const o of picked) counts.set(o.cardId, (counts.get(o.cardId) ?? 0) + 1);
+    for (const [id, n] of counts) {
+      const most = blocksAllowed(state, id);
+      if (n <= most) continue;
+      const why = blockLimitWords(state, id, most);
       reasons.push(why);
       for (const option of picked.filter(o => o.cardId === id)) add(option.attackerId, why);
     }
@@ -665,6 +675,11 @@ export const blockers = {
   },
 };
 
+/* The refusal of a blocker declared blocking more attackers than it may (CR 509.1a): what is wrong, then what to do. */
+const BLOCK_LIMITS = ["one attacker. Choose one attacker for it to block.", "two attackers. Choose two or fewer for it to block.",
+  "three attackers. Choose three or fewer for it to block."];
+const blockLimitWords = (state, id, most) => `${shownName(state.objects[id])} can block only ${BLOCK_LIMITS[most - 1] ?? `${most} attackers. Choose ${most} or fewer for it to block.`}`;
+
 /* The blocks, declared (CR 509.1g-h): each attacker blocked by its blockers, said, and the next defending player asked. */
 function declareBlocks(state, player, picked, events) {
   for (const option of picked) {
@@ -696,6 +711,8 @@ function declareBlocks(state, player, picked, events) {
 const power = (state, id) => combatDamageOf(state, id);
 /* CR 506.4: a creature that has left the battlefield is out of combat. */
 const onBattlefield = (state, id) => state.objects[id] !== undefined && state.objects[id].zone === "battlefield";
+/* The attackers still in combat this creature blocks (CR 509.1a; more than one, Brave the Sands). */
+const blockedBy = (state, id) => state.combat.attacks.filter((a) => a.blockers.includes(id) && onBattlefield(state, a.attacker)).map((a) => a.attacker);
 /** Which combat damage step this is (CR 510.4): the first-strike step, or the regular one. */
 export const damageStep = (state) => (state.phase === "COMBAT_FIRST_STRIKE_DAMAGE" ? "first" : "regular");
 /* WHO DEALS DAMAGE IN THIS STEP (CR 510.4). In the first-strike step, a creature with first or double strike now -- and
@@ -718,12 +735,28 @@ export const combatDamage = {
     const dealsNow = (id) => dealsIn(state, id, step);
     const attack = state.combat.attacks.find((a) => a.assignment?.step !== step && onBattlefield(state, a.attacker) && dealsNow(a.attacker)
       && power(state, a.attacker) > 0 && a.blockers.filter((id) => onBattlefield(state, id)).length > 1);
-    if (!attack) return false;
-    state.awaiting = {kind: "assign-combat-damage", player: state.combat.attackingPlayerId, attacker: attack.attacker, step};
+    if (attack) {
+      state.awaiting = {kind: "assign-combat-damage", player: state.combat.attackingPlayerId, attacker: attack.attacker, step};
+      return true;
+    }
+    /* And a blocker that deals damage in this step blocking two or more attackers still in combat (Brave the Sands; CR 510.1d):
+       its damage divided among them as its controller chooses, asked of that player -- once in each step it deals damage in. */
+    const blocker = [...new Set(state.combat.attacks.flatMap((a) => a.blockers))].find((id) => onBattlefield(state, id) && dealsNow(id)
+      && power(state, id) > 0 && blockedBy(state, id).length > 1 && state.combat.blockerAssignments?.[id]?.step !== step);
+    if (blocker === undefined) return false;
+    state.awaiting = {kind: "assign-combat-damage", player: controllerOf(state, blocker), blocker, step};
     return true;
   },
 
   choice(state, awaiting) {
+    /* A blocker's division (CR 510.1d): among the attackers it blocks, in no order, nothing past them. */
+    if (awaiting.blocker !== undefined) return {
+      id: `assign-damage:${state.turn}:${awaiting.step ?? "regular"}:blocker:${awaiting.blocker}`,
+      title: `Assign ${power(state, awaiting.blocker)} damage`, mode: "damage", min: 0, max: 0, total: power(state, awaiting.blocker), maySkip: false,
+      divide: true, overrideOrder: false,
+      options: blockedBy(state, awaiting.blocker).map((id, index) => ({index, label: shownName(state.objects[id]), cardId: id,
+        lethal: lethalNeededFrom(state, awaiting.blocker, id), defender: false})),
+    };
     const attack = state.combat.attacks.find((a) => a.attacker === awaiting.attacker);
     const options = attack.blockers.filter((id) => onBattlefield(state, id)).map((id, index) => ({
       index,
@@ -757,6 +790,12 @@ export const combatDamage = {
     const choice = combatDamage.choice(state, awaiting);
     const problem = damageAssignmentProblem(choice, amounts);
     if (problem) throw new Error(problem);
+    if (awaiting.blocker !== undefined) {
+      (state.combat.blockerAssignments ??= {})[awaiting.blocker] = {step: awaiting.step ?? "regular",
+        toAttackers: Object.fromEntries(choice.options.map((o) => [o.cardId, amounts[o.index]]))};
+      state.awaiting = null;
+      return [];
+    }
     attack.assignment = {
       step: awaiting.step ?? "regular",
       toBlockers: Object.fromEntries(choice.options.filter((o) => !o.defender).map((o) => [o.cardId, amounts[o.index]])),
@@ -835,12 +874,16 @@ export const combatDamage = {
           }
         }
       }
-      /* CR 510.1d: each blocking creature assigns its damage to the creature it is blocking. */
+      /* CR 510.1d: each blocking creature assigns its damage to the creature it is blocking -- or, blocking two or more still in
+         combat, this one its share of the division its controller chose for this step (open, resolve). */
       for (const blocker of attack.blockers) {
         if (!stillThere(blocker)) continue;
         const blockPower = power(state, blocker);
-        if (dealsNow(blocker) && blockPower > 0)
-          pending.push({toCard: attack.attacker, amount: blockPower, source: blocker});
+        if (!dealsNow(blocker) || blockPower <= 0) continue;
+        const shared = blockedBy(state, blocker).length > 1;
+        const split = state.combat.blockerAssignments?.[blocker];
+        const amount = shared ? (split?.step === step ? split.toAttackers[attack.attacker] ?? 0 : 0) : blockPower;
+        if (amount > 0) pending.push({toCard: attack.attacker, amount, source: blocker});
       }
     }
 

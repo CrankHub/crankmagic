@@ -271,6 +271,10 @@ export const STATIC_RULES = Object.freeze({
   /** A restriction on blocking (CR 509.1b): "This token can't block" (White Sun's Twilight's Mites), "target creature
       can't block this turn" given until end of turn: `affects` what can't. rules/combat.mjs, canBlock. */
   "cant-block": "rules/combat.mjs",
+  /** "Each creature you control can block an additional creature each combat" (Brave the Sands; CR 509.1a): `affects` the
+      creatures that may each block one more attacker, every instance one more (blocksAllowed, below). rules/combat.mjs, as
+      blockers are declared. */
+  "blocks-additional": "rules/combat.mjs",
   /** Flashback (CR 702.34a): the card's own, from its keyword and cost (cards/index.mjs), or given until end of turn
       (Past in Flames: effectUntil, its cards fixed as it resolves, their mana costs the cost). rules/actions.mjs offers
       the cast from its owner's graveyard; rules/stack.mjs and effects/zones.mjs exile it as it leaves the stack. */
@@ -1672,6 +1676,23 @@ export function playerRuleChanged(state, rule, player) {
   /* Or an effect a spell made, for the players it names, for as long as it lasts: "you have no maximum hand size for the
      rest of the game" (Wisdom of Ages; CR 402.2, 611.2a; effects/permanents.mjs, effectUntil's `players`). */
   return (state.effects ?? []).some((effect) => effect.rule === rule && (effect.players ?? []).includes(player));
+}
+
+/**
+ * HOW MANY ATTACKERS THIS CREATURE MAY BLOCK (CR 509.1a): one, "unless an effect says otherwise" -- and one more for each static
+ * `blocks-additional` whose `affects` takes it in as it is now ("each creature you control can block an additional creature
+ * each combat", Brave the Sands), its holder's controller "you". Two such abilities give two more.
+ */
+export function blocksAllowed(state, id) {
+  const held = staticAbilities(state);
+  let most = 1;
+  for (const holderId of state.zones.battlefield) {
+    const holder = state.objects[holderId];
+    for (const ability of held(holderId))
+      if (ability.kind === "static" && ability.rule === "blocks-additional"
+        && matchesSelector(chosenFor(ability, holder).affects, state, id, {controller: holder.controller, source: holderId})) most += 1;
+  }
+  return most;
 }
 
 /** Whether any static ability on the battlefield -- or an effect with a duration ("can't be blocked this turn") -- changes `rule` for this object. */
