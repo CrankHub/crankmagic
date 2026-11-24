@@ -1,7 +1,7 @@
 {
   "name": "crankmagic-staging",
   "main": "cloud/play-worker.mjs",
-  "compatibility_date": "2026-11-21",
+  "compatibility_date": "2026-11-24",
   "assets": {
     "directory": "./",
     "binding": "ASSETS",
@@ -28,9 +28,9 @@
   "vars": {
     "SHARING_ENABLED": "on",
     "INVITE_ADMIN_ID": "1",
-    "CLOUDFLARE_ACCOUNT_ID": "02e7ae6d703281008f546c63378c6ddb",
     "ACCESS_INVITE_APP_IDS": "16fef6e1-0437-4bbd-b7fe-a81419dc09fa,23915d70-d40d-4f6f-9170-d43b3bf412d8",
     "INVITE_LINK_ORIGIN": "https://crankmagic.com",
+    "CLOUDFLARE_ACCOUNT_ID": "02e7ae6d703281008f546c63378c6ddb",
     "ACCESS_TEAM_DOMAIN": "crankmagic.cloudflareaccess.com",
     "ACCESS_AUD": "213cb6b10352e5ed5525d6337f355cd5190dec402e86debd30971d3bd5bda1f5",
     "PLAYTEST_TABLES": "on",
