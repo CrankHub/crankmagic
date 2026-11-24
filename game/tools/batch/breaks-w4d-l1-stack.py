@@ -76,7 +76,7 @@ BREAKS = [
     ('any ability a triggered one', 'game/engine/script/filter.mjs',
      '    if (selector.abilityKind === "triggered" && entry.kind !== "trigger") return false;\n', ''),
     ('abilityKind no selector key', 'game/engine/script/filter.mjs',
-     '"singleTarget", "abilityKind", "goaded",', '"singleTarget", "goaded",'),
+     '"singleTarget", "abilityKind", "fromSource", "goaded",', '"singleTarget", "fromSource", "goaded",'),
     ("an ability's copy controlled by the original's controller", 'game/engine/rules/stack.mjs',
      'stackId: state.nextStackId, playerId: controller, stage: "waiting", copy: true};', 'stackId: state.nextStackId, playerId: original.playerId, stage: "waiting", copy: true};'),
     ("an ability's copy never on the stack", 'game/engine/rules/stack.mjs',

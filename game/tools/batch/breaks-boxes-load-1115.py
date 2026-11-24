@@ -125,10 +125,10 @@ BREAKS = [
      '"other opponent"]'),
     # Heartbeat of Spring: the tapper picks the type (CR 106.3).
     ('heartbeat: the first type is taken without asking', TRIGGER,
-     'kind = pending.shift();',
-     'kind = kinds[0];'),
+     'kind = pending.shift();\n        if (!kinds.includes(kind))',
+     'kind = kinds[0];\n        if (!kinds.includes(kind))'),
     ('heartbeat: no offer for each pick', ACTIONS,
-     'if (kinds.length < 2 || !ability.tapSelf) return [null];',
+     'if (!ability.tapSelf) return [null];',
      'if (true) return [null];'),
     ('heartbeat: the pick offers are spent as plain taps', ACTIONS,
      'if (offer.costChoice || offer.extra) continue;',
