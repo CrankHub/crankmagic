@@ -67,7 +67,7 @@ BREAKS = [
     ('X convoke paid', ACTIONS, 'action.lifeInstead !== undefined ? "" : null, action.extraMana ?? "", action.targets, action.x);', 'action.lifeInstead !== undefined ? "" : null, action.extraMana ?? "", action.targets);'),
     ('X paid more than one way', ACTIONS, ' action.extraMana ?? "", action.targets, action.x);\n  const {x} = reckoned, cost = anyTypeCost(reckoned.cost, permission);\n  return paymentOptions',
      ' action.extraMana ?? "", action.targets);\n  const {x} = reckoned, cost = anyTypeCost(reckoned.cost, permission);\n  return paymentOptions'),
-    ('X tapped for, paid', ACTIONS, 'castCost(state, player, action.objectId, tax, false, null, action.extraMana ?? "", action.targets, action.x));', 'castCost(state, player, action.objectId, tax, false, null, action.extraMana ?? "", action.targets));'),
+    ('X tapped for, paid', ACTIONS, 'castCost(state, player, action.objectId, tax, false, sneakWay(state, player, action)?.mana ?? null, action.extraMana ?? "", action.targets, action.x));', 'castCost(state, player, action.objectId, tax, false, sneakWay(state, player, action)?.mana ?? null, action.extraMana ?? "", action.targets));'),
     ('X paid', ACTIONS, '    const reckoned = castCost(state, player, action.objectId, tax, Boolean(free), lifeCost !== null ? "" : back ? back.mana : fled ? fled.mana : way ? way.mana : manaInstead, action.extraMana ?? "", action.targets, action.x);',
      '    const reckoned = castCost(state, player, action.objectId, tax, Boolean(free), lifeCost !== null ? "" : back ? back.mana : fled ? fled.mana : way ? way.mana : manaInstead, action.extraMana ?? "", action.targets);'),
     # Lobelia: a linked card played free, one only.

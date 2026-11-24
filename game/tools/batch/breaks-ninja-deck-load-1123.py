@@ -38,8 +38,8 @@ BREAKS = [
      '      ...(context.paidFor ? {paidFor: context.paidFor} : {}),\n',
      ''),
     ('sneak paid: a branch condition is not told', RESOLUTION,
-     'gift: resolving.context.gift, paidFor: resolving.context.paidFor});',
-     'gift: resolving.context.gift});'),
+     'about: resolving.context.about, paidFor: resolving.context.paidFor,\n',
+     'about: resolving.context.about,\n'),
 
     # Group B. Ninjutsu given (Satoru Umezawa; CR 702.49a, 613.1f).
     ('ninjutsu given: a card in hand has only its printed abilities', LAYERS,

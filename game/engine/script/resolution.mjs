@@ -123,11 +123,12 @@ export function runResolution(state, rng = null) {
        instead" -- its own condition (`if`) asked now, as it reaches the head (CR 608.2c), and the effects of the way it goes
        put in front of whatever follows, so one of them may stop to ask (Composer of Spring's "you may put a card"). */
     if (effect?.effect === "branch") {
-      const holds = conditionHolds(state, effect.if, {controller: resolving.context.controller, source: resolving.context.source, about: resolving.context.about,
+      /* `paidFor`: "if this creature's sneak cost was paid, instead" (Turncoat Kunoichi), its source gone, as it last was
+         (CR 608.2h; rules/stack.mjs). */
+      const holds = conditionHolds(state, effect.if, {controller: resolving.context.controller, source: resolving.context.source, about: resolving.context.about, paidFor: resolving.context.paidFor,
         remembered: resolving.context.remembered, targets: resolving.context.targets, cast: resolving.context.cast, rolled: resolving.context.rolled,
         movedWas: resolving.context.movedWas, searched: resolving.context.searched, lastKnown: resolving.context.lastKnown, resolvedBefore: resolving.context.resolvedBefore,
-        /* "If this creature's sneak cost was paid, instead" (Turncoat Kunoichi): its source gone, as it last was (CR 608.2h; rules/stack.mjs). */
-        gift: resolving.context.gift, paidFor: resolving.context.paidFor});
+        gift: resolving.context.gift});
       resolving.queue.shift();
       resolving.queue.unshift(...structuredClone((holds ? effect.then : effect.otherwise) ?? []));
       continue;
