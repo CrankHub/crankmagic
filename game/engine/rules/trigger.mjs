@@ -221,6 +221,18 @@ function subjects(state, event, condition, sourceId, controller) {
     if (condition.removedAtLeast && -fields.sa.loyalty < condition.removedAtLeast) return [];
     return [{card: fields.card?.cardId, player: activator}];
   }
+  /* "Whenever you activate an ability, if it isn't a mana ability" (Rings of Brighthearth), "whenever an ability of equipped
+     creature is activated" (Illusionist's Bracers; CR 602.2, 605.3a): an ability, not a spell, put on the stack as it was
+     activated -- a mana ability never is, and a copy is put there without being activated (CR 707.10c), so neither is seen.
+     `of: "equipped"`: its source the creature this Equipment is attached to once the activation is done (CR 602.2i). About
+     the ability by its stack id, for "copy that ability" (script/bind.mjs, `stack: "that"`). */
+  if (condition.on === "GameEventSpellAbilityCast" && condition.abilityActivated) {
+    if (fields.sa?.isSpell !== false) return [];
+    const activator = fields.si?.actor?.playerId;
+    if (!whoseIs(condition.activator ?? "you", activator, controller)) return [];
+    if (condition.of === "equipped" && state.objects[sourceId]?.attachedTo !== fields.card?.cardId) return [];
+    return [{card: fields.card?.cardId, player: activator, stackId: fields.sa.stackId}];
+  }
   if (condition.on === "GameEventSpellAbilityCast") {
     if (!fields.sa?.isSpell) return [];
     /* The spell is the stack entry's object: the card in hand became a new object as it moved to the stack (CR 400.7). */

@@ -1,0 +1,66 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "The Peregrine Dynamo",
+    "oracleId": "da21f1a7-65d0-46d0-8ad1-f84a387ba753",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Artifact",
+      "Creature"
+    ],
+    "subtypes": [
+      "Construct"
+    ],
+    "manaCost": "{3}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": 1,
+    "toughness": 5
+  },
+  "oracleText": "Haste\n{1}, {T}: Copy target activated or triggered ability you control from another legendary source that's not a commander. You may choose new targets for the copy. (Mana abilities can't be targeted.)",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Haste",
+      "keyword": "haste"
+    },
+    {
+      "kind": "activated",
+      "text": "{1}, {T}: Copy target activated or triggered ability you control from another legendary source that's not a commander. You may choose new targets for the copy.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{1}"
+        },
+        {
+          "atom": "{T}"
+        }
+      ],
+      "targets": [
+        {
+          "what": "ability",
+          "controller": "you",
+          "fromSource": {
+            "supertypes": [
+              "Legendary"
+            ],
+            "another": true,
+            "commander": false
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect": "copySpell",
+          "stack": {
+            "target": 0
+          },
+          "newTargets": true
+        }
+      ]
+    }
+  ]
+}

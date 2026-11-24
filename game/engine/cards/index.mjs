@@ -352,6 +352,12 @@ const TRIGGERS = {
      its cost, CR 606.4). About the permanent and the player. */
   "loyalty activated": (t) => ({on: "GameEventSpellAbilityCast", loyaltyActivated: true, activator: t.activator ?? "you",
     ...(Number.isInteger(t.removedAtLeast) && t.removedAtLeast >= 1 ? {removedAtLeast: t.removedAtLeast} : {})}),
+  /* "Whenever you activate an ability, if it isn't a mana ability" (Rings of Brighthearth; CR 602.2, 605.3a): any ability put
+     on the stack by its activation, by `activator`, a loyalty ability's too (CR 606.3); "whenever an ability of equipped
+     creature is activated" (Illusionist's Bracers; `of: "equipped"`, by anyone): the creature this Equipment is attached to
+     its source. About the source, the activator and the ability itself (rules/trigger.mjs), for "copy that ability". */
+  "ability activated": (t) => ({on: "GameEventSpellAbilityCast", abilityActivated: true, activator: t.activator ?? "you",
+    ...(t.of === "equipped" ? {of: "equipped"} : {})}),
   /* "Whenever you attack" (CR 508.1): the attack as a whole, once, about the attacking player; "whenever you attack a player"
      (`each: "defender"`): once for each player attacked; "with two or more creatures" (`atLeast`); "if none of those
      creatures attacked you" (`notAttacking: "you"`); "with one or more non-Gnome creatures", "whenever one or more Goblins

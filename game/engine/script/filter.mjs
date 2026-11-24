@@ -48,7 +48,7 @@ const BLOCKERS_DECLARED = ["COMBAT_DECLARE_BLOCKERS", "COMBAT_FIRST_STRIKE_DAMAG
 export const SELECTOR_KEYS = Object.freeze([
   "what", "types", "subtypes", "supertypes", "nonTypes", "nonSubtypes", "zone", "controller", "who", "another", "target", "token", "manaValue", "named",
   "attachedBy", "colors", "tapped", "counters", "power", "self", "keywords", "nonSupertypes", "colorless", "attacking", "toughness", "countersAtLeast", "attackedThisTurn", "commander", "nonColors", "owner", "enteredThisTurn", "toughnessOverPower",
-  "unblocked", "singleTarget", "abilityKind", "goaded", "uniqueName", "sharesCreatureType", "multicolored", "monocolored", "sharesColor",
+  "unblocked", "singleTarget", "abilityKind", "fromSource", "goaded", "uniqueName", "sharesCreatureType", "multicolored", "monocolored", "sharesColor",
   /* "Whenever a modified creature you control deals combat damage" (Kodama of the West Tree; CR 700.15, rules/layers.mjs). */
   "modified",
   /* Bludgeon Brawl (wave 4d L3): "attached to it", the object a layer-7 amount is counted for (rules/layers.mjs, counted's
@@ -205,13 +205,22 @@ const WHAT = ["permanent", "card", "player", "spell", "ability"];
    Nothing gives an ability hexproof or protection, so being a target asks nothing more (`target`). */
 /* `abilityKind`: "triggered" -- "copy target triggered ability you control" (Strionic Resonator; CR 113.3c, card load w4d
    L1). */
-const ABILITY_KEYS = ["what", "controller", "singleTarget", "target", "abilityKind"];
+/* `fromSource`: "from another legendary source that's not a commander" (The Peregrine Dynamo; CR 113.7, 113.8, 903.3) -- a
+   selector of the ability's source as it is now, wherever it is; an ability with no source object (an emblem's, the game's
+   own) is from none. */
+const ABILITY_KEYS = ["what", "controller", "singleTarget", "target", "abilityKind", "fromSource"];
 const abilityMatcher = (selector) => {
   const extra = Object.keys(selector).filter((key) => !ABILITY_KEYS.includes(key));
   if (extra.length) throw new Error(`An ability on the stack is chosen by ${ABILITY_KEYS.join(", ")}, not ${extra.join(", ")}`);
+  /* Read where it is: a legendary creature's "when this creature dies" from its graveyard (CR 113.7a). */
+  const fromSource = new Map(), sourceIn = (zone) => fromSource.get(zone) ?? fromSource.set(zone, compileSelector({...selector.fromSource, what: "card", zone})).get(zone);
   return (state, id, context = {}) => {
     const entry = state.stack.find((e) => e.stackId === id);
     if (!entry || entry.kind === "spell") return false;
+    if (selector.fromSource) {
+      const source = entry.cardId === null || entry.cardId === undefined ? null : state.objects[entry.cardId];
+      if (!source || !sourceIn(source.zone)(state, entry.cardId, context)) return false;
+    }
     if (selector.controller === "you" && entry.playerId !== context.controller) return false;
     if (selector.controller === "opponent" && entry.playerId === context.controller) return false;
     if (selector.singleTarget === true && (entry.targets ?? []).flat().filter(Boolean).length !== 1) return false;
@@ -638,6 +647,8 @@ export function compileSelector(selector) {
     if (selector.owner === "opponent" && object.owner === chooser) return false;
     /* "If you control a commander" (CR 903.3): a card designated a commander. */
     if (selector.commander === true && object.commander !== true) return false;
+    /* "That's not a commander" (The Peregrine Dynamo; CR 903.3): a card not designated one. */
+    if (selector.commander === false && object.commander === true) return false;
     /* "Target creature that was dealt damage this turn" (Mirrodin Avenged; CR 120.3): any damage, by anything, since this
        turn began -- still so once the damage is gone (regenerated, CR 701.19a), never so for damage before this object was
        (CR 400.7) or before this turn (effects/resources.mjs, damagePermanent). */
