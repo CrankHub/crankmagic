@@ -60,6 +60,8 @@ export function identityOf(card) {
     power: num(face.power), toughness: num(face.toughness),
     /* A planeswalker's printed loyalty (CR 306.5a). */
     ...(num(face.loyalty) !== null ? {loyalty: num(face.loyalty)} : {}),
+    /* A battle's printed defense (CR 310.4a). */
+    ...(num(face.defense) !== null ? {defense: num(face.defense)} : {}),
   };
 }
 
@@ -90,9 +92,13 @@ const CLASS_REMINDER = /^\(Gain the next level as a sorcery to add its abilit(y|
 /* "(Melds with Hanweir Battlements.)": on the half of a meld pair without the meld ability, a reminder of the other card's
    (CR 712.4a), which claims nothing on this one. */
 const MELD_REMINDER = /^\(Melds with [^()]+\.\)$/;
+/* A Siege's first line, "(As a Siege enters, choose an opponent to protect it. ...)", explains the rules every Siege has (CR
+   310.12): its protector, who may attack it, and its own trigger -- the engine's for every Siege (rules/entering.mjs,
+   rules/combat.mjs, rules/trigger.mjs), so the line claims nothing. */
+const SIEGE_REMINDER = /^\(As a Siege enters, choose an opponent to protect it\. You and others can attack it\. When it['’]s defeated, exile it, then cast it transformed\.\)$/;
 const withoutReminders = (line) => {
   const t = line.trim();
-  if (PHYREXIAN_REMINDER.test(t) || CLASS_REMINDER.test(t) || MELD_REMINDER.test(t)) return "";
+  if (PHYREXIAN_REMINDER.test(t) || CLASS_REMINDER.test(t) || MELD_REMINDER.test(t) || SIEGE_REMINDER.test(t)) return "";
   if (/^\(.*\)$/.test(t)) return t.slice(1, -1);
   return t.replace(/\s*\([^)]*\)/g, "").trim();
 };

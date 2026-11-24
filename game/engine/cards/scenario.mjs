@@ -20,7 +20,7 @@
  *     setup: [{seat, zone, cards, sick?}]   (a card put in the command zone is that seat's commander),
  *     steps: [ {play|tap|cast|activate|turnFaceUp|suspend|plot: name, seat?, targets?: [{card, seat?} | {player} | {ability}] | "any", ability?, mana?, x?, optional?, gift?}
  *            | {resolve: true} | {settle: true} | {pass: n} | {to: {turn, phase}} | {answer: [indices], amounts?: [n]} | {expect: [...]}
- *            | {attack: [names], at?} | {block: [[blocker, attacker], ...]} | {choose: [labels]} ],
+ *            | {attack: [names], at?, offered?} | {block: [[blocker, attacker], ...]} | {choose: [labels]} ],
  *   (`targets: "any"` takes the first legal aim; `optional` skips a move the rules do not offer; `settle` answers every
  *   question with its first legal answer and resolves the stack until it is empty -- the card loader's smoke test.)
  *     expect: [ {seat, of?, zone, cards?, count?, faceDown?} | {seat, life} | {seat, poison} | {stack} | {seat, tapped, is}
@@ -405,6 +405,13 @@ export function runScenario(scenario, cards, fixtures = {}) {
       for (let n = 0; n < STEP_LIMIT && state.awaiting?.kind !== "declare-attackers"; n += 1) stepOnce();
       if (state.awaiting?.kind !== "declare-attackers") fail("the game never asked who attacks");
       const choice = awaitingChoice(state), picked = [];
+      /* `offered`: every attack the question offers, by its label ("Bear → Maya", "Bear → Invasion of Dominaria (Maya)") -- a
+         battle its protector may not attack is not among them (CR 310.9b). */
+      if (step.offered !== undefined) {
+        const got = choice.options.map((o) => o.label).sort();
+        if (JSON.stringify(got) !== JSON.stringify([...step.offered].sort())) fail(`the attacks offered are ${JSON.stringify(got)}, not ${JSON.stringify(step.offered)}`);
+        passed.push(`attacks offered: ${step.offered.join(", ") || "none"}`);
+      }
       for (const [k, name] of step.attack.entries()) {
         /* At whom (`at`, a player's name, or one for each attacker in turn), or its first defender. */
         const at = Array.isArray(step.at) ? step.at[k] : step.at;

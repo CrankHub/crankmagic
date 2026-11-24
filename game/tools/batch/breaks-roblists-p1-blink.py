@@ -71,7 +71,7 @@ BREAKS = [
  ('the infinity ability compiled', INDEX, '        ...(ability.harnessed === true ? {harnessed: true} : {}),\n', ''),
  # Trouble in Pairs: extra turns skipped; attacks at you counted.
  ("an opponent's extra turn skipped", TURN, ' && playerRuleChanged(state, "skip-extra-turns", extra.player)) continue;', ' && false) continue;'),
- ('attacks at you counted', TRIGGER, '(condition.attacksYou ? attacks.filter((a) => a.defender?.playerId === controller && !a.defender.planeswalker) : attacks).length', 'attacks.length'),
+ ('attacks at you counted', TRIGGER, '(condition.attacksYou ? attacks.filter((a) => a.defender?.playerId === controller && atPlayer(a)) : attacks).length', 'attacks.length'),
  ('attacks at you, compiled', INDEX, '    ...(t.attacksYou === true ? {attacksYou: true} : {}),\n', ''),
  # Battle Angels of Tyr: myriad, and "more than each other player".
  ('myriad: other opponents', EFFECTS, ' && player !== context.about?.player).map((player) => ({player}));', ').map((player) => ({player}));'),

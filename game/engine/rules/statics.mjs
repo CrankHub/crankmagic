@@ -276,6 +276,10 @@ export const STATIC_RULES = Object.freeze({
   /** A restriction on blocking (CR 509.1b): "This token can't block" (White Sun's Twilight's Mites), "target creature
       can't block this turn" given until end of turn: `affects` what can't. rules/combat.mjs, canBlock. */
   "cant-block": "rules/combat.mjs",
+  /** "Each creature you control can block an additional creature each combat" (Brave the Sands; CR 509.1a): `affects` the
+      creatures that may each block one more attacker, every instance one more (blocksAllowed, below). rules/combat.mjs, as
+      blockers are declared. */
+  "blocks-additional": "rules/combat.mjs",
   /** Flashback (CR 702.34a): the card's own, from its keyword and cost (cards/index.mjs), or given until end of turn
       (Past in Flames: effectUntil, its cards fixed as it resolves, their mana costs the cost). rules/actions.mjs offers
       the cast from its owner's graveyard; rules/stack.mjs and effects/zones.mjs exile it as it leaves the stack. */
@@ -1230,6 +1234,8 @@ export function isGoaded(state, id) {
 export function attackTax(state, picked) {
   let total = 0;
   const held = staticAbilities(state);
+  /* An attack on a battle is no attack on its protector (CR 506.3, 310.9): "creatures can't attack you unless" asks nothing of it. */
+  picked = picked.filter((o) => o.battleId === undefined);
   for (const {defenderId, planeswalkerId} of picked) for (const holderId of state.zones.battlefield) {
     const holder = state.objects[holderId];
     if (holder.controller !== defenderId) continue;
@@ -1694,6 +1700,23 @@ function withEmblems(state) {
   let emblems = null;
   for (const seat of state.zones.command ?? []) for (const id of seat) if (state.objects[id]?.emblem === true) (emblems ??= []).push(id);
   return emblems ? [...state.zones.battlefield, ...emblems] : state.zones.battlefield;
+}
+
+/**
+ * HOW MANY ATTACKERS THIS CREATURE MAY BLOCK (CR 509.1a): one, "unless an effect says otherwise" -- and one more for each static
+ * `blocks-additional` whose `affects` takes it in as it is now ("each creature you control can block an additional creature
+ * each combat", Brave the Sands), its holder's controller "you". Two such abilities give two more.
+ */
+export function blocksAllowed(state, id) {
+  const held = staticAbilities(state);
+  let most = 1;
+  for (const holderId of state.zones.battlefield) {
+    const holder = state.objects[holderId];
+    for (const ability of held(holderId))
+      if (ability.kind === "static" && ability.rule === "blocks-additional"
+        && matchesSelector(chosenFor(ability, holder).affects, state, id, {controller: holder.controller, source: holderId})) most += 1;
+  }
+  return most;
 }
 
 /** Whether any static ability on the battlefield -- or an effect with a duration ("can't be blocked this turn") -- changes `rule` for this object. */

@@ -322,7 +322,8 @@ export function damageAll(state, params, context) {
 }
 
 /**
- * DAMAGE TO A PERMANENT (CR 120.3): to a planeswalker, that many loyalty counters removed (120.3c, 306.8); to a creature,
+ * DAMAGE TO A PERMANENT (CR 120.3): to a planeswalker, that many loyalty counters removed (120.3c, 306.8); to a battle, that
+ * many defense counters (120.3h); to a creature,
  * marked -- or, from a source with infect, that many -1/-1 counters (120.3d); to one that is both, both (120.3).
  */
 export function damagePermanent(state, id, amount, events, {infect = false, by = null} = {}) {
@@ -336,6 +337,14 @@ export function damagePermanent(state, id, amount, events, {infect = false, by =
     const before = object.counters.loyalty ?? 0;
     object.counters.loyalty = Math.max(0, before - amount);
     events.push(event("GameEventCardCounters", state, {card: cardRef(state, id), type: "loyalty", oldValue: before, newValue: object.counters.loyalty}));
+    if (!types.includes("Creature")) return;
+  }
+  /* To a battle, that many defense counters removed (CR 120.3h, 310.6) -- infect or not: the last one removed is what a Siege's
+     own trigger waits for (CR 310.12b; rules/trigger.mjs). */
+  if (types.includes("Battle")) {
+    const before = object.counters.defense ?? 0;
+    object.counters.defense = Math.max(0, before - amount);
+    events.push(event("GameEventCardCounters", state, {card: cardRef(state, id), type: "defense", oldValue: before, newValue: object.counters.defense}));
     if (!types.includes("Creature")) return;
   }
   if (infect) addCounters(state, id, "-1/-1", amount, events, by);

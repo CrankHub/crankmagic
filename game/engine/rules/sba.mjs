@@ -359,8 +359,12 @@ export function checkStateBasedActions(state) {
         return toughness <= 0 || (object.deathtouched === true && toughness > 0) || (object.damage > 0 && object.damage >= toughness);
       }));
       return {lethal,
-        /* And the planeswalkers with no loyalty left (CR 704.5i), acted on below. */
-        spent: state.zones.battlefield.filter((id) => typesOf(state, id).includes("Planeswalker") && (state.objects[id].counters?.loyalty ?? 0) <= 0),
+        /* And the planeswalkers with no loyalty left (CR 704.5i), and the battles with no defense left (704.5v-w), acted on below
+           -- but not a Siege that is the source of an ability that has triggered and not yet left the stack (704.5v, 310.7): its
+           own "exile it, then you may cast it transformed" (CR 310.12b; rules/trigger.mjs) waiting there. */
+        spent: state.zones.battlefield.filter((id) => (typesOf(state, id).includes("Planeswalker") && (state.objects[id].counters?.loyalty ?? 0) <= 0)
+          || (typesOf(state, id).includes("Battle") && (state.objects[id].counters?.defense ?? 0) <= 0
+            && !(subtypesOf(state, id).includes("Siege") && [...(state.pendingTriggers ?? []).map((t) => t.source?.cardId), ...state.stack.filter((e) => e.kind !== "spell").map((e) => e.cardId)].includes(id)))),
         /* WHICH REPLACES A DESTRUCTION, WHEN SEVERAL WOULD (CR 616.1; two Auras with umbra armor, or one and a regeneration
            shield): asked of the creature's controller before any of these destructions happens -- they happen at once (CR
            704.3) -- and the whole check made again with the answer (finishDestructionChoice). Read in the same question, every
@@ -434,7 +438,7 @@ export function checkStateBasedActions(state) {
       }
     }
 
-    /* CR 704.5i: a planeswalker with loyalty 0 is put into its owner's graveyard -- put, not destroyed, so indestructible
+    /* CR 704.5i: a planeswalker with loyalty 0 is put into its owner's graveyard -- and a battle with defense 0 (704.5v-w) -- put, not destroyed, so indestructible
        does not keep it; through the replacements and with its last known information. Read with the lethal creatures
        above, so one that was a creature too and died is gone. */
     for (const id of spent) {

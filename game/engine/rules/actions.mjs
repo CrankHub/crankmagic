@@ -253,7 +253,9 @@ function convokeCost(state, player, action) {
 /* And face down, when it is cast with disguise (CR 702.168b). */
 /* And face up, a card exiled face down that is being played (CR 406.3a; withFaceUp) -- as an Adventure too, then. */
 /* And as its back face, a modal double-faced card cast so (CR 712.11a). */
+/* And transformed, a transforming double-faced card an effect casts so (CR 712.11a; withTransformed). */
 const asCast = (state, action, fn) => withFaceUp(state, action?.objectId, () => (action?.adventure === true ? withAdventure(state, action.objectId, fn)
+  : action?.kind === "cast" && action?.transformed === true ? withTransformed(state, action.objectId, fn)
   : action?.kind === "cast" && action?.face === "back" ? withBackFace(state, action.objectId, fn)
   : action?.disguise === true ? withFaceDown(state, action.objectId, fn) : fn()));
 /* The ways the pool pays the rest once the creatures a convoke picked have paid their part (rules/mana.mjs,
@@ -1971,6 +1973,16 @@ function withBackFace(state, id, fn) {
   finally { if (state.objects[id]?.face === "back") showFace(state, id, "front"); }
 }
 
+/* A TRANSFORMING DOUBLE-FACED CARD CAST TRANSFORMED (CR 712.11a; a Siege's "cast it transformed", CR 310.12b): weighed with its
+   back face up for the length of `fn` -- only that face's characteristics count (712.11c) -- and its front again after unless
+   `fn` cast it: it is then a new object on the stack with its back face up (rules/stack.mjs, pushSpell), and on the
+   battlefield so as it resolves (712.13). */
+function withTransformed(state, id, fn) {
+  showFace(state, id, "back");
+  try { return derivingAfresh(state, fn); }
+  finally { if (state.objects[id]?.face === "back") showFace(state, id, "front"); }
+}
+
 /* DISGUISE (CR 702.168a-b): "You may cast this card as a 2/2 face-down creature with ward {2}, no name, no subtypes, and no
    mana cost by paying {3} rather than paying its mana cost" -- an alternative cost (CR 118.9), from any zone it could be cast
    from. The card is weighed as that face-down spell for the length of `fn` (state/index.mjs, shownFaceDown): its cost, its
@@ -2558,7 +2570,9 @@ export function landChoicesNow(state, player, id) {
 }
 
 /** The ways to cast this card now as an effect lets it be cast: its targets or modes. Not a land, an Aura, or a spell with an additional cost to choose. */
-export function castChoicesNow(state, player, id) {
+/* `transformed`: cast with its back face up (CR 712.11a), the ways of that face (withTransformed). */
+export function castChoicesNow(state, player, id, {transformed = false} = {}) {
+  if (transformed) return withTransformed(state, id, () => choicesNow(state, player, id).map((offer) => ({...offer, transformed: true})));
   /* An adventurer card: as itself, or as its Adventure (CR 715.3) -- an effect that lets it be cast lets it be cast as one
      (715.3d), each its own choice, the Adventure's weighed with the card shown as one (715.3a). */
   const object = state.objects[id];
