@@ -606,13 +606,18 @@ actions.deck=el=>go('decks',{deck:el.dataset.deck});actions['deck-cards']=el=>go
 const groupRows=g=>g.entries.length?g.entries.map(r=>({cardId:r.cardId,quantity:r.quantity,printing:r.printing})):C.state.lots.filter(l=>l.groupIds.includes(g.id)).map(l=>({cardId:l.cardId,quantity:l.quantity,printing:l.printing}));
 C.groupDeck=(gid,named='')=>groupDeck(gid,named);
 /* `named` is the name the import already asked for (ROB-547): the deck takes it and this window does not ask again. */
-function groupDeck(groupId,named=''){
+/* What a group must hold to start a deck; a refusal says what to do instead. Create › From a group asks it before it lets its shell go. */
+function groupStart(groupId){
   const g=C.state.groups.find(x=>x.id===groupId);
   if(!g)throw Error('Choose a collection group.');
   const rows=groupRows(g);
   if(!rows.length)throw Error(`${g.name} holds no cards yet, so there is nothing to start a deck from. Import a list into it, or start from a commander.`);
   const leaders=rows.map(r=>C.card(r.cardId)).filter(c=>c&&c.commander&&c.legalities?.commander==='legal');
   if(!leaders.length)throw Error(`${g.name} holds no Commander-legal creature, so there is nothing to lead the deck. Add one, or start from a commander instead.`);
+  return {g,rows,leaders};}
+C.groupDeckCheck=gid=>{groupStart(gid);};
+function groupDeck(groupId,named=''){
+  const {g,rows,leaders}=groupStart(groupId);
   /* THE COPIES COME TOO, IF YOU SAY SO (Rob, 2026-09-28). He loaded 85 cards he owns into a group for a Quintorius deck,
      made the deck from the group, and found them still on the Bench: the deck copied the list and moved nothing. The
      copies on the Bench filed in this group can go straight into the new deck's box; a copy already in another deck, reserved for one, or offered for trade stays where it is. */
@@ -668,7 +673,8 @@ actions['new-deck']=()=>{
 };
 /* THE GROUPS A DECK CAN START FROM (ROB-547): they hold cards and are no deck's own. Create › Start from › From a group
    (crankmagic-newdeck.js) lists them. */
-C.groupDeckChoices=()=>C.state.groups.filter(g=>g.template!=='bench'&&!C.state.decks.some(d=>d.groupId===g.id)&&groupRows(g).length);
+C.groupDeckChoices=()=>{const own=new Set((M.starterGroups?.()||[]).map(x=>x.id));/* the Bench, To Buy and To Trade never become a deck's box */
+  return C.state.groups.filter(g=>g.template!=='bench'&&!own.has(g.id)&&!C.state.decks.some(d=>d.groupId===g.id)&&groupRows(g).length);};
 /* LOAD PATH: start from one of Rob's own decks.
  *
  * Rob, 2026-09-24: "Create and Lab should be the same thing... that should be 'Load' which provides

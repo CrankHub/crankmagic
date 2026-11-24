@@ -94,9 +94,12 @@ function drawStart(){
   d.addEventListener('close',()=>{if(F&&F.step==='start'){const n=d.querySelector('#cm-flow-name')?.value.trim();if(n&&n!==M.deck(C.state,F.deckId).name)commit({type:'editDeck',deckId:F.deckId,name:n},{renderView:false}).catch(()=>{});}},{once:true});}
 actions['flow-group-next']=async()=>{if(!F)return;const gid=document.getElementById('cm-flow-group')?.value||F.group;if(!gid)return;
   const name=(document.getElementById('cm-flow-name')?.value||F.name||'').trim(),shell=M.deck(C.state,F.deckId);
-  /* The shell Start from saved is let go while it is still empty: the deck is made from the group, with the group. */
+  /* A group that cannot start a deck (no card that can lead) is refused here, with Start from left as it was. Otherwise the
+     shell Start from saved is let go while it is still empty, and the deck is made from the group, with the group. */
+  C.groupDeckCheck(gid);
+  F=null;
   if(shell&&!shell.commanders.length&&!shell.slots.length)await commit({type:'deleteDeck',deckId:shell.id,confirmed:true},{renderView:false});
-  F=null;return C.groupDeck(gid,name);};
+  return C.groupDeck(gid,name);};
 const toggle=(list,id)=>list.includes(id)?list.filter(x=>x!==id):[...list,id];
 /* A chosen commander sets the colors: pressing one asks first (flow-color-yes / flow-color-no), and only a yes lets the commander go. */
 actions['flow-color-yes']=()=>{const x=F?.colorAsk;if(!x)return;const p=F.picks,lead=String(F.commander.ci||'').split('').filter(Boolean);F.colorAsk=null;F.commander=null;F.second=null;

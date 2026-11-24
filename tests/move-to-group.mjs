@@ -176,6 +176,27 @@ try {
   await page.locator("#cm-dialog[open] h2", {hasText: "Groups"}).waitFor();
   eq(await page.locator("#cm-dialog .cm-group-row", {hasText: /^(To Buy|To Trade|Bench)/}).count(), 0, "the Bench, To Buy and To Trade, the app's own groups, offer no Delete");
   await page.locator("#cm-dialog [data-action=close]").first().click();
+  /* CREATE › FROM A GROUP REFUSES A GROUP WITH NO LEADER (ROB-547), and leaves Start from and its shell as they were; the app's
+     own groups are never offered. */
+  const noLead = await page.evaluate(async () => {
+    const C = globalThis.__cm, l = C.state.lots.find((x) => x.source === "owned" && x.location?.kind === "bench" && !x.allocation && !(x.groupIds || []).length && !C.card(x.cardId)?.commander);
+    const gid = "group:" + C.uid();
+    await C.commit({type: "batch", summary: "test", commands: [{type: "createGroup", groupId: gid, name: "No leader pile"}, {type: "groupLots", groupId: gid, lotIds: [l.id]}]}, {renderView: false});
+    return gid;
+  });
+  await page.goto(`${base}/index.html#decks`);
+  await page.locator("[data-action=new-deck]").first().waitFor({timeout: 60000});
+  await page.locator("[data-action=new-deck]").first().click();
+  await page.locator("#cm-dialog [data-action=start-from]").click();
+  await page.locator(".cm-flow-dialog").waitFor({timeout: 30000});
+  const shells = await page.evaluate(() => globalThis.__cm.state.decks.length);
+  await page.locator(".cm-flow-nav button", {hasText: "From a group"}).click();
+  const offered = await page.locator("#cm-flow-group option").allInnerTexts();
+  ok(offered.includes("No leader pile") && !offered.some((x) => /^(To Buy|To Trade|Bench)/.test(x)), `From a group offers the groups that hold cards, never the app's own (${offered.join(" | ")})`);
+  await page.selectOption("#cm-flow-group", noLead);
+  await page.locator("[data-action=flow-group-next]").click();
+  await page.locator("#cm-notice", {hasText: "nothing to lead the deck"}).waitFor({timeout: 15000});
+  ok(await page.locator(".cm-flow-dialog[open]").count() === 1 && await page.evaluate(() => globalThis.__cm.state.decks.length) === shells, "a group with no card that can lead is refused with the way out, and Start from and its shell stay as they were");
   await context.close();
 
 } finally {
