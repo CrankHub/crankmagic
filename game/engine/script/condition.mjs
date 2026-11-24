@@ -559,8 +559,9 @@ export function conditionHolds(state, condition, {controller, source = null, abo
   if (condition.prowled !== undefined && (state.objects[source]?.prowled === true) !== condition.prowled) return false;
   /* Evolve's comparison (CR 702.100a): as it triggers, and again as it resolves (CR 603.4). */
   if (condition.evolves === true && !evolves(state, source, about)) return false;
-  /* "If you've activated a loyalty ability this turn" (Kiora of Salt and Sand): its controller has (rules/actions.mjs). */
-  if (condition.loyaltyThisTurn === true && !((state.players[controller]?.loyaltyThisTurn ?? 0) > 0)) return false;
+  /* "If you've activated a loyalty ability this turn" (Kiora of Salt and Sand): its controller has (rules/actions.mjs). And
+     false, "if you didn't activate a loyalty ability of a planeswalker this turn" (The Chain Veil): has not. */
+  if (typeof condition.loyaltyThisTurn === "boolean" && ((state.players[controller]?.loyaltyThisTurn ?? 0) > 0) !== condition.loyaltyThisTurn) return false;
   /* "Activate only during your turn" (Humble Defector). */
   if (condition.yourTurn === true && state.activePlayer !== controller) return false;
   /* "If it's your main phase" (Moraug): a main phase of its controller's turn, an added one too (CR 500.8, 505.1). */
@@ -648,7 +649,7 @@ export function conditionProblems(condition) {
   }
   if ("notYourTurn" in condition && condition.notYourTurn !== true) problems.push("notYourTurn is true");
   if ("targetsLegal" in condition && condition.targetsLegal !== true) problems.push("targetsLegal is true: every target still legal as it resolves");
-  if ("loyaltyThisTurn" in condition && condition.loyaltyThisTurn !== true) problems.push("loyaltyThisTurn is true");
+  if ("loyaltyThisTurn" in condition && typeof condition.loyaltyThisTurn !== "boolean") problems.push("loyaltyThisTurn is true or false");
   if ("evolves" in condition && condition.evolves !== true) problems.push("evolves is true");
   if ("prowl" in condition && condition.prowl !== true) problems.push("prowl is true");
   if ("prowled" in condition && typeof condition.prowled !== "boolean") problems.push("prowled is true or false");

@@ -376,6 +376,13 @@ export const STATIC_RULES = Object.freeze({
   /** CR 606.3 changed: "You may activate the loyalty abilities of planeswalkers you control twice each turn rather than only
       once" (Oath of Teferi): `affects` the planeswalkers, "you" its controller. Twice, however many say so. rules/actions.mjs. */
   "loyalty-twice": "rules/actions.mjs",
+  /** CR 606.3 changed for a turn: "For each planeswalker you control, you may activate one of its loyalty abilities once this
+      turn as though none of its loyalty abilities have been activated this turn" (The Chain Veil): an effect with a duration
+      only (effectUntil), its planeswalkers fixed as it resolves; each such effect one more activation. loyaltyAgain, below. */
+  "loyalty-again": "rules/actions.mjs",
+  /** "You draw a card during each opponent's draw step" (Teferi, Who Slows the Sunset's emblem; CR 504.1): no trigger, a draw
+      made in that step after its own, by the ability's controller (playerStatics). rules/turn.mjs. */
+  "draws-in-others-draw-step": "rules/turn.mjs",
   /** CR 606.4's cost modified: "Planeswalkers' loyalty abilities you activate cost an additional [+1] to activate" (Carth the
       Lion): `affects` the players, "you" its controller, `amount` the loyalty counters added. loyaltyCostIncrease, below. */
   "loyalty-costs-more": "rules/actions.mjs",
@@ -1372,7 +1379,9 @@ export function searchController(state, player) {
 export function playerStatics(state, rule, player) {
   const found = [];
   const held = staticAbilities(state);
-  for (const holderId of state.zones.battlefield) {
+  /* A permanent's, and an emblem's from the command zone, where its abilities function (CR 114.4): "untap all permanents you
+     control during each opponent's untap step" (Teferi, Who Slows the Sunset's emblem), "you" the player who got it. */
+  for (const holderId of withEmblems(state)) {
     const holder = state.objects[holderId];
     if (holder.controller !== player) continue;
     for (const ability of held(holderId)) if (ability.kind === "static" && ability.rule === rule) found.push({ability: chosenFor(ability, holder), source: holderId});
@@ -1674,10 +1683,21 @@ export function playerRuleChanged(state, rule, player) {
   return (state.effects ?? []).some((effect) => effect.rule === rule && (effect.players ?? []).includes(player));
 }
 
+/* The permanents on the battlefield, and the emblems in the command zone, where an emblem's abilities function (CR 114.4):
+   the battlefield's own list, not a copy, while nobody has an emblem -- this is asked on every offer. */
+function withEmblems(state) {
+  let emblems = null;
+  for (const seat of state.zones.command ?? []) for (const id of seat) if (state.objects[id]?.emblem === true) (emblems ??= []).push(id);
+  return emblems ? [...state.zones.battlefield, ...emblems] : state.zones.battlefield;
+}
+
 /** Whether any static ability on the battlefield -- or an effect with a duration ("can't be blocked this turn") -- changes `rule` for this object. */
 export function ruleChanged(state, rule, id) {
   const held = staticAbilities(state);
-  for (const holderId of state.zones.battlefield) {
+  /* A permanent's, and an emblem's from the command zone, where its abilities function (CR 114.4): "you may activate loyalty
+     abilities of planeswalkers you control on any player's turn any time you could cast an instant" (Teferi, Temporal
+     Archmage's emblem), "you" the player who got it. */
+  for (const holderId of withEmblems(state)) {
     const holder = state.objects[holderId];
     for (const ability of held(holderId)) {
       if (ability.kind !== "static" || ability.rule !== rule) continue;
@@ -1693,6 +1713,10 @@ export function ruleChanged(state, rule, id) {
   }
   return false;
 }
+
+/** How many more loyalty activations this permanent has this turn (CR 606.3; The Chain Veil): one for each `loyalty-again`
+    effect that reaches it, so the Veil activated twice gives two. */
+export const loyaltyAgain = (state, id) => (state.effects ?? []).filter((effect) => effect.rule === "loyalty-again" && staticAffects(state, effect, id, effect.sourceController)).length;
 
 /**
  * How much combat damage this creature assigns (CR 510.1a): its power, or its toughness when a static ability says

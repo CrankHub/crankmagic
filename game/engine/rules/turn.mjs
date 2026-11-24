@@ -47,7 +47,7 @@ import {mulliganChoice, resolveMulligan} from "./mulligan.mjs";
 import {answerResolution, answerDeparted, resolutionChoice, runResolution} from "../script/resolution.mjs";
 import {finishResolving} from "./stack.mjs";
 import {priorityOrder} from "./priority.mjs";
-import {playerRuleChanged, untapsDuringOthers, ruleChanged, drawForbidden, emptyDrawWins} from "./statics.mjs";
+import {playerRuleChanged, untapsDuringOthers, ruleChanged, drawForbidden, emptyDrawWins, playerStatics} from "./statics.mjs";
 import {emptyRestricted, colorlessPool} from "./restricted-mana.mjs";
 import {endCopies, phaseIn, endControlChange, nextRecord} from "../script/effects/permanents.mjs";
 import {untapOne, winGame} from "../script/effects/resources.mjs";
@@ -749,6 +749,9 @@ function arrive(state, events) {
     if (dredgers(state, state.activePlayer).length) state.awaiting = {kind: "dredge-draw", player: state.activePlayer};
     else if (state.drawBeat) state.awaiting = {kind: "draw-card", player: state.activePlayer};
     else draw(state, state.activePlayer, events);
+    /* "You draw a card during each opponent's draw step" (Teferi, Who Slows the Sunset's emblem; CR 114.4, 504.1): no trigger,
+       a draw in this step after the active player's, one for each such ability of each other player's, in turn order. */
+    for (const seat of priorityOrder(state)) if (seat !== state.activePlayer) playerStatics(state, "draws-in-others-draw-step", seat).forEach(() => draw(state, seat, events));
   }
   /* CR 714.3b: as the precombat main phase begins, the active player puts a lore counter on each Saga they control -- what
      brings its next chapter. */

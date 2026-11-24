@@ -683,6 +683,8 @@ const GRANTABLE = ["activated", "triggered", "keyword"];
 /* What an emblem's abilities are compiled under (CR 114.3: it has no types, no mana cost and no color) -- the abilities
    alone are kept. */
 const EMBLEM_IDENTITY = Object.freeze({name: "An emblem", oracleId: "emblem", types: ["Enchantment"]});
+/* The rule statics an emblem may have beyond a player's rule (compileGivenIn): those whose readers look in the command zone. */
+const EMBLEM_RULES = ["loyalty-at-instant-speed", "untap-during-others", "draws-in-others-draw-step"];
 function compileGrant(list, text, problems) {
   if (!Array.isArray(list) || !list.length) { problems.push(`${text}: the abilities given are a list, with at least one`); return null; }
   for (const ability of list) if (!GRANTABLE.includes(ability?.kind)) problems.push(`${text}: a ${ability?.kind ?? "nameless"} ability given -- only ${GRANTABLE.join(", ")} abilities are given yet`);
@@ -711,6 +713,11 @@ function compileGivenIn(effects, text, problems) {
          `cast-without-paying`, read from the command zone as a permanent's is (rules/statics.mjs, freeCast). */
       for (const ability of list) if (!(["triggered", "replacement"].includes(ability?.kind) || (ability?.kind === "static" && typeof ability.rule === "string" && ability.affects?.what === "player")
         || (ability?.kind === "static" && ability.rule === "cast-without-paying")
+        /* And the rules read from the command zone as a permanent's are: "you may activate loyalty abilities of planeswalkers
+           you control on any player's turn any time you could cast an instant" (Teferi, Temporal Archmage's; rules/statics.mjs,
+           ruleChanged), "untap all permanents you control during each opponent's untap step" and "you draw a card during each
+           opponent's draw step" (Teferi, Who Slows the Sunset's; playerStatics). */
+        || (ability?.kind === "static" && EMBLEM_RULES.includes(ability.rule))
         || (ability?.kind === "static" && ability.rule === undefined && Number.isInteger(ability.layer))))
         problems.push(`${text}: an emblem's ${ability?.kind ?? "nameless"} ability -- only triggered and replacement abilities, a rule changed for players and a static in a layer work from the command zone yet`);
       const {definition, problems: inner} = compileScript({schema: SCRIPT_SCHEMA, identity: EMBLEM_IDENTITY, oracleText: "", abilities: list});

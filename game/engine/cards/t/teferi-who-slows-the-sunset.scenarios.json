@@ -1,0 +1,768 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Teferi, Who Slows the Sunset",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "abilities": [
+        {
+          "id": "m",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "C": 1
+          }
+        }
+      ]
+    },
+    "Loyalty Tonic": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Put nine loyalty counters on target planeswalker.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Planeswalker"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "putCounter",
+            "targets": {
+              "target": 0
+            },
+            "counter": "loyalty",
+            "count": 9
+          }
+        ]
+      }
+    },
+    "Stun Snare": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Tap target creature. Put a stun counter on it.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "tap",
+            "targets": {
+              "target": 0
+            }
+          },
+          {
+            "effect": "putCounter",
+            "targets": {
+              "target": 0
+            },
+            "counter": "stun",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "+1 at Maya's tapped, stunned Bear: only \"untap the chosen permanents you control\", so hers is not untapped and keeps its stun counter",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset",
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Stun Snare"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Stun Snare",
+          "targets": [
+            {
+              "card": "Bear",
+              "seat": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Bear"
+            },
+            {
+              "seat": 1,
+              "counters": {
+                "card": "Bear",
+                "counter": "stun",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "activate": "Teferi, Who Slows the Sunset",
+          "ability": "a0",
+          "targets": [
+            [],
+            [
+              {
+                "card": "Bear",
+                "seat": 1
+              }
+            ],
+            []
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "tapped": "Bear"
+        },
+        {
+          "seat": 1,
+          "counters": {
+            "card": "Bear",
+            "counter": "stun",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "life": 42
+        }
+      ]
+    },
+    {
+      "name": "Cast from four untapped lands (the table's way): 4 loyalty, his +1 and his -2 offered, the -7 not",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Teferi, Who Slows the Sunset"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Teferi, Who Slows the Sunset"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Teferi, Who Slows the Sunset"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Teferi, Who Slows the Sunset",
+                "counter": "loyalty",
+                "count": 4
+              }
+            },
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Teferi, Who Slows the Sunset"
+              },
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Teferi, Who Slows the Sunset"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "+1: Rob's tapped Rock and Island untap, Maya's untapped Bear is tapped, and Rob gains 2 life",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset",
+            "Rock",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Rock"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "activate": "Teferi, Who Slows the Sunset",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Rock"
+              }
+            ],
+            [
+              {
+                "card": "Bear",
+                "seat": 1
+              }
+            ],
+            [
+              {
+                "card": "Island"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Rock",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Island",
+          "is": false
+        },
+        {
+          "seat": 1,
+          "tapped": "Bear"
+        },
+        {
+          "seat": 0,
+          "life": 42
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Who Slows the Sunset",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "+1 the other way round: Maya's Rock and Forest are tapped, Rob's Bear untaps, each \"up to one\" its own target",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset",
+            "Bear",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Rock",
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "attack": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Bear"
+            }
+          ]
+        },
+        {
+          "activate": "Teferi, Who Slows the Sunset",
+          "ability": "a0",
+          "targets": [
+            [
+              {
+                "card": "Rock",
+                "seat": 1
+              }
+            ],
+            [
+              {
+                "card": "Bear",
+                "seat": 0
+              }
+            ],
+            [
+              {
+                "card": "Forest",
+                "seat": 1
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "tapped": "Rock"
+        },
+        {
+          "seat": 1,
+          "tapped": "Forest"
+        },
+        {
+          "seat": 0,
+          "tapped": "Bear",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Island",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "life": 42
+        }
+      ]
+    },
+    {
+      "name": "+1 with none of the three chosen: nothing taps or untaps, and Rob still gains 2 life",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset",
+            "Island"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "activate": "Teferi, Who Slows the Sunset",
+          "ability": "a0",
+          "targets": [
+            [],
+            [],
+            []
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Island"
+        },
+        {
+          "seat": 1,
+          "tapped": "Forest",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "life": 42
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Who Slows the Sunset",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "-2: of the top three, the Bear into Rob's hand and the other two on the bottom; 2 loyalty",
+      "library": [
+        "Rock",
+        "Bear",
+        "Island"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Teferi, Who Slows the Sunset",
+          "ability": "a1"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Bear"
+          ]
+        },
+        {
+          "answer": [
+            0,
+            1
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Who Slows the Sunset",
+            "counter": "loyalty",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Without the emblem: Rob's tapped Island stays tapped through Maya's turn, and he draws nothing in her draw step",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset",
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Island"
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "-7: the emblem; in Maya's and Trey's untap steps Rob's permanents untap, in each of their draw steps he draws a card",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Who Slows the Sunset",
+            "Island",
+            "Rock"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Loyalty Tonic"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Loyalty Tonic",
+          "targets": [
+            {
+              "card": "Teferi, Who Slows the Sunset"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Teferi, Who Slows the Sunset",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "command",
+              "cards": [
+                "Teferi, Who Slows the Sunset emblem"
+              ]
+            },
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Teferi, Who Slows the Sunset",
+                "counter": "loyalty",
+                "count": 6
+              }
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "tap": "Rock"
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Island"
+            },
+            {
+              "seat": 0,
+              "tapped": "Rock"
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "UPKEEP"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Island",
+              "is": false
+            },
+            {
+              "seat": 0,
+              "tapped": "Rock",
+              "is": false
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "hand",
+              "count": 2
+            },
+            {
+              "seat": 1,
+              "zone": "hand",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "count": 3
+        },
+        {
+          "seat": 2,
+          "zone": "hand",
+          "count": 1
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 17
+        }
+      ]
+    }
+  ]
+}
