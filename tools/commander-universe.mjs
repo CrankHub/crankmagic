@@ -67,11 +67,16 @@ const TYPES = ["Land", "Creature", "Planeswalker", "Battle", "Artifact", "Enchan
 const primaryType = (line) => TYPES.find((t) => (line || "").includes(t)) || "Other";
 
 async function getJson(url) {
-  const res = await fetch(url, {headers: UA});
-  const body = await res.json();
-  if (body.object === "error") throw new Error(`${url} -> ${body.details}`);
-  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
-  return body;
+  for (let tries = 0;;) {
+    const res = await fetch(url, {headers: UA});
+    /* Scryfall's own rule, as tools/catalog-rule.mjs keeps it: when it says wait, wait, and ask more slowly after (ROB-548:
+       this call had no wait, so one refusal ended the whole step). A fourth refusal in a row is given up on. */
+    if (res.status === 429 && tries < 3) { tries += 1; console.log(`  rate-limited; waiting ${60 * tries} s`); await sleep(60000 * tries); continue; }
+    const body = await res.json();
+    if (body.object === "error") throw new Error(`${url} -> ${body.details}`);
+    if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+    return body;
+  }
 }
 
 /** Every card Scryfall itself will let you put in a command zone. */
@@ -136,7 +141,11 @@ if (process.argv.includes("--check")) {
 }
 
 console.log("fetching Scryfall...");
-const [commanders, oracle, paper] = await Promise.all([commanderNames(), oracleCards(), paperOracleIds({cacheDir: CACHE})]);
+/* One after another, not together: the commander-name pages (120 ms apart) and the paper-id pages (200 ms apart) ran at
+   once, about 13 requests a second between them against Scryfall's 10, and were refused (ROB-548, 2026-11-24). */
+const commanders = await commanderNames();
+const oracle = await oracleCards();
+const paper = await paperOracleIds({cacheDir: CACHE});
 /* The catalog rule (tools/catalog-rule.mjs, ROB-213): Commander-legal paper cards only, no Alchemy and no A- rebalances. */
 const legal = oracle.rows.filter((c) => !catalogProblem(c, paper));
 console.log(`  ${oracle.rows.length} oracle rows -> ${legal.length} Commander-legal paper cards`);
