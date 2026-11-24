@@ -1,0 +1,171 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Coalition Victory",
+    "oracleId": "e9e25800-9ee7-40c9-b22d-611c7281c125",
+    "types": [
+      "Sorcery"
+    ],
+    "subtypes": [],
+    "manaCost": "{3}{W}{U}{B}{R}{G}",
+    "colors": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "You win the game if you control a land of each basic land type and a creature of each color.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "spell",
+      "text": "You win the game if you control a land of each basic land type and a creature of each color.",
+      "targets": [],
+      "effects": [
+        {
+          "effect": "branch",
+          "if": {
+            "allOf": [
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Land"
+                  ],
+                  "subtypes": [
+                    "Plains"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Land"
+                  ],
+                  "subtypes": [
+                    "Island"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Land"
+                  ],
+                  "subtypes": [
+                    "Swamp"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Land"
+                  ],
+                  "subtypes": [
+                    "Mountain"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Land"
+                  ],
+                  "subtypes": [
+                    "Forest"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "colors": [
+                    "W"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "colors": [
+                    "U"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "colors": [
+                    "B"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "colors": [
+                    "R"
+                  ],
+                  "controller": "you"
+                }
+              },
+              {
+                "present": {
+                  "what": "permanent",
+                  "types": [
+                    "Creature"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "controller": "you"
+                }
+              }
+            ]
+          },
+          "then": [
+            {
+              "effect": "winGame"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

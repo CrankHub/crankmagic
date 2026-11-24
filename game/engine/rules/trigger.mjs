@@ -57,6 +57,7 @@ import {playerStatics, ruleChanged} from "./statics.mjs";
 import {matchesSelector, matchesLastKnown} from "../script/filter.mjs";
 import {abilitiesOf, abilitiesReader, characteristicsOf} from "./layers.mjs";
 import {chosenFor, CHOSEN_COLOR_LETTER} from "../script/chosen.mjs";
+import {COLORS} from "./mana.mjs";
 import {targetChoices, targetName, isHostile, isChoosing, targetCandidates, countedChoice, modalScript, differentControllersProblem, shareProblem} from "../script/bind.mjs";
 
 /* An ability lives where its card is (CR 113.6). A triggered ability of a permanent watches the
@@ -704,10 +705,16 @@ export function manaTriggered(state, event, picks = []) {
         kind = pending.shift();
         if (!kinds.includes(kind)) throw new Error(`Choose which of the types that land produced (${kinds.join(", ")}) to add one more of`);
       }
+      /* "An additional one mana of any color" (Fertile Ground; CR 106.1a, 605.1b): its color the tapping player's pick, made as
+         they tap, among the five -- one pick for each such ability, in the order they are read (manaPicks). */
+      if (mana.anyColor === true) {
+        kind = pending.shift();
+        if (!COLORS.includes(kind)) throw new Error(`Choose the color of the one mana ${holder.card} adds (${COLORS.join(", ")})`);
+      }
       /* "An additional one mana of the chosen color" (Utopia Sprawl): the color its permanent chose as it entered; none
          chosen, none. */
       const chosen = mana.chosenColor === true ? CHOSEN_COLOR_LETTER[holder.chosen] : undefined;
-      const adds = mana.produced ? (kind ? {[kind]: 1} : null) : mana.chosenColor === true ? (chosen ? {[chosen]: 1} : null) : mana.mana;
+      const adds = mana.produced || mana.anyColor === true ? (kind ? {[kind]: 1} : null) : mana.chosenColor === true ? (chosen ? {[chosen]: 1} : null) : mana.mana;
       if (adds) made.push({player: fields.player?.playerId, mana: adds, source: id});
     }
   }
@@ -725,17 +732,23 @@ export function manaTriggered(state, event, picks = []) {
 }
 
 /**
- * HOW MANY TRIGGERED MANA ABILITIES ASK THE TAPPING PLAYER WHICH TYPE (CR 605.1b): those that add one mana "of any type that land
- * produced", for this tap -- each one a pick, when more than one type was produced (manaTriggered). `event`: what the tap would
- * say, `{data: {fields: {player, source, produced, tapped}}}`. Zero when the tap triggers none of them.
+ * THE PICKS THE TRIGGERED MANA ABILITIES OF A TAP ASK THE TAPPING PLAYER FOR (CR 605.1b), each a list of its options, in the order
+ * manaTriggered reads them: one for each that adds one mana "of any type that land produced", when more than one type was
+ * produced (those types), and one for each that adds one mana "of any color" (Fertile Ground; the five). `event`: what the tap
+ * would say, `{data: {fields: {player, source, produced, tapped}}}`. Empty when the tap asks for none.
  */
 export function manaPicks(state, event) {
   const fields = event?.data?.fields ?? {};
+  const kinds = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
   const held = abilitiesReader(state);
-  let picks = 0;
+  const picks = [];
   for (const id of state.zones.battlefield)
-    for (const ability of held(id))
-      if (ability.kind === "triggered" && ability.trigger?.manaAbility?.produced && tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) picks += 1;
+    for (const ability of held(id)) {
+      const mana = ability.kind === "triggered" ? ability.trigger?.manaAbility : null;
+      if (!mana || !tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) continue;
+      if (mana.produced && kinds.length > 1) picks.push(kinds);
+      else if (mana.anyColor === true) picks.push([...COLORS]);
+    }
   return picks;
 }
 
