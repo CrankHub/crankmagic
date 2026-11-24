@@ -1983,7 +1983,7 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 #matrix-v2 .cm-board .cm-r4-combat.is-draft .is-active>.cm-combat-tile{outline:3px solid var(--color-aether);outline-offset:-3px}
 #matrix-v2 .cm-board .cm-block-row-card,#matrix-v2 .cm-board .cm-block-row-text,#matrix-v2 .cm-board .cm-block-row-side{position:relative;z-index:1;pointer-events:none;min-width:0}
 #matrix-v2 .cm-board .cm-block-row-text{display:flex;flex-direction:column;gap:2px;font-size:calc(15px*var(--hud-scale,1));line-height:1.25}
-#matrix-v2 .cm-board .cm-block-row-name{overflow-wrap:anywhere;white-space:normal}
+#matrix-v2 .cm-board .cm-block-row-name{overflow-wrap:break-word;white-space:normal}
 #matrix-v2 .cm-board .cm-block-row-text>small{color:var(--color-muted);font-size:inherit}
 #matrix-v2 .cm-board .cm-r4-combat.is-draft .cm-combat-relation{flex-direction:row;align-items:center;gap:6px;max-width:none;text-align:left}
 #matrix-v2 .cm-board .cm-block-row-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
@@ -1994,15 +1994,19 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 #matrix-v2 .cm-board .cm-r4-combat.is-draft .cm-combat-reason{grid-column:1/-1;max-height:none}
 #matrix-v2 .cm-board .cm-block-layout>.cm-block-draft{display:flex;flex-direction:column;min-height:0;min-width:0}
 #matrix-v2 .cm-board .cm-block-layout>.cm-block-draft>*{flex:none}
-#matrix-v2 .cm-board .cm-block-layout>.cm-block-draft>h2{margin:0;font-size:var(--text-hud-heading,20px);line-height:1.25;overflow-wrap:anywhere}
+#matrix-v2 .cm-board .cm-block-layout>.cm-block-draft>h2{margin:0;font-size:calc(20px*var(--hud-scale,1));line-height:1.25;overflow-wrap:anywhere}
 #matrix-v2 .cm-board .cm-block-layout .cm-block-attacker{margin:4px 0 8px}
 #matrix-v2 .cm-board .cm-block-layout .cm-block-tiles{flex:0 1 auto;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));align-content:start;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
 #matrix-v2 .cm-board .cm-block-layout .cm-block-status:empty{display:none}
+#matrix-v2 .cm-board .cm-block-layout .cm-block-tile>span:not(.cm-combat-thumb){overflow-wrap:break-word}
 #matrix-v2 .cm-board .cm-block-tile>.cm-block-elsewhere{font-weight:400;font-size:calc(13px*var(--hud-scale,1));overflow-wrap:anywhere}
 @media(max-width:699px){
   #matrix-v2 .cm-board .cm-block-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px}
   #matrix-v2 .cm-board .cm-r4-combat.is-draft .cm-combat-groups{max-height:30dvh}
   #matrix-v2 .cm-board .cm-block-layout .cm-block-tiles{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+  /* the row's state and blockers go under its name, so a narrow window never squeezes the name to letters */
+  #matrix-v2 .cm-board .cm-r4-combat.is-draft .cm-combat-tile{grid-template-columns:auto minmax(0,1fr)}
+  #matrix-v2 .cm-board .cm-block-row-side{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between}
 }
 /* A CANCELED QUESTION WAITING ON THE PLAYER'S WORD (ROB-205; the stabilization plan of 2026-11-19, section 2: "the collapsed box sits
    off the mats, not centered on the board"): small, at the foot of the window beside the left drawer, over the hand's edge rather
