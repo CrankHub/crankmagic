@@ -139,6 +139,7 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | Firdoch Core | **An ignore.** Animated, it keeps the Kindred type (CR 205.1b would drop it: `animate` only adds types, as Cyberdrive Awakener's). Nothing that plays reads Kindred on a creature; it shows on the type line. | Upgrade map load, 2026-11-24 |
 | The Peregrine Dynamo; Illusionist's Bracers | **An ignore.** The Dynamo reads an ability's source as it is now, not as it last existed (CR 113.7a): an ability whose legendary token source is gone cannot be targeted. A creature sacrificed as the cost of its own ability is no longer equipped once the activation is done, so the Bracers copy nothing (no Gatherer ruling checked). | Upgrade map load, 2026-11-24 |
 | The Chain Veil; Leyline of the Guildpact; Teferi, Who Slows the Sunset | **Untested edges, named.** A planeswalker that changes control after the Veil resolves, and the Veil with Oath of Teferi, are not shown; the Leyline's opening-hand start is not run (the scenario runner has no mulligan; it is the other Leylines' shape); the -7 emblem's untap is shown in one opponent's untap step only. | Upgrade map load, 2026-11-24 |
+| Silicate Surveyor | **An ignore.** The card it exiles is offered to be played only once its mana is floated (the "casts from exile" row above); its scenarios tap by hand before the offer is checked. | Star Trek load, 2026-11-22 (ROB-532) |
 
 ## 5. Choices the engine makes for the player
 

@@ -4,35 +4,43 @@
  "source": {
   "list": "Rob's workbook \"Unplayable Cards 2026-11-18.xlsx\" (from the Master saved 2026-11-18 22:22), sheets \"Dx-A (8 boxes)\" and \"Series-G-CJ-HG\", status \"Not in the engine\"",
   "distinct": 42,
-  "notInTheOracleData": [
+  "releasedAfterTheOracleData": [
    {
     "name": "Federation Probe",
     "decks": [
      "S2-D2 Ezuri, Claw of Progress",
      "G1-D1 Denzilore Fatehold"
     ],
-    "where": "design"
+    "where": "design",
+    "loadedHere": true,
+    "loadedIn": "ROB-532"
    },
    {
     "name": "Silicate Surveyor",
     "decks": [
      "S2-D6 Laelia, the Blade Reforged"
     ],
-    "where": "design"
+    "where": "design",
+    "loadedHere": true,
+    "loadedIn": "ROB-532"
    },
    {
     "name": "Command Subadjunct",
     "decks": [
      "G1-D3 Vraska, Soul of Stone"
     ],
-    "where": "design"
+    "where": "design",
+    "loadedHere": true,
+    "loadedIn": "ROB-532"
    },
    {
     "name": "Captain's Tutelage",
     "decks": [
      "G1-D4 Alexios, Deimos of Kosmos"
     ],
-    "where": "design"
+    "where": "design",
+    "loadedHere": true,
+    "loadedIn": "ROB-532"
    }
   ]
  },

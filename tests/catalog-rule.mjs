@@ -12,8 +12,9 @@
         Scryfall marks Commander-legal (found 2026-10-29: 32,116 legal, 32,115 with a paper printing). graph.json names its
         cards by position, which data/graph-played.json's 701,916 edges use, so it leaves with the graph's rebuild and not
         by hand. Until then it is the one exception, and this suite fails the day it is gone from a file or still named
-        after the rebuild, so the exception cannot outlive its reason. The universe was rebuilt 2026-10-29 and has none;
-        the graph and the engine's oracle and support tables still carry it.
+        after the rebuild, so the exception cannot outlive its reason. The universe was rebuilt 2026-10-29 and has none,
+        and the engine's oracle and support tables were rebuilt 2026-11-22 (ROB-532) and have none; the graph still
+        carries it.
 
      node tests/catalog-rule.mjs
 */
@@ -52,15 +53,16 @@ const oracle = read("data/engine/oracle.json").cards, support = read("data/engin
 const universe = read("data/commander-universe.json").cards.map((r) => ({name: r[0]}));
 const graph = read("data/graph.json").cards;
 const files = {"data/engine/oracle.json": oracle, "data/engine/support.json": support, "data/commander-universe.json": universe, "data/graph.json": graph};
-/* The universe was rebuilt on 2026-10-29 and no longer has it (32,116 -> 32,115). The graph and the engine's tables wait
-   for their own rebuilds; the day one of them is 0, move it into `rebuilt`, and when all are, delete the exception. */
-const rebuilt = new Set(["data/commander-universe.json"]);
+/* The universe was rebuilt on 2026-10-29 and no longer has it (32,116 -> 32,115), and the engine's oracle and support tables
+   were rebuilt on 2026-11-22 (ROB-532, `node tools/build-engine-cards.mjs`: 32,642 cards, the Goblin among none of them). The
+   graph waits for its own rebuild; the day it is 0, move it into `rebuilt`, and then delete the exception. */
+const rebuilt = new Set(["data/commander-universe.json", "data/engine/oracle.json", "data/engine/support.json"]);
 for (const [file, rows] of Object.entries(files)) {
   eq(rows.filter((c) => /^A-/.test(c.name)).map((c) => c.name), [], `${file}: no A- card`);
   const goblins = rows.filter((c) => c.name === GOBLIN.name).length;
   if (rebuilt.has(file)) eq(goblins, 0, `${file}: was rebuilt under the catalog rule, so ${GOBLIN.name} is gone`);
   else eq(goblins, 1, `${file}: the one known exception, ${GOBLIN.name}, is still here, awaiting the rebuild (the day this is 0, move it into \`rebuilt\`)`);
 }
-eq(oracle.find((c) => c.name === GOBLIN.name).id, GOBLIN.id, "the exception is the card Scryfall lists with no paper printing, by oracle id");
+eq(oracle.filter((c) => c.id === GOBLIN.id).length, 0, "the engine's oracle has no card with the exception's oracle id (the card Scryfall lists with no paper printing)");
 
 console.log(`catalog-rule: ${checks} checks passed -- Commander-legal paper cards only; the loaders apply the rule; no A- card in the committed catalogs; one MTGO-only card is known and waits for the rebuild.`);

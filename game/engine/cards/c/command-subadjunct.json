@@ -1,0 +1,45 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Command Subadjunct",
+    "oracleId": "85b67121-340f-4cff-a26d-2160aa923ec3",
+    "types": [
+      "Artifact",
+      "Creature"
+    ],
+    "subtypes": [
+      "Borg"
+    ],
+    "manaCost": "{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": 2,
+    "toughness": 1
+  },
+  "oracleText": "Artifact creatures you control have vigilance.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Artifact creatures you control have vigilance.",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Artifact",
+          "Creature"
+        ],
+        "controller": "you"
+      },
+      "apply": {
+        "addKeywords": [
+          "Vigilance"
+        ]
+      }
+    }
+  ]
+}
