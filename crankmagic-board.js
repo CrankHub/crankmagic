@@ -393,27 +393,19 @@ globalThis.CrankBoard = Object.seal({
   /* The table design: a saved id, an older one (wooden, stone, obsidian) or none, resolved through the catalog (ROB-100). */
   const tableDesignId = (id) => (globalThis.CrankStage ? CrankStage.tableDesign(id).id : id);
   let blockSelected = null, blockAttacker = null, blockPending = null, blockResult = null, blockListOpen = false, blockEpoch = 0;
-  const blockSettled = new Set();
   // One check in flight: checked echoes the choice ID, but not a draft/request ID.
   const blocking = () => view?.status !== "finished" && view?.decision?.mode === "many" && Array.isArray(view.decision.legalBlocks);
   const blockContext = () => blocking() ? JSON.stringify([view.matchId, view.revision, view.decision.id, view.decision.options, view.decision.legalBlocks,view.decision.blockReasons]) : null;
   const blockKey = () => JSON.stringify([blockContext(), picked]);
   const blockValid = () => blocking() && blockResult?.key === blockKey() && blockResult.ok && blockResult.open && socket?.readyState === 1;
   const ownBlockAttacks = () => view ? combatAttacks().filter(a=>a.defender===view.seat) : [];
-  const blocksSettled = () => ownBlockAttacks().every(a=>blockSettled.has(a.attacker));
-  const canSendBlocks = () => blockValid() && blocksSettled() && !sending;
-  /* "No blocks on any attacker" (ROB-333; Rob, 2026-10-30: he pressed No block or Confirm once per attacker slot): one press
-     settles every slot at "no block" and sends the empty answer. It waits for the table's check of the empty draft (the
-     same one Send waits for) and sends only if that check accepts it; `blockAll` is the decision it was pressed on. */
-  let blockAll = null;
-  const blockLegal = () => blocking() && view.decision.legalBlocks.length > 0 && ownBlockAttacks().length > 0;
-  function sendNoBlocksToAll() {
-    if (!blockAll) return;
-    if (blockAll !== blockContext() || picked.length) {blockAll = null; return;}
-    if (!canSendBlocks()) return;
-    blockAll = null;
-    actions["board-confirm"]();
-  }
+  /* SEND WITH ATTACKERS LEFT ALONE (ROB-544; Rob, 2026-11-24: "allow the user to press confirm when there are unconfirmed
+     blockers, and any that are unconfirmed are default to not being blocked"). The draft is the blocks the player assigned;
+     an attacker nobody was assigned to is not blocked (CR 509.1a: the defending player chooses which creatures block, and
+     the player still presses Send). Send waits only for the table's check of the current draft. */
+  const canSendBlocks = () => blockValid() && !sending;
+  /* The pairs drafted for one attacker, as option objects. */
+  const draftFor = id => picked.map(i=>view.decision.options.find(o=>o.index===i)).filter(o=>o?.attackerId===id);
   function checkBlocks() {
     if (!blocking() || blockPending || blockResult?.key === blockKey() || socket?.readyState !== 1) return;
     blockPending = {key: blockKey(), choiceId: view.decision.id};
@@ -424,22 +416,18 @@ globalThis.CrankBoard = Object.seal({
     const pending = blockPending; blockPending = null;
     if (pending.key === blockKey()) blockResult = {key: pending.key, ok: frame.ok === true, open: frame.open === true,
       reasons: frame.reasons || [frame.error || "The table could not check these blocks. Try again."], byAttacker:Array.isArray(frame.byAttacker)?frame.byAttacker:[]};
-    if (blockAll && blockResult?.key === blockKey() && !blockResult.ok) blockAll = null;
-    sendNoBlocksToAll(); checkBlocks(); draw();
+    checkBlocks(); draw();
   }
   function draftBlock(index) {
     if (!blocking() || sending) return;
     const o = view.decision.options.find(o => o.index === index);
     if (!o || !view.decision.legalBlocks.some(b => b.blocker === o.cardId && b.attackers.includes(o.attackerId))) return;
-    blockAll=null;
-    const old=[...picked],removing=picked.includes(index);
+    const removing=picked.includes(index);
     if(removing)picked=picked.filter(i=>i!==index);
     else {
       if(view.decision.exclusiveBy === "cardId")picked=picked.filter(i=>view.decision.options.find(x=>x.index===i)?.cardId!==o.cardId);
       picked=[...picked,index];
     }
-    for(const i of old.filter(i=>!picked.includes(i)))blockSettled.delete(view.decision.options.find(x=>x.index===i)?.attackerId);
-    blockSettled.delete(o.attackerId);
     blockResult = null; checkBlocks(); draw();
   }
   let drag = null;          /* a bar being dragged: {kind: "rows"|"hand"|"pane"|"panel"|"side", x, y, from, per} */
@@ -518,7 +506,7 @@ globalThis.CrankBoard = Object.seal({
     /* On a phone the board you are looking at is the only one on screen: when you are asked, it is yours. */
     if (phone() && view.decision && view.decision.id !== before) focus = view.seat;
     if ((view.decision && view.decision.id) !== before) {choiceFlow=null;flowPaused=false;attackChoice=null;actionCard=null;draftRevision=null;picked = []; amounts = []; sending = false; alsoOpen = false; if(view.decision && view.decision.kind !== "priority") {actionsShut = false;}}
-    if (priorBlocks !== blockContext()) {blockEpoch++; blockSettled.clear();blockAttacker=null;picked = []; blockSelected = null; blockResult = null; blockListOpen = false;}
+    if (priorBlocks !== blockContext()) {blockEpoch++; blockAttacker=null;picked = []; blockSelected = null; blockResult = null; blockListOpen = false;}
     // The popup owns its source image; required choices never open an automatic side inspection.
     checkBlocks();
     if (selected !== null && !findCard(selected)) selected = null;
@@ -852,24 +840,60 @@ globalThis.CrankBoard = Object.seal({
     const chosen=picked.map(i=>view.decision?.options.find(o=>o.index===i)).filter(o=>o?.attackerId===id).map(o=>o.cardId);
     return [...fromCheck,...(facts?.refused || []).filter(x=>chosen.includes(x.blockerId)).flatMap(x=>x.reasons || [])];
   }
-  function combatStrip() {
-    const attacks=combatAttacks();if(!attacks.length)return "";
-    const draft=blocking(),own=ownBlockAttacks(),settled=own.filter(a=>blockSettled.has(a.attacker)).length;
+  /* The table's word on the current draft (ROB-544): the header says only that, never a count of attackers to settle. */
+  function blockCheckState() {
     const result=blockResult?.key===blockKey()?blockResult:null;
-    const status=draft ? result?.ok && result.open && blocksSettled() ? "The table accepts this draft" : `${settled} of ${own.length} settled` : "Confirmed assignments";
-    const tiles=attacks.map(a=>{
-      const mine=draft && a.defender===view.seat,issues=mine?attackerIssues(a.attacker):[],ready=mine?blockSettled.has(a.attacker):a.blocked;
-      const selected=mine?picked.map(i=>view.decision.options.find(o=>o.index===i)).filter(o=>o?.attackerId===a.attacker).map(o=>o.cardId):(a.blockers || []).filter(id=>combatCard(id));
-      const state=issues.length?"refused":ready?"ready":mine?"unsettled":"public";
-      const word=issues.length?"✗ Refused":ready?"✓ Ready":mine?"Needs a choice":a.blocked?"Blocked":"No blocks confirmed";
-      return `<li class="cm-combat-row is-${state}" data-combat-attacker="${a.attacker}" data-combat-defender="${a.defender}" data-combat-target="${a.planeswalker ?? `seat:${a.defender}`}"><div class="cm-combat-tile" data-attacker="${a.attacker}"><button type="button" class="cm-combat-open" data-action="${mine?'board-block-attacker':'board-combat-inspect'}" data-attacker="${a.attacker}" data-card="${a.attacker}" data-combat-light="${a.attacker}" aria-label="${e(`${combatName(combatCard(a.attacker))}: ${word}${issues.length?'. '+issues.join('; '):''}`)}"${sending && mine?' disabled':''}></button>
-        <strong class="cm-combat-state">${e(word)}</strong><span class="cm-combat-pair">${inspectCombatThumb(a.attacker,'Attacker')}<span class="cm-combat-relation"><span>Attacking</span><span aria-hidden="true">→</span>${a.planeswalker!==undefined ? inspectCombatThumb(a.planeswalker,'Attacked permanent',{label:true}) : `<span>${e(nameOf(a.defender))}</span>`}</span>
-        <span class="cm-combat-blocks">${selected.length?selected.map(id=>inspectCombatThumb(id,'Blocker',{draft:mine})).join(''):`<span class="cm-combat-empty" aria-label="${!mine?(a.blocked?'Blocked, no blockers remain':'No blocks confirmed'):ready?'No blocks chosen':'No blocks yet'}" title="${!mine?(a.blocked?'Blocked · no blockers remain':'No blocks confirmed'):ready?'No blocks chosen':'No blocks yet'}">${!mine && a.blocked?'Blocked · no blockers remain':!mine?'—':ready?'No blocks':'—'}</span>`}</span></span>
+    if(!result)return {state:"pending",word:"… Checking",why:"Waiting for the table to check these blocks"};
+    if(!result.open)return {state:"closed",word:"Not checked",why:"The table could not check these blocks. Press Check again."};
+    if(!result.ok)return {state:"refused",word:"✗ Refused",why:"The table refuses these blocks. Change the attacker marked ✗."};
+    return {state:"ok",word:"✓ Legal",why:"Stays private until sent"};
+  }
+  /* WHILE YOU DECLARE BLOCKERS (ROB-544; Rob, 2026-11-24: "the text is being scrunched in the scroll bar ... They can be very
+     long"): the attackers are a list read top to bottom, each row whole -- its picture, its name wrapped and never cut, its
+     power and toughness, keywords, whom it attacks, and the creatures you assigned to it. A press on a row chooses which
+     attacker your next press blocks; nothing here scrolls sideways. Attacks at other seats are listed too, read-only. */
+  function blockList(attacks) {
+    const check=blockCheckState();
+    const rows=attacks.map(a=>{
+      const mine=a.defender===view.seat,c=combatCard(a.attacker),issues=mine?attackerIssues(a.attacker):[];
+      const selected=mine?draftFor(a.attacker).map(o=>o.cardId):(a.blockers || []).filter(id=>combatCard(id));
+      const active=mine && a.attacker===(ownBlockAttacks().find(x=>x.attacker===blockAttacker) || ownBlockAttacks()[0])?.attacker;
+      const state=issues.length?"refused":selected.length?"blocked":mine?"open":"public";
+      const word=issues.length?"✗ Refused":selected.length?"⛨ Blocked":mine?"— Not blocked":a.blocked?"Blocked":"No blocks confirmed";
+      const whom=a.planeswalker!==undefined?inspectCombatThumb(a.planeswalker,'Attacked permanent',{label:true}):`<span>${e(a.defender===view.seat?'You':nameOf(a.defender))}</span>`;
+      const facts=[c?.power!=null?`${c.power}/${c.toughness}`:'',...(c?.keywords || [])].filter(Boolean).join(' · ');
+      const said=`${combatName(c)}${twinMark(a.attacker)?' '+twinMark(a.attacker):''}: ${word.replace(/^[^A-Za-z]+/,'')}${selected.length?' by '+selected.map(id=>combatName(combatCard(id))).join(', '):''}${issues.length?'. '+issues.join('; '):''}`;
+      return `<li class="cm-combat-row cm-block-row is-${state}${active?' is-active':''}" data-combat-attacker="${a.attacker}" data-combat-defender="${a.defender}" data-combat-target="${a.planeswalker ?? `seat:${a.defender}`}"><div class="cm-combat-tile" data-attacker="${a.attacker}"><button type="button" class="cm-combat-open" data-action="${mine?'board-block-attacker':'board-combat-inspect'}" data-attacker="${a.attacker}" data-card="${a.attacker}" data-combat-light="${a.attacker}"${active?' aria-current="true"':''} aria-label="${e(said)}"${sending && mine?' disabled':''}></button>
+        <span class="cm-block-row-card">${inspectCombatThumb(a.attacker,'Attacker')}</span><span class="cm-block-row-text"><strong class="cm-block-row-name">${e(combatName(c))}</strong>${facts?`<small>${e(facts)}</small>`:''}<span class="cm-combat-relation"><span aria-hidden="true">→</span>${whom}</span></span>
+        <span class="cm-block-row-side"><strong class="cm-combat-state">${e(word)}</strong><span class="cm-combat-blocks">${selected.map(id=>inspectCombatThumb(id,'Blocker',{draft:mine})).join('')}${!mine && a.blocked && !selected.length?'<span class="cm-combat-empty">Blocked · no blockers remain</span>':''}</span></span>
         ${issues.length?`<small class="cm-combat-reason">${e(issues[0])}</small>`:''}</div></li>`;
     }).join('');
-    const missing=own.length-settled,why=missing?`${missing} attacker${missing===1?'':'s'} still need${missing===1?'s':''} a choice`:!blockValid()?'Waiting for a current valid table check':'Stays private until sent';
     const key=`${view.matchId}:${view.state.turnId || view.state.turn}:${attacks.map(a=>a.attacker).join(',')}`;
-    return `<section class="cm-combat cm-r4-combat" aria-label="Combat assignments" data-wf="W05"><header><strong>Combat · blocks</strong><span role="status">${e(status)}</span></header><div class="cm-combat-body"><button type="button" class="cm-combat-scroll" data-action="board-combat-scroll" data-by="-1" aria-label="Previous attackers" hidden>‹</button><ul class="cm-combat-groups" data-combat-key="${e(key)}" tabindex="0" aria-label="Attackers; use left and right arrows to scroll" data-wf="W06">${tiles}</ul><button type="button" class="cm-combat-scroll" data-action="board-combat-scroll" data-by="1" aria-label="More attackers">›</button>${draft?`<div class="cm-combat-send"><small data-combat-more hidden></small>${b('Send blockers','board-send-blockers',{revision:String(view.revision),choice:view.decision.id,match:view.matchId},true,{disabled:!canSendBlocks()}).replace('<button ',`<button title="${e(why)}" `)}</div>`:''}</div></section>`;
+    return `<section class="cm-combat cm-r4-combat is-draft" aria-label="Attackers" data-wf="W05"><header><strong>Combat · blocks</strong><span role="status" class="is-${check.state}" title="${e(check.why)}">${e(check.word)}</span></header><ul class="cm-combat-groups" data-combat-key="${e(key)}" tabindex="-1" aria-label="Attackers" data-wf="W06">${rows}</ul></section>`;
+  }
+  function combatStrip() {
+    const attacks=combatAttacks();if(!attacks.length)return "";
+    if(blocking())return blockList(attacks);
+    const status="Confirmed assignments";
+    const tiles=attacks.map(a=>{
+      const selected=(a.blockers || []).filter(id=>combatCard(id));
+      const word=a.blocked?"Blocked":"No blocks confirmed";
+      return `<li class="cm-combat-row is-public" data-combat-attacker="${a.attacker}" data-combat-defender="${a.defender}" data-combat-target="${a.planeswalker ?? `seat:${a.defender}`}"><div class="cm-combat-tile" data-attacker="${a.attacker}"><button type="button" class="cm-combat-open" data-action="board-combat-inspect" data-attacker="${a.attacker}" data-card="${a.attacker}" data-combat-light="${a.attacker}" aria-label="${e(`${combatName(combatCard(a.attacker))}: ${word}`)}"></button>
+        <strong class="cm-combat-state">${e(word)}</strong><span class="cm-combat-pair">${inspectCombatThumb(a.attacker,'Attacker')}<span class="cm-combat-relation"><span>Attacking</span><span aria-hidden="true">→</span>${a.planeswalker!==undefined ? inspectCombatThumb(a.planeswalker,'Attacked permanent',{label:true}) : `<span>${e(nameOf(a.defender))}</span>`}</span>
+        <span class="cm-combat-blocks">${selected.length?selected.map(id=>inspectCombatThumb(id,'Blocker')).join(''):`<span class="cm-combat-empty" aria-label="${a.blocked?'Blocked, no blockers remain':'No blocks confirmed'}" title="${a.blocked?'Blocked · no blockers remain':'No blocks confirmed'}">${a.blocked?'Blocked · no blockers remain':'—'}</span>`}</span></span></div></li>`;
+    }).join('');
+    const key=`${view.matchId}:${view.state.turnId || view.state.turn}:${attacks.map(a=>a.attacker).join(',')}`;
+    return `<section class="cm-combat cm-r4-combat" aria-label="Combat assignments" data-wf="W05"><header><strong>Combat · blocks</strong><span role="status">${e(status)}</span></header><div class="cm-combat-body"><button type="button" class="cm-combat-scroll" data-action="board-combat-scroll" data-by="-1" aria-label="Previous attackers" hidden>‹</button><ul class="cm-combat-groups" data-combat-key="${e(key)}" tabindex="0" aria-label="Attackers; use left and right arrows to scroll" data-wf="W06">${tiles}</ul><button type="button" class="cm-combat-scroll" data-action="board-combat-scroll" data-by="1" aria-label="More attackers">›</button></div></section>`;
+  }
+  /* THE ONE ANSWER (ROB-544): Send what you assigned. With nothing assigned it reads ⊘ No blocks and sends the empty answer in
+     one press (ROB-333's one press, kept); there is no shortcut that clears an assigned block. Its accessible name says the
+     whole answer: how many blocks and how many attackers go unblocked. */
+  function sendBlocksButton() {
+    const own=ownBlockAttacks(),open=own.filter(a=>!draftFor(a.attacker).length).length,n=picked.length,check=blockCheckState();
+    const label=n?`⛨ Send ${n}`:'⊘ No blocks';
+    const said=`${n?`Send ${n} block${n===1?'':'s'}`:'No blocks'}; ${open} attacker${open===1?'':'s'} not blocked`;
+    return b(label,'board-send-blockers',{revision:String(view.revision),choice:view.decision.id,match:view.matchId},true,{disabled:!canSendBlocks()})
+      .replace('<button ',`<button aria-label="${e(said)}" title="${e(canSendBlocks()?said:check.why)}" `);
   }
   const offerData = o => ({index:String(o.index),act:o.act || '',card:String(o.cardId),revision:String(view.revision),choice:view.decision?.id || '',match:view.matchId});
   let offeredPending = null;
@@ -2030,7 +2054,10 @@ globalThis.CrankBoard = Object.seal({
     let placed = false;
     return opts.map((o) => (manaOf(o) ? (placed ? "" : ((placed = true), row)) : one(o))).join("");
   }
-  const noneAllButton = () => blockLegal() ? b('⊘ No blocks, all','board-block-none-all',{revision:String(view.revision),choice:view.decision.id,match:view.matchId},false,{disabled:sending}).replace('<button ','<button aria-label="No blockers on any attacker" title="No blockers on any attacker: settles every attacker as not blocked and sends" ') : '';
+  /* THE SELECTED ATTACKER'S BLOCKERS (ROB-544; Rob, 2026-11-24: "click the attacker object and then click one of my [creatures]
+     ... Once I've clicked the card, it's assigned"): one press on a tile assigns it, a second takes it off; there is no
+     per-attacker Confirm or Don't block, and nothing moves on by itself (several creatures may block one attacker). A tile
+     already blocking another attacker says which, and a press moves it here when a creature may block only one. */
   function blockDraft() {
     const d=view.decision,attacks=ownBlockAttacks(),a=attacks.find(a=>a.attacker===blockAttacker) || attacks[0];
     if(!a)return '<p>No attacks at your seat.</p>';
@@ -2038,11 +2065,11 @@ globalThis.CrankBoard = Object.seal({
     const issues=attackerIssues(a.attacker),restrictions=d.blockReasons?.find(x=>x.attackerId===a.attacker)?.reasons || [];
     const result=blockResult?.key===blockKey()?blockResult:null,globalReasons=result && !result.ok ? result.reasons : [];
     const facts=[c?.power!=null?`${c.power}/${c.toughness}`:'',a.planeswalker!==undefined?`Attacking ${combatName(combatCard(a.planeswalker))}`:'Attacking you',...(c?.keywords || [])].filter(Boolean).join(' · ');
-    return `<div class="cm-block-draft" data-wf="W08" data-active-attacker="${a.attacker}"><h2>Block ${e(combatName(c))}</h2><div class="cm-block-attacker">${combatThumb(a.attacker,'Attacker')}<p>${e(facts)}</p></div>
-      <div class="cm-block-tiles" data-block-key="${e(`${blockEpoch}:attacker:${a.attacker}`)}" aria-label="Legal blockers">${options.map(o=>{const b=combatCard(o.cardId);return `<button type="button" class="cm-block-tile" data-action="board-block-pair" data-index="${o.index}" data-block-object="${o.cardId}" data-combat-light="${o.cardId}" data-peek-card="${o.cardId}" aria-pressed="${picked.includes(o.index)}"${sending?' disabled':''}>${combatThumb(o.cardId,'Candidate')}<span>${e(combatName(b))}</span><b>${b?.power!=null?`${e(b.power)}/${e(b.toughness)}`:''}</b></button>`;}).join('') || '<p>No legal blockers.</p>'}</div>
+    const elsewhere=o=>picked.map(i=>d.options.find(x=>x.index===i)).find(x=>x && x.cardId===o.cardId && x.attackerId!==a.attacker);
+    return `<div class="cm-block-draft" data-wf="W08" data-active-attacker="${a.attacker}"><h2>Block ${e(combatName(c))}</h2><div class="cm-block-attacker"><p>${e(facts)}</p></div>
+      <div class="cm-block-tiles" data-block-key="${e(`${blockEpoch}:attacker:${a.attacker}`)}" role="group" aria-label="${e(`Your creatures that can block ${combatName(c)}`)}">${options.map(o=>{const b=combatCard(o.cardId),other=elsewhere(o);return `<button type="button" class="cm-block-tile" data-action="board-block-pair" data-index="${o.index}" data-block-object="${o.cardId}" data-combat-light="${o.cardId}" data-peek-card="${o.cardId}" aria-pressed="${picked.includes(o.index)}"${other?` aria-description="${e(`Now blocking ${combatName(combatCard(other.attackerId))}`)}"`:''}${sending?' disabled':''}>${combatThumb(o.cardId,'Candidate')}<span>${e(combatName(b))}</span><b>${b?.power!=null?`${e(b.power)}/${e(b.toughness)}`:''}</b>${other?`<small class="cm-block-elsewhere">⛨ ${e(combatName(combatCard(other.attackerId)))}${twinMark(other.attackerId)?' '+e(twinMark(other.attackerId)):''}</small>`:''}</button>`;}).join('') || '<p>No creature of yours can block it.</p>'}</div>
       ${restrictions.length?`<p class="cm-block-restrictions">${restrictions.map(e).join(' · ')}</p>`:''}<div class="cm-block-status" role="status">${issues.map(r=>`<p>${e(r)}</p>`).join('')}${globalReasons.length?`<div class="cm-block-global"><strong>Draft check</strong>${globalReasons.map(r=>`<p>${e(r)}</p>`).join('')}</div>`:''}</div>
-      ${result && !result.open ? b('Check again','board-block-retry',{},false,{cls:'compact',disabled:sending}) : ''}
-      <div class="cm-decide-actions" data-wf="W10">${b("Don't block","board-block-attacker-none",{attacker:String(a.attacker)},false,{disabled:sending})}${b('Confirm','board-block-attacker-confirm',{attacker:String(a.attacker)},false,{disabled:sending}).replace('<button ','<button title="This attacker only" ')}${noneAllButton()}</div></div>`;
+      ${result && !result.open ? b('Check again','board-block-retry',{},false,{cls:'compact',disabled:sending}) : ''}</div>`;
   }
   /* Review uses only the current seat's offered words. No target, payment or outcome is inferred. The outlined option is
      the selection on screen (Rob, 2026-10-25: "The outline around the selection indicates the selection. We don't need to
@@ -2232,8 +2259,8 @@ globalThis.CrankBoard = Object.seal({
     }
     if (["one", "boolean", "index"].includes(d.mode)) {body = reviewReady(d) && targeting ? "" : d.mode === "one" ? grouped(sameStacks(d)) : d.options.map((o) => [o]).map(stackOpt).join(""); foot = commitReview(d);}
     else if (blocking()) {
-      body = combatStrip() + blockDraft();
-      foot = '';
+      body = `<div class="cm-block-layout">${combatStrip()}${blockDraft()}</div>`;
+      foot = sendBlocksButton() + (picked.length ? b('Clear','board-block-none',{},false,{disabled:sending}).replace('<button ','<button aria-label="Clear every block" title="Clear every block" ') : '');
     }
     /* WHAT YOU WERE SHOWN (ROB-169): an acknowledgment about cards ("Peek: you look at Maya's hand") draws them, each one
        to read (Card zoom on a click); this seat alone is sent them, in its own decision. OK answers it. */
@@ -3298,7 +3325,7 @@ globalThis.CrankBoard = Object.seal({
     const choiceScroll = choice && choice.dataset.choiceId === view?.decision?.id && choice.dataset.matchId === view?.matchId
       ? choice.querySelector(".cm-board-options")?.scrollTop : null;
     const fight = host.querySelector(".cm-combat-groups"), fightPosition = fight && {key: fight.dataset.combatKey, x: fight.scrollLeft, y: fight.scrollTop};
-    const blockPositions = new Map([...host.querySelectorAll("[data-block-key]")].map(el => [el.dataset.blockKey, el.scrollLeft]));
+    const blockPositions = new Map([...host.querySelectorAll("[data-block-key]")].map(el => [el.dataset.blockKey, [el.scrollLeft, el.scrollTop]]));
     const rowKey = `${view?.matchId}:${view?.seat}`;
     const drawerPositions=host.dataset.rowScrollMatch===rowKey?[...host.querySelectorAll(':scope>.cm-stage-rail,:scope>.cm-stage-side')].map(el=>({id:el.id,view:host.dataset.view,top:el.scrollTop})):[];
     const main=host.querySelector('.cm-board-main'),focusPosition=main&&host.dataset.rowScrollMatch===rowKey?{seat:main.querySelector('.cm-board-stage>.cm-mat')?.dataset.seat,y:main.scrollTop}:null;
@@ -3318,7 +3345,7 @@ globalThis.CrankBoard = Object.seal({
     host.dataset.rowScrollMatch = rowKey;
     for (const el of host.querySelectorAll("[data-keep-scroll]")) {const top = keptScroll.get(`${host.dataset.view}:${el.dataset.keepScroll}`); if (top) el.scrollTop = top;}
     for (const el of host.querySelectorAll('[data-zone-scroll]')) {const pos=zonePositions.get(`${host.dataset.view}:${el.dataset.zoneScroll}`);if(pos){el.scrollLeft=pos[0];el.scrollTop=pos[1];}}
-    for (const el of host.querySelectorAll("[data-block-key]")) el.scrollLeft = blockPositions.get(el.dataset.blockKey) || 0;
+    for (const el of host.querySelectorAll("[data-block-key]")) {const [x, y] = blockPositions.get(el.dataset.blockKey) || [0, 0]; el.scrollLeft = x; el.scrollTop = y;}
     const options = host.querySelector("#cm-board-decision .cm-board-options");
     if (choiceScroll !== null && options) {
       options.scrollTop = choiceScroll;
@@ -3845,7 +3872,7 @@ globalThis.CrankBoard = Object.seal({
   };
   actions['board-flow-cancel'] = () => {
     if(sending)return;
-    choiceFlow=null;attackChoice=null;picked=[];amounts=[];draftRevision=null;targetReviewing=false;if(blocking()){blockSettled.clear();blockResult=null;}
+    choiceFlow=null;attackChoice=null;picked=[];amounts=[];draftRevision=null;targetReviewing=false;if(blocking()){blockResult=null;}
     /* Your own cast or activation, stopped by the room to ask its targets or payment (`cancel.way` "back-out"): Cancel ends it there
        and then, the card back where it was and priority yours again -- no Resume (ROB-205). An action not yet sent ends here, as ever. */
     if(view.decision.kind!=='priority' && view.decision.cancel?.way==='back-out'){cancelQuestion();return;}
@@ -4015,23 +4042,12 @@ globalThis.CrankBoard = Object.seal({
     draw();
   };
   actions["board-block-attacker"] = el => {const id=Number(el.dataset.attacker);if(!blocking() || !ownBlockAttacks().some(a=>a.attacker===id))return;blockAttacker=id;actionsShut=false;if(phone())stageRail=true;openModuleDrawer('actions');draw();};
-  actions["board-block-attacker-none"] = el => {
-    const id=Number(el.dataset.attacker);if(!blocking() || sending || !ownBlockAttacks().some(a=>a.attacker===id))return;
-    picked=picked.filter(i=>view.decision.options.find(o=>o.index===i)?.attackerId!==id);blockSettled.add(id);blockResult=null;if(phone())stageRail=false;checkBlocks();draw();
-  };
-  actions["board-block-attacker-confirm"] = el => {const id=Number(el.dataset.attacker);if(!blocking() || sending || !ownBlockAttacks().some(a=>a.attacker===id))return;blockSettled.add(id);if(phone())stageRail=false;checkBlocks();draw();};
   actions["board-send-blockers"] = el => {if(Number(el?.dataset?.revision)===view?.revision && el.dataset.choice===view?.decision?.id && el.dataset.match===view?.matchId && canSendBlocks())actions["board-confirm"]();};
-  actions["board-combat-scroll"] = el => {const row=document.querySelector('.cm-r4-combat .cm-combat-groups'),tile=row?.querySelector('.cm-combat-row');if(row&&tile)row.scrollBy({left:Number(el.dataset.by)*(tile.getBoundingClientRect().width+8),behavior:reduced()?'instant':'smooth'});};
+  actions["board-combat-scroll"] = el => {const row=document.querySelector('.cm-r4-combat:not(.is-draft) .cm-combat-groups'),tile=row?.querySelector('.cm-combat-row');if(row&&tile)row.scrollBy({left:Number(el.dataset.by)*(tile.getBoundingClientRect().width+8),behavior:reduced()?'instant':'smooth'});};
   actions["board-block-select"] = el => {if (!blocking() || sending) return; blockSelected = Number(el.dataset.blockObject); draw();};
   actions["board-block-pair"] = el => draftBlock(Number(el.dataset.index));
-  actions["board-block-none-all"] = el => {
-    if (!blockLegal() || sending || Number(el?.dataset?.revision) !== view.revision || el.dataset.choice !== view.decision.id || el.dataset.match !== view.matchId) return;
-    picked = []; for (const a of ownBlockAttacks()) blockSettled.add(a.attacker);
-    if (blockResult && !blockResult.ok) blockResult = null; // pressed again after a refusal: ask the table again
-    blockAll = blockContext(); if (phone()) stageRail = false;
-    sendNoBlocksToAll(); checkBlocks(); draw();
-  };
-  actions["board-block-none"] = () => {blockAll = null; if (!blocking() || sending) return; picked = [];blockSettled.clear(); blockResult = null; checkBlocks(); draw();};
+  /* Clear: the player's own, named press that takes every drafted block off (shown only while one is drafted). It sends nothing. */
+  actions["board-block-none"] = () => {if (!blocking() || sending) return; picked = []; blockResult = null; checkBlocks(); draw();};
   actions["board-block-clear"] = () => {
     if (!blocking() || sending) return;
     picked = picked.filter(i => view.decision.options.find(o => o.index === i)?.cardId !== blockSelected);
@@ -4200,15 +4216,15 @@ globalThis.CrankBoard = Object.seal({
     }
   }
   function fitCombatStrip(host=document) {
-    const strip=host.querySelector('.cm-r4-combat'),row=strip?.querySelector('.cm-combat-groups');if(!row)return;
+    const strip=host.querySelector('.cm-r4-combat:not(.is-draft)'),row=strip?.querySelector('.cm-combat-groups');if(!row)return;
     const left=row.scrollLeft>1,right=row.scrollLeft+row.clientWidth<row.scrollWidth-2;
     strip.querySelector('[data-by="-1"]').hidden=!left;strip.querySelector('[data-by="1"]').hidden=!right;
     const r=row.getBoundingClientRect(),hidden=[...row.children].filter(el=>el.getBoundingClientRect().right>r.right+1).length,more=strip.querySelector('[data-combat-more]');
     if(more){more.hidden=!hidden;more.textContent=`+${hidden} more`;}
   }
-  document.addEventListener('scroll',event=>{if(event.target.matches?.('.cm-r4-combat .cm-combat-groups'))fitCombatStrip(document);},true);
+  document.addEventListener('scroll',event=>{if(event.target.matches?.('.cm-r4-combat:not(.is-draft) .cm-combat-groups'))fitCombatStrip(document);},true);
   document.addEventListener('keydown',event=>{
-    if(!event.target.matches?.('.cm-r4-combat .cm-combat-groups') || !['ArrowLeft','ArrowRight'].includes(event.key))return;
+    if(!event.target.matches?.('.cm-r4-combat:not(.is-draft) .cm-combat-groups') || !['ArrowLeft','ArrowRight'].includes(event.key))return;
     event.preventDefault();actions['board-combat-scroll']({dataset:{by:event.key==='ArrowRight'?'1':'-1'}});
   });
   function lightCombat(id,on) {for(const el of document.querySelectorAll(`#cm-board .cm-mat .cm-bcard[data-card="${id}"]`))el.classList.toggle('is-lit',on);}
