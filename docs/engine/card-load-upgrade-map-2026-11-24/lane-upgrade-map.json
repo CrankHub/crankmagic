@@ -1,0 +1,322 @@
+{
+  "schema": "library-load-lane@1",
+  "lane": "Rob's Upgrade map, 2026-11-24: the cards of its BIC, Practical and Available columns the engine could not play",
+  "source": {
+    "list": "pasted by Rob 2026-11-24, checked from Upgrade Series 2026-11-22 Map.xlsx with tools/library-engine-index.mjs --check-lane on main 59b9f862: 73 distinct, 48 playable, these 25 not",
+    "main": "1952139b",
+    "distinct": 25
+  },
+  "cards": [
+    {
+      "name": "Brave the Sands",
+      "copies": 1,
+      "deck": "D4",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Buy local",
+      "group": "D",
+      "loadedHere": false
+    },
+    {
+      "name": "Brokers Ascendancy",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Buy local",
+      "group": "A",
+      "loadedHere": false
+    },
+    {
+      "name": "Clock of Omens",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC",
+        "Practical"
+      ],
+      "slotStatus": "Buy online",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Coalition Victory",
+      "copies": 1,
+      "deck": "D8",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "E",
+      "loadedHere": false
+    },
+    {
+      "name": "Drogskol Reaver",
+      "copies": 1,
+      "deck": "D7",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "E",
+      "loadedHere": false
+    },
+    {
+      "name": "Dross Scorpion",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC",
+        "Practical"
+      ],
+      "slotStatus": "Buy online",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Felidar Guardian",
+      "copies": 1,
+      "deck": "D2",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Buy local",
+      "group": "E",
+      "loadedHere": false
+    },
+    {
+      "name": "Fertile Ground",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "E",
+      "loadedHere": false
+    },
+    {
+      "name": "Firdoch Core",
+      "copies": 1,
+      "deck": "D8",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Illusionist's Bracers",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "B",
+      "loadedHere": false
+    },
+    {
+      "name": "Invasion of Dominaria",
+      "copies": 1,
+      "deck": "D8",
+      "listedAs": [
+        "BIC",
+        "Practical"
+      ],
+      "slotStatus": "Buy online",
+      "group": "D",
+      "loadedHere": false,
+      "oracleName": "Invasion of Dominaria // Serra Faithkeeper"
+    },
+    {
+      "name": "Invasion of Zendikar",
+      "copies": 1,
+      "deck": "D8",
+      "listedAs": [
+        "BIC",
+        "Practical"
+      ],
+      "slotStatus": "Buy online",
+      "group": "D",
+      "loadedHere": false,
+      "oracleName": "Invasion of Zendikar // Awakened Skyclave"
+    },
+    {
+      "name": "Jan Jansen, Chaos Crafter",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Leyline of the Guildpact",
+      "copies": 1,
+      "deck": "D8",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "E",
+      "loadedHere": false
+    },
+    {
+      "name": "Marionette Master",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC"
+      ],
+      "slotStatus": "In cart, keep",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Oni-Cult Anvil",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Queen Marchesa",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "E",
+      "loadedHere": false
+    },
+    {
+      "name": "Rings of Brighthearth",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "Practical"
+      ],
+      "slotStatus": "Ordered",
+      "group": "B",
+      "loadedHere": false
+    },
+    {
+      "name": "Sting, the Glinting Dagger",
+      "copies": 1,
+      "deck": "D5+D6",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Buy local, Ordered",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "Teferi, Temporal Archmage",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Buy local",
+      "group": "A",
+      "loadedHere": false
+    },
+    {
+      "name": "Teferi, Who Slows the Sunset",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "A",
+      "loadedHere": false
+    },
+    {
+      "name": "Tempered Steel",
+      "copies": 1,
+      "deck": "D5",
+      "listedAs": [
+        "BIC",
+        "Practical"
+      ],
+      "slotStatus": "Buy online",
+      "group": "C",
+      "loadedHere": false
+    },
+    {
+      "name": "The Chain Veil",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "BIC"
+      ],
+      "slotStatus": "Buy local, Ordered",
+      "group": "A",
+      "loadedHere": false
+    },
+    {
+      "name": "The Peregrine Dynamo",
+      "copies": 1,
+      "deck": "D1",
+      "listedAs": [
+        "Practical"
+      ],
+      "slotStatus": "Buy online",
+      "group": "B",
+      "loadedHere": false
+    },
+    {
+      "name": "Transguild Courier",
+      "copies": 1,
+      "deck": "D8",
+      "listedAs": [
+        "BIC",
+        "Practical",
+        "Available"
+      ],
+      "slotStatus": "Ordered",
+      "group": "C",
+      "loadedHere": false
+    }
+  ]
+}
