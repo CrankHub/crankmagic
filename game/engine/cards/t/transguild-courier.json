@@ -1,0 +1,43 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Transguild Courier",
+    "oracleId": "86f94f8e-f45e-42fc-8ad6-e9bdfaaa997d",
+    "types": [
+      "Artifact",
+      "Creature"
+    ],
+    "subtypes": [
+      "Golem"
+    ],
+    "manaCost": "{4}",
+    "colors": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "power": 3,
+    "toughness": 3
+  },
+  "oracleText": "Transguild Courier is all colors.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Transguild Courier is all colors.",
+      "rule": "all-colors",
+      "affects": {
+        "self": true
+      }
+    }
+  ]
+}

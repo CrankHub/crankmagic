@@ -54,6 +54,11 @@ export const STATIC_RULES = Object.freeze({
       of the game, which nothing in a game reads: the compiler holds it to the card's own name (cards/index.mjs), and it stays
       among the definition's abilities for a deck held to the rule that every card but a basic land has a different name. */
   "any-number-in-deck": "cards/index.mjs",
+  /** CR 604.3, 105.2: "Transguild Courier is all colors" -- a characteristic-defining ability, which works in every zone: the
+      card's identity colors are all five (the oracle data agrees), so every reader of colors sees them, in a hand and on the
+      stack too, and a color-changing effect applies after it in layer 5 (CR 613.3), as after a printed color. Nothing else
+      reads the rule; it stays among the definition's abilities as the card's words. */
+  "all-colors": "cards/index.mjs",
   /** CR 510.1a's exception: assigns combat damage equal to its toughness rather than its power. combat.mjs. */
   "combat-damage-by-toughness": "rules/combat.mjs",
   /** CR 510.1a's other exception: "If Loot's power is negative, he assigns combat damage as though his power were positive"
