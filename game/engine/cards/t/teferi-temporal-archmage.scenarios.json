@@ -1,0 +1,748 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Teferi, Temporal Archmage",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Rock": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "abilities": [
+        {
+          "id": "m",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "C": 1
+          }
+        }
+      ]
+    },
+    "Walker": {
+      "types": [
+        "Planeswalker"
+      ],
+      "subtypes": [
+        "Ajani"
+      ],
+      "manaCost": "{2}{W}",
+      "colors": [
+        "W"
+      ],
+      "loyalty": 3,
+      "abilities": [
+        {
+          "id": "aj-life",
+          "kind": "activated",
+          "text": "+1: You gain 1 life.",
+          "targets": [],
+          "loyalty": 1,
+          "timing": "sorcery",
+          "cost": [
+            {
+              "atom": "addCounters",
+              "self": true,
+              "counter": "loyalty",
+              "count": 1
+            }
+          ],
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    "Loyalty Tonic": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Put nine loyalty counters on target planeswalker.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Planeswalker"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "putCounter",
+            "targets": {
+              "target": 0
+            },
+            "counter": "loyalty",
+            "count": 9
+          }
+        ]
+      }
+    },
+    "Smoke Tidings": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{U}",
+      "colors": [
+        "U"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Draw a card.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "draw",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from six untapped lands (the table's way): 5 loyalty, his +1 and his -1 offered, the -10 not",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Teferi, Temporal Archmage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Teferi, Temporal Archmage"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Teferi, Temporal Archmage"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Teferi, Temporal Archmage",
+                "counter": "loyalty",
+                "count": 5
+              }
+            },
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Teferi, Temporal Archmage"
+              },
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Island",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Teferi, Temporal Archmage"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cast from the command zone: he can be Rob's commander",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Island",
+            "Island",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "command",
+          "cards": [
+            "Teferi, Temporal Archmage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Teferi, Temporal Archmage"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Temporal Archmage",
+            "counter": "loyalty",
+            "count": 5
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "command",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "+1: of the top two, Rob puts the Bear into his hand and the other card on the bottom; 6 loyalty",
+      "library": [
+        "Bear",
+        "Rock"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Temporal Archmage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Teferi, Temporal Archmage",
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Bear"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "library",
+          "count": 19
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Temporal Archmage",
+            "counter": "loyalty",
+            "count": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "-1: up to four targets -- Rob untaps his Island and Maya's Rock he chose, and his Forest he did not choose stays tapped",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Temporal Archmage",
+            "Island",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Rock"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Rock",
+          "seat": 1
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "expect": [
+            {
+              "seat": 1,
+              "tapped": "Rock"
+            },
+            {
+              "seat": 0,
+              "tapped": "Island"
+            }
+          ]
+        },
+        {
+          "activate": "Teferi, Temporal Archmage",
+          "ability": "a1",
+          "targets": [
+            [
+              {
+                "card": "Island"
+              },
+              {
+                "card": "Rock",
+                "seat": 1
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Island",
+          "is": false
+        },
+        {
+          "seat": 1,
+          "tapped": "Rock",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Forest"
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Temporal Archmage",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "-1 with no target chosen (\"up to\"): nothing untaps, and it still costs a loyalty counter",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Temporal Archmage",
+            "Island"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "activate": "Teferi, Temporal Archmage",
+          "ability": "a1",
+          "targets": [
+            []
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Island"
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Temporal Archmage",
+            "counter": "loyalty",
+            "count": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "Without the emblem, on Maya's turn Rob's Teferi waits for his own main phase",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Temporal Archmage"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "pass": 1
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Teferi, Temporal Archmage",
+                "seat": 0
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Temporal Archmage",
+            "counter": "loyalty",
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "-10: the emblem; then on Maya's turn Rob activates Teferi's +1 and his Ajani's, once each, and on his own turn with a spell on the stack",
+      "library": [
+        "Bear",
+        "Rock",
+        "Wastes",
+        "Wastes"
+      ],
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Teferi, Temporal Archmage",
+            "Walker",
+            "Island",
+            "Island"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Loyalty Tonic",
+            "Smoke Tidings"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Loyalty Tonic",
+          "targets": [
+            {
+              "card": "Teferi, Temporal Archmage"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Teferi, Temporal Archmage",
+                "counter": "loyalty",
+                "count": 14
+              }
+            }
+          ]
+        },
+        {
+          "activate": "Teferi, Temporal Archmage",
+          "ability": "a2"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "zone": "command",
+              "cards": [
+                "Teferi, Temporal Archmage emblem"
+              ]
+            },
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Teferi, Temporal Archmage",
+                "counter": "loyalty",
+                "count": 4
+              }
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "pass": 1
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Teferi, Temporal Archmage",
+                "seat": 0
+              },
+              "count": 2
+            },
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Walker",
+                "seat": 0
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Teferi, Temporal Archmage",
+          "seat": 0,
+          "ability": "a0"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Bear"
+          ]
+        },
+        {
+          "pass": 1
+        },
+        {
+          "activate": "Walker",
+          "seat": 0,
+          "ability": "aj-life"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "pass": 1
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Teferi, Temporal Archmage",
+                "seat": 0
+              },
+              "count": 0
+            },
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Walker",
+                "seat": 0
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Smoke Tidings"
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            },
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Teferi, Temporal Archmage"
+              },
+              "count": 2
+            }
+          ]
+        },
+        {
+          "activate": "Teferi, Temporal Archmage",
+          "ability": "a1",
+          "targets": [
+            [
+              {
+                "card": "Island"
+              }
+            ]
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Teferi, Temporal Archmage",
+            "counter": "loyalty",
+            "count": 4
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Walker",
+            "counter": "loyalty",
+            "count": 4
+          }
+        },
+        {
+          "seat": 0,
+          "life": 41
+        },
+        {
+          "seat": 0,
+          "tapped": "Island",
+          "is": false
+        }
+      ]
+    }
+  ]
+}
