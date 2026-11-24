@@ -127,6 +127,9 @@ export const TRIGGER_EVENTS = Object.freeze([
   "loyalty activated",
   /* "Whenever you activate a ninjutsu ability" (CR 702.49; Satoru Umezawa, card load ROB-540). */
   "ninjutsu activated",
+  /* "Whenever you activate an ability, if it isn't a mana ability" (CR 602.2, 605.3a; Rings of Brighthearth, Illusionist's
+     Bracers, card load ROB-541). */
+  "ability activated",
   /* "Whenever you scry or surveil" (CR 701.22a, 701.25a). */
   "scried",
   /* "Whenever you proliferate" (CR 701.34a; Train C, w2c-hands-triggers). */
