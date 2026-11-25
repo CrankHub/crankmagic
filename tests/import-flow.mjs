@@ -18,7 +18,7 @@
  *   Group    "New group name" shows only for a new group, in the import and in Explore's two group forms
  *   Review   every unresolved row is shown; "Needs identity only" shows just those; a correction keeps the
  *            review's filter
- *   Close    the close control, Escape and the backdrop ask "Are you sure…"; staying keeps the batch
+ *   Close    the close control and Escape ask "Are you sure…"; staying keeps the batch; a click beside a window does nothing (ROB-547)
  *   Revise   comes back with the pasted list
  *   New deck the dialog is as wide as its choices, its close button in line with their right edge
  *   Upload   Library › Upload cards opens the import
@@ -164,7 +164,7 @@ if (browser) {
     await page.keyboard.press("Escape");
     await page.mouse.click(5, 5);
     await page.waitForTimeout(300);
-    eq(asked, Array(3).fill("Are you sure you want to close this window? All progress will be lost."), "the close control, Escape and a click beside the dialog each ask first");
+    eq(asked, Array(2).fill("Are you sure you want to close this window? All progress will be lost."), "the close control and Escape each ask first, and a click beside the window asks nothing: it is not a way out (ROB-547)");
     ok(await page.locator("#cm-dialog[open] h2", {hasText: "Review import"}).count() === 1 && (await rows()).length === 3, "and choosing to stay keeps the review as it was, filter and all");
 
     /* A correction goes to the picker and back, keeping the review's filter */
@@ -197,6 +197,30 @@ if (browser) {
       return {width: Math.round(d.width), closeRight: Math.round(x.right), pathsRight: Math.round(p.right), left: Math.round(p.left - d.left), right: Math.round(d.right - p.right)};});
     ok(fit.width <= 560 && Math.abs(fit.closeRight - fit.pathsRight) <= 2 && Math.abs(fit.left - fit.right) <= 2, `the New deck dialog is ${fit.width}px, as wide as its choices: the close button's right edge is the choices' (${fit.closeRight} vs ${fit.pathsRight}) and the gutters match (${fit.left} left, ${fit.right} right)`);
     await shot(page, "new-deck-1280");
+
+    /* ONE NAME (ROB-547): a click beside the window leaves it open; Import asks for the deck's name, and the window after it does not ask again */
+    await page.mouse.click(5, 5);
+    await page.waitForTimeout(300);
+    ok(await page.locator("#cm-dialog[open] .cm-wizard-paths").count() === 1, "a click beside the New deck window leaves it open");
+    await page.locator("#cm-dialog [data-action=wizard-import]").click();
+    await page.locator("#cm-dialog[open] h2", {hasText: "Import cards or a deck list"}).waitFor();
+    ok(await page.getByLabel("Deck name").isVisible() && !(await page.getByLabel("New group name").count()), "opened from New deck, the import asks for the Deck name, not a group's");
+    await shot(page, "new-deck-import-name-1280");
+    await page.getByLabel("Deck name").fill("One name deck");
+    await page.fill("#cm-dialog [name=text]", ["1 Krenko, Mob Boss", "1 Sol Ring", "1 Lightning Bolt"].join(String.fromCharCode(10)));
+    await page.click("#cm-dialog [type=submit]");
+    await page.locator("#cm-dialog[open] h2", {hasText: "Review import"}).waitFor({timeout: 60000});
+    await page.getByRole("button", {name: /^Import 3 reviewed rows$/}).click();
+    await page.locator("#cm-dialog[open] h2", {hasText: "New deck: One name deck"}).waitFor({timeout: 30000});
+    ok(!(await page.locator("#cm-dialog [name=name]").count()) && await page.locator("#cm-dialog [name=commanderId]").isVisible(), "the window after the import does not ask for the name again: it asks for the commander");
+    await shot(page, "new-deck-one-name-1280");
+    await page.mouse.click(5, 5);
+    await page.waitForTimeout(300);
+    ok(await page.locator("#cm-dialog[open] h2", {hasText: "New deck: One name deck"}).count() === 1, "and a click beside it leaves it open too");
+    await page.getByRole("button", {name: "Create draft", exact: true}).click();
+    await page.waitForFunction(() => location.hash.startsWith("#decks?deck="), null, {timeout: 30000});
+    const oneName = await page.evaluate(async () => {const r = await CrankRepository.open(); try {const st = await r.getState(), d = st.decks.find((x) => x.name === "One name deck"), g = d && st.groups.find((x) => x.id === d.groupId); return d ? {group: g && g.name, cards: d.slots.reduce((n, s) => n + s.quantity, 0)} : null;} finally {r.close();}});
+    eq(oneName, {group: "One name deck", cards: 3}, "the deck and the group its list landed in carry the one name, with the three cards");
     await context.close();
   } finally {
     await close();

@@ -46,7 +46,7 @@ try {
   const shellId = (await decks(page)).map((d) => d.id).find((id) => !before.includes(id));
   ok(shellId, "the shell is saved as Start from opens");
   eq(await deck(page, shellId).then((d) => [d.name, d.commanders, d.slots]), ["New deck", [], 0], "a shell: no commander, no cards");
-  eq(await page.$$eval(".cm-flow-nav button", (bs) => bs.map((x) => x.textContent.trim())), ["Pick a commander", "Choose colors", "Choose play style", "Choose mechanics"], "four methods in the nav");
+  eq(await page.$$eval(".cm-flow-nav button", (bs) => bs.map((x) => x.textContent.trim())), ["Pick a commander", "Choose colors", "Choose play style", "Choose mechanics", "From a group"], "four ways to a commander, and From a group (ROB-547), in the nav");
   ok(await page.$eval("[data-action=flow-next]", (x) => x.disabled), "Next waits for a commander");
   ok(!(await page.locator("#cm-dialog .cm-flow p.cm-muted").count()), "no explanatory copy in the frame (DLG-4)");
   await page.evaluate(() => globalThis.__cm.actions.close());
