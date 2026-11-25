@@ -4008,7 +4008,9 @@ globalThis.CrankBoard = Object.seal({
     if(origin.revision!==view.revision || origin.choice!==(view.decision?.id || '') || origin.match!==view.matchId)return;
     if(attacking()?.options.some(o=>o.cardId===id)) {
       if(event?.detail>=2)return;
-      if(attackChosen(view.decision).some(o=>o.cardId===id))attackBack(id);else attackSend(id);
+      /* sent at the selected target: brought back; sent elsewhere: moved here; not sent: sent here */
+      const at=attackChosen(view.decision).find(o=>o.cardId===id);
+      if(at && attackKey(at)===attackState(view.decision).target)attackBack(id);else attackSend(id);
       return;
     }
     if(event?.detail>=2) {

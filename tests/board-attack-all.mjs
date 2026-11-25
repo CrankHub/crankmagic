@@ -159,6 +159,17 @@ try {
     if (reach.ok) await page.mouse.click(reach.x, reach.y); else {await onTable.focus(); await page.keyboard.press("Enter");}
     await page.waitForTimeout(150);
     eq(await sentAt(page), [], "and another press brings it back");
+    /* Moving it: sent at one player, another header selected, a press on the table moves it there -- one target at most. */
+    const [p1, p2] = [...new Set(view.decision.options.map((o) => o.defenderId))];
+    if (reach.ok) await page.mouse.click(reach.x, reach.y); else {await onTable.focus(); await page.keyboard.press("Enter");}
+    await page.waitForTimeout(150);
+    await press(page, `[data-action=board-attack-target][data-target="${p2}:"]`);
+    if (reach.ok) await page.mouse.click(reach.x, reach.y); else {await onTable.focus(); await page.keyboard.press("Enter");}
+    await page.waitForTimeout(150);
+    eq(await sentAt(page), [`${ids[0]}@${p2}`], `sent at ${p1}, then with ${p2} selected, a press on the table moves it to ${p2}: at one target only`);
+    if (reach.ok) await page.mouse.click(reach.x, reach.y); else {await onTable.focus(); await page.keyboard.press("Enter");}
+    await page.waitForTimeout(150);
+    eq(await sentAt(page), [], "and a press on it where it is sent brings it back");
     ok(frames.filter((f) => f.type === "act").length === 0 && await page.locator("#cm-card-menu").count() === 0, "nothing is sent, and no card menu opens");
     await context.close();
   }
