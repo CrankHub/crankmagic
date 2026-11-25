@@ -103,7 +103,13 @@ const again = Criteria.buildFromCriteria(fixture.sets[0].criteria, rows, owned, 
 eq(again.cards.map((c) => c.name), results.get("krenko-aggressive").cards.map((c) => c.name), "the same criteria and seed give the same hundred");
 const other = Criteria.buildFromCriteria({...fixture.sets[0].criteria, seed: "b"}, rows, owned, opts);
 ok(other.cards.map((c) => c.name).join("|") !== again.cards.map((c) => c.name).join("|"), "another seed gives another hundred");
-ok(other.cards.filter((c) => again.cards.some((x) => x.name === c.name)).length >= 70, "but most of it is the same deck: the seed is a nudge, not a reshuffle");
+/* AN IGNORE, NAMED (Rob, 2026-11-25: "Yes, loosen it"; ROB-551). This pin was 70 cards in common, an absolute number that main's builder met
+   with 75 of the deck's 82 distinct cards (91 percent) -- while carrying none of its three Game Changers at this $150 bracket 3 cap, the very
+   bug ROB-551 fixes. A deck that really carries them leaves the other cards about $93 of the $150 and the seed moves more of them: 67 of the
+   same 82 (82 percent). The property the pin is for is "most of it is the same deck", so it is stated as a share of the deck, at least 80
+   percent of the distinct cards, which both builders meet. The pin is looser than it was; the seed is still a nudge, not a reshuffle. */
+const shared = other.cards.filter((c) => again.cards.some((x) => x.name === c.name)).length, distinct = Math.min(again.cards.length, other.cards.length);
+ok(shared >= 0.8 * distinct, `but most of it is the same deck: the seed is a nudge, not a reshuffle (${shared} of ${distinct} cards in common, at least 80 percent)`);
 const notOwned = Criteria.buildFromCriteria({...fixture.sets[0].criteria, ownedFirst: false}, rows, owned, opts);
 ok(notOwned.owned.cards < results.get("krenko-aggressive").owned.cards && !notOwned.owned.preferred, `owned first is a real preference (${results.get("krenko-aggressive").owned.cards} owned with it, ${notOwned.owned.cards} without)`);
 const missing = Criteria.buildFromCriteria({commander: "Not A Card At All", colors: ["R"], playstyle: "Aggressive", bracket: 3, budgetUsd: 100}, rows, null, opts);
