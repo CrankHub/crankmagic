@@ -154,12 +154,12 @@
       "sha": "5dd742bd996b24a6"
     },
     "crankmagic-app.js": {
-      "version": 779,
-      "sha": "a91ba9a1d6b8d1b0"
+      "version": 777,
+      "sha": "90e7be40c72a0cb7"
     },
     "crankmagic-assets.js": {
-      "version": 43,
-      "sha": "c00c6d454fc858fb"
+      "version": 41,
+      "sha": "dde4ffd5665c1015"
     },
     "crankmagic-audio.js": {
       "version": 1,
@@ -366,8 +366,8 @@
       "sha": "07440b83396bb9e2"
     },
     "crankmagic-sw.js": {
-      "version": 762,
-      "sha": "38273ecf95a34b8a"
+      "version": 760,
+      "sha": "de91599df4a4551a"
     },
     "crankmagic-table.js": {
       "version": 59,
@@ -398,32 +398,32 @@
       "sha": "4c2b2793f05a10be"
     },
     "data/card-facts.json": {
-      "version": 14,
-      "sha": "7fda45a175b4758e"
+      "version": 12,
+      "sha": "493614e56659b872"
     },
     "data/cards.json": {
-      "version": 17,
-      "sha": "a378b65f16bb6a91"
+      "version": 15,
+      "sha": "6bb4a95fd10e0ca5"
     },
     "data/commander-glossary.json": {
       "version": 2,
       "sha": "53a48ee6727fe50d"
     },
     "data/commander-index.json": {
-      "version": 4,
-      "sha": "b4a40bc5313cd3de"
+      "version": 3,
+      "sha": "751a89b2dd3ca459"
     },
     "data/commander-ranks.json": {
-      "version": 8,
-      "sha": "1f5453fb105fee0c"
+      "version": 7,
+      "sha": "977776dd59b7cc27"
     },
     "data/commander-strategies.json": {
-      "version": 10,
-      "sha": "6863593eaca17b9a"
+      "version": 8,
+      "sha": "9e20bb7880cfa56b"
     },
     "data/commander-universe.json": {
-      "version": 8,
-      "sha": "38ed4a957001bca9"
+      "version": 7,
+      "sha": "cf6a90e383a0a8cc"
     },
     "data/composition-targets.json": {
       "version": 1,
@@ -434,24 +434,24 @@
       "sha": "37c351c5b3741d08"
     },
     "data/flavor-names.json": {
-      "version": 8,
-      "sha": "7d0f03301772c3f2"
+      "version": 7,
+      "sha": "440efb887ac0d300"
     },
     "data/graph-played.json": {
-      "version": 6,
-      "sha": "6fc85a42eaa6685a"
+      "version": 5,
+      "sha": "90d284ec23c1a1f8"
     },
     "data/graph.json": {
-      "version": 25,
-      "sha": "526f2237b7122f6b"
+      "version": 24,
+      "sha": "e64d60205d8f4bb5"
     },
     "data/precons-latest.json": {
-      "version": 4,
-      "sha": "5722c1b4412cf4f4"
+      "version": 3,
+      "sha": "9c52db521bcfe93f"
     },
     "data/precons.json": {
-      "version": 5,
-      "sha": "02c9c2741cb70617"
+      "version": 4,
+      "sha": "04bfe48da34a2870"
     },
     "deck-autocreate.js": {
       "version": 1,
