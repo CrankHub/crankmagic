@@ -2040,6 +2040,7 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 #matrix-v2 .cm-board .cm-attack-back,#matrix-v2 .cm-board .cm-attack-send{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;min-height:45px;padding:4px 8px;border:1px solid var(--color-line);border-radius:var(--radius-control);background:var(--color-panel);color:var(--color-ink);font:500 calc(14px*var(--hud-scale,1))/1.25 var(--font-body);text-align:left;cursor:pointer}
 #matrix-v2 .cm-board .cm-attack-who{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
 #matrix-v2 .cm-board .cm-attack-pt{flex:none;font-weight:700}
+#matrix-v2 .cm-board .cm-attack-twin{color:var(--color-muted);font-weight:700}
 #matrix-v2 .cm-board .cm-attack-back .cm-risk,#matrix-v2 .cm-board .cm-attack-send .cm-risk{margin:0}
 #matrix-v2 .cm-board .cm-attack-x{flex:none;color:var(--color-muted)}
 #matrix-v2 .cm-board .cm-attack-tray-wrap{flex:none;margin-top:8px;padding-top:6px;border-top:1px solid var(--color-line-strong)}
