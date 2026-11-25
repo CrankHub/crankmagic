@@ -18,7 +18,7 @@
 import {addRestricted, addPoolMana} from "../../rules/restricted-mana.mjs";
 import {applyReplacements, hitKey, damageChoicesPossible} from "../../rules/replacement.mjs";
 import {runFollowUps} from "./index.mjs";
-import {selectMatching} from "../filter.mjs";
+import {selectMatching, matchesSelector} from "../filter.mjs";
 import {event, cardRef, playersFor} from "./zones.mjs";
 import {markDeathtouch, lifelinkFrom} from "../../keywords/combat.mjs";
 import {typesOf, powerOf, toughnessOf, keywordsOf, isKeywordCounter, controllerOf} from "../../rules/layers.mjs";
@@ -67,12 +67,14 @@ export function tap(state, params, context) {
   for (const id of params.targets ?? []) {
     const object = state.objects[id];
     if (!object) continue;
+    /* "Tap the chosen permanents you don't control" (Teferi, Who Slows the Sunset; CR 608.2c): of those it names, the ones a
+       selector fits as each now is (`only`). */
+    if (params.only && !onlyFits(state, params.only, id, context)) continue;
     if (params.noUntap === true && object.zone === "battlefield") object.skipUntap = controllerOf(state, id);
     if (object.tapped) continue;
     object.tapped = true;
     events.push(event("GameEventCardTapped", state, {card: cardRef(state, id), tapped: true}));
   }
-  void context;
   return events;
 }
 
@@ -82,11 +84,15 @@ export function untap(state, params, context) {
   for (const id of params.targets ?? []) {
     const object = state.objects[id];
     if (!object || !object.tapped) continue;
+    /* "Untap the chosen permanents you control" (Teferi, Who Slows the Sunset): `only`, as tap's. */
+    if (params.only && !onlyFits(state, params.only, id, context)) continue;
     untapOne(state, id, events);
   }
-  void context;
   return events;
 }
+
+/* Whether a permanent a tap or an untap names is one its `only` selector fits, "you" the effect's controller. */
+const onlyFits = (state, only, id, context) => matchesSelector({what: "permanent", ...only}, state, id, {controller: context.controller, source: context.source ?? null});
 
 /**
  * A STUN COUNTER (CR 122.1d): a permanent with one that would become untapped has one removed instead, and stays tapped --
@@ -316,7 +322,8 @@ export function damageAll(state, params, context) {
 }
 
 /**
- * DAMAGE TO A PERMANENT (CR 120.3): to a planeswalker, that many loyalty counters removed (120.3c, 306.8); to a creature,
+ * DAMAGE TO A PERMANENT (CR 120.3): to a planeswalker, that many loyalty counters removed (120.3c, 306.8); to a battle, that
+ * many defense counters (120.3h); to a creature,
  * marked -- or, from a source with infect, that many -1/-1 counters (120.3d); to one that is both, both (120.3).
  */
 export function damagePermanent(state, id, amount, events, {infect = false, by = null} = {}) {
@@ -330,6 +337,14 @@ export function damagePermanent(state, id, amount, events, {infect = false, by =
     const before = object.counters.loyalty ?? 0;
     object.counters.loyalty = Math.max(0, before - amount);
     events.push(event("GameEventCardCounters", state, {card: cardRef(state, id), type: "loyalty", oldValue: before, newValue: object.counters.loyalty}));
+    if (!types.includes("Creature")) return;
+  }
+  /* To a battle, that many defense counters removed (CR 120.3h, 310.6) -- infect or not: the last one removed is what a Siege's
+     own trigger waits for (CR 310.12b; rules/trigger.mjs). */
+  if (types.includes("Battle")) {
+    const before = object.counters.defense ?? 0;
+    object.counters.defense = Math.max(0, before - amount);
+    events.push(event("GameEventCardCounters", state, {card: cardRef(state, id), type: "defense", oldValue: before, newValue: object.counters.defense}));
     if (!types.includes("Creature")) return;
   }
   if (infect) addCounters(state, id, "-1/-1", amount, events, by);

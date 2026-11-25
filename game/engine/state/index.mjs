@@ -209,7 +209,7 @@ const listFor = (state, zone, player) => (PER_PLAYER.includes(zone) ? state.zone
  */
 /* A double-faced card's face (CR 712.8): its characteristics, from the card's own two. `mdfc` holds both faces of any
    double-faced card -- a modal one, or a nonmodal one (`transforming`, CR 712.2) that transforms. */
-const FACE_KEYS = ["card", "types", "subtypes", "supertypes", "manaCost", "colors", "power", "toughness", "loyalty", "keywords", "abilities", "spell", "enchant"];
+const FACE_KEYS = ["card", "types", "subtypes", "supertypes", "manaCost", "colors", "power", "toughness", "loyalty", "defense", "keywords", "abilities", "spell", "enchant"];
 function faceOf(mdfc, face) {
   const side = face === "back" ? mdfc.back : mdfc.front;
   return Object.fromEntries(FACE_KEYS.map((key) => [key, side[key]]));
@@ -423,6 +423,8 @@ export function addObject(state, object, zone, player = null) {
     toughness: Number.isInteger(object.toughness) ? object.toughness : null,
     /* A planeswalker's printed loyalty (CR 306.5a); on the battlefield its loyalty is its loyalty counters (306.5c). */
     ...(Number.isInteger(object.loyalty) ? {loyalty: object.loyalty} : {}),
+    /* A battle's printed defense (CR 310.4a); on the battlefield its defense is its defense counters (310.4c). */
+    ...(Number.isInteger(object.defense) ? {defense: object.defense} : {}),
     keywords: Array.isArray(object.keywords) ? [...object.keywords] : [],
     /* CR 302.6, summoning sickness: the turn this object came under its controller's control. A
        zone change makes a new object, so an entering permanent gets the current turn and a creature
@@ -676,7 +678,9 @@ function moveCard(state, from, zone, player, {faceDown, transformed, disguised})
        it is its front (CR 712.8a). */
     ...(from.mdfc ? {mdfc: from.mdfc, face: (zone === "battlefield" && (from.face === "back" || transformed === true))
       /* And onto the stack, a modal double-faced card cast as its back face (CR 712.11a; rules/actions.mjs, withBackFace). */
-      || (zone === "stack" && from.face === "back" && from.mdfc.transforming !== true) ? "back" : undefined} : {}),
+      || (zone === "stack" && from.face === "back" && from.mdfc.transforming !== true)
+      /* And a transforming one cast transformed (CR 712.11a; rules/stack.mjs, pushSpell). */
+      || (zone === "stack" && transformed === true) ? "back" : undefined} : {}),
     /* An adventurer card goes to the stack as its Adventure when it was shown as one to be cast (CR 715.3b), and leaves it --
        countered, resolved, wherever it goes -- as itself (715.4). */
     ...(from.adventurer ? {adventurer: from.adventurer, face: zone === "stack" && from.face === "adventure" ? "adventure" : undefined} : {}),

@@ -636,7 +636,13 @@ export function enteringModifications(state, {objectId, player, types, abilities
      rules/actions.mjs), if it would enter with any. */
   if (phyrexianLife > 0 && counters.loyalty > 0 && (state.objects[objectId]?.keywords ?? []).includes("Compleated"))
     counters.loyalty = Math.max(0, counters.loyalty - 2 * phyrexianLife);
-  return {tapped: proposal.tapped === true, counters, asks: withChoiceCounters(proposal), designations: proposal.designations ?? []};
+  /* A battle enters with as many defense counters as its printed defense (CR 310.4b): a replacement every battle has. And as
+     a Siege enters, its controller chooses its protector from among their opponents (CR 310.9a, 310.12a): asked as it
+     enters (rules/entering.mjs). */
+  const entering = state.objects[objectId];
+  if ((types ?? []).includes("Battle") && Number.isInteger(entering?.defense)) counters.defense = (counters.defense ?? 0) + entering.defense;
+  const siege = (types ?? []).includes("Battle") && (entering?.subtypes ?? []).includes("Siege");
+  return {tapped: proposal.tapped === true, counters, asks: [...withChoiceCounters(proposal), ...(siege ? [{protector: true}] : [])], designations: proposal.designations ?? []};
 }
 
 /* THE COUNTERS A CHOICE COUNTS (Banner of Kinship; `chosenCounters`, applyOne above): carried on the entering's "choose"
