@@ -62,13 +62,31 @@ try {
   const before = await page.evaluate(() => {const g = globalThis.__cm.state.groups.find((x) => x.name === "Quintorius pile"); return {gid: g.id, bench: globalThis.__cm.state.lots.filter((l) => l.groupIds.includes(g.id) && l.location?.kind === "bench").length};});
   eq(before.bench, 9, "the 9 owned cards are on the Bench, filed in the new group");
 
-  /* DECK: a deck from the group's own cards. New deck's Create no longer takes this road (the Decks requirements' NEW-3,
-     2026-10-23: it is Define the Deck's Merge in a Group now); a deck made from a group, after an import or from the
-     Library, is still this one command, and this walk holds it. */
+  /* GROUPS UNDER LIBRARY (ROB-547): the rail's entry lists the groups with what each holds, and a press opens that group. */
+  await page.locator(".cm-subnav a", {hasText: "Groups"}).click();
+  await page.locator("#cm-dialog[open] h2", {hasText: "Groups"}).waitFor();
+  const pile = page.locator("#cm-dialog [data-action=library-group-open]", {hasText: "Quintorius pile"});
+  ok(/9 cards/.test(await pile.innerText()), "Library › Groups lists the new group with its 9 cards");
+  await shot(page, "library-groups-1280");
+  await pile.click();
+  await page.waitForFunction((gid) => location.hash.includes(encodeURIComponent(gid)) || location.hash.includes(gid), before.gid, {timeout: 30000});
+  ok(!(await page.locator("#cm-dialog[open]").count()), "and a press on it opens that group in the Library");
+
+  /* DECK: a deck from the group's own cards, by New deck › Create › From a group (ROB-547: the road the Decks requirements'
+     NEW-3 took off New deck on 2026-10-23 is back, as Start from's fifth way in). Next lets the empty shell go. */
   await page.goto(`${base}/index.html#decks`);
   await page.locator("[data-action=new-deck]").first().waitFor({timeout: 60000});
-  await page.evaluate((gid) => globalThis.__cm.groupDeck(gid), before.gid);
+  await page.locator("[data-action=new-deck]").first().click();
+  const decksBefore = await page.evaluate(() => globalThis.__cm.state.decks.length);
+  await page.locator("#cm-dialog [data-action=start-from]").click();
+  await page.locator(".cm-flow-dialog").waitFor({timeout: 30000});
+  await page.locator(".cm-flow-nav button", {hasText: "From a group"}).click();
+  await page.locator("#cm-flow-group").waitFor();
+  await shot(page, "new-deck-from-a-group-1280");
+  eq(await page.locator("#cm-flow-group option").allInnerTexts(), ["Quintorius pile"], "Create › From a group offers the groups that hold cards and are no deck's own");
+  await page.locator("[data-action=flow-group-next]").click();
   await page.locator("#cm-dialog[open] h2", {hasText: "New deck from Quintorius pile"}).waitFor();
+  eq(await page.evaluate(() => globalThis.__cm.state.decks.length), decksBefore, "and Next let the empty shell go: no stray New deck is left behind");
   const move = page.locator("#cm-dialog [name=move]");
   ok(await move.isChecked() && /Put the 9 copies you own from Quintorius pile \(now on the Bench\) in the deck's box/.test(await page.locator("#cm-dialog label.cm-checkbox").innerText()), "New deck from the group offers, ticked, to put the 9 copies in the deck's box");
   await shot(page, "new-deck-from-group-1280");
