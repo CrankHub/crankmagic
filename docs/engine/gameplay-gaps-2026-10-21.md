@@ -140,6 +140,8 @@ reads the 9-30 Master; moving it to the 10-21 library is ROB-186 (Rob's call).
 | The Peregrine Dynamo; Illusionist's Bracers | **An ignore.** The Dynamo reads an ability's source as it is now, not as it last existed (CR 113.7a): an ability whose legendary token source is gone cannot be targeted. A creature sacrificed as the cost of its own ability is no longer equipped once the activation is done, so the Bracers copy nothing (no Gatherer ruling checked). | Upgrade map load, 2026-11-24 |
 | The Chain Veil; Leyline of the Guildpact; Teferi, Who Slows the Sunset | **Untested edges, named.** A planeswalker that changes control after the Veil resolves, and the Veil with Oath of Teferi, are not shown; the Leyline's opening-hand start is not run (the scenario runner has no mulligan; it is the other Leylines' shape); the -7 emblem's untap is shown in one opponent's untap step only. | Upgrade map load, 2026-11-24 |
 | Silicate Surveyor | **An ignore.** The card it exiles is offered to be played only once its mana is floated (the "casts from exile" row above); its scenarios tap by hand before the offer is checked. | Star Trek load, 2026-11-22 (ROB-532) |
+| Every token that shares its name with another (107 of the 161 the definitions make: Spirit, Elemental, Dragon, Goblin, Zombie, Inkling, Treasure...) | **Fixed.** The board drew a token from Scryfall by its name alone: a 1/1 Inkling for Shadrix's 2/1, a colorless 4/4 Dragon for the red 5/5, the Dinosaur side of a Dinosaur // Treasure token, an Unfinity card for a Goblin. The view now names the printing that is the token (`tokenArt`, `docs/ui-lane/token-art-contract.md`), and Oko's look its own Elk; `tests/engine-token-art.mjs`, `tests/board-token-art.mjs`. Three tokens are still drawn by name: Royal Treatment's Role and Sarpadian Empires' Camarid (no Scryfall token), and Celebrate the Mountain-king's candidate Soldier (ROB-549). Where Scryfall has no exact token, the closest is drawn (a red 1/1 Goblin with haste as a plain red 1/1 Goblin). | ROB-542 |
+| Draconic Visitor beside a creature token (Shadrix's Inkling) | **Right, and silent.** It replaces artifact tokens only, so the Inkling stays an Inkling; nothing on the board says why, and it was reported as a bug. | ROB-542 |
 
 ## 5. Choices the engine makes for the player
 
@@ -163,7 +165,8 @@ is decided in code today.
 
 Not rules gaps, but a card the AI never uses plays differently at a table of four. The house AI never sacrifices for
 Plumb the Forbidden, never plots (Blacksnag Buzzard), never attacks planeswalkers, and does not value the monarch
-(#829, #597, #721).
+(#829, #597, #721). It never blocks a creature with menace: both pilots block one for one, so against AI seats a menace
+creature is never blocked at all (`house-pilot.mjs`, `scored-pilot.mjs`; ROB-542).
 
 ## 7. Checks that step around a card (ignores in suites and tools)
 
