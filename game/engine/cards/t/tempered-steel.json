@@ -1,0 +1,42 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Tempered Steel",
+    "oracleId": "e220138c-5fc6-487d-9fa9-f21b2fb1f12c",
+    "types": [
+      "Enchantment"
+    ],
+    "subtypes": [],
+    "manaCost": "{1}{W}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Artifact creatures you control get +2/+2.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Artifact creatures you control get +2/+2.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Artifact",
+          "Creature"
+        ],
+        "controller": "you"
+      },
+      "apply": {
+        "power": 2,
+        "toughness": 2
+      }
+    }
+  ]
+}

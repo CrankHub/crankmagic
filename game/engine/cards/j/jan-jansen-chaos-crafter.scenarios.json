@@ -1,0 +1,256 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Jan Jansen, Chaos Crafter",
+  "fixtures": {
+    "Thopter": {
+      "types": [
+        "Artifact",
+        "Creature"
+      ],
+      "subtypes": [
+        "Thopter"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 1,
+      "toughness": 1
+    },
+    "Relic A": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way), and with haste tapped at once: the Thopter sacrificed for two Treasures",
+      "pooledTaps": true,
+      "abilityTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Plains",
+            "Swamp",
+            "Thopter",
+            "Relic A"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Jan Jansen, Chaos Crafter"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Jan Jansen, Chaos Crafter"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Jan Jansen, Chaos Crafter"
+              },
+              "count": 2,
+              "costs": [
+                [
+                  "Thopter"
+                ],
+                [
+                  "Relic A"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "activate": "Jan Jansen, Chaos Crafter",
+          "sacrifice": "Thopter"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Jan Jansen, Chaos Crafter",
+            "Mountain",
+            "Plains",
+            "Swamp",
+            "Relic A",
+            "Treasure",
+            "Treasure"
+          ]
+        },
+        {
+          "seat": 0,
+          "tapped": "Jan Jansen, Chaos Crafter"
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Thopter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A noncreature artifact sacrificed: two 1/1 colorless Construct artifact creatures",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jan Jansen, Chaos Crafter",
+            "Relic A",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jan Jansen, Chaos Crafter",
+          "sacrifice": "Relic A"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Jan Jansen, Chaos Crafter",
+            "Bear",
+            "Construct",
+            "Construct"
+          ]
+        },
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Construct",
+            "power": 1,
+            "toughness": 1
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Relic A"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Only a creature that is no artifact, and nothing else: neither ability is offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jan Jansen, Chaos Crafter",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Jan Jansen, Chaos Crafter"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Jan Jansen, Chaos Crafter",
+            "Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A Treasure is a noncreature artifact: sacrificed for two Constructs, and on the next turn a Construct is sacrificed for two Treasures",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Jan Jansen, Chaos Crafter",
+            "Relic A"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Jan Jansen, Chaos Crafter",
+          "sacrifice": "Relic A"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "activate": "Jan Jansen, Chaos Crafter",
+          "sacrifice": "Construct"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Jan Jansen, Chaos Crafter",
+            "Construct",
+            "Treasure",
+            "Treasure"
+          ]
+        }
+      ]
+    }
+  ]
+}

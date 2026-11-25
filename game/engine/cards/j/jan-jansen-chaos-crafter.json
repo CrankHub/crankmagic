@@ -1,0 +1,105 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Jan Jansen, Chaos Crafter",
+    "oracleId": "cb491d8a-2e9f-46fe-9590-44c3b4a25f1b",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Creature"
+    ],
+    "subtypes": [
+      "Gnome",
+      "Artificer"
+    ],
+    "manaCost": "{R}{W}{B}",
+    "colors": [
+      "B",
+      "R",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "R",
+      "W"
+    ],
+    "power": 3,
+    "toughness": 3
+  },
+  "oracleText": "Haste\n{T}, Sacrifice an artifact creature: Create two Treasure tokens.\n{T}, Sacrifice a noncreature artifact: Create two 1/1 colorless Construct artifact creature tokens.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Haste",
+      "keyword": "haste"
+    },
+    {
+      "kind": "activated",
+      "text": "{T}, Sacrifice an artifact creature: Create two Treasure tokens.",
+      "cost": [
+        {
+          "atom": "{T}"
+        },
+        {
+          "atom": "sacrifice",
+          "selector": {
+            "types": [
+              "Artifact",
+              "Creature"
+            ]
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 2,
+          "token": {
+            "predefined": "Treasure"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{T}, Sacrifice a noncreature artifact: Create two 1/1 colorless Construct artifact creature tokens.",
+      "cost": [
+        {
+          "atom": "{T}"
+        },
+        {
+          "atom": "sacrifice",
+          "selector": {
+            "types": [
+              "Artifact"
+            ],
+            "nonTypes": [
+              "Creature"
+            ]
+          }
+        }
+      ],
+      "effects": [
+        {
+          "effect": "createToken",
+          "count": 2,
+          "token": {
+            "name": "Construct",
+            "types": [
+              "Artifact",
+              "Creature"
+            ],
+            "subtypes": [
+              "Construct"
+            ],
+            "colors": [],
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ]
+    }
+  ]
+}

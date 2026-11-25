@@ -54,6 +54,11 @@ export const STATIC_RULES = Object.freeze({
       of the game, which nothing in a game reads: the compiler holds it to the card's own name (cards/index.mjs), and it stays
       among the definition's abilities for a deck held to the rule that every card but a basic land has a different name. */
   "any-number-in-deck": "cards/index.mjs",
+  /** CR 604.3, 105.2: "Transguild Courier is all colors" -- a characteristic-defining ability, which works in every zone: the
+      card's identity colors are all five (the oracle data agrees), so every reader of colors sees them, in a hand and on the
+      stack too, and a color-changing effect applies after it in layer 5 (CR 613.3), as after a printed color. Nothing else
+      reads the rule; it stays among the definition's abilities as the card's words. */
+  "all-colors": "cards/index.mjs",
   /** CR 510.1a's exception: assigns combat damage equal to its toughness rather than its power. combat.mjs. */
   "combat-damage-by-toughness": "rules/combat.mjs",
   /** CR 510.1a's other exception: "If Loot's power is negative, he assigns combat damage as though his power were positive"
@@ -271,6 +276,10 @@ export const STATIC_RULES = Object.freeze({
   /** A restriction on blocking (CR 509.1b): "This token can't block" (White Sun's Twilight's Mites), "target creature
       can't block this turn" given until end of turn: `affects` what can't. rules/combat.mjs, canBlock. */
   "cant-block": "rules/combat.mjs",
+  /** "Each creature you control can block an additional creature each combat" (Brave the Sands; CR 509.1a): `affects` the
+      creatures that may each block one more attacker, every instance one more (blocksAllowed, below). rules/combat.mjs, as
+      blockers are declared. */
+  "blocks-additional": "rules/combat.mjs",
   /** Flashback (CR 702.34a): the card's own, from its keyword and cost (cards/index.mjs), or given until end of turn
       (Past in Flames: effectUntil, its cards fixed as it resolves, their mana costs the cost). rules/actions.mjs offers
       the cast from its owner's graveyard; rules/stack.mjs and effects/zones.mjs exile it as it leaves the stack. */
@@ -376,6 +385,13 @@ export const STATIC_RULES = Object.freeze({
   /** CR 606.3 changed: "You may activate the loyalty abilities of planeswalkers you control twice each turn rather than only
       once" (Oath of Teferi): `affects` the planeswalkers, "you" its controller. Twice, however many say so. rules/actions.mjs. */
   "loyalty-twice": "rules/actions.mjs",
+  /** CR 606.3 changed for a turn: "For each planeswalker you control, you may activate one of its loyalty abilities once this
+      turn as though none of its loyalty abilities have been activated this turn" (The Chain Veil): an effect with a duration
+      only (effectUntil), its planeswalkers fixed as it resolves; each such effect one more activation. loyaltyAgain, below. */
+  "loyalty-again": "rules/actions.mjs",
+  /** "You draw a card during each opponent's draw step" (Teferi, Who Slows the Sunset's emblem; CR 504.1): no trigger, a draw
+      made in that step after its own, by the ability's controller (playerStatics). rules/turn.mjs. */
+  "draws-in-others-draw-step": "rules/turn.mjs",
   /** CR 606.4's cost modified: "Planeswalkers' loyalty abilities you activate cost an additional [+1] to activate" (Carth the
       Lion): `affects` the players, "you" its controller, `amount` the loyalty counters added. loyaltyCostIncrease, below. */
   "loyalty-costs-more": "rules/actions.mjs",
@@ -1218,6 +1234,8 @@ export function isGoaded(state, id) {
 export function attackTax(state, picked) {
   let total = 0;
   const held = staticAbilities(state);
+  /* An attack on a battle is no attack on its protector (CR 506.3, 310.9): "creatures can't attack you unless" asks nothing of it. */
+  picked = picked.filter((o) => o.battleId === undefined);
   for (const {defenderId, planeswalkerId} of picked) for (const holderId of state.zones.battlefield) {
     const holder = state.objects[holderId];
     if (holder.controller !== defenderId) continue;
@@ -1372,7 +1390,9 @@ export function searchController(state, player) {
 export function playerStatics(state, rule, player) {
   const found = [];
   const held = staticAbilities(state);
-  for (const holderId of state.zones.battlefield) {
+  /* A permanent's, and an emblem's from the command zone, where its abilities function (CR 114.4): "untap all permanents you
+     control during each opponent's untap step" (Teferi, Who Slows the Sunset's emblem), "you" the player who got it. */
+  for (const holderId of withEmblems(state)) {
     const holder = state.objects[holderId];
     if (holder.controller !== player) continue;
     for (const ability of held(holderId)) if (ability.kind === "static" && ability.rule === rule) found.push({ability: chosenFor(ability, holder), source: holderId});
@@ -1674,10 +1694,38 @@ export function playerRuleChanged(state, rule, player) {
   return (state.effects ?? []).some((effect) => effect.rule === rule && (effect.players ?? []).includes(player));
 }
 
+/* The permanents on the battlefield, and the emblems in the command zone, where an emblem's abilities function (CR 114.4):
+   the battlefield's own list, not a copy, while nobody has an emblem -- this is asked on every offer. */
+function withEmblems(state) {
+  let emblems = null;
+  for (const seat of state.zones.command ?? []) for (const id of seat) if (state.objects[id]?.emblem === true) (emblems ??= []).push(id);
+  return emblems ? [...state.zones.battlefield, ...emblems] : state.zones.battlefield;
+}
+
+/**
+ * HOW MANY ATTACKERS THIS CREATURE MAY BLOCK (CR 509.1a): one, "unless an effect says otherwise" -- and one more for each static
+ * `blocks-additional` whose `affects` takes it in as it is now ("each creature you control can block an additional creature
+ * each combat", Brave the Sands), its holder's controller "you". Two such abilities give two more.
+ */
+export function blocksAllowed(state, id) {
+  const held = staticAbilities(state);
+  let most = 1;
+  for (const holderId of state.zones.battlefield) {
+    const holder = state.objects[holderId];
+    for (const ability of held(holderId))
+      if (ability.kind === "static" && ability.rule === "blocks-additional"
+        && matchesSelector(chosenFor(ability, holder).affects, state, id, {controller: holder.controller, source: holderId})) most += 1;
+  }
+  return most;
+}
+
 /** Whether any static ability on the battlefield -- or an effect with a duration ("can't be blocked this turn") -- changes `rule` for this object. */
 export function ruleChanged(state, rule, id) {
   const held = staticAbilities(state);
-  for (const holderId of state.zones.battlefield) {
+  /* A permanent's, and an emblem's from the command zone, where its abilities function (CR 114.4): "you may activate loyalty
+     abilities of planeswalkers you control on any player's turn any time you could cast an instant" (Teferi, Temporal
+     Archmage's emblem), "you" the player who got it. */
+  for (const holderId of withEmblems(state)) {
     const holder = state.objects[holderId];
     for (const ability of held(holderId)) {
       if (ability.kind !== "static" || ability.rule !== rule) continue;
@@ -1693,6 +1741,10 @@ export function ruleChanged(state, rule, id) {
   }
   return false;
 }
+
+/** How many more loyalty activations this permanent has this turn (CR 606.3; The Chain Veil): one for each `loyalty-again`
+    effect that reaches it, so the Veil activated twice gives two. */
+export const loyaltyAgain = (state, id) => (state.effects ?? []).filter((effect) => effect.rule === "loyalty-again" && staticAffects(state, effect, id, effect.sourceController)).length;
 
 /**
  * How much combat damage this creature assigns (CR 510.1a): its power, or its toughness when a static ability says

@@ -9,14 +9,16 @@ BREAKS = [
     ("face-down identity is exposed", T,
      'c?.faceDown ? "Face-down creature" : c?.name || "Unnamed permanent"',
      'c?.name || "Unnamed permanent"'),
+    # ROB-544 (2026-11-24) re-anchored this on the attackers' list drawn while you block (blockList).
     # r4 B (4cc914ed, 2026-10-26) made the picture one row per attacker: a blocked attacker whose blockers are gone
     # says so in its empty blocks cell, and a private pick is drawn in the same row, marked as a draft, not as a Blocker.
     ("missing blockers make an attacker unblocked", T,
-     "${!mine && a.blocked?'Blocked · no blockers remain':!mine?'—'",
-     "${!mine && a.blocked && selected.length?'Blocked · no blockers remain':!mine?'—'"),
+     "${!mine && a.blocked && !selected.length?'<span class=\"cm-combat-empty\">Blocked · no blockers remain</span>':''}",
+     "${!mine && a.blocked && selected.length?'<span class=\"cm-combat-empty\">Blocked · no blockers remain</span>':''}"),
     ("planeswalker endpoint becomes its controller", T,
-     '${a.planeswalker ?? `seat:${a.defender}`}',
-     '${`seat:${a.defender}`}'),
+     # ROB-544: the attackers' list drawn while you block (the read-only strip draws the same attribute).
+     '${a.planeswalker ?? `seat:${a.defender}`}"><div class="cm-combat-tile" data-attacker="${a.attacker}"><button type="button" class="cm-combat-open" data-action="${mine',
+     '${`seat:${a.defender}`}"><div class="cm-combat-tile" data-attacker="${a.attacker}"><button type="button" class="cm-combat-open" data-action="${mine'),
     ("private picks appear as confirmed assignments", T,
      "inspectCombatThumb(id,'Blocker',{draft:mine})",
      "inspectCombatThumb(id,'Blocker')"),
@@ -29,8 +31,8 @@ BREAKS = [
     # While you declare blockers the picture is in the question's pop-up, on the phone too (0cae5802, 2026-10-29), and
     # that is the only state this suite's fixture is in; the phone's own strip (not blocking) is not reached by it.
     ("the phone loses its combat picture", T,
-     '      body = combatStrip() + blockDraft();',
-     '      body = (phone() ? "" : combatStrip()) + blockDraft();'),
+     '      body = `<div class="cm-block-layout">${combatStrip()}${blockDraft()}</div>`;',
+     '      body = `<div class="cm-block-layout">${phone() ? "" : combatStrip()}${blockDraft()}</div>`;'),
     ("combat has no reserved header space", "crankmagic-stage.css",
      '.cm-board[data-shell="shared"][data-combat]{grid-template-rows:188px minmax(0,1fr)}',
      '.cm-board[data-shell="shared"][data-combat]{grid-template-rows:58px minmax(0,1fr)}'),

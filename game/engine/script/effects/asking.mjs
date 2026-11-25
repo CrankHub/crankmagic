@@ -2369,7 +2369,8 @@ const payableCost = (state, player, cost) => !cost || unlessPlans(state, player,
    305.2b, 305.3), for nothing, since a land has no mana cost. And a card exiled face down -- a hideaway card (CR 702.75a) -- is
    weighed as the card it is, its mana value and its targets too, since it is turned face up just before it is played (CR
    406.3a; rules/actions.mjs, withFaceUp); castNow plays it the same way. */
-const playable = (state, player, pool, {most, free, anyMana, payMana = false, lands = false}) => {
+/* `transformed`: a transforming double-faced card cast with its back face up (a Siege's, CR 310.12b, 712.11a). */
+const playable = (state, player, pool, {most, free, anyMana, payMana = false, lands = false, transformed = false}) => {
   /* Its mana value as it would be cast: an adventurer card cast as its Adventure has the Adventure's (CR 715.3a). */
   const valueOf = (id, adventure = false) => {
     const cost = adventure ? state.objects[id].adventurer?.adventure?.manaCost : state.objects[id].manaCost;
@@ -2378,7 +2379,7 @@ const playable = (state, player, pool, {most, free, anyMana, payMana = false, la
   const owed = (id, adventure) => (free ? (state.objects[id].zone === "command" ? commanderTax(state, player, id) : 0) : anyMana ? valueOf(id, adventure) : null);
   /* A card cast a moment ago is on the stack as a new object (CR 400.7): its id here no longer names anything. */
   return pool.filter((id) => state.objects[id]).flatMap((id) => withFaceUp(state, id, () => [...(lands ? landChoicesNow(state, player, id) : []),
-    ...(valueOf(id) <= most || (Boolean(state.objects[id].adventurer) && valueOf(id, true) <= most) ? castChoicesNow(state, player, id) : [])
+    ...(valueOf(id) <= most || (Boolean(state.objects[id].adventurer) && valueOf(id, true) <= most) ? castChoicesNow(state, player, id, {transformed}) : [])
       .filter((action) => valueOf(id, action.adventure === true) <= most).flatMap((action) => {
         if (payMana) {
           const cost = manaCostOf(state, id, action.adventure === true);
@@ -2420,7 +2421,7 @@ export const play = {
       : (params.targets ?? []).filter((id) => state.objects[id] && !["battlefield", "stack"].includes(state.objects[id].zone)
         /* "For each player, you may cast a card that player milled this way" (The Ur-Sphinx): `ownedBy` "that player". */
         && (params.ownedBy !== "that player" || state.objects[id].owner === context.about?.player));
-    const terms = {most, free: params.free === true, anyMana: params.anyMana === true, payMana: params.payMana === true, lands: params.lands === true};
+    const terms = {most, free: params.free === true, anyMana: params.anyMana === true, payMana: params.payMana === true, lands: params.lands === true, transformed: params.transformed === true};
     /* "If that spell would be put into a graveyard, exile it instead" (Halo Forager): the spell cast, so marked (rules/actions.mjs). */
     const exileInstead = params.exileInstead === true ? {exileInstead: true} : {};
     const choices = playable(state, player, pool, terms);

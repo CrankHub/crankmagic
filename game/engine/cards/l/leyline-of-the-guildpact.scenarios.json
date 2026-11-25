@@ -1,0 +1,361 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Leyline of the Guildpact",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "manaCost": "{1}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Forest Cub": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [],
+      "manaCost": "{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 1,
+      "toughness": 1
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast for its four hybrid symbols from untapped lands -- a Plains, an Island, a Swamp and a Mountain, each paying the half it can",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Island",
+            "Swamp",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Leyline of the Guildpact"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Leyline of the Guildpact"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Island",
+            "Swamp",
+            "Mountain",
+            "Leyline of the Guildpact"
+          ]
+        },
+        {
+          "seat": 0,
+          "tapped": "Plains"
+        },
+        {
+          "seat": 0,
+          "tapped": "Island"
+        },
+        {
+          "seat": 0,
+          "tapped": "Swamp"
+        },
+        {
+          "seat": 0,
+          "tapped": "Mountain"
+        }
+      ]
+    },
+    {
+      "name": "Paid with four Forests: green pays each hybrid symbol",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Forest",
+            "Forest",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Leyline of the Guildpact"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Leyline of the Guildpact"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Forest",
+            "Forest",
+            "Forest",
+            "Forest",
+            "Leyline of the Guildpact"
+          ]
+        },
+        {
+          "seat": 0,
+          "pool": {
+            "G": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rob's Bear is every color, so Doom Blade can't target it; Maya's Bear is still green and can be destroyed",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Leyline of the Guildpact",
+            "Bear",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Doom Blade"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "C": 1
+          }
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Doom Blade"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Doom Blade",
+          "targets": [
+            {
+              "card": "Bear",
+              "seat": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Leyline of the Guildpact",
+            "Bear",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "controls": []
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Without the Leyline, Doom Blade can target either Bear (the colors above come from the Leyline)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Bear",
+            "Swamp",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Doom Blade"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Wastes"
+        }
+      ],
+      "expect": [
+        {
+          "offers": {
+            "kind": "cast",
+            "card": "Doom Blade"
+          },
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "Rob's Wastes is every basic land type, so it taps for any color as well as {C}; it pays a Bear's {G}",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Leyline of the Guildpact",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Forest Cub"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Wastes"
+              },
+              "count": 6,
+              "mana": [
+                {
+                  "C": 1
+                },
+                {
+                  "W": 1
+                },
+                {
+                  "U": 1
+                },
+                {
+                  "B": 1
+                },
+                {
+                  "R": 1
+                },
+                {
+                  "G": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Wastes",
+          "mana": {
+            "G": 1
+          }
+        },
+        {
+          "cast": "Forest Cub"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Leyline of the Guildpact",
+            "Wastes",
+            "Forest Cub"
+          ]
+        }
+      ]
+    }
+  ]
+}

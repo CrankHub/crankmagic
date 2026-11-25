@@ -1,0 +1,402 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Dross Scorpion",
+  "fixtures": {
+    "Mox Relic": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "abilities": [
+        {
+          "id": "t-c",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "C": 1
+          }
+        }
+      ]
+    },
+    "Their Thopter": {
+      "types": [
+        "Artifact",
+        "Creature"
+      ],
+      "subtypes": [
+        "Thopter"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 1,
+      "toughness": 1
+    },
+    "Their Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Kill Spell": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way): a 3/1 artifact creature",
+      "pooledTaps": true,
+      "abilityTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Dross Scorpion"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Dross Scorpion"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Dross Scorpion"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Dross Scorpion",
+            "power": 3,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maya's Thopter dies: Rob may untap target artifact -- he takes it, and his Mox Relic untaps",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dross Scorpion",
+            "Mox Relic"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kill Spell"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Thopter"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mox Relic"
+        },
+        {
+          "cast": "Kill Spell",
+          "targets": [
+            {
+              "card": "Their Thopter"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Dross Scorpion",
+                  "Mox Relic"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            1
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            },
+            {
+              "seat": 0,
+              "tapped": "Mox Relic"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Mox Relic",
+          "is": false
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Their Thopter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "It dies itself and sees it (CR 603.10a); \"you may\": Rob declines, and the Mox Relic stays tapped",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dross Scorpion",
+            "Mox Relic"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kill Spell"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mox Relic"
+        },
+        {
+          "cast": "Kill Spell",
+          "targets": [
+            {
+              "card": "Dross Scorpion"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Mox Relic"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Mox Relic"
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Dross Scorpion",
+            "Kill Spell"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "It dies with no artifact left to target: the trigger has nothing to choose and is removed (CR 603.3d)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dross Scorpion",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kill Spell"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Kill Spell",
+          "targets": [
+            {
+              "card": "Dross Scorpion"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Dross Scorpion",
+            "Kill Spell"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A creature that is no artifact dies: nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Dross Scorpion",
+            "Mox Relic"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kill Spell"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mox Relic"
+        },
+        {
+          "cast": "Kill Spell",
+          "targets": [
+            {
+              "card": "Their Bear"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "tapped": "Mox Relic"
+        }
+      ]
+    }
+  ]
+}

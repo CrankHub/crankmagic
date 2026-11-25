@@ -70,11 +70,8 @@ async function inspectPoint(page,id) {
   const selector=`.cm-r4-combat .cm-combat-thumb-inspect[data-card="${id}"]`;
   /* the picture heads the pop-up's own list (ROB-319), which a person scrolls back up to; that list only, never hidden overflow */
   await page.evaluate(()=>{const list=document.querySelector('.cm-required-popup #cm-board-decision>.cm-board-options');if(list)list.scrollTop=0;});
-  for(let n=0;n<12;n++) {
-    const box=await page.locator(selector).first().boundingBox(),row=await page.locator('.cm-combat-groups').boundingBox();
-    if(box && box.x>=row.x && box.x+box.width<=row.x+row.width)break;
-    const by=box?.x<row.x?'-1':'1';await page.locator(`.cm-combat-scroll[data-by="${by}"]`).click();await page.waitForTimeout(60);
-  }
+  /* since ROB-544 the attackers are a list read top to bottom: the list itself scrolls the row into view */
+  await page.locator(selector).first().evaluate(el=>el.scrollIntoView({block:"nearest"}));
   return point(page,selector);
 }
 /* The card's inspection (C.modal, #cm-dialog): since ROB-319 the combat question is a dialog too, the pop-up. */
@@ -124,20 +121,17 @@ try{
     assert.equal(frames.filter(f=>f.type==="act").length,0,`${where}: inspection never plays a card or assigns a block`);
     await page.getByRole("button",{name:"Close",exact:true}).last().click();
     const list=page.locator(".cm-combat-groups");
-    /* r4 W06 supersedes wrapping: all assignments stay in one row with native horizontal navigation. */
-    if(width>=1000){
-      let combat;
-      await publish(v=>{combat=structuredClone(v.state.combat);v.state.combat.attacks=v.state.combat.attacks.filter(a=>a.planeswalker===undefined).map(a=>({...a,defender:1}));});
-      const lay=await list.evaluate(g=>{const rows=[...g.querySelectorAll('.cm-combat-row')].map(r=>r.getBoundingClientRect());return {sameLine:rows.length>1&&Math.abs(rows[0].top-rows[1].top)<1,wrapped:rows.some(r=>r.top>rows[0].top+1),sideways:g.scrollWidth>g.clientWidth+1,rows:rows.length};});
-      assert.ok(lay.sameLine&&!lay.wrapped&&lay.sideways,`${where}: one row keeps complete horizontal navigation (${JSON.stringify(lay)})`);
-      await publish(v=>{v.state.combat=combat;});
-    }
+    /* ROB-544 supersedes r4 W06's one row while you block (Rob, 2026-11-24: "the text is being scrunched in the scroll bar"):
+       the attackers are a list, one under another, that never scrolls sideways and scrolls up and down inside the pop-up. */
+    const lay=await list.evaluate(g=>{const rows=[...g.querySelectorAll('.cm-combat-row')].map(r=>r.getBoundingClientRect());return {stacked:rows.length>1&&rows.every((q,i)=>!i||q.top>=rows[i-1].bottom-1),sideways:g.scrollWidth>g.clientWidth+1,rows:rows.length};});
+    assert.ok(lay.stacked&&!lay.sideways,`${where}: the attackers are a list, one under another, never sideways (${JSON.stringify(lay)})`);
+    let more=0;
+    while(!await list.evaluate(el=>el.scrollHeight>el.clientHeight+160) && more<20){more++;await publish(v=>{const id=70100+v.state.combat.attacks.length;v.state.players[0].zones.Battlefield.cards.push(permanent(id,"Savannah Lions",0));v.state.combat.attacks.push({attacker:id,defender:2,blocked:false,blockers:[]});});}
     const r=await list.boundingBox();
-    const horizontal=await list.evaluate(el=>el.scrollWidth>el.clientWidth);
     await page.mouse.move(r.x+r.width/2,r.y+r.height/2);
-    await page.mouse.wheel(horizontal?3000:0,horizontal?0:3000);await page.waitForTimeout(150);
+    await page.mouse.wheel(0,90);await page.waitForTimeout(150);
     const scroll=await list.evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}));
-    assert.ok(scroll.x>0||scroll.y>0,`${where}: crowded combat can actually scroll`);
+    assert.ok(scroll.y>0&&scroll.x===0,`${where}: crowded combat scrolls up and down, not sideways`);
     await publish(()=>{});
     assert.deepEqual(await list.evaluate(el=>({x:el.scrollLeft,y:el.scrollTop})),scroll,`${where}: room refresh keeps the scrolled combat`);
     await list.evaluate(el=>{el.scrollLeft=0;el.scrollTop=0;});

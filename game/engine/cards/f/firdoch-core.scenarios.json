@@ -1,0 +1,283 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Firdoch Core",
+  "fixtures": {
+    "Elf Lord": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Elf"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 1,
+      "toughness": 1,
+      "abilities": [
+        {
+          "id": "l",
+          "kind": "static",
+          "text": "Other Elf creatures you control get +1/+1.",
+          "layer": 7,
+          "sublayer": "c",
+          "affects": {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ],
+            "subtypes": [
+              "Elf"
+            ],
+            "controller": "you",
+            "another": true
+          },
+          "apply": {
+            "power": 1,
+            "toughness": 1
+          }
+        }
+      ]
+    },
+    "Kill Spell": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target creature.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Creature"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way), then tapped for one mana of any color: red, as Rob picks",
+      "pooledTaps": true,
+      "abilityTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Firdoch Core"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Firdoch Core"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Firdoch Core",
+          "mana": {
+            "R": 1
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "R": 1
+          }
+        },
+        {
+          "seat": 0,
+          "tapped": "Firdoch Core"
+        }
+      ]
+    },
+    {
+      "name": "{4} from untapped lands (the table's way): a 4/4 artifact creature until end of turn -- a changeling, so an Elf the lord pumps to 5/5",
+      "pooledTaps": true,
+      "abilityTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Firdoch Core",
+            "Elf Lord",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Firdoch Core"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "Firdoch Core"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Firdoch Core",
+            "power": 5,
+            "toughness": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Animated it is a creature a Kill Spell may target; on the next turn it is an artifact again, and no creature to target",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Firdoch Core",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Kill Spell"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Kill Spell"
+              },
+              "count": 0
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Firdoch Core"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "pool": {
+                "C": 1
+              }
+            },
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Kill Spell"
+              },
+              "count": 1,
+              "targets": [
+                [
+                  "Firdoch Core"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Kill Spell"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "controls": [
+            "Firdoch Core",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ]
+    }
+  ]
+}
