@@ -1271,7 +1271,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `board-control` — `tests/board-control.mjs`
 - `board-combat-display` — `tests/board-combat-display.mjs`
 - `board-direct-blocking` — `tests/board-direct-blocking.mjs`
-- `board-block-none-all` — `tests/board-block-none-all.mjs` (ROB-333: one control (No blocks at all) answers every attacker slot with no block and sends the empty set in one activation; absent with no legal blocker, keyboard, phone layout)
+- `board-block-none-all` — `tests/board-block-none-all.mjs` (ROB-333, kept by ROB-544: one button reads ⊘ No blocks with nothing assigned and ⛨ Send N otherwise; no attacker is settled one by one, an attacker left alone is not blocked; one press sends [] or exactly the assigned pairs; keyboard, phone layout)
 - `board-commander-hand` — `tests/board-commander-hand.mjs`
 - `board-attack-all` — `tests/board-attack-all.mjs` ("All at <player>" and None on Declare attackers: picks only, a swarm sent at one player in one press)
 - `board-callouts-place` — `tests/board-callouts-place.mjs` (callouts never over a question asked of you: below it, above it or out of sight, back in place once it is answered, and seen on the phone)

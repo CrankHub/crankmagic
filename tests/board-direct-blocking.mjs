@@ -1,4 +1,5 @@
-/* ROB-26 direct blocking: private drafts, authoritative checks, stale responses and pointer reach. */
+/* ROB-26 direct blocking: private drafts, authoritative checks, stale responses and pointer reach. Since ROB-544 nothing is
+   settled per attacker: an attacker left alone is not blocked, and Send waits only for the table's check of the current draft. */
 import assert from "node:assert/strict";
 import {readFileSync, mkdirSync} from "node:fs";
 import path from "node:path";
@@ -76,13 +77,13 @@ const send='[data-action="board-send-blockers"]';
 const pause=page=>page.waitForTimeout(100);
 async function press(page,sel){
   const el=page.locator(sel).first();
-  if(await el.evaluate(el=>!!el.closest('.cm-board-options'))){
-    const box=page.locator('#cm-board-decision .cm-board-options');
+  const pane='.cm-block-tiles,.cm-combat-groups,.cm-board-options';
+  if(await el.evaluate((el,pane)=>!!el.closest(pane),pane)){
     for(let n=0;n<64;n++){
       const hit=await el.evaluate(el=>{const r=el.getBoundingClientRect();return [[.5,.5],[.2,.2],[.8,.8]].every(([x,y])=>el.contains(document.elementFromPoint(r.x+r.width*x,r.y+r.height*y)));});
       if(hit)break;
-      const r=await box.boundingBox();await page.mouse.move(Math.min(innerWidthSafe(page),r.x+r.width/2),Math.min(650,Math.max(50,r.y+r.height/2)));
-      const dir=await el.evaluate(el=>{const r=el.getBoundingClientRect(),b=el.closest('.cm-board-options').getBoundingClientRect();return r.y+r.height*.2<b.y?-1:1;});
+      const r=await el.evaluate((el,pane)=>el.closest(pane).getBoundingClientRect().toJSON(),pane);await page.mouse.move(Math.min(innerWidthSafe(page),r.x+r.width/2),Math.min(650,Math.max(50,r.y+r.height/2)));
+      const dir=await el.evaluate((el,pane)=>{const r=el.getBoundingClientRect(),b=el.closest(pane).getBoundingClientRect();return r.y+r.height*.2<b.y?-1:1;},pane);
       await page.mouse.wheel(0,dir*80);await pause(page);
     }
   }
@@ -92,17 +93,10 @@ function innerWidthSafe(page){return page.viewportSize().width-5;}
 async function show(page,id){
   const active=page.locator('.cm-block-draft');
   if(Number(await active.getAttribute('data-active-attacker'))===id)return;
-  const control=page.locator(`[data-action="board-block-attacker"][data-attacker="${id}"]`);
-  const row=page.locator('.cm-combat-groups');
-  for(let n=0;n<20;n++){
-    const r=await control.boundingBox(),b=await row.boundingBox();
-    if(r.x>=b.x&&r.x+r.width<=b.x+b.width)break;
-    await page.locator(`.cm-combat-scroll[data-by="${r.x<b.x?'-1':'1'}"]`).click();await pause(page);
-  }
-  await control.click();await pause(page);
+  await press(page,`[data-action="board-block-attacker"][data-attacker="${id}"]`);
 }
-async function settle(page,id,none=false){await press(page,`[data-action="${none?'board-block-attacker-none':'board-block-attacker-confirm'}"][data-attacker="${id}"]`);}
-async function noBlocks(page){for(const id of [72001,72002]){await show(page,id);await settle(page,id,true);}}
+/* Every block taken off at once is the player's own named press, Clear (shown only while a block is drafted). */
+async function noBlocks(page){if(await page.locator('[data-action="board-block-none"]').count())await press(page,'[data-action="board-block-none"]');assert.equal(await page.locator('[data-draft-blocker]').count(),0,'Clear takes every drafted block off');}
 async function enabled(page){await page.locator(send+':not([disabled])').waitFor();}
 let cases=0;
 try {
@@ -113,7 +107,7 @@ try {
   const where=`${mode} ${width}x${height}${tall?' tall text':''}`;console.log(where);
   await pause(page);
   assert.deepEqual(frames.filter(f=>f.type==='check').map(f=>f.indices),[[]],where+': initial no-block draft checked');
-  assert.equal(await page.locator(send).isDisabled(),true,'a valid empty check does not settle attackers for the person');
+  await enabled(page);assert.equal((await page.locator(send).innerText()).trim(),'⊘ No blocks','a valid empty check lets Send answer no blocks, with no attacker settled');
   await show(page,72001);
   assert.equal(await page.locator('[data-block-object="72014"]').count(),0,'tapped creature has no legal pairs');
   assert.equal(await page.locator(pair(0)).count(),1,'one offered control for the exact legal pair');
@@ -133,9 +127,8 @@ try {
   const newer=frames.filter(f=>f.type==='check').at(-1);assert.deepEqual(newer.indices,[0,1,2],'queued check uses complete latest draft');
   reply(newer,{ok:false,reasons:['Reach creature can block only one attacker.']});await pause(page);
   await press(page,pair(2));reply(frames.filter(f=>f.type==='check').at(-1));await pause(page);
-  await settle(page,72002,true);reply(frames.filter(f=>f.type==='check').at(-1));await pause(page);
-  await show(page,72001);await settle(page,72001);await enabled(page);
-  assert.equal(frames.filter(f=>f.type==='act').length,0,'selection and per-attacker confirmation publish nothing');
+  await enabled(page);
+  assert.equal(frames.filter(f=>f.type==='act').length,0,'selection publishes nothing');
   if(width===1280&&mode==='full')await shot(page,'r4-blocking-1280x720');
   if(width===390)await shot(page,'r4-blocking-390x844');
   if(tall&&mode==='focus')await shot(page,'r4-blocking-focus-tall');
@@ -144,8 +137,8 @@ try {
   emit({type:'receipt',receipt:{}});await pause(page);assert.equal(await page.locator(send).isDisabled(),true,'receipt cannot reopen submitted draft');
   release();await publish(v=>{v.revision++;v.decision.id+=':next';});await pause(page);
   assert.equal(await page.locator('[data-draft-blocker]').count(),0,'new decision clears previous draft');
-  await show(page,72001);await press(page,pair(3));await settle(page,72001);
-  await show(page,72002);await press(page,pair(4));await settle(page,72002);await enabled(page);
+  await show(page,72001);await press(page,pair(3));
+  await show(page,72002);await press(page,pair(4));await enabled(page);
   assert.deepEqual(frames.filter(f=>f.type==='check').at(-1).indices,[3,4],'server can accept one creature on multiple attackers');
   await press(page,pair(4));await show(page,72001);await press(page,pair(3));await pause(page);
   assert.equal(await page.locator('[data-draft-blocker]').count(),0,'a second press removes each pair');
@@ -172,19 +165,19 @@ try {
   assert.equal(await candidate.getAttribute('aria-pressed'),'true','keyboard drafts exact legal pair');
   assert.equal(await candidate.evaluate(el=>document.activeElement===el),true,'focus survives draft and check redraws');
   await noBlocks(page);await enabled(page);
-  assert.equal(frames.filter(f=>f.type==='act').length,1,'Don\'t block remains local');
+  assert.equal(frames.filter(f=>f.type==='act').length,1,'Clear remains local');
   await press(page,send);assert.deepEqual(frames.filter(f=>f.type==='act').at(-1).indices,[],'Send no blocks uses empty answer');
   if(width===1280&&mode==='full'){
     await publish(v=>{v.revision++;v.decision.id+=':crowded';const attackers=Array.from({length:14},(_,i)=>73000+i),blockers=Array.from({length:14},(_,i)=>74000+i);
       v.state.players[0].zones.Battlefield.cards=attackers.map(id=>permanent(id,'Savannah Lions',0));v.state.combat.attacks=attackers.map(attacker=>({attacker,defender:1,blocked:false,blockers:[]}));v.state.players[1].zones.Battlefield.cards=blockers.map(id=>permanent(id,'Grizzly Bears',1));v.decision.legalBlocks=blockers.map(blocker=>({blocker,attackers}));v.decision.options=blockers.flatMap((cardId,b)=>attackers.map((attackerId,a)=>({index:b*14+a,cardId,attackerId,label:cardId+' blocks '+attackerId})));});
-    await show(page,73013);const choices=page.locator('#cm-board-decision .cm-board-options');await press(page,pair(195));
+    await show(page,73013);const choices=page.locator('#cm-board-decision .cm-block-tiles');await press(page,pair(195));
     assert.ok(await choices.evaluate(el=>el.scrollTop)>0,'crowded blockers reached through real wheel scroll');
     assert.equal(await page.locator(pair(195)).getAttribute('aria-pressed'),'true','last blocker stays selected and reachable');await point(page,pair(195));
-    assert.equal(await page.locator(send).isDisabled(),true,'one settled attacker cannot authorize the crowded set');
+    await enabled(page);assert.equal((await page.locator(send).innerText()).trim(),'⛨ Send 1','one block among fourteen attackers is sent as it is, the rest not blocked');
     await show(page,73000);assert.equal(await page.locator(pair(0)).count(),1,'another attacker displays its own legal choices');
     await publish(v=>{v.matchId+='-fresh';});await pause(page);assert.equal(await choices.evaluate(el=>el.scrollTop),0,'new match resets crowded choice scroll');
   }
   await context.close();
  }
- assert.ok(cases>0,'BLOCK_CASE must name an exercised layout');assert.deepEqual(errors,[],'no browser errors');console.log('board-direct-blocking: PASS ('+cases+' layouts; private settlements, authoritative checks, serial/stale responses, capacities, retry, keyboard and real pointer reach; crowded choices in full1280)');
+ assert.ok(cases>0,'BLOCK_CASE must name an exercised layout');assert.deepEqual(errors,[],'no browser errors');console.log('board-direct-blocking: PASS ('+cases+' layouts; private drafts with nothing settled, authoritative checks, serial/stale responses, capacities, retry, keyboard and real pointer reach; crowded choices in full1280)');
 }finally{await close();}
