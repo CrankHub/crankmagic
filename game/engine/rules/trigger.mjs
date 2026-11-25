@@ -55,8 +55,9 @@ import {pushAbility, becameTarget, crimeCommitted} from "./stack.mjs";
 import {objectsAfterMove, cardsIn, usesThisTurn, recordUse} from "../state/index.mjs";
 import {playerStatics, ruleChanged} from "./statics.mjs";
 import {matchesSelector, matchesLastKnown} from "../script/filter.mjs";
-import {abilitiesOf, abilitiesReader, characteristicsOf} from "./layers.mjs";
+import {abilitiesOf, abilitiesReader, characteristicsOf, controllerOf} from "./layers.mjs";
 import {chosenFor, CHOSEN_COLOR_LETTER} from "../script/chosen.mjs";
+import {COLORS} from "./mana.mjs";
 import {targetChoices, targetName, isHostile, isChoosing, targetCandidates, countedChoice, modalScript, differentControllersProblem, shareProblem} from "../script/bind.mjs";
 
 /* An ability lives where its card is (CR 113.6). A triggered ability of a permanent watches the
@@ -221,6 +222,18 @@ function subjects(state, event, condition, sourceId, controller) {
     if (condition.removedAtLeast && -fields.sa.loyalty < condition.removedAtLeast) return [];
     return [{card: fields.card?.cardId, player: activator}];
   }
+  /* "Whenever you activate an ability, if it isn't a mana ability" (Rings of Brighthearth), "whenever an ability of equipped
+     creature is activated" (Illusionist's Bracers; CR 602.2, 605.3a): an ability, not a spell, put on the stack as it was
+     activated -- a mana ability never is, and a copy is put there without being activated (CR 707.10c), so neither is seen.
+     `of: "equipped"`: its source the creature this Equipment is attached to once the activation is done (CR 602.2i). About
+     the ability by its stack id, for "copy that ability" (script/bind.mjs, `stack: "that"`). */
+  if (condition.on === "GameEventSpellAbilityCast" && condition.abilityActivated) {
+    if (fields.sa?.isSpell !== false) return [];
+    const activator = fields.si?.actor?.playerId;
+    if (!whoseIs(condition.activator ?? "you", activator, controller)) return [];
+    if (condition.of === "equipped" && state.objects[sourceId]?.attachedTo !== fields.card?.cardId) return [];
+    return [{card: fields.card?.cardId, player: activator, stackId: fields.sa.stackId}];
+  }
   if (condition.on === "GameEventSpellAbilityCast") {
     if (!fields.sa?.isSpell) return [];
     /* The spell is the stack entry's object: the card in hand became a new object as it moved to the stack (CR 400.7). */
@@ -288,22 +301,25 @@ function subjects(state, event, condition, sourceId, controller) {
   /* "Whenever this creature attacks", "whenever a creature you control attacks" (CR 508.1m): each attacker, and the
      player it attacks. */
   /* "Whenever you attack" ("attackers declared"): the attack as a whole, by whom, with how many, at whom. */
+  /* An attack on a player, as the event says it: not on a planeswalker of theirs, nor on a battle they protect (CR 506.3,
+     310.9) -- the protector is that attack's defending player (310.9d), but it is no attack on them. */
+  const atPlayer = (a) => !a.defender?.planeswalker && !a.defender?.battle;
   if (condition.on === "GameEventAttackersDeclared" && condition.declared) {
     const attacker = fields.player?.playerId, attacks = fields.attackers ?? [];
     if (!attacks.length || !whoseIs(condition.attacker ?? "you", attacker, controller)) return [];
     /* "Attacks you with two or more creatures" (Trouble in Pairs; CR 506.3): the creatures attacking this ability's controller
        counted, never one attacking a planeswalker of theirs. */
-    if (condition.atLeast && (condition.attacksYou ? attacks.filter((a) => a.defender?.playerId === controller && !a.defender.planeswalker) : attacks).length < condition.atLeast) return [];
+    if (condition.atLeast && (condition.attacksYou ? attacks.filter((a) => a.defender?.playerId === controller && atPlayer(a)) : attacks).length < condition.atLeast) return [];
     /* "Whenever you attack with one or more non-Gnome creatures" (Anim Pakal): an attacker the filter fits. */
     if (condition.filter && !attacks.some((a) => fits(state, a.card?.cardId, {filter: condition.filter}, sourceId, controller))) return [];
     /* "Each player mills that many cards" (The Ur-Sphinx): the attackers the filter fits, as "those cards". */
     const those = condition.filter ? attacks.filter((a) => fits(state, a.card?.cardId, {filter: condition.filter}, sourceId, controller)).map((a) => a.card?.cardId) : null;
     /* Attacking a planeswalker of a player's is not attacking that player (CR 506.3): not "attacking you", and no player
        attacked for "that player". */
-    if (condition.notAttacking === "you" && attacks.some((a) => a.defender?.playerId === controller && !a.defender.planeswalker)) return [];
+    if (condition.notAttacking === "you" && attacks.some((a) => a.defender?.playerId === controller && atPlayer(a))) return [];
     /* Each player attacked, "that player"; the attacking player is `attacker` ("that attacking player creates ..."). One of
        this ability's controller's opponents only, when it says so (CR 508.3e). */
-    if (condition.eachDefender) return [...new Set(attacks.filter((a) => !a.defender?.planeswalker).map((a) => a.defender?.playerId))]
+    if (condition.eachDefender) return [...new Set(attacks.filter(atPlayer).map((a) => a.defender?.playerId))]
       .filter((player) => condition.defender !== "opponent" || player !== controller).map((player) => ({player, attacker}));
     return [{player: attacker, ...(those ? {cards: those} : {})}];
   }
@@ -320,14 +336,14 @@ function subjects(state, event, condition, sourceId, controller) {
       /* "Attack one of your opponents": the player attacked is not this ability's controller. A planeswalker of theirs only
          when it says "or a planeswalker they control" (`planeswalkers`, Frontier Warmonger; CR 506.3). */
       .filter((a) => condition.defender !== "opponent" || (a.defender?.playerId !== undefined && a.defender.playerId !== controller
-        && (!a.defender.planeswalker || condition.planeswalkers === true)))
+        && !a.defender.battle && (!a.defender.planeswalker || condition.planeswalkers === true)))
       /* "Whenever a creature attacks you or a planeswalker you control" (Jace, Reality Sculptor): `defender` "you". */
-      .filter((a) => condition.defender !== "you" || (a.defender?.playerId === controller && (!a.defender.planeswalker || condition.planeswalkers === true)))
+      .filter((a) => condition.defender !== "you" || (a.defender?.playerId === controller && !a.defender.battle && (!a.defender.planeswalker || condition.planeswalkers === true)))
       /* "Attacks a player alone" (Jiang Yanggu, Alone; Yuriko): a player, not a planeswalker of theirs (CR 506.3). */
-      .filter((a) => condition.defender !== "player" || (a.defender?.playerId !== undefined && !a.defender.planeswalker))
+      .filter((a) => condition.defender !== "player" || (a.defender?.playerId !== undefined && atPlayer(a)))
       /* Dethrone's "attacks the player with the most life or tied for most life" (CR 702.105a; cards/index.mjs): that player, as
          it attacks -- a planeswalker of theirs is not them (CR 506.3). */
-      .filter((a) => condition.defenderMostLife !== true || (a.defender?.playerId !== undefined && !a.defender.planeswalker && hasMostLife(state, a.defender.playerId)));
+      .filter((a) => condition.defenderMostLife !== true || (a.defender?.playerId !== undefined && atPlayer(a) && hasMostLife(state, a.defender.playerId)));
     /* "Whenever a player attacks with three or more creatures" (Aurelia): the attack as a whole, counted -- one event
        declares every attacker (CR 508.1). */
     if (condition.atLeast && matched.length < condition.atLeast) return [];
@@ -704,10 +720,16 @@ export function manaTriggered(state, event, picks = []) {
         kind = pending.shift();
         if (!kinds.includes(kind)) throw new Error(`Choose which of the types that land produced (${kinds.join(", ")}) to add one more of`);
       }
+      /* "An additional one mana of any color" (Fertile Ground; CR 106.1a, 605.1b): its color the tapping player's pick, made as
+         they tap, among the five -- one pick for each such ability, in the order they are read (manaPicks). */
+      if (mana.anyColor === true) {
+        kind = pending.shift();
+        if (!COLORS.includes(kind)) throw new Error(`Choose the color of the one mana ${holder.card} adds (${COLORS.join(", ")})`);
+      }
       /* "An additional one mana of the chosen color" (Utopia Sprawl): the color its permanent chose as it entered; none
          chosen, none. */
       const chosen = mana.chosenColor === true ? CHOSEN_COLOR_LETTER[holder.chosen] : undefined;
-      const adds = mana.produced ? (kind ? {[kind]: 1} : null) : mana.chosenColor === true ? (chosen ? {[chosen]: 1} : null) : mana.mana;
+      const adds = mana.produced || mana.anyColor === true ? (kind ? {[kind]: 1} : null) : mana.chosenColor === true ? (chosen ? {[chosen]: 1} : null) : mana.mana;
       if (adds) made.push({player: fields.player?.playerId, mana: adds, source: id});
     }
   }
@@ -725,18 +747,41 @@ export function manaTriggered(state, event, picks = []) {
 }
 
 /**
- * HOW MANY TRIGGERED MANA ABILITIES ASK THE TAPPING PLAYER WHICH TYPE (CR 605.1b): those that add one mana "of any type that land
- * produced", for this tap -- each one a pick, when more than one type was produced (manaTriggered). `event`: what the tap would
- * say, `{data: {fields: {player, source, produced, tapped}}}`. Zero when the tap triggers none of them.
+ * THE PICKS THE TRIGGERED MANA ABILITIES OF A TAP ASK THE TAPPING PLAYER FOR (CR 605.1b), each a list of its options, in the order
+ * manaTriggered reads them: one for each that adds one mana "of any type that land produced", when more than one type was
+ * produced (those types), and one for each that adds one mana "of any color" (Fertile Ground; the five). `event`: what the tap
+ * would say, `{data: {fields: {player, source, produced, tapped}}}`. Empty when the tap asks for none.
  */
-export function manaPicks(state, event) {
+export function manaPicks(state, event, watchers = manaWatchers(state)) {
   const fields = event?.data?.fields ?? {};
-  const held = abilitiesReader(state);
-  let picks = 0;
-  for (const id of state.zones.battlefield)
-    for (const ability of held(id))
-      if (ability.kind === "triggered" && ability.trigger?.manaAbility?.produced && tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) picks += 1;
+  const kinds = Object.keys(fields.produced ?? {}).filter((k) => fields.produced[k] > 0);
+  const picks = [];
+  for (const {id, ability} of watchers) {
+    const mana = ability.trigger.manaAbility;
+    if (!tappedForMana(state, fields, ability.trigger, id, state.objects[id].controller)) continue;
+    if (mana.produced && kinds.length > 1) picks.push(kinds);
+    else if (mana.anyColor === true) picks.push([...COLORS]);
+  }
   return picks;
+}
+
+/* The triggered mana abilities on the battlefield that may ask a tap for a pick (manaPicks): "of any type that land produced"
+   and "of any color", each `{id, ability}`. Read once for all of a player's mana offers -- usually there are none, and then no
+   tap asks anything. */
+export function manaWatchers(state) {
+  /* None can be held unless one is a permanent's own -- a copy's own too, its copied abilities (CR 707.2): read what each
+     holds only then, since that derives every permanent. No card gives one (`addAbilities` gives mana and activated
+     abilities, Ultima's and Thranduil's); a card that gives a triggered mana ability is read here too. */
+  const watches = (ability) => ability?.kind === "triggered" && Boolean(ability.trigger?.manaAbility?.produced || ability.trigger?.manaAbility?.anyColor === true);
+  if (!state.zones.battlefield.some((id) => (state.objects[id].abilities ?? []).some(watches))) return [];
+  const held = abilitiesReader(state);
+  const watchers = [];
+  for (const id of state.zones.battlefield)
+    for (const ability of held(id)) {
+      const mana = ability.kind === "triggered" ? ability.trigger?.manaAbility : null;
+      if (mana && (mana.produced || mana.anyColor === true)) watchers.push({id, ability});
+    }
+  return watchers;
 }
 
 /**
@@ -960,6 +1005,19 @@ export function collectTriggers(state, events) {
         controller: card.owner, source: {cardId: id, name: card.card}, cause: null, optional: false, about: {card: id, player: card.owner},
         script: {targets: [], effects: [{effect: "removeCounter", targets: "that card", counter: "time", count: 1},
           {effect: "play", from: "targets", targets: "that card", free: true, condition: {compare: {count: {countersOn: "that card", counter: "time"}, atMost: 0}}}]}});
+    }
+    /* A SIEGE'S OWN TRIGGER (CR 310.12b): "when the last defense counter is removed from this permanent, exile it, then you may
+       cast it transformed without paying its mana cost" -- an ability every Siege has, its controller's. While it waits, the
+       Siege at defense 0 is not put into its owner's graveyard (CR 704.5v; rules/sba.mjs). Cast so, it is put on the stack
+       with its back face up (CR 712.11a; effects/asking.mjs, `play`'s `transformed`); or not cast, it stays in exile. */
+    if (event.kind === "GameEventCardCounters" && event.data?.fields?.type === "defense" && (event.data.fields.oldValue ?? 0) > 0 && (event.data.fields.newValue ?? 0) <= 0) {
+      const siege = event.data.fields.card?.cardId;
+      const object = state.objects[siege];
+      if (object && characteristicsOf(state, siege).subtypes.includes("Siege"))
+        state.pendingTriggers.push({abilityId: "siege", text: "When the last defense counter is removed from this Siege, exile it, then you may cast it transformed without paying its mana cost.",
+          controller: controllerOf(state, siege), source: {cardId: siege, name: object.card}, cause: null, optional: false, about: {card: siege, player: controllerOf(state, siege)},
+          script: {targets: [], effects: [{effect: "moveZone", targets: "that card", to: "exile", remember: true},
+            {effect: "play", from: "targets", targets: "remembered", free: true, transformed: true}]}});
     }
     if (moment && (state.delayedTriggers ?? []).length) {
       /* "At the beginning of your next upkeep" (rebound, `yours`) and "at the beginning of your precombat main phase" (paradigm,

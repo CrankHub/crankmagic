@@ -32,6 +32,7 @@ import {conditionHolds} from "./script/condition.mjs";
 import {commanderKeyOf} from "./state/index.mjs";
 import {commanderTax} from "./rules/commander.mjs";
 import {aimsOf} from "./aims.mjs";
+import {tokenArtOf} from "./cards/token-art.mjs";
 
 export const PROJECTION_SCHEMA = "CommanderProbeProjection@1";
 
@@ -98,13 +99,25 @@ function cardFor(state, id, canSeeFace, viewer = null) {
        a zone change makes a new object, and an Aura in a hidden zone must never gain an identity through its old host. */
     ...(object.zone === "battlefield" ? {
       ...(object.token === true ? {token: true} : {}),
+      /* A battle's protector (CR 310.9): public, the player who blocks for it and may never attack it. */
+      ...(Number.isInteger(object.protector) ? {protector: object.protector} : {}),
+      /* WHICH TOKEN'S PICTURE (ROB-542; docs/ui-lane/token-art-contract.md): a name is not a token (22 Spirits on Scryfall), so
+         the printing that is this token -- found by what it was made as (its copiable values, CR 707.2), not by what effects make
+         of it now. Absent for a token that is a copy of a card, drawn as that card by name. */
+      ...(named && object.token === true ? (() => { const art = tokenArtOf(object); return art ? {tokenArt: art} : {}; })() : {}),
       /* WHICH FACE IS UP (ROB-207; the UI's request #5): the back face of a double-faced permanent, said with its name. A name
          cannot say which side of one picture to draw (a modal double-faced land played as its back face, Mistgate Pathway).
          The front is the default and says nothing; `face` is only ever "back" here (an adventure's face is not a permanent's). */
       ...(named && object.face === "back" ? {face: "back"} : {}),
       /* WHAT IT LOOKS LIKE WHEN IT IS NOT ITS CARD (ROB-329, Oko's Elk): the token it has become, said with its name, so the
          board draws that token's picture. Present only while the effect holds; the next view without it is the revert. */
-      ...(named ? (() => { const look = lookOf(state, id); return look ? {appearance: look} : {}; })() : {}),
+      ...(named ? (() => {
+        const look = lookOf(state, id);
+        if (!look) return {};
+        /* The token it looks like, as the one above is found (ROB-542): Oko's 3/3 green Elk, not some Elk. */
+        const art = tokenArtOf({name: look.token, types: ["Creature"], subtypes: look.subtypes, colors: look.colors, power: look.power, toughness: look.toughness});
+        return {appearance: art ? {...look, art} : look};
+      })() : {}),
       attachments: (object.attachments ?? []).filter(id => state.objects[id]?.zone === "battlefield" && state.objects[id].attachedTo === object.id),
     } : {}),
 
@@ -275,7 +288,9 @@ function project(state, viewer) {
         attackingPlayerId: state.combat.attackingPlayerId,
         defenders: [...state.combat.defenders],
         attacks: state.combat.attacks.map((a) => ({
-          attacker: a.attacker, defender: a.defender, ...(a.planeswalker !== undefined ? {planeswalker: a.planeswalker} : {}), blocked: a.blocked, blockers: [...a.blockers],
+          attacker: a.attacker, defender: a.defender, ...(a.planeswalker !== undefined ? {planeswalker: a.planeswalker} : {}),
+          /* The battle attacked, `defender` its protector (CR 310.9d). */
+          ...(a.battle !== undefined ? {battle: a.battle} : {}), blocked: a.blocked, blockers: [...a.blockers],
         })),
       }
       : null,

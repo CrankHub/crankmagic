@@ -67,7 +67,7 @@ import {runEffects} from "../script/effects/index.mjs";
 import {changeLife} from "../script/effects/resources.mjs";
 import {unprepare, preparedCopyStays} from "../script/effects/attributes.mjs";
 import {checkStateBasedActions, gameOver} from "./sba.mjs";
-import {costReduction, costIncrease, lifeIncrease, lifeForLess, costsReadTargets, abilityCostIncrease, abilityCostReduction, equipCostReduction, playerStatics, eachPlayerStatics, freeCast, flashGranted, castForbidden, placeCounters, activationForbidden, permanentActivationForbidden, cantBeSacrificed, ruleChanged, sorceryTimeOnly, playerRuleChanged, loyaltyCostIncrease} from "./statics.mjs";
+import {costReduction, costIncrease, lifeIncrease, lifeForLess, costsReadTargets, abilityCostIncrease, abilityCostReduction, equipCostReduction, playerStatics, eachPlayerStatics, freeCast, flashGranted, castForbidden, placeCounters, activationForbidden, permanentActivationForbidden, cantBeSacrificed, ruleChanged, sorceryTimeOnly, playerRuleChanged, loyaltyCostIncrease, loyaltyAgain} from "./statics.mjs";
 import {countMana, amountOf, countEffect, isCounted, amountProblems, commanderless} from "../script/amount.mjs";
 import {bindEffect} from "../script/bind.mjs";
 import {conditionHolds} from "../script/condition.mjs";
@@ -75,7 +75,7 @@ import {lastKnown, characteristicsOf, abilitiesOf, deriving, derivingAfresh, onc
 import {namesChosen, withChosen, chosenFor} from "../script/chosen.mjs";
 import {poolFor, spendFor, addRestricted, addRider, riderChoices, addProvenance, addPoolMana} from "./restricted-mana.mjs";
 import {askEntering} from "./entering.mjs";
-import {collectTriggers, openTriggers, manaTriggered, manaPicks} from "./trigger.mjs";
+import {collectTriggers, openTriggers, manaTriggered, manaPicks, manaWatchers} from "./trigger.mjs";
 
 const MAIN_PHASES = ["MAIN1", "MAIN2"];
 /* A LAND IN ANY STEP OF YOUR OWN TURN (`landAnyStep`; Rob, 2026-10-21): a house rule, not CR 305.1's main phase -- the
@@ -253,7 +253,9 @@ function convokeCost(state, player, action) {
 /* And face down, when it is cast with disguise (CR 702.168b). */
 /* And face up, a card exiled face down that is being played (CR 406.3a; withFaceUp) -- as an Adventure too, then. */
 /* And as its back face, a modal double-faced card cast so (CR 712.11a). */
+/* And transformed, a transforming double-faced card an effect casts so (CR 712.11a; withTransformed). */
 const asCast = (state, action, fn) => withFaceUp(state, action?.objectId, () => (action?.adventure === true ? withAdventure(state, action.objectId, fn)
+  : action?.kind === "cast" && action?.transformed === true ? withTransformed(state, action.objectId, fn)
   : action?.kind === "cast" && action?.face === "back" ? withBackFace(state, action.objectId, fn)
   : action?.disguise === true ? withFaceDown(state, action.objectId, fn) : fn()));
 /* The ways the pool pays the rest once the creatures a convoke picked have paid their part (rules/mana.mjs,
@@ -1643,22 +1645,31 @@ function playableElsewhere(state, player, kind) {
  * THE PICKS A TAP OFFERS (CR 605.1b, 106.1): for a mana ability that makes more than one type of mana at once, each triggered
  * mana ability that adds one mana "of any type that land produced" (Heartbeat of Spring, Mirari's Wake) asks which type -- so one
  * offer for each way to pick, a list of types, one for each such ability (the same types in another order are the same pick).
+ * And whatever it makes, each that adds one mana "of any color" (Fertile Ground; CR 106.1a) asks which of the five, the same way.
  * `[null]`: no pick, the tap makes one type or nothing asks. Never for an ability with no {T} of its own: it is "tapped for mana"
  * only when its source is tapped (the event's `tapped`).
  */
-function manaPickable(state, player, id, ability, mana) {
-  const kinds = MANA_KEYS.filter((k) => (mana?.[k] ?? 0) > 0);
-  if (kinds.length < 2 || !ability.tapSelf) return [null];
-  const picks = manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced: mana, source: {cardId: id}}}});
-  if (!picks) return [null];
+function manaPickable(state, player, id, ability, mana, watchers) {
+  if (!ability.tapSelf || !watchers.length) return [null];
+  const picks = manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced: mana, source: {cardId: id}}}}, watchers);
+  if (!picks.length) return [null];
   let ways = [[]];
-  for (let n = 0; n < picks; n += 1) ways = ways.flatMap((way) => kinds.filter((k) => way.length === 0 || k >= way[way.length - 1]).map((k) => [...way, k]));
-  return ways;
+  for (const options of picks) ways = ways.flatMap((way) => MANA_KEYS.filter((k) => options.includes(k)).map((k) => [...way, k]));
+  /* The same mana in another order is the same pick: one way for each, in order where the picks' options allow it -- a pick of
+     a land's two types and one of any color may add {W} and {B} only as W then B (CR 605.1b). */
+  const kept = new Map();
+  for (const way of ways) {
+    const key = [...way].sort().join(), ordered = way.every((k, n) => n === 0 || k >= way[n - 1]);
+    if (!kept.has(key) || (ordered && !kept.get(key).ordered)) kept.set(key, {way, ordered});
+  }
+  return [...kept.values()].map((k) => k.way);
 }
 
 /** Its mana abilities' activations, each an offer (CR 605.3a): any time the player has priority, whatever the step. */
 function manaOffers(state, player) {
   const actions = [];
+  /* The triggered mana abilities that may ask a tap for a pick, read once for every offer (manaPickable). */
+  const watchers = manaWatchers(state);
   for (const id of state.zones.battlefield) {
     const object = state.objects[id];
     if (object.controller !== player) continue;
@@ -1688,7 +1699,7 @@ function manaOffers(state, player) {
       for (const costChoice of fodder) alternatives.forEach((mana, produce) => {
         /* "Add one mana of any type that land produced" with more than one type made (Heartbeat of Spring): each pick the tapping
            player may make, an offer of its own (manaPickable). */
-        for (const extra of manaPickable(state, player, id, ability, mana)) actions.push({
+        for (const extra of manaPickable(state, player, id, ability, mana, watchers)) actions.push({
           kind: "activate-mana", objectId: id, abilityId: ability.id, label: object.card, mana,
           /* A fixed ability is one offer and looks as it always has; a choice says which it is. */
           ...(alternatives.length > 1 || Array.isArray(ability.produces) || ability.anyColor || ability.reflect || ability.among ? {produce} : {}),
@@ -1959,6 +1970,16 @@ function withAdventure(state, id, fn) {
 const backSpell = (object) => object?.mdfc !== undefined && object.mdfc.transforming !== true && object.face !== "back" && !(object.mdfc.back.types ?? []).includes("Land");
 function withBackFace(state, id, fn) {
   if (!backSpell(state.objects[id])) return fn();
+  showFace(state, id, "back");
+  try { return derivingAfresh(state, fn); }
+  finally { if (state.objects[id]?.face === "back") showFace(state, id, "front"); }
+}
+
+/* A TRANSFORMING DOUBLE-FACED CARD CAST TRANSFORMED (CR 712.11a; a Siege's "cast it transformed", CR 310.12b): weighed with its
+   back face up for the length of `fn` -- only that face's characteristics count (712.11c) -- and its front again after unless
+   `fn` cast it: it is then a new object on the stack with its back face up (rules/stack.mjs, pushSpell), and on the
+   battlefield so as it resolves (712.13). */
+function withTransformed(state, id, fn) {
   showFace(state, id, "back");
   try { return derivingAfresh(state, fn); }
   finally { if (state.objects[id]?.face === "back") showFace(state, id, "front"); }
@@ -2410,8 +2431,9 @@ function offers(state, player) {
       if (!withinLimit(state, id, ability)) continue;
       /* A loyalty ability: only if none of this permanent's has been activated this turn (CR 606.3) -- or, while an effect lets
          its controller activate them twice each turn rather than only once (Oath of Teferi; rules/statics.mjs
-         `loyalty-twice`), only one. Two such effects still make it twice. */
-      if (ability.loyalty !== undefined && usesThisTurn(state, id, "loyalty") >= (ruleChanged(state, "loyalty-twice", id) ? 2 : 1)) continue;
+         `loyalty-twice`), only one. Two such effects still make it twice. And one more for each time The Chain Veil's ability
+         reached it this turn (`loyalty-again`, statics.mjs loyaltyAgain; CR 606.3). */
+      if (ability.loyalty !== undefined && usesThisTurn(state, id, "loyalty") >= (ruleChanged(state, "loyalty-twice", id) ? 2 : 1) + loyaltyAgain(state, id)) continue;
       actions.push(...abilityOffers(state, player, id, ability));
     }
   }
@@ -2550,7 +2572,9 @@ export function landChoicesNow(state, player, id) {
 }
 
 /** The ways to cast this card now as an effect lets it be cast: its targets or modes. Not a land, an Aura, or a spell with an additional cost to choose. */
-export function castChoicesNow(state, player, id) {
+/* `transformed`: cast with its back face up (CR 712.11a), the ways of that face (withTransformed). */
+export function castChoicesNow(state, player, id, {transformed = false} = {}) {
+  if (transformed) return withTransformed(state, id, () => choicesNow(state, player, id).map((offer) => ({...offer, transformed: true})));
   /* An adventurer card: as itself, or as its Adventure (CR 715.3) -- an effect that lets it be cast lets it be cast as one
      (715.3d), each its own choice, the Adventure's weighed with the card shown as one (715.3a). */
   const object = state.objects[id];
@@ -3150,11 +3174,12 @@ function performOffered(state, player, action, during) {
     if (!produced || !payment || !withinLimit(state, action.objectId, ability) || !countersPayable(state, action.objectId, ability.counterCost) || !millPayable(state, player, ability))
       throw new Error(`${object.card} cannot add that mana now`);
     /* Refused before anything is paid or tapped: a land that makes more than one type, with a "type that land produced" trigger
-       watching it (manaPickable), is activated with its pick -- one type of what it makes for each such trigger (manaTriggered). */
-    const picksOwed = ability.tapSelf && MANA_KEYS.filter((k) => (produced[k] ?? 0) > 0).length > 1
-      ? manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced, source: {cardId: action.objectId}}}}) : 0;
+       watching it (manaPickable), is activated with its pick -- one type of what it makes for each such trigger (manaTriggered);
+       and one with an "any color" trigger watching it (Fertile Ground), with its color. */
+    const picksOwed = ability.tapSelf
+      ? manaPicks(state, {data: {fields: {tapped: true, player: {playerId: player}, produced, source: {cardId: action.objectId}}}}).length : 0;
     if (picksOwed > 0 && (action.extra ?? []).length < picksOwed)
-      throw new Error(`Choose which of the types ${object.card} produces to add one more of (${MANA_KEYS.filter((k) => (produced[k] ?? 0) > 0).join(", ")}) before tapping it`);
+      throw new Error(`Choose what the triggered mana abilities watching ${object.card} add (${picksOwed} pick${picksOwed === 1 ? "" : "s"}) before tapping it`);
     const pool = state.players[player].manaPool;
     spend(pool, payment.mana);
     const life = (ability.payLife ?? 0) + payment.life;
