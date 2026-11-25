@@ -1,0 +1,299 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Fertile Ground",
+  "scenarios": [
+    {
+      "name": "On Rob's Wastes: tapped, it offers one more mana of each of the five colors, and Rob picks blue",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Island",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Fertile Ground"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Island"
+        },
+        {
+          "cast": "Fertile Ground",
+          "targets": [
+            {
+              "card": "Wastes"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Wastes"
+              },
+              "count": 5
+            }
+          ]
+        },
+        {
+          "tap": "Wastes",
+          "pick": [
+            "U"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "C": 1,
+            "U": 1,
+            "W": 0,
+            "B": 0,
+            "R": 0,
+            "G": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cast from untapped lands onto the Forest that paid for it; next turn the Forest makes {G} and Rob picks black for the extra",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Fertile Ground"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Fertile Ground",
+          "targets": [
+            {
+              "card": "Forest"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Forest",
+                "Wastes",
+                "Fertile Ground"
+              ]
+            },
+            {
+              "seat": 0,
+              "tapped": "Forest"
+            },
+            {
+              "seat": 0,
+              "tapped": "Wastes"
+            }
+          ]
+        },
+        {
+          "to": {
+            "turn": 3,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Forest",
+          "pick": [
+            "B"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "G": 1,
+            "B": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "On Maya's land: its controller adds the extra mana -- Maya taps it on her turn and picks red; Rob gets nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Plains"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Fertile Ground"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "tap": "Plains"
+        },
+        {
+          "cast": "Fertile Ground",
+          "targets": [
+            {
+              "card": "Wastes",
+              "seat": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1,
+          "pick": [
+            "R"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "pool": {
+            "C": 1,
+            "R": 1
+          }
+        },
+        {
+          "seat": 0,
+          "pool": {
+            "R": 0,
+            "C": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "On a Boros Garrison with Mirari's Wake: two picks, one of the types it made and one of any color -- nine different results offered, and Rob takes white and black",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mirari's Wake",
+            "Boros Garrison",
+            "Forest"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Fertile Ground"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Forest"
+        },
+        {
+          "cast": "Fertile Ground",
+          "targets": [
+            {
+              "card": "Boros Garrison"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate-mana",
+                "card": "Boros Garrison"
+              },
+              "count": 9
+            }
+          ]
+        },
+        {
+          "tap": "Boros Garrison",
+          "pick": [
+            "W",
+            "B"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "pool": {
+            "R": 1,
+            "W": 2,
+            "B": 1,
+            "G": 0
+          }
+        }
+      ]
+    }
+  ]
+}

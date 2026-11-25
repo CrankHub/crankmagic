@@ -1,0 +1,75 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Invasion of Dominaria // Serra Faithkeeper",
+    "oracleId": "dcbd8b15-e5fd-4f0d-ba2d-06f018b64fb3",
+    "types": [
+      "Battle"
+    ],
+    "subtypes": [
+      "Siege"
+    ],
+    "manaCost": "{2}{W}",
+    "colors": [
+      "W"
+    ],
+    "colorIdentity": [
+      "W"
+    ],
+    "power": null,
+    "toughness": null,
+    "defense": 5
+  },
+  "oracleText": "(As a Siege enters, choose an opponent to protect it. You and others can attack it. When it's defeated, exile it, then cast it transformed.)\nWhen this Siege enters, you gain 4 life and draw a card.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When this Siege enters, you gain 4 life and draw a card.",
+      "trigger": {
+        "on": "enters"
+      },
+      "effects": [
+        {
+          "effect": "gainLife",
+          "amount": 4
+        },
+        {
+          "effect": "draw",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "layout": "transform",
+  "back": {
+    "identity": {
+      "name": "Serra Faithkeeper",
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Angel"
+      ],
+      "manaCost": null,
+      "colors": [
+        "W"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "oracleText": "Flying, vigilance",
+    "abilities": [
+      {
+        "kind": "keyword",
+        "text": "Flying",
+        "keyword": "flying"
+      },
+      {
+        "kind": "keyword",
+        "text": "vigilance",
+        "keyword": "vigilance"
+      }
+    ]
+  }
+}

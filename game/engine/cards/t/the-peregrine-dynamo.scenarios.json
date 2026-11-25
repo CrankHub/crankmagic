@@ -1,0 +1,427 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "The Peregrine Dynamo",
+  "fixtures": {
+    "Smoke Legend": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Human"
+      ],
+      "manaCost": "{C}",
+      "power": 1,
+      "toughness": 1,
+      "abilities": [
+        {
+          "id": "a0",
+          "kind": "activated",
+          "text": "{1}: You gain 1 life.",
+          "cost": [
+            {
+              "atom": "mana",
+              "cost": "{1}"
+            }
+          ],
+          "targets": [],
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    "Smoke Herald": {
+      "types": [
+        "Creature"
+      ],
+      "supertypes": [
+        "Legendary"
+      ],
+      "subtypes": [
+        "Human"
+      ],
+      "manaCost": "{C}",
+      "power": 1,
+      "toughness": 1,
+      "abilities": [
+        {
+          "id": "a0",
+          "kind": "triggered",
+          "text": "When this creature enters, you gain 3 life.",
+          "trigger": {
+            "on": "GameEventCardChangeZone",
+            "to": "Battlefield",
+            "who": "self"
+          },
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 3
+            }
+          ]
+        }
+      ]
+    },
+    "Smoke Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{C}",
+      "power": 2,
+      "toughness": 2,
+      "abilities": [
+        {
+          "id": "a0",
+          "kind": "activated",
+          "text": "{1}: You gain 1 life.",
+          "cost": [
+            {
+              "atom": "mana",
+              "cost": "{1}"
+            }
+          ],
+          "targets": [],
+          "effects": [
+            {
+              "effect": "gainLife",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands, and with haste: {1}, {T} copies Smoke Legend's activated ability -- 2 life",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Legend",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "The Peregrine Dynamo"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "The Peregrine Dynamo"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "activate": "Smoke Legend"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "The Peregrine Dynamo"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "activate": "The Peregrine Dynamo",
+          "targets": [
+            {
+              "ability": "Smoke Legend"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 2
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 42
+        },
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "tapped": "The Peregrine Dynamo"
+        }
+      ]
+    },
+    {
+      "name": "A triggered ability of a legendary source: Smoke Herald's enters trigger copied -- 6 life",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Peregrine Dynamo",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Smoke Herald"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Herald"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "The Peregrine Dynamo",
+          "targets": [
+            {
+              "ability": "Smoke Herald"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "life": 46
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "A nonlegendary source's ability is no target: not offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Peregrine Dynamo",
+            "Smoke Bear",
+            "Wastes",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Smoke Bear"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "The Peregrine Dynamo"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "stack": 1
+        }
+      ]
+    },
+    {
+      "name": "A commander's ability is no target: Smoke Legend cast from the command zone, its {1} not offered to copy",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Peregrine Dynamo",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "command",
+          "cards": [
+            "Smoke Legend"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Smoke Legend"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "activate": "Smoke Legend"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "The Peregrine Dynamo"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "stack": 1
+        }
+      ]
+    },
+    {
+      "name": "An ability Maya controls is no target: her Smoke Legend's {1} not offered to Rob to copy",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "The Peregrine Dynamo",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Smoke Legend",
+            "Wastes"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "pass": 1
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "activate": "Smoke Legend",
+          "seat": 1
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 0
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "The Peregrine Dynamo",
+                "seat": 0
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "stack": 1
+        }
+      ]
+    }
+  ]
+}

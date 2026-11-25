@@ -108,6 +108,15 @@ export function askEntering(state) {
     const object = state.objects[q.objectId];
     /* Gone before it could be asked (a state-based action, say): nothing to decide. */
     if (!object || object.zone !== "battlefield") { queue.shift(); continue; }
+    /* A SIEGE'S PROTECTOR (CR 310.9a, 310.12a): one of its controller's opponents still in the game, chosen by its controller.
+       With one, the rules leave no choice, and it is that opponent; with more, its controller is asked. */
+    if (q.protector) {
+      const opponents = state.players.filter((p) => p.id !== object.controller && !p.lost).map((p) => p.id);
+      if (opponents.length > 1) { state.awaiting = {kind: "entering-choice", player: object.controller, objectId: q.objectId, protector: opponents}; return true; }
+      object.protector = opponents[0];
+      queue.shift();
+      continue;
+    }
     /* A reveal with nothing to reveal is no choice: it stays tapped, and nobody is asked. */
     if (q.reveal && revealable(state, object.controller, q.reveal).length === 0) { queue.shift(); continue; }
     /* "Choose a creature type": of the creature types among the game's cards (effects/asking.mjs); "choose artifact,
@@ -163,6 +172,9 @@ export function enteringChoice(state, awaiting) {
   if (awaiting.riot) return {id: `entering-riot:${awaiting.objectId}`, title: `${name}: riot`, mode: "one", min: 1, max: 1,
     options: [{index: 0, label: `${name} enters with a +1/+1 counter`, cardId: awaiting.objectId, riot: "counter"},
       {index: 1, label: `${name} gains haste`, cardId: awaiting.objectId, riot: "haste"}]};
+  /* A Siege's protector (CR 310.12a): each opponent of its controller's. */
+  if (awaiting.protector) return {id: `entering-protector:${awaiting.objectId}`, title: `${name}: choose an opponent to protect it`, mode: "one", min: 1, max: 1,
+    options: awaiting.protector.map((player, index) => ({index, label: state.players[player].name, playerId: player, protector: player}))};
   if (awaiting.choose) return {id: `entering-choose:${awaiting.objectId}`, title: `${name}: choose`, mode: "one", min: 1, max: 1,
     options: awaiting.choose.map((label, index) => ({index, label, cardId: awaiting.objectId, chosen: label}))};
   /* A reveal: one option per card that could be shown, and not revealing (the player's own hand: nobody else is asked). */
@@ -280,6 +292,9 @@ export function resolveEnteringChoice(state, awaiting, indices) {
     (state.effects ??= []).push({id: `riot-haste:${awaiting.objectId}:${timestamp}`, layer: 6, affects: {ids: [awaiting.objectId]}, apply: {addKeywords: ["Haste"]}, until: null,
       sourceController: riot.controller, timestamp});
   }
+  /* The protector chosen (CR 310.9a), kept on the battle: the player who may block creatures attacking it and never attack it
+     (CR 310.9b-c; rules/combat.mjs). */
+  if (option.protector !== undefined && state.objects[awaiting.objectId]) state.objects[awaiting.objectId].protector = option.protector;
   /* What was chosen as it entered, kept on the permanent for its abilities to read ("$chosen", script/chosen.mjs). */
   if (option.chosen !== undefined && state.objects[awaiting.objectId]) state.objects[awaiting.objectId].chosen = option.chosen;
   /* "This artifact enters with a fellowship counter on it for each creature you control of the chosen type" (Banner of

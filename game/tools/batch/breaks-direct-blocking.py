@@ -43,17 +43,18 @@ BREAKS = [
     ("clear blocker leaves its assignments", T,
      'picked = picked.filter(i => view.decision.options.find(o => o.index === i)?.cardId !== blockSelected);',
      'picked = [...picked];'),
-    # Since 4cc914ed (r4 B) the draft-only "no blocks" is per attacker (Don't block); board-block-none is drawn nowhere,
-    # and "No blocks, all" (ROB-333) sends on purpose, once the table accepts the empty draft.
-    ("No blocks sends without confirmation", T,
-     'blockSettled.add(id);blockResult=null;if(phone())stageRail=false;checkBlocks();draw();\n  };',
-     'blockSettled.add(id);send({indices: []});blockResult=null;if(phone())stageRail=false;checkBlocks();draw();\n  };'),
+    # Re-anchored by ROB-544: the per-attacker Don't block and "No blocks, all" are gone; Clear takes every drafted block off
+    # and must send nothing (Send is the one answer).
+    ("Clear sends without Send", T,
+     'actions["board-block-none"] = () => {if (!blocking() || sending) return; picked = []; blockResult = null;',
+     'actions["board-block-none"] = () => {if (!blocking() || sending) return; picked = []; send({indices: []}); blockResult = null;'),
     ("receipt reopens already submitted blocks", T,
      '      blockResult = null; // A receipt alone must not reopen this already submitted draft.\n',
      ''),
+    # ROB-544: the blockers are tiles that scroll up and down in their own column; a redraw keeps the place.
     ("crowded block rows jump back to the start", T,
-     'el.scrollLeft = blockPositions.get(el.dataset.blockKey) || 0;',
-     'el.scrollLeft = 0;'),
+     'el.scrollLeft = x; el.scrollTop = y;}',
+     'el.scrollLeft = 0; el.scrollTop = 0;}'),
     ("phone clips confirmation below draft", "crankmagic-stage.css",
      '.cm-phone-ask .is-blocking>.cm-board-options{display:block;min-height:0;overflow:auto;flex:1;padding:3px}',
      '.cm-phone-ask .is-blocking>.cm-board-options{display:block;min-height:0;overflow:visible;flex:none;padding:3px}'),

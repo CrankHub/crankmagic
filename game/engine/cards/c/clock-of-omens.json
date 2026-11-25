@@ -1,0 +1,52 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Clock of Omens",
+    "oracleId": "5d0f4665-aa10-4251-b590-129b59274fb3",
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [],
+    "manaCost": "{4}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Tap two untapped artifacts you control: Untap target artifact.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "Tap two untapped artifacts you control: Untap target artifact.",
+      "cost": [
+        {
+          "atom": "tapCreature",
+          "selector": {
+            "types": [
+              "Artifact"
+            ],
+            "controller": "you"
+          },
+          "count": 2
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Artifact"
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "effect": "untap",
+          "targets": {
+            "target": 0
+          }
+        }
+      ]
+    }
+  ]
+}

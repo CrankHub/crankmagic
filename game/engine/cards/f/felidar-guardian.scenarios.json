@@ -1,0 +1,368 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Felidar Guardian",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "manaCost": "{1}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands, then it blinks the tapped Plains that paid for it: the Plains returns untapped",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Felidar Guardian"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Felidar Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Plains"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Plains",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Wastes"
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Felidar Guardian"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "Rob declines: the targeted Plains stays where it is, tapped",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Felidar Guardian"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Felidar Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Plains"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "No"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Plains"
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Felidar Guardian"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Paid for with four Lotus Petals, which are gone: no other permanent to target, so its trigger does nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Lotus Petal",
+            "Lotus Petal",
+            "Lotus Petal",
+            "Lotus Petal"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Felidar Guardian"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Lotus Petal",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "tap": "Lotus Petal",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "tap": "Lotus Petal",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "tap": "Lotus Petal",
+          "mana": {
+            "W": 1
+          }
+        },
+        {
+          "cast": "Felidar Guardian"
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Felidar Guardian"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "It blinks Maya's Bear that Rob took with Word of Seizing: the Bear returns under its owner's control, Maya's",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Mountain",
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Word of Seizing",
+            "Felidar Guardian"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Word of Seizing",
+          "targets": [
+            {
+              "card": "Bear",
+              "seat": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "controls": [
+                "Mountain",
+                "Mountain",
+                "Wastes",
+                "Wastes",
+                "Wastes",
+                "Plains",
+                "Wastes",
+                "Wastes",
+                "Wastes",
+                "Bear"
+              ]
+            }
+          ]
+        },
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Felidar Guardian"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Bear"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Yes"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "controls": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "controls": [
+            "Mountain",
+            "Mountain",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Felidar Guardian"
+          ]
+        }
+      ]
+    }
+  ]
+}

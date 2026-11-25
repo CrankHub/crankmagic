@@ -1,0 +1,449 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Marionette Master",
+  "fixtures": {
+    "Relic A": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Their Relic": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Thopter": {
+      "types": [
+        "Artifact",
+        "Creature"
+      ],
+      "subtypes": [
+        "Thopter"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 1,
+      "toughness": 1
+    },
+    "Artifact Smash": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target artifact.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Artifact"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    },
+    "Artifact Exile": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Exile target artifact.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Artifact"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "moveZone",
+            "targets": {
+              "target": 0
+            },
+            "to": "exile"
+          }
+        ]
+      }
+    },
+    "Wrath": {
+      "types": [
+        "Sorcery"
+      ],
+      "manaCost": "{C}",
+      "colors": [],
+      "spell": {
+        "id": "s",
+        "text": "Destroy all creatures.",
+        "targets": [],
+        "effects": [
+          {
+            "effect": "destroyAll",
+            "selector": {
+              "what": "permanent",
+              "types": [
+                "Creature"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way): fabricate 3, the counters chosen -- a 4/6",
+      "pooledTaps": true,
+      "abilityTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Marionette Master"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "cast": "Marionette Master"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Put 3 +1/+1 counters on it",
+                  "Create 3 1/1 Servo tokens"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Put 3 +1/+1 counters on it"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "stats": {
+            "card": "Marionette Master",
+            "power": 4,
+            "toughness": 6
+          }
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Marionette Master",
+            "counter": "+1/+1",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "A 1/3 with no counters, and Rob's Relic destroyed: the opponent he targets, of two, loses 1 -- its power",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Marionette Master",
+            "Relic A",
+            "Wastes"
+          ],
+          "sick": true
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Artifact Smash"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Artifact Smash",
+          "targets": [
+            {
+              "card": "Relic A"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Maya",
+                  "Trey"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            1
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 2,
+          "life": 39
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "A 4/6, and a Wrath takes it with Rob's Thopter: Maya loses 4, its power as it last existed (CR 603.10a, 608.2h)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Swamp",
+            "Swamp",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Wastes",
+            "Thopter"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Marionette Master",
+            "Wrath"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Swamp"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Marionette Master"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Put 3 +1/+1 counters on it"
+          ]
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Wrath"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Maya"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "answer": [
+            0
+          ]
+        },
+        {
+          "expect": [
+            {
+              "stack": 1
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "life": 36
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Marionette Master",
+            "Thopter",
+            "Wrath"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rob's artifact exiled, and Maya's destroyed: neither is an artifact of his put into a graveyard -- nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Marionette Master",
+            "Relic A",
+            "Wastes",
+            "Wastes"
+          ],
+          "sick": true
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Artifact Exile",
+            "Artifact Smash"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Relic"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Artifact Exile",
+          "targets": [
+            {
+              "card": "Relic A"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Artifact Smash",
+          "targets": [
+            {
+              "card": "Their Relic"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "stack": 0
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "zone": "graveyard",
+          "cards": [
+            "Their Relic"
+          ]
+        }
+      ]
+    }
+  ]
+}

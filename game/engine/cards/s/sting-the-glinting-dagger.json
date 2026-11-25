@@ -1,0 +1,128 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Sting, the Glinting Dagger",
+    "oracleId": "973c49a1-8425-40b9-8bdc-2c2434222314",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [
+      "Equipment"
+    ],
+    "manaCost": "{2}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Equipped creature gets +1/+1 and has haste.\nAt the beginning of each combat, untap equipped creature.\nEquipped creature has first strike as long as it's blocking or blocked by a Goblin or Orc.\nEquip {2}",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "Equipped creature gets +1/+1 and has haste.",
+      "layer": 7,
+      "sublayer": "c",
+      "affects": {
+        "what": "permanent",
+        "attachedBy": "self"
+      },
+      "apply": {
+        "power": 1,
+        "toughness": 1
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Equipped creature gets +1/+1 and has haste.",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "attachedBy": "self"
+      },
+      "apply": {
+        "addKeywords": [
+          "Haste"
+        ]
+      }
+    },
+    {
+      "kind": "triggered",
+      "text": "At the beginning of each combat, untap equipped creature.",
+      "trigger": {
+        "on": "step",
+        "step": "COMBAT_BEGIN",
+        "yours": false
+      },
+      "effects": [
+        {
+          "effect": "untap",
+          "targets": "equipped"
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Equipped creature has first strike as long as it's blocking or blocked by a Goblin or Orc.",
+      "layer": 6,
+      "affects": {
+        "what": "permanent",
+        "attachedBy": "self"
+      },
+      "apply": {
+        "addKeywords": [
+          "First Strike"
+        ]
+      },
+      "condition": {
+        "present": {
+          "what": "permanent",
+          "anyOf": [
+            {
+              "subtypes": [
+                "Goblin"
+              ]
+            },
+            {
+              "subtypes": [
+                "Orc"
+              ]
+            }
+          ],
+          "blockingOrBlockedByAttached": true
+        }
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "Equip {2}",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{2}"
+        }
+      ],
+      "timing": "sorcery",
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "controller": "you"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "attach",
+          "targets": {
+            "target": 0
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -48,8 +48,8 @@ BREAKS = [
     ('castByYou: true or false', CONDITION, '  if ("castByYou" in condition && typeof condition.castByYou !== "boolean") problems.push("castByYou is true or false");\n', ''),
     ('castByYou: a condition key', CONDITION, '"castFromYourHand", "castByYou",', '"castFromYourHand",'),
     # Utopia Sprawl: a triggered mana ability of the chosen color (CR 605.1b).
-    ('sprawl: compiled a mana ability', INDEX, '(MANA(adds.mana) || adds.produced === true || adds.chosenColor === true)) {', '(MANA(adds.mana) || adds.produced === true)) {'),
-    ('sprawl: of the chosen color', INDEX, 'adds.chosenColor === true ? {chosenColor: true} : {mana: {...adds.mana}};', '{mana: {...adds.mana}};'),
+    ('sprawl: compiled a mana ability', INDEX, '(MANA(adds.mana) || adds.produced === true || adds.chosenColor === true || adds.anyColor === true)) {', '(MANA(adds.mana) || adds.produced === true || adds.anyColor === true)) {'),
+    ('sprawl: of the chosen color', INDEX, ': adds.chosenColor === true ? {chosenColor: true}\n', ': false ? {chosenColor: true}\n'),
     ('sprawl: the color chosen', TRIGGER, 'const chosen = mana.chosenColor === true ? CHOSEN_COLOR_LETTER[holder.chosen] : undefined;',
      'const chosen = mana.chosenColor === true ? "G" : undefined;'),
     ('sprawl: none chosen, none', TRIGGER, 'mana.chosenColor === true ? (chosen ? {[chosen]: 1} : null) : mana.mana;', 'mana.chosenColor === true ? {[chosen]: 1} : mana.mana;'),

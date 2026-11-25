@@ -122,12 +122,12 @@ export function boardPerson({page, seat, cards, current, timeout = 15000}) {
         const publicIds=new Set(v.state.players.flatMap(p=>p.zones.Battlefield.cards).map(c=>c.cardId));
         const attacks=(v.state.combat?.attacks || []).filter(a=>a.defender===v.seat && publicIds.has(a.attacker));
         for(const attack of attacks) {
-          const currentAttacker=await page.locator('.cm-block-draft').getAttribute('data-active-attacker');
-          const confirms=await visible(page,`[data-action=board-block-attacker-confirm][data-attacker="${attack.attacker}"]`);
-          if(Number(currentAttacker)!==attack.attacker || !confirms)await click(page,`[data-action=board-block-attacker][data-attacker="${attack.attacker}"]`);
+          /* ROB-544: an attacker left alone is not blocked; two presses (its row, then the creature) assign a block. */
           const indices=(picked.indices || []).filter(i=>d.options.find(o=>o.index===i)?.attackerId===attack.attacker);
+          if(!indices.length)continue;
+          const currentAttacker=await page.locator('.cm-block-draft').getAttribute('data-active-attacker');
+          if(Number(currentAttacker)!==attack.attacker)await click(page,`[data-action=board-block-attacker][data-attacker="${attack.attacker}"]`);
           for(const i of indices)await click(page,`[data-action=board-block-pair][data-index="${i}"]`);
-          await click(page,`[data-action=${indices.length?'board-block-attacker-confirm':'board-block-attacker-none'}][data-attacker="${attack.attacker}"]`);
         }
         await page.locator('[data-action=board-send-blockers]:not([disabled])').waitFor({timeout});
         await click(page,'[data-action=board-send-blockers]:not([disabled])');bound=true;

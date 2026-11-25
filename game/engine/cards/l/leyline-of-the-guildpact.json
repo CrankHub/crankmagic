@@ -1,0 +1,84 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Leyline of the Guildpact",
+    "oracleId": "6b2e6a51-b9e6-4848-b7d7-98f02f2b897f",
+    "types": [
+      "Enchantment"
+    ],
+    "subtypes": [],
+    "manaCost": "{G/W}{G/U}{B/G}{R/G}",
+    "colors": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "B",
+      "G",
+      "R",
+      "U",
+      "W"
+    ],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "If this card is in your opening hand, you may begin the game with it on the battlefield.\nEach nonland permanent you control is all colors.\nLands you control are every basic land type in addition to their other types.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "static",
+      "text": "If this card is in your opening hand, you may begin the game with it on the battlefield.",
+      "rule": "opening-hand",
+      "affects": {
+        "what": "card",
+        "self": true
+      },
+      "begin": "battlefield"
+    },
+    {
+      "kind": "static",
+      "text": "Each nonland permanent you control is all colors.",
+      "layer": 5,
+      "affects": {
+        "what": "permanent",
+        "nonTypes": [
+          "Land"
+        ],
+        "controller": "you"
+      },
+      "apply": {
+        "setColors": [
+          "W",
+          "U",
+          "B",
+          "R",
+          "G"
+        ]
+      }
+    },
+    {
+      "kind": "static",
+      "text": "Lands you control are every basic land type in addition to their other types.",
+      "layer": 4,
+      "affects": {
+        "what": "permanent",
+        "types": [
+          "Land"
+        ],
+        "controller": "you"
+      },
+      "apply": {
+        "addSubtypes": [
+          "Plains",
+          "Island",
+          "Swamp",
+          "Mountain",
+          "Forest"
+        ]
+      }
+    }
+  ]
+}

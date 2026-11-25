@@ -1,0 +1,239 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Clock of Omens",
+  "fixtures": {
+    "Mox Relic": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{0}",
+      "colors": [],
+      "abilities": [
+        {
+          "id": "t-c",
+          "kind": "mana",
+          "tapSelf": true,
+          "produces": {
+            "C": 1
+          }
+        }
+      ]
+    },
+    "Relic A": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Relic B": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Their Relic": {
+      "types": [
+        "Artifact"
+      ],
+      "manaCost": "{1}",
+      "colors": []
+    },
+    "Thopter": {
+      "types": [
+        "Artifact",
+        "Creature"
+      ],
+      "subtypes": [
+        "Thopter"
+      ],
+      "manaCost": "{1}",
+      "colors": [],
+      "power": 1,
+      "toughness": 1
+    },
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Itself and Relic A tapped for its cost: the tapped Mox Relic untaps",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Clock of Omens",
+            "Relic A",
+            "Mox Relic"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mox Relic"
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "tapped": "Mox Relic"
+            }
+          ]
+        },
+        {
+          "activate": "Clock of Omens",
+          "tapping": [
+            "Clock of Omens",
+            "Relic A"
+          ],
+          "targets": [
+            {
+              "card": "Mox Relic"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Mox Relic",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Clock of Omens"
+        },
+        {
+          "seat": 0,
+          "tapped": "Relic A"
+        }
+      ]
+    },
+    {
+      "name": "Two other artifacts tapped, a summoning-sick Thopter among them (CR 302.6): Maya's artifact is a legal target, and the Clock stays untapped",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Clock of Omens",
+            "Relic A"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Thopter"
+          ],
+          "sick": true
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Relic"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "activate": "Clock of Omens",
+          "tapping": [
+            "Relic A",
+            "Thopter"
+          ],
+          "targets": [
+            {
+              "card": "Their Relic"
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Clock of Omens",
+          "is": false
+        },
+        {
+          "seat": 0,
+          "tapped": "Relic A"
+        },
+        {
+          "seat": 0,
+          "tapped": "Thopter"
+        },
+        {
+          "seat": 1,
+          "tapped": "Their Relic",
+          "is": false
+        }
+      ]
+    },
+    {
+      "name": "Only one untapped artifact of Rob's (a creature and a tapped Mox Relic do not count): not offered",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Clock of Omens",
+            "Mox Relic",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Their Relic"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Mox Relic"
+        },
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "activate",
+                "card": "Clock of Omens"
+              },
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "tapped": "Clock of Omens",
+          "is": false
+        }
+      ]
+    }
+  ]
+}
