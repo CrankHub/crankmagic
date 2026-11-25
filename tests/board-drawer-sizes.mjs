@@ -43,7 +43,7 @@ const open=async(kind='combat')=>{
   const v=structuredClone(sample);v.revision=++revision;v.decision=kind==='priority'
     ? {id:'priority:sizes',kind:'priority',title:'Your priority',mode:'one',min:1,max:1,options:[{index:0,label:'Pass priority',act:'pass'},{index:1,label:'Proft, Consulting Detective',act:'activate',cardId:526}]}
     : {id:"declare-attackers:sizes",kind:"attackers",title:"Declare attackers",mode:"many",min:0,max:options.length,options};
-  sock.send(JSON.stringify({type:"view",view:v}));await page.locator(kind==='priority'?'[data-action=board-choose]':'[data-action=board-flow-attacker]').first().waitFor();
+  sock.send(JSON.stringify({type:"view",view:v}));await page.locator(kind==='priority'?'[data-action=board-choose]':'[data-action=board-attack-send]').first().waitFor();
   await page.mouse.move(5,400);await page.waitForTimeout(300);
 };
 const box=(sel)=>page.evaluate((sel)=>{const x=document.querySelector(sel);if(!x)return null;const b=x.getBoundingClientRect();return {top:b.top,bottom:b.bottom,height:b.height,width:b.width,left:b.left,right:b.right,scroll:x.scrollHeight,client:x.clientHeight};},sel);
@@ -68,13 +68,13 @@ try{
   const dec=await box(D);ok(dec.bottom<=768&&dec.top>=0,'required combat popup fits viewport');
   const reachChoices=async()=>{
     for(const o of options){
-      await press(`[data-action=board-flow-attacker][data-card="${o.cardId}"]`,'attacking creature');
-      await press(`[data-action=board-flow-choice][data-indices~="${o.index}"]`,`conditional defender ${o.index}`);
-      await press('[data-action=board-flow-confirm]','local attacker confirmation');
+      await press(`[data-action=board-attack-target][data-target="${o.defenderId}:"]`,`target ${o.defenderId}`);
+      if(await page.locator(`[data-action=board-attack-back][data-card="${o.cardId}"]`).count())await press(`[data-action=board-attack-back][data-card="${o.cardId}"]`,'sent creature, brought back');
+      await press(`[data-action=board-attack-send][data-card="${o.cardId}"]`,`creature ${o.cardId} at ${o.defenderId}`);
     }
   };
   await reachChoices();
-  eq(await page.locator('[data-action=board-flow-attacker][aria-pressed=true]').count(),3,'each creature has one defender after visiting all nine legal pairs');
+  eq(await page.locator('[data-action=board-attack-back]').count(),3,'each creature has one defender after visiting all nine legal pairs');
   eq(await page.locator('.cm-stage-module[data-module=actions]').count(),0,'required choices have no duplicate drawer module');
   await open('priority');
   /* 3. */

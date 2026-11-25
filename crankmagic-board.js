@@ -225,6 +225,7 @@ globalThis.CrankBoard = Object.seal({
   }
   const attackChosen = d => picked.map(i=>d.options.find(o=>o.index===i)).filter(Boolean);
   const attackOptionFor = (d,cardId,key) => d.options.find(o=>o.cardId===cardId && attackKey(o)===key);
+  const attackName = id => `${combatName(findCard(id))}${twinMark(id) ? ` ${twinMark(id)}` : ''}`;
   const attackTargetName = key => {const [p,t]=key.split(':');return t ? combatName(findCard(Number(t))) : nameOf(Number(p));};
   /* What keeps Confirm off, in the room's own words where it gives them (rules/combat.mjs: min and max, `requires`, `capped`). */
   function attackProblem(d) {
@@ -245,10 +246,10 @@ globalThis.CrankBoard = Object.seal({
       const at=d.options.filter(o=>attackKey(o)===key && (!sentCards.has(o.cardId) || chosen.some(c=>c.index===o.index))).map(attackOutlook).filter(Boolean);
       return at.length ? at.reduce((a,o)=>OUTLOOK_RANK[o.mark]<OUTLOOK_RANK[a.mark]?o:a) : null;
     };
-    const thumb=(id,cls='')=>{const c=findCard(id);return `<button type="button" class="cm-attack-inspect${cls}" data-action="board-combat-inspect" data-card="${id}" data-peek-card="${id}" aria-label="Inspect ${e(combatName(c))}">${c?.name && !c.faceDown?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" loading="lazy" data-fallback-name="${e(c.name)}">`:'<i class="cm-combat-back" aria-hidden="true"></i>'}</button>`;};
+    const thumb=(id,cls='')=>{const c=findCard(id);return `<button type="button" class="cm-attack-inspect${cls}" data-action="board-combat-inspect" data-card="${id}" data-peek-card="${id}" aria-label="Inspect ${e(attackName(id))}">${c?.name && !c.faceDown?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" loading="lazy" data-fallback-name="${e(c.name)}">`:'<i class="cm-combat-back" aria-hidden="true"></i>'}</button>`;};
     const who=id=>{const c=findCard(id);return `${e(combatName(c))}${twinMark(id)?` <small class="cm-attack-twin">${e(twinMark(id))}</small>`:''}`;};
     const pt=id=>{const c=findCard(id);return c?.power!=null?`<b class="cm-attack-pt">${e(c.power)}/${e(c.toughness)}</b>`:'';};
-    const sentRows=key=>chosen.filter(o=>attackKey(o)===key).map(o=>`<li class="cm-attack-sent">${thumb(o.cardId)}<button type="button" class="cm-attack-back" data-action="board-attack-back" data-card="${o.cardId}" aria-label="Bring back ${e(combatName(findCard(o.cardId)))}"${sending?' disabled':''}><span class="cm-attack-who">${who(o.cardId)}</span>${pt(o.cardId)}${outlookMark(attackOutlook(o))}<span class="cm-attack-x" aria-hidden="true">✕</span></button></li>`).join('');
+    const sentRows=key=>chosen.filter(o=>attackKey(o)===key).map(o=>`<li class="cm-attack-sent">${thumb(o.cardId)}<button type="button" class="cm-attack-back" data-action="board-attack-back" data-card="${o.cardId}" aria-label="Bring back ${e(attackName(o.cardId))}"${sending?' disabled':''}><span class="cm-attack-who">${who(o.cardId)}</span>${pt(o.cardId)}${outlookMark(attackOutlook(o))}<span class="cm-attack-x" aria-hidden="true">✕</span></button></li>`).join('');
     const targetButton=(key,label,cls)=>{const n=chosen.filter(o=>attackKey(o)===key).length;return `<button type="button" class="cm-attack-target ${cls}" data-action="board-attack-target" data-target="${e(key)}" aria-pressed="${ui.target===key}"${sending?' disabled':''}>${outlookMark(best(key),{weak:false})}<span class="cm-attack-name">${label}</span><span class="cm-attack-count"${n?'':' hidden'}>⚔ ${n}<span class="cm-sr-only"> sent</span></span></button>`;};
     const groups=players.map(p=>{
       const key=`${p}:`,open=ui.open.has(p),subs=[...new Set(d.options.filter(o=>o.defenderId===p && attackKey(o)!==key).map(attackKey))];
@@ -261,7 +262,7 @@ globalThis.CrankBoard = Object.seal({
     const targetName=ui.target?attackTargetName(ui.target):'';
     const tiles=free.map(id=>{
       const o=ui.target?attackOptionFor(d,id,ui.target):null,c=findCard(id);
-      return `<li class="cm-attack-tile${o?'':' is-unable'}">${thumb(id)}<button type="button" class="cm-attack-send" data-action="board-attack-send" data-card="${id}" aria-label="${o?`Send ${e(combatName(c))} at ${e(targetName)}`:`${e(combatName(c))} can't attack ${e(targetName)}`}"${o?'':' aria-disabled="true"'}${sending?' disabled':''}><span class="cm-attack-who">${who(id)}</span>${pt(id)}${o?outlookMark(attackOutlook(o)):'<span class="cm-risk is-none" aria-hidden="true">—</span>'}</button></li>`;
+      return `<li class="cm-attack-tile${o?'':' is-unable'}">${thumb(id)}<button type="button" class="cm-attack-send" data-action="board-attack-send" data-card="${id}" aria-label="${o?`Send ${e(attackName(id))} at ${e(targetName)}`:`${e(attackName(id))} can't attack ${e(targetName)}`}"${o?'':' aria-disabled="true"'}${sending?' disabled':''}><span class="cm-attack-who">${who(id)}</span>${pt(id)}${o?outlookMark(attackOutlook(o)):'<span class="cm-risk is-none" aria-hidden="true">—</span>'}</button></li>`;
     }).join('');
     const problem=attackProblem(d);
     return `<section class="cm-board-decision cm-choice-flow is-attacking" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" aria-label="${e(d.title)}"><h2>${e(d.title)}</h2>${forRunNote(d)}
@@ -4061,7 +4062,7 @@ globalThis.CrankBoard = Object.seal({
     const d = attacking();
     if (!d || !d.options.some((o) => o.cardId === cardId)) return false;
     const ui = attackState(d), o = ui.target ? attackOptionFor(d, cardId, ui.target) : null;
-    if (!o) {const why = `${combatName(findCard(cardId))} can't attack ${ui.target ? attackTargetName(ui.target) : "that"}. Choose another target above.`; say(why); C.notice(why); return true;}
+    if (!o) {const why = `${attackName(cardId)} can't attack ${ui.target ? attackTargetName(ui.target) : "that"}. Choose another target above.`; say(why); C.notice(why); return true;}
     picked = [...picked.filter((i) => d.options.find((x) => x.index === i)?.cardId !== cardId), o.index];
     draftRevision = view.revision;
     draw();

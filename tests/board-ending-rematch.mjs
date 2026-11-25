@@ -100,7 +100,7 @@ try {
     view.state.stack = [{stackId: 1, cardId: 99001, name: "Massacre Girl", playerId: 1, kind: "spell"}];
     const {page, context, frames, errors} = await fixture(view, {mode});
     ok(await page.locator('#cm-board-over-title').innerText() === 'You lost', `${mode}: the persistent ending banner explains the terminal state`);
-    const gameplay = ['board-flow-confirm','board-flow-choice','board-flow-attacker','board-pass','board-draw','board-resolve-all','board-skip','board-confirm','board-direct','board-option','board-card-menu-do','board-hand-do','board-zoom-do','board-send-blockers','board-opening-hand','board-offered-undo'].map(action=>`[data-action="${action}"]`).join(',');
+    const gameplay = ['board-flow-confirm','board-flow-choice','board-attack-send','board-attack-back','board-attack-target','board-attack-all','board-pass','board-draw','board-resolve-all','board-skip','board-confirm','board-direct','board-option','board-card-menu-do','board-hand-do','board-zoom-do','board-send-blockers','board-opening-hand','board-offered-undo'].map(action=>`[data-action="${action}"]`).join(',');
     const enabledGameplay = () => page.locator(gameplay).evaluateAll(els => els.filter(el => !el.disabled).map(el => ({action:el.dataset.action,text:el.textContent.trim()})));
     ok((await enabledGameplay()).length === 0, `${mode}: no enabled pass, draw, resolve, skip or answer remains after game over`);
     const empty = await page.locator(".cm-board-empty").allTextContents();

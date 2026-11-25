@@ -138,19 +138,19 @@ try{
   eq(sent.filter(s=>s.type==='act').at(-1).indices,[],'zero remains a real choice for any number');
   await context.close();
  }
- // Attackers are chosen once each; their defenders appear only after choosing the creature.
+ // Attackers are one pop-up (ROB-545): a header per player, the creatures not yet sent in a row, one press sends one at the selected player.
  {
   const {v}=viewed(game()),creatures=v.state.players[0].zones.Battlefield.cards.filter(c=>c.types.includes('Creature'));
   v.state.players.push({...structuredClone(v.state.players[1]),playerId:2,name:'Third player'});
   v.decision={id:'declare-attackers:1',title:'Declare attackers',mode:'many',min:0,max:2,exclusiveBy:'cardId',options:creatures.flatMap((c,i)=>[1,2].map((id,j)=>({index:i*2+j,label:`${c.name} → ${id}`,cardId:c.cardId,defenderId:id})))};
   const {page,context,sent}=await open(v,'table',1280,720);
-  await page.locator('[data-action=board-flow-attacker]').first().waitFor();await exclusive(page);
-  eq(await page.locator('[data-action=board-flow-attacker]').count(),2,'one row per attacking creature');
-  await page.locator('[data-action=board-flow-attacker]').first().click();
-  eq(await page.locator('[data-action=board-flow-choice]').count(),2,'defenders are a separate conditional layer');
-  await page.locator('[data-action=board-flow-choice]').first().click();await page.locator('[data-action=board-flow-confirm]').click();
-  eq(sent.filter(s=>s.type==='act').length,0,'per-creature confirmation stays a draft');
-  eq(await page.locator('[data-action=board-flow-attacker][aria-pressed=true]').count(),1,'assignment shown on creature');
+  await page.locator('[data-action=board-attack-send]').first().waitFor();await exclusive(page);
+  eq(await page.locator('[data-action=board-attack-send]').count(),2,'one tile per creature that may attack');
+  eq(await page.locator('[data-action=board-attack-target]').count(),2,'a header per player it may attack, in the same pop-up');
+  eq(await page.locator('[data-action=board-flow-choice]').count(),0,'no second screen asks one creature at a time');
+  await page.locator('[data-action=board-attack-send]').first().click();
+  eq(sent.filter(s=>s.type==='act').length,0,'a creature sent stays a draft');
+  eq(await page.locator('.cm-attack-sent').count(),1,'the creature sent is listed under its player');
   await shot(page,'attackers-table-1280');
   await page.locator('[data-action=board-confirm]').click();await page.waitForTimeout(40);
   eq(sent.filter(s=>s.type==='act').map(s=>s.indices),[[0]],'whole attack submits original indices once');
