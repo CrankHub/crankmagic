@@ -49,6 +49,21 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
   eq(oracleFacets("{2}, {T}, Sacrifice this artifact: You gain 3 life.").activated[0].parts, ["{2}", "{T}", "Sacrifice this artifact"], "a cost split at its commas, not inside its braces");
   eq(oracleFacets("Kicker {1}{G} (You may pay an additional {1}{G}.)\nDraw a card.").keywords, ["kicker"], "a way keyword at the start of a line");
 
+  /* The tokens the text makes, and how many modes it lets a player take (ROB-542). */
+  const inkling = oracleFacets("Target player creates a 2/1 white and black Inkling creature token with flying.").tokens;
+  eq(inkling.map((t) => [t.power, t.toughness, t.colors, t.subtypes, t.keywords.join()]), [[2, 1, "BW", "Inkling", "flying"]], "a token: its size, colors, subtype and keyword");
+  eq(oracleFacets("Create a 1/1 colorless Thopter artifact creature token with flying, then draw a card.").tokens.map((t) => [t.colors, t.artifact, t.keywords.join()]), [["", true, "flying"]], "a colorless artifact creature token");
+  eq(oracleFacets("Create a 1/1 white Soldier creature token with lifelink, then target creature gains haste until end of turn.").tokens[0].keywords, ["lifelink"], "the \"with\" clause ends where the sentence turns to something else");
+  eq(oracleFacets("Create a 1/1 white Spirit creature token with flying and a 2/2 black Zombie creature token.").tokens.map((t) => [t.subtypes, t.keywords.join()]), [["Spirit", "flying"], ["Zombie", ""]], "two tokens in one sentence, each with its own keywords");
+  eq(oracleFacets("Create an X/X green Ooze creature token, where X is its power.").tokens.map((t) => [t.power, t.colors]), [[null, "G"]], "a token whose size is a letter is read for the rest");
+  eq(oracleFacets("Creature tokens you control have flying.").tokens, [], "a sentence about tokens makes none");
+  const chosen = (text) => { const c = oracleFacets(text).choose; return c && [c.min, c.max]; };
+  eq(chosen("Choose two —\n• Draw a card.\n• Gain 2 life.\n• Scry 2."), [2, 2], "choose two: exactly two");
+  eq(chosen("Choose one or both —\n• Draw a card.\n• Gain 2 life."), [1, 2], "one or both: one to two");
+  eq(chosen("Choose up to two —\n• Draw a card.\n• Gain 2 life.\n• Scry 2."), [0, 2], "up to two: none is a choice");
+  eq(chosen("Choose one or more —\n• Draw a card.\n• Gain 2 life."), [1, Infinity], "one or more: up to all of them");
+  eq(chosen("As this enchantment enters, choose Khans or Dragons.\n• Khans — Add {G}{G}.\n• Dragons — Fight."), null, "a Siege's choice has no count");
+
   /* The ways of a cost, as the lands that pay each. */
   const gambit = paymentWays("{3}{U/P}");
   eq(gambit.map((w) => [w.lands.length, w.via.join()]), [[4, "mana"], [3, "life"]], "{3}{U/P}: three Wastes and an Island, or three Wastes and 2 life");
@@ -62,6 +77,8 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
   const flashback = scripts.find((s) => /^Flashback/m.test(s.oracleText) && s.abilities.some((a) => a.keyword === "flashback"));
   const sacrificer = scripts.find((s) => s.abilities.some((a) => a.kind === "activated" && /^\{[^}]+\}.*Sacrifice/.test(a.text ?? "") && (a.cost ?? []).some?.((c) => c.atom === "sacrifice") && (a.cost ?? []).some((c) => c.atom === "mana")));
   ok(flashback && sacrificer, "the directory still has a flashback card and a mana-and-sacrifice ability to break");
+  const firstNode = (d, is) => { let found; (function look(v) { if (found || !v || typeof v !== "object") return; if (!Array.isArray(v) && is(v)) { found = v; return; } Object.values(v).forEach(look); })(d.abilities); assert.ok(found, `${d.identity.name} has nothing to break`); return found; };
+  const tokenOf = (d) => firstNode(d, (n) => n.token && n.token.name).token, modalOf = (d) => firstNode(d, (n) => n.effect === "modal");
   const mutations = [
     ["Abrade", "MODES_DROPPED", (d) => { d.abilities[0].effects = []; }],
     ["Abrade", "MODES_COUNT", (d) => { d.abilities[0].effects[0].modes.pop(); }],
@@ -73,6 +90,17 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
     ["Flicker of Fate", "TARGET_UNION_NARROWED", (d) => { d.abilities[0].targets = [{what: "permanent", types: ["Creature"]}]; }],
     ["Flicker of Fate", "TARGET_UNION_NARROWED", (d) => { d.abilities[0].targets = [{what: "permanent", types: ["Creature", "Enchantment"]}]; }],
     ["Altar's Reap", "ADDITIONAL_COST_DROPPED", (d) => { delete d.abilities[0].additionalCost; }],
+    /* ROB-542: the Inkling Shadrix makes, a little wrong each way, and a "choose two" kept as choose one. */
+    ["Shadrix Silverquill", "TOKEN_DIFFERS", (d) => { tokenOf(d).power = 1; }],
+    ["Shadrix Silverquill", "TOKEN_DIFFERS", (d) => { tokenOf(d).colors = ["W"]; }],
+    ["Shadrix Silverquill", "TOKEN_DIFFERS", (d) => { tokenOf(d).keywords = []; }],
+    ["Shadrix Silverquill", "TOKEN_DIFFERS", (d) => { tokenOf(d).keywords.push("Haste"); }],
+    ["Shadrix Silverquill", "TOKEN_DIFFERS", (d) => { tokenOf(d).types.push("Artifact"); }],
+    ["Shadrix Silverquill", "TOKEN_DIFFERS", (d) => { tokenOf(d).subtypes = ["Spirit"]; }],
+    ["Shadrix Silverquill", "TOKEN_DROPPED", (d) => { d.abilities[2].effects[0].modes[0].effects = []; }],
+    ["Beledros Witherbloom", "TOKEN_DROPPED", (d) => { d.abilities = d.abilities.filter((a) => !/Pest/.test(a.text ?? "")); }],
+    ["Prismari Command", "CHOOSE_COUNT_DIFFERS", (d) => { modalOf(d).choose = 1; }],
+    ["Perfect Intimidation", "CHOOSE_COUNT_DIFFERS", (d) => { delete modalOf(d).chooseUpTo; }],
   ];
   for (const [name, code, mutate] of mutations) {
     ok(!codes(card(name)).includes(code), `${name} as written has no ${code}`);
@@ -171,7 +199,7 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
   console.log(`  advisory, not enforced: ${new Set(advisory.map((f) => f.card)).size} cards offer a costed ability only once the mana is floated (${advisory.length} findings)`);
 
   /* Non-vacuity: a parser that finds nothing would pass the ratchet. */
-  const FLOOR = {modalCards: 80, wayKeywordLines: 100, cyclingLines: 150, activatedLines: 1500, loyaltyLines: 60, costParts: 2000, targetUnions: 150, hybridSymbols: 150};
+  const FLOOR = {tokenPhrases: 280, chooseHeaders: 85, modalCards: 80, wayKeywordLines: 100, cyclingLines: 150, activatedLines: 1500, loyaltyLines: 60, costParts: 2000, targetUnions: 150, hybridSymbols: 150};
   for (const [key, floor] of Object.entries(FLOOR)) ok((whole.directory.examined[key] ?? 0) >= floor, `Layer A examined ${whole.directory.examined[key]} ${key}, under the floor ${floor}`);
   ok(whole.directory.subjects >= 6000, `Layer B costed ${whole.directory.subjects} spells and abilities, under the floor 6000`);
   ok(whole.directory.exercised / whole.directory.subjects >= 0.9, `Layer B exercised ${whole.directory.exercised} of ${whole.directory.subjects}: under nine in ten`);
@@ -183,4 +211,4 @@ const codes = (def) => extractionFindings(def).map((f) => f.code);
   ok(!whole.findings.some((f) => f.card === "Tezzeret's Gambit"), "Tezzeret's Gambit, ROB-326, is not among them");
 }
 
-console.log(`engine-interaction-census: ${checks} checks passed — the parser on the text that fooled it, ten detectors red on a real definition with a way removed, the funding comparison with the engine replaced by a probe, the table's flags (and a guard on them), the compiler's gate on Prison Realm, and the directory and the candidates held to the ratchet.`);
+console.log(`engine-interaction-census: ${checks} checks passed — the parser on the text that fooled it, thirteen detectors red on a real definition with a way removed or a token made a little wrong, the funding comparison with the engine replaced by a probe, the table's flags (and a guard on them), the compiler's gate on Prison Realm, and the directory and the candidates held to the ratchet.`);

@@ -756,7 +756,12 @@ globalThis.CrankBoard = Object.seal({
     const url = (extra = "", of = name) => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(of)}${extra}&format=image&version=normal`;
     /* WHAT IT LOOKS LIKE WHEN IT IS NOT ITS CARD (ROB-329, Oko's Elk; the view's `appearance`): the token's picture, by the token's name.
        The card's own name stays on the card; the card's own art is one press away (the card menu's Original). */
+    /* WHICH TOKEN (ROB-542; the view's `tokenArt`, and a look's `appearance.art`): the Scryfall printing that is this token --
+       a name alone drew a 1/1 Inkling for a 2/1, a colorless 4/4 for a red 5/5 Dragon, a Dinosaur for a Treasure. */
+    const printing = (art) => `https://api.scryfall.com/cards/${encodeURIComponent(art.scryfallId)}?format=image&version=normal${art.face === "back" ? "&face=back" : ""}`;
+    if (card && card.appearance && card.appearance.art && card.appearance.art.scryfallId) return printing(card.appearance.art);
     if (card && card.appearance && card.appearance.token) return url("", card.appearance.token);
+    if (card && card.tokenArt && card.tokenArt.scryfallId) return printing(card.tokenArt);
     if (card && card.face === "back") return url("&face=back");
     const r = recordOf(name);
     return (r && r.image) || url();
