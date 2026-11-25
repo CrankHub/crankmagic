@@ -154,12 +154,12 @@
       "sha": "5dd742bd996b24a6"
     },
     "crankmagic-app.js": {
-      "version": 778,
-      "sha": "c22ca7b143f50b8a"
+      "version": 779,
+      "sha": "a91ba9a1d6b8d1b0"
     },
     "crankmagic-assets.js": {
-      "version": 42,
-      "sha": "988f1c6f14b46660"
+      "version": 43,
+      "sha": "c00c6d454fc858fb"
     },
     "crankmagic-audio.js": {
       "version": 1,
@@ -366,8 +366,8 @@
       "sha": "07440b83396bb9e2"
     },
     "crankmagic-sw.js": {
-      "version": 761,
-      "sha": "ac720fe1907f2b44"
+      "version": 762,
+      "sha": "38273ecf95a34b8a"
     },
     "crankmagic-table.js": {
       "version": 59,
@@ -398,12 +398,12 @@
       "sha": "4c2b2793f05a10be"
     },
     "data/card-facts.json": {
-      "version": 13,
-      "sha": "898366198994be1a"
+      "version": 14,
+      "sha": "7fda45a175b4758e"
     },
     "data/cards.json": {
-      "version": 16,
-      "sha": "62574d26b2df5eb6"
+      "version": 17,
+      "sha": "a378b65f16bb6a91"
     },
     "data/commander-glossary.json": {
       "version": 2,
@@ -418,8 +418,8 @@
       "sha": "1f5453fb105fee0c"
     },
     "data/commander-strategies.json": {
-      "version": 9,
-      "sha": "faff5f300fe26d51"
+      "version": 10,
+      "sha": "6863593eaca17b9a"
     },
     "data/commander-universe.json": {
       "version": 8,

@@ -1,6 +1,6 @@
 {
  "schema": "manifest@1",
- "generatedAt": "2026-11-24T23:11:04.428Z",
+ "generatedAt": "2026-11-25T00:06:47.853Z",
  "generator": "tools/data-manifest.mjs",
  "count": 27,
  "files": [
@@ -40,22 +40,22 @@
   {
    "file": "data/cards.json",
    "schema": "cards@2",
-   "stamp": "2026-11-24T23:10:49.041Z",
+   "stamp": "2026-11-25T00:06:31.835Z",
    "generator": "tools/build-card-records.mjs",
-   "bytes": 4839776,
-   "sha256": "62574d26b2df5eb6e1c5c993572ab9221feb68797604b4526964b2bf17a13aed",
-   "version": 16,
+   "bytes": 4849400,
+   "sha256": "a378b65f16bb6a91d5ccbc31e4b62fd6d49d501afd8ed32fd34989da1443a20a",
+   "version": 17,
    "served": true,
    "cache": "precached"
   },
   {
    "file": "data/card-facts.json",
    "schema": "card-facts@1",
-   "stamp": "2026-11-24T23:10:49.041Z",
+   "stamp": "2026-11-25T00:06:31.836Z",
    "generator": "tools/build-card-records.mjs",
    "bytes": 488999,
-   "sha256": "898366198994be1aa750d9d5385219c47a0c77121a85c0f8b624a332a6e99f79",
-   "version": 13,
+   "sha256": "7fda45a175b4758e9ccbcb327f24d252a5591e24ccf50d05889b46bc126566a2",
+   "version": 14,
    "served": true,
    "cache": "precached"
   },
@@ -84,11 +84,11 @@
   {
    "file": "data/commander-strategies.json",
    "schema": "commander-strategies@1",
-   "stamp": "2026-11-24T23:10:50.516Z",
+   "stamp": "2026-11-25T00:06:34.124Z",
    "generator": "tools/commander-strategies.mjs",
    "bytes": 628875,
-   "sha256": "faff5f300fe26d515c758b27fb43e048287f5ced92b43840ddcefebc44a09a4d",
-   "version": 9,
+   "sha256": "6863593eaca17b9ad43f3275c0443c50040f5f3ef0bf7d17aaab265d3ffc5e09",
+   "version": 10,
    "served": true,
    "cache": "on demand"
   },
