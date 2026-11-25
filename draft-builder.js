@@ -51,11 +51,13 @@
      what the commander's strategies reach rather than by role slots alone. The bonus joins the
      score; the roles still fill to their targets, the caps still hold, and a card the trace
      never lit is chosen as before when the lit ones run out. */
-  function build({commanders,cards,definition,available={},benchOnly=false,pinned=[],seed=null}){
+  function build({commanders,cards,definition,available={},benchOnly=false,pinned=[],seed=null,reserveFit=true}){
     const colors=new Set(commanders.flatMap(c=>c.colorIdentity||[])),issues=[],chosen=new Map(),all=new Map(cards.map(c=>[c.id,c]));
     let spend=0,relaxed=0,gameChangers=0,assumedBasics=0,splurged=0,nonbasics=0;
     const budget=definition.budget===null||definition.budget===undefined?null:Number(definition.budget);
     const perCardCap=definition.perCardCap===null||definition.perCardCap===undefined?null:Number(definition.perCardCap);
+    /* What the FILL may spend: the cap, less what the bracket fit has set aside (below). Everything after the fill spends the whole cap. */
+    let fillCap=budget;
     const ceiling=Number(definition.bracketCeiling||definition.baseBracket||3);
     const maxGameChangers=ceiling>=4?Infinity:ceiling===3?3:0;
     const legal=c=>c.verified&&c.legalities?.commander==='legal'&&(c.colorIdentity||[]).every(x=>colors.has(x));
@@ -93,7 +95,7 @@
       let splurge=false;
       if(budget!==null){
         if(p===null){if(required)issues.push(c.name+': price is unknown, so it cannot be counted against the total cap.');return false;}
-        if(spend+p*n+reserve(count()+n)>budget+1e-9){if(required)issues.push(c.name+': would leave too little of the total cap to finish the deck.');return false;}
+        if(spend+p*n+reserve(count()+n)>fillCap+1e-9){if(required)issues.push(c.name+': would leave too little of the total cap to finish the deck.');return false;}
         if(share!==null&&!basic&&!required&&p>Math.max(share*evenShare,.5)){
           if(splurged+p*n>splurgeLimit)return false;
           splurge=true;
@@ -131,6 +133,27 @@
     const basics=(()=>{const names=colors.size?[...colors].map(x=>({W:'Plains',U:'Island',B:'Swamp',R:'Mountain',G:'Forest'})[x]):['Wastes'];return names.map(n=>cards.find(c=>c.name===n)).filter(Boolean);})();
 
     function fillBasics(target){let failed=0,i=0;while(basics.length&&roleCount('land')<target&&count()<100&&failed<basics.length){if(add(basics[i++%basics.length]))failed=0;else failed++;}}
+
+    /* THE BRACKET'S ALLOWANCE IS PAID FOR BEFORE THE FILL SPENDS THE CAP (ROB-551, 2026-11-25). `fitBracket` brings its Game Changers
+       in only after the hundred is full, each swapped for the weakest card of its role, and refuses a swap that takes the total over
+       the budget. The fill spends nearly all of a cap, so the swaps were starved, and how starved depended on where the fill happened
+       to stop: with the 2026-11-24 prices a $225 Krenko carried 1 of its 3 Game Changers, $235 carried 2, $250 carried 3 and $275
+       carried 2 -- more money, fewer Game Changers, a deck that plays below the bracket its seat names.
+       So under a cap the fill is held back by exactly what reaching the allowance needs: the price of the CHEAPEST Game Changers it
+       can carry together (never more than the bounded splurge the fill allows itself, half the cap, so a cap too small for the
+       allowance still comes up short and says so, as before). The fill spends the rest (`fillCap`); everything after it spends the
+       whole cap. The swap pass below is unchanged in what it takes (the strongest-scoring first, the weakest same-role card out, so
+       what the Trace lit is not displaced), and now looks ahead: a card is taken only while the cheapest of the others still needed
+       stay affordable, so a dear early pick cannot spend the money that reaching the allowance was held back for. */
+    let heldBack=0;
+    if(reserveFit&&definition.fitBracket&&maxGameChangers!==Infinity&&maxGameChangers>0&&budget!==null&&count()<100){
+      const want=maxGameChangers-gameChangers;
+      const cheapest=pool.filter(c=>c.gameChanger&&!chosen.has(c.id)&&!isBasic(c)&&price(c)!==null&&(perCardCap===null||price(c)<=perCardCap)).map(price).sort((a,b)=>a-b);
+      const allowance=Math.min(splurgeLimit,Math.max(0,budget-spend));
+      let carry=0;
+      while(carry<want&&carry<cheapest.length&&heldBack+cheapest[carry]<=allowance+1e-9){heldBack+=cheapest[carry];carry+=1;}
+      fillCap=budget-heldBack;
+    }
 
     /* Roles in order, then everything else; three passes of the same loop, each allowing
        a card a larger slice of what is left, and only while the list is short. */
@@ -184,13 +207,21 @@
          and letting them in would build a "$60" deck around three cards worth hundreds. */
       const changers=pool.filter(c=>c.gameChanger&&!chosen.has(c.id)&&!isBasic(c)&&price(c)!==null&&(perCardCap===null||price(c)<=perCardCap)).sort((a,b)=>rawScore(b)-rawScore(a));
       let added=0,blocked=0;
-      for(const cand of changers){
+      for(let i=0;i<changers.length;i++){
+        const cand=changers[i];
         if(added>=want)break;
         const p=price(cand)||0,r=role(cand);
         const weakest=[...chosen.keys()].filter(id=>swappable(id)&&!lookup(id).gameChanger&&role(lookup(id))===r).map(lookup).sort((a,b)=>rawScore(a)-rawScore(b))[0];
         if(!weakest)continue;
         const wp=price(weakest)||0;
         if(budget!==null&&spend-wp+p>budget+1e-9){blocked+=1;continue;}
+        /* The look-ahead (ROB-551): with this one taken, what is left must still pay for the cheapest of the others the allowance needs
+           -- and only if the money was held back for them, so a list with no hold-back is judged as it always was. */
+        if(budget!==null&&heldBack>0){
+          const others=want-added-1,later=changers.slice(i+1).map(price).sort((a,b)=>a-b);
+          let rest=0;for(let k=0;k<others;k++){if(k>=later.length){rest=0;break;}rest+=later[k];}   /* too few left to need them all: nothing to protect */
+          if(rest>0&&spend-wp+p+rest>budget+1e-9){blocked+=1;continue;}
+        }
         chosen.delete(weakest.id);chosen.set(cand.id,1);spend+=p-wp;gameChangers+=1;added+=1;
       }
       bracketFit={allowed:maxGameChangers,carried:gameChangers,added,short:maxGameChangers-gameChangers,blockedByBudget:blocked};
@@ -255,6 +286,10 @@
       +(bracketFit.short?`. ${bracketFit.short} short of the allowance${bracketFit.blockedByBudget?` — the budget would not stretch to ${bracketFit.short===1?'another':'more'}`:' — the catalog holds no more in these colors'}, so this deck plays under its bracket rather than at it.`:'.'));
     else if(maxGameChangers!==Infinity)notes.push(`Bracket ceiling ${ceiling}: ${maxGameChangers===0?'no Game Changers were chosen':'at most three Game Changers were chosen ('+gameChangers+' in this list)'}.`);
     notes.push('Play style, speed, competitiveness and saltiness require your review. This initial pass does not steer by them and does not certify them.');
+    /* THE HOLD-BACK MAY NEVER COST THE DECK ITS HUNDRED (ROB-551). The reserve rule assumes the cheapest cards it counts on are there to be taken; in a pool too small for that
+       (a colorless commander in a small catalog) holding money back from the fill can leave the list short where the old order completed. Then the list is built again the old way,
+       and that one stands if it holds more cards. The builder's first promise is a hundred; the fit is second to it. */
+    if(heldBack>0&&count()!==100){const plain=build({commanders,cards,definition,available,benchOnly,pinned,seed,reserveFit:false});if(plain.slots.reduce((n,r)=>n+r.quantity,0)>count())return plain;}
     return {slots:result,cards:[...new Set([...chosen.keys()])].map(lookup),issues,estimatedPrice:spend,relaxed,gameChangers,bracketFit,splurged,nonbasics,upgrades,seeded,
       unknownPrices:result.filter(r=>price(lookup(r.cardId))===null).length,method:seed&&seed.size?'Constructive draft seeded from the trace; not simulated':'Constructive metadata draft; not simulated',notes};
   }
