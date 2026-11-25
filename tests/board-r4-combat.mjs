@@ -74,10 +74,11 @@ try{
      const rows=[...list.querySelectorAll('.cm-combat-row')].map(e=>e.getBoundingClientRect());
      const sideways=[pop,...pop.querySelectorAll('*')].filter(el=>el.scrollWidth>el.clientWidth+1&&getComputedStyle(el).overflowX!=='visible'&&getComputedStyle(el).overflowX!=='clip').map(el=>String(el.className).slice(0,50));
      const send=document.querySelector('[data-action="board-send-blockers"]'),s=send.getBoundingClientRect();
-     return {w:r.width,inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,stacked:rows.every((q,i)=>!i||q.top>=rows[i-1].bottom-1),scrolls:list.scrollHeight>list.clientHeight+1,sideways,
+     return {w:r.width,h:r.height,inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,stacked:rows.every((q,i)=>!i||q.top>=rows[i-1].bottom-1),scrolls:list.scrollHeight>list.clientHeight+1,sideways,
        send:[[.5,.5],[.2,.2],[.8,.8]].every(([x,y])=>send.contains(document.elementFromPoint(s.x+s.width*x,s.y+s.height*y)))};
    });
    if(width>=1440)ok(m.w>=900,`${where}: the blocker pop-up is at least 900px wide (${m.w})`);
+   if(width>=1000)ok(m.h>=height*.65,`${where}: nine attackers take the window's height, not a short list (${m.h} of ${height})`);
    ok(m.inside,`${where}: the pop-up fits the window`);
    ok(m.stacked,`${where}: nine attackers are a list, one under another`);
    ok(m.scrolls,`${where}: nine attackers scroll inside the list`);

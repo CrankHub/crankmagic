@@ -893,7 +893,7 @@ globalThis.CrankBoard = Object.seal({
     const label=n?`⛨ Send ${n}`:'⊘ No blocks';
     const said=`${n?`Send ${n} block${n===1?'':'s'}`:'No blocks'}; ${open} attacker${open===1?'':'s'} not blocked`;
     return b(label,'board-send-blockers',{revision:String(view.revision),choice:view.decision.id,match:view.matchId},true,{disabled:!canSendBlocks()})
-      .replace('<button ',`<button aria-label="${e(said)}" title="${e(canSendBlocks()?said:check.why)}" `);
+      .replace('<button ',`<button aria-label="${e(said)}" title="${e(canSendBlocks()?said:sending?'Sending':socket?.readyState!==1?'Reconnecting to the table':check.why)}" `);
   }
   const offerData = o => ({index:String(o.index),act:o.act || '',card:String(o.cardId),revision:String(view.revision),choice:view.decision?.id || '',match:view.matchId});
   let offeredPending = null;

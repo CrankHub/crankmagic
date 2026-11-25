@@ -20,9 +20,9 @@ BREAKS = [
  ('a tile hides which attacker it blocks', T, "${other?`<small class=\"cm-block-elsewhere\">", "${false?`<small class=\"cm-block-elsewhere\">"),
  ('the blocker pop-up stays narrow', S, '.cm-required-popup:has(.is-blocking){width:min(1040px,calc(100vw - 32px))!important}', '.cm-required-popup:has(.is-blocking){width:min(540px,calc(100vw - 32px))!important}'),
  ('the attackers run sideways again', S, '.cm-r4-combat.is-draft .cm-combat-groups{display:flex;flex-direction:column;', '.cm-r4-combat.is-draft .cm-combat-groups{display:flex;flex-direction:row;overflow-x:auto;'),
- ('a long name is cut', S, '.cm-block-row-name{overflow-wrap:anywhere;white-space:normal}', '.cm-block-row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'),
+ ('a long name is cut', S, '.cm-block-row-name{overflow-wrap:break-word;white-space:normal}', '.cm-block-row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'),
  ('Send leaves the answering row', T, '      foot = sendBlocksButton() + ', '      body += sendBlocksButton(); foot = '),
- ('the pop-up grows past the window', S, '#cm-board-decision.is-blocking>.cm-board-options{display:flex;flex-direction:column;max-height:calc(100dvh - 220px);overflow:hidden;', '#cm-board-decision.is-blocking>.cm-board-options{display:flex;flex-direction:column;max-height:none;overflow:hidden;'),
+ ('the blockers keep the old short list', S, '#cm-board-decision.is-blocking>.cm-board-options{display:flex;flex-direction:column;max-height:calc(100dvh - 220px);overflow:hidden;', '#cm-board-decision.is-blocking>.cm-board-options{display:flex;flex-direction:column;max-height:45dvh;overflow:hidden;'),
  # Break the winning shared !important rule, not the redundant lower-priority tile rule.
  ('chosen blockers borrow ownership color', S, '.cm-board .cm-board-options [aria-pressed=true]{background:var(--color-ink)!important;', '.cm-board .cm-board-options [aria-pressed=true]{background:var(--st-inbox)!important;'),
 ]
