@@ -249,7 +249,7 @@ globalThis.CrankBoard = Object.seal({
     const thumb=(id,cls='')=>{const c=findCard(id);return `<button type="button" class="cm-attack-inspect${cls}" data-action="board-combat-inspect" data-card="${id}" data-peek-card="${id}" aria-label="Inspect ${e(attackName(id))}">${c?.name && !c.faceDown?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" loading="lazy" data-fallback-name="${e(c.name)}">`:'<i class="cm-combat-back" aria-hidden="true"></i>'}</button>`;};
     const who=id=>{const c=findCard(id);return `${e(combatName(c))}${twinMark(id)?` <small class="cm-attack-twin">${e(twinMark(id))}</small>`:''}`;};
     const pt=id=>{const c=findCard(id);return c?.power!=null?`<b class="cm-attack-pt">${e(c.power)}/${e(c.toughness)}</b>`:'';};
-    const sentRows=key=>chosen.filter(o=>attackKey(o)===key).map(o=>`<li class="cm-attack-sent">${thumb(o.cardId)}<button type="button" class="cm-attack-back" data-action="board-attack-back" data-card="${o.cardId}" aria-label="Bring back ${e(attackName(o.cardId))}"${sending?' disabled':''}><span class="cm-attack-who">${who(o.cardId)}</span>${pt(o.cardId)}${outlookMark(attackOutlook(o))}<span class="cm-attack-x" aria-hidden="true">✕</span></button></li>`).join('');
+    const sentRows=key=>chosen.filter(o=>attackKey(o)===key).map(o=>`<li class="cm-attack-sent">${thumb(o.cardId)}<button type="button" class="cm-attack-back" data-action="board-attack-back" data-card="${o.cardId}" aria-label="Bring back ${e(attackName(o.cardId))} (${e(outlookSaid(attackOutlook(o)) || "sent")})"${sending?' disabled':''}><span class="cm-attack-who">${who(o.cardId)}</span>${pt(o.cardId)}${outlookMark(attackOutlook(o))}<span class="cm-attack-x" aria-hidden="true">✕</span></button></li>`).join('');
     const targetButton=(key,label,cls)=>{const n=chosen.filter(o=>attackKey(o)===key).length;return `<button type="button" class="cm-attack-target ${cls}" data-action="board-attack-target" data-target="${e(key)}" aria-pressed="${ui.target===key}"${sending?' disabled':''}>${outlookMark(best(key),{weak:false})}<span class="cm-attack-name">${label}</span><span class="cm-attack-count"${n?'':' hidden'}>⚔ ${n}<span class="cm-sr-only"> sent</span></span></button>`;};
     const groups=players.map(p=>{
       const key=`${p}:`,open=ui.open.has(p),subs=[...new Set(d.options.filter(o=>o.defenderId===p && attackKey(o)!==key).map(attackKey))];
@@ -262,7 +262,7 @@ globalThis.CrankBoard = Object.seal({
     const targetName=ui.target?attackTargetName(ui.target):'';
     const tiles=free.map(id=>{
       const o=ui.target?attackOptionFor(d,id,ui.target):null,c=findCard(id);
-      return `<li class="cm-attack-tile${o?'':' is-unable'}">${thumb(id)}<button type="button" class="cm-attack-send" data-action="board-attack-send" data-card="${id}" aria-label="${o?`Send ${e(attackName(id))} at ${e(targetName)}`:`${e(attackName(id))} can't attack ${e(targetName)}`}"${o?'':' aria-disabled="true"'}${sending?' disabled':''}><span class="cm-attack-who">${who(id)}</span>${pt(id)}${o?outlookMark(attackOutlook(o)):'<span class="cm-risk is-none" aria-hidden="true">—</span>'}</button></li>`;
+      return `<li class="cm-attack-tile${o?'':' is-unable'}">${thumb(id)}<button type="button" class="cm-attack-send" data-action="board-attack-send" data-card="${id}" aria-label="${o?`Send ${e(attackName(id))} at ${e(targetName)}${attackOutlook(o)?` (${e(outlookSaid(attackOutlook(o)))})`:""}`:`${e(attackName(id))} can't attack ${e(targetName)}`}"${o?'':' aria-disabled="true"'}${sending?' disabled':''}><span class="cm-attack-who">${who(id)}</span>${pt(id)}${o?outlookMark(attackOutlook(o)):'<span class="cm-risk is-none" aria-hidden="true">—</span>'}</button></li>`;
     }).join('');
     const problem=attackProblem(d);
     return `<section class="cm-board-decision cm-choice-flow is-attacking" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" aria-label="${e(d.title)}"><h2>${e(d.title)}</h2>${forRunNote(d)}
@@ -2261,12 +2261,14 @@ globalThis.CrankBoard = Object.seal({
   const OUTLOOK_WORDS = {clear: ["✓", "is-safe", "Safe: nothing untapped can block it"], safe: ["✓", "is-safe", "Safe: no blocker can kill it"],
     trade: ["⇄", "is-trade", "Could trade with"], dies: ["☠", "is-die", "Could die"]};
   const OUTLOOK_LIMIT = "as the table stands; a trick or first strike can change it";
+  const outlookWords = (out) => OUTLOOK_WORDS[out.mark][2] + (out.die.length ? `: ${out.die.map((c) => `${combatName(c)}${c.power != null ? ` ${c.power}/${c.toughness}` : ""}`).join(", ")}` : "");
+  /* The same words where a button's own name has to carry them (a name given by aria-label hides what is inside it). */
+  const outlookSaid = (out) => (out ? `${outlookWords(out)}${out.weak ? "; kills no blocker alone" : ""}` : "");
   const outlookMark = (out, {weak = true} = {}) => {
     if (!out) return "";
-    const [glyph, cls, words] = OUTLOOK_WORDS[out.mark];
-    const said = words + (out.die.length ? `: ${out.die.map((c) => `${combatName(c)}${c.power != null ? ` ${c.power}/${c.toughness}` : ""}`).join(", ")}` : "");
-    return `<span class="cm-risk ${cls}" data-outlook="${out.mark}" title="${e(said)} (${OUTLOOK_LIMIT})">${glyph}<span class="cm-sr-only"> ${e(said)};</span></span>${weak && out.weak
-      ? `<span class="cm-risk is-weak" data-outlook="weak" title="Kills no blocker alone (${OUTLOOK_LIMIT})">⊘<span class="cm-sr-only"> kills no blocker alone;</span></span>` : ""}`;
+    const [glyph, cls] = OUTLOOK_WORDS[out.mark], said = outlookWords(out);
+    return `<span class="cm-risk ${cls}" data-outlook="${out.mark}" title="${e(said)} (${OUTLOOK_LIMIT})"><span aria-hidden="true">${glyph}</span><span class="cm-sr-only"> ${e(said)};</span></span>${weak && out.weak
+      ? `<span class="cm-risk is-weak" data-outlook="weak" title="Kills no blocker alone (${OUTLOOK_LIMIT})"><span aria-hidden="true">⊘</span><span class="cm-sr-only"> kills no blocker alone;</span></span>` : ""}`;
   };
   /* An option that names a card the seat can read carries it for the hover (peek). */
   const peekOf = (o) => (o.cardId !== undefined && (findCard(o.cardId)?.name || shownCard(o.cardId)) ? ` data-peek-card="${o.cardId}"` : "");

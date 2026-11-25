@@ -58,7 +58,7 @@ try{
   const proft3=page.locator(`[data-action=board-attack-target][data-target="3:"] .cm-risk.is-die`);
   eq(await proft3.getAttribute("title"),"Could die: Kor Skyfisher 2/3 (as the table stands; a trick or first strike can change it)","☠ says which blocker could kill it and the limit of the hint, on hover");
   ok((await page.locator(`[data-action=board-attack-target][data-target="3:"]`).textContent()).includes("Could die: Kor Skyfisher 2/3;"),"and a screen reader hears it");
-  ok((await page.locator(`.cm-attack-sent [data-action=board-attack-back][data-card="${FAERIE}"]`).getAttribute("aria-label"))==="Bring back Faerie Formation","a sent creature says what a press does");
+  ok((await page.locator(`.cm-attack-sent [data-action=board-attack-back][data-card="${FAERIE}"]`).getAttribute("aria-label"))==="Bring back Faerie Formation (Safe: nothing untapped can block it)","a sent creature says what a press does, and its mark in words");
   ok(await page.locator(".cm-attack-sent .cm-risk.is-safe").count()===2,"each sent creature carries its own mark (✓ at Friend)");
   const colors=await page.evaluate(()=>{const probe=document.createElement("i");document.querySelector("#cm-board").append(probe);const tok=t=>{probe.style.color=`var(${t})`;return getComputedStyle(probe).color;};const c=s=>getComputedStyle(document.querySelector(s)).color;
     const r={die:[c(".cm-attack-head .cm-risk.is-die"),tok("--color-required")],trade:[c(".cm-attack-head .cm-risk.is-trade"),tok("--color-money")],safe:[c(".cm-attack-head .cm-risk.is-safe"),tok("--st-inbox")]};probe.remove();return r;});

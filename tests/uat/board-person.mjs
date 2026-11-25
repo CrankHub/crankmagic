@@ -108,7 +108,8 @@ export function boardPerson({page, seat, cards, current, timeout = 15000}) {
       } else if(['one','boolean','index'].includes(d.mode) && await visible(page,'.cm-choice-flow')) {
         await chooseFlow(page,picked.indices[0]);bound=true;
       } else if(String(d.id).startsWith('declare-attackers:')) {
-        for(const i of picked.indices || []){const o=d.options.find(o=>o.index===i);await click(page,`[data-action=board-flow-attacker][data-card="${o.cardId}"]`);await chooseFlow(page,i);}
+        /* The attack pop-up (ROB-545): select the option's target, then press its creature in the row. */
+        for(const i of picked.indices || []){const o=d.options.find(o=>o.index===i);await click(page,`[data-action=board-attack-target][data-target="${o.defenderId}:${o.planeswalkerId ?? o.battleId ?? ''}"]`);await click(page,`.cm-attack-tray [data-action=board-attack-send][data-card="${o.cardId}"]`);}
       } else if(picked.indices?.length===1 && d.options.find(o=>o.index===picked.indices[0])?.decline && await visible(page,`[data-action=board-decline][data-index="${picked.indices[0]}"]`)) {
         await click(page,`[data-action=board-decline][data-index="${picked.indices[0]}"]`);bound=true;
       } else if (picked.amounts) {
