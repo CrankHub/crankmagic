@@ -2029,3 +2029,23 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 #matrix-v2 .cm-board .cm-choice-flow .cm-flow-card.is-artless{font-size:12px}
 #matrix-v2 .cm-board .cm-choice-flow .cm-flow-thumb.is-artless{font-size:8px;padding:2px}
 #matrix-v2 .cm-board .cm-choice-flow .is-artless::after{content:attr(data-name)}
+
+/* AN ORDER IS NUMBERED ON ITS ROWS (ROB-554; Rob, 2026-11-25: "They just simply need to have a number indicator placed onto the
+   selected row"). One choice a row, each with a place for its number at the left: empty until chosen, then 1, 2, 3 in the order
+   pressed. Nothing is printed under the list, so the list is the only part that grows, and it scrolls inside the pop-up while
+   Reset, Confirm and Cancel stay at its foot. */
+#matrix-v2 .cm-board .cm-board-decision.is-order>.cm-board-options{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-content:start}
+#matrix-v2 .cm-board .cm-board-decision.is-order>.cm-board-options>.v-button{position:relative;display:flex;align-items:center;justify-content:flex-start;width:100%;min-height:44px;padding:8px 12px 8px 46px;text-align:left;line-height:1.3}
+#matrix-v2 .cm-board .cm-board-decision.is-order>.cm-board-options>.v-button::before{content:"";position:absolute;left:10px;top:50%;width:26px;height:26px;margin-top:-13px;box-sizing:border-box;border-radius:50%;border:1px dashed var(--color-line-strong)}
+#matrix-v2 .cm-board .cm-board-decision.is-order>.cm-board-options>.v-button[data-order]::before{content:attr(data-order);display:grid;place-items:center;border:0;background:var(--color-ink);color:var(--color-bg);font:800 14px/1 var(--font-body)}
+
+/* ATTACHED CARDS RIDE BEHIND THEIR PERMANENT (ROB-555; crankmagic-board.js, withRiders). The group is the host's slot grown by the
+   room its riders take, up and to the right, so a row measures it whole; each rider is the same card size, behind the host and
+   stepped so its name line shows above it. The showing part under the pointer or the focus brings that card whole to the front. */
+#matrix-v2 .cm-board .cm-attach-group{position:relative;display:inline-grid;flex:none;vertical-align:bottom;line-height:0;isolation:isolate;box-sizing:content-box;padding:calc(var(--bc)*var(--att-up)*var(--att)) calc(var(--bc)*var(--att-right)*var(--att)) 0 0}
+#matrix-v2 .cm-board .cm-attach-group>:not(.cm-attached){position:relative;z-index:1;grid-area:1/1}
+#matrix-v2 .cm-board .cm-attach-group>.cm-bcard{margin:0}
+#matrix-v2 .cm-board .cm-attach-group>.cm-bcard.is-tapped,#matrix-v2 .cm-board .cm-attached>.cm-bcard.is-tapped{transform:rotate(30deg)}
+#matrix-v2 .cm-board .cm-attached{position:absolute;left:calc(var(--bc)*var(--att-right)*var(--i));bottom:calc(var(--bc)*var(--att-up)*var(--i));z-index:calc(0 - var(--i));line-height:0}
+#matrix-v2 .cm-board .cm-attached>.cm-bcard{margin:0}
+#matrix-v2 .cm-board .cm-attached:is(:hover,:focus-within){z-index:8}
