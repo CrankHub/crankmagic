@@ -4,7 +4,7 @@
  *
  * Each token the game can make, by game/engine/cards/token-art.mjs's key (name|types|subtypes|colors|power|toughness|keywords),
  * and the Scryfall printing to draw it with: `scryfallId`, `oracleId` (the Scryfall token it was matched to), `face` ("back" for
- * the second face of a two-sided token). 171 tokens. */
+ * the second face of a two-sided token). 173 tokens. */
 
 export const TOKEN_ART = Object.freeze({
   "Ajani's Pridemate|Creature|Cat Soldier|W|2|2|": {"scryfallId":"7801c326-d740-4cec-9268-05348ace8302","oracleId":"9fcff433-c6f7-44c6-8279-04625703cb3e"},
@@ -14,6 +14,7 @@ export const TOKEN_ART = Object.freeze({
   "Angel|Creature|Angel|W|4|4|flying": {"scryfallId":"1159d02c-0291-42de-91e6-e9a49d5ed968","oracleId":"40c64f08-ab2f-4933-8e0e-d1a1c729008f"},
   "Angel|Creature|Angel|W|4|4|flying,vigilance": {"scryfallId":"9864812a-b3b1-4e12-8737-0795cdff994c","oracleId":"29ff8699-53d8-413b-8a3c-0e3ea1e13ff0"},
   "Ape|Creature|Ape|G|3|3|": {"scryfallId":"9fc2b0f6-f126-47a2-8316-febf92e90006","oracleId":"6736e171-ed7d-4259-8a42-f5936ebad532"},
+  "Assassin|Creature|Assassin|B|1|1|deathtouch,haste": {"scryfallId":"3a0d35d2-1e30-4aba-abf5-4ac2707c9ea3","oracleId":"6fb42b86-70bf-4c3e-af02-f861434ca424"},
   "Assassin|Creature|Assassin|B|1|1|menace": {"scryfallId":"19cb2062-86f0-4ce3-b5fb-d3c310f36ec3","oracleId":"e3b8309b-bea0-4489-8063-6a228ff09ad0"},
   "Astartes Warrior|Creature|Astartes Warrior|W|2|2|vigilance": {"scryfallId":"2077e1c1-744b-4379-b4ab-220642873c2d","oracleId":"35e27ced-1151-4559-b552-0d90325092c4"},
   "Axe|Artifact|Equipment||||": {"scryfallId":"6f7a3999-e341-43bb-9b8f-6c1a05b98906","oracleId":"3ac207f4-0510-4b6a-8579-93dfba830537"},
@@ -37,6 +38,7 @@ export const TOKEN_ART = Object.freeze({
   "Citizen|Creature|Citizen|W|1|1|": {"scryfallId":"165164e7-5693-4d65-b789-8ed8a222365b","oracleId":"e31c15d7-f89e-480b-a22f-5823343342bb"},
   "Clue|Artifact|Clue||||": {"scryfallId":"24c80ef6-747d-47b7-8e1f-148f5dfacc32","oracleId":"496e1083-c792-40a4-adf4-fec1d559cd5e"},
   "Construct|Artifact Creature|Construct||0|0|": {"scryfallId":"3877d2d1-61f2-4295-b0fc-827965eaaefc","oracleId":"ee740c48-59cd-4fcc-b4a5-fe3dde1361d5"},
+  "Construct|Artifact Creature|Construct||1|1|": {"scryfallId":"3f695aef-e30a-4289-a9b8-24b5495c344e","oracleId":"180881c9-5ae7-4810-a17a-06b5994a48a1"},
   "Dinosaur Beast|Creature|Beast Dinosaur|G|X|X|trample": {"scryfallId":"ce81e7fe-66fc-4073-a920-bdfc0bf860b9","oracleId":"5db05258-9421-4a4f-8a2d-700c814efead"},
   "Dinosaur Soldier|Creature|Dinosaur Soldier|W|2|2|": {"scryfallId":"f8845523-62d5-451c-aa20-780c64bb44b3","oracleId":"84c0752e-4def-4a72-b6a4-54ee16ad18fa"},
   "Dinosaur|Creature|Dinosaur|G|X|X|trample": {"scryfallId":"20f22bef-e00f-461b-a75b-c5ad49865044","oracleId":"240300bd-5088-43c5-a873-290507515843"},

@@ -117,6 +117,8 @@ class Batch:
             'manaCost': face['mana'] or None, 'colors': face['colors'], **({'colorIdentity': ci} if ci is not None else {}),
             'power': num(face['power']), 'toughness': num(face['toughness']),
             **({'loyalty': num(face['loyalty'])} if face.get('loyalty') else {}),
+            # A battle's printed defense (CR 310.4a).
+            **({'defense': num(face['defense'])} if face.get('defense') else {}),
         }
 
     def identity(self, name):

@@ -99,6 +99,8 @@ function cardFor(state, id, canSeeFace, viewer = null) {
        a zone change makes a new object, and an Aura in a hidden zone must never gain an identity through its old host. */
     ...(object.zone === "battlefield" ? {
       ...(object.token === true ? {token: true} : {}),
+      /* A battle's protector (CR 310.9): public, the player who blocks for it and may never attack it. */
+      ...(Number.isInteger(object.protector) ? {protector: object.protector} : {}),
       /* WHICH TOKEN'S PICTURE (ROB-542; docs/ui-lane/token-art-contract.md): a name is not a token (22 Spirits on Scryfall), so
          the printing that is this token -- found by what it was made as (its copiable values, CR 707.2), not by what effects make
          of it now. Absent for a token that is a copy of a card, drawn as that card by name. */
@@ -286,7 +288,9 @@ function project(state, viewer) {
         attackingPlayerId: state.combat.attackingPlayerId,
         defenders: [...state.combat.defenders],
         attacks: state.combat.attacks.map((a) => ({
-          attacker: a.attacker, defender: a.defender, ...(a.planeswalker !== undefined ? {planeswalker: a.planeswalker} : {}), blocked: a.blocked, blockers: [...a.blockers],
+          attacker: a.attacker, defender: a.defender, ...(a.planeswalker !== undefined ? {planeswalker: a.planeswalker} : {}),
+          /* The battle attacked, `defender` its protector (CR 310.9d). */
+          ...(a.battle !== undefined ? {battle: a.battle} : {}), blocked: a.blocked, blockers: [...a.blockers],
         })),
       }
       : null,

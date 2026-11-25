@@ -73,6 +73,8 @@
  *   {monarch: "you"}                   "if you're the monarch" (CR 725; Ginger, Queen of Sweets): its controller is the
  *                                      monarch now (`state.monarch`, effects/resources.mjs) -- with no monarch in the game, nobody
  *                                      is (725.1)
+ *   {monarch: "opponent"}              "if an opponent is the monarch" (CR 725; Queen Marchesa): a player other than its
+ *                                      controller is the monarch now -- with no monarch in the game, no opponent is
  *   {solved: true|false}               its own permanent, a Case, is solved, or is not (CR 719.3b): "To solve" asks it as its
  *                                      end step begins (719.3a), and "Solved -- [ability]" is that ability's condition (719.3c)
  *   {sacrificedNontokenThisTurn: true}  its controller has sacrificed a nontoken permanent this turn (Evendo Brushrazer;
@@ -506,6 +508,8 @@ export function conditionHolds(state, condition, {controller, source = null, abo
     && Number.isInteger(gift ?? (source !== null && source !== undefined ? state.objects[source]?.gift : undefined)) !== condition.giftPromised) return false;
   /* "If you're the monarch" (CR 725.1, 725.3): its controller holds the game's designation now. */
   if (condition.monarch === "you" && state.monarch !== controller) return false;
+  /* "If an opponent is the monarch" (Queen Marchesa; CR 725.1, 725.3): some other player holds it now -- nobody does, and none is. */
+  if (condition.monarch === "opponent" && !(Number.isInteger(state.monarch) && state.monarch !== controller)) return false;
   /* "IF FRODO IS YOUR RING-BEARER" (CR 701.54e; Frodo, Adventurous Hobbit): its own permanent is the creature its
      controller chose as their Ring-bearer, still on the battlefield under their control (keywords/ring.mjs). */
   if (condition.ringBearer === true && !isRingBearer(state, source, controller)) return false;
@@ -559,8 +563,9 @@ export function conditionHolds(state, condition, {controller, source = null, abo
   if (condition.prowled !== undefined && (state.objects[source]?.prowled === true) !== condition.prowled) return false;
   /* Evolve's comparison (CR 702.100a): as it triggers, and again as it resolves (CR 603.4). */
   if (condition.evolves === true && !evolves(state, source, about)) return false;
-  /* "If you've activated a loyalty ability this turn" (Kiora of Salt and Sand): its controller has (rules/actions.mjs). */
-  if (condition.loyaltyThisTurn === true && !((state.players[controller]?.loyaltyThisTurn ?? 0) > 0)) return false;
+  /* "If you've activated a loyalty ability this turn" (Kiora of Salt and Sand): its controller has (rules/actions.mjs). And
+     false, "if you didn't activate a loyalty ability of a planeswalker this turn" (The Chain Veil): has not. */
+  if (typeof condition.loyaltyThisTurn === "boolean" && ((state.players[controller]?.loyaltyThisTurn ?? 0) > 0) !== condition.loyaltyThisTurn) return false;
   /* "Activate only during your turn" (Humble Defector). */
   if (condition.yourTurn === true && state.activePlayer !== controller) return false;
   /* "If it's your main phase" (Moraug): a main phase of its controller's turn, an added one too (CR 500.8, 505.1). */
@@ -593,10 +598,10 @@ export function conditionHolds(state, condition, {controller, source = null, abo
     if (!them || them.lost || state.players.some((p) => p.id !== them.id && !p.lost && measure(p.id) >= measure(them.id))) return false;
   }
   /* "IF IT'S ATTACKING THE PLAYER WITH THE MOST LIFE OR TIED FOR MOST LIFE" (Scourge of the Throne; CR 702.105a's player): this
-     creature attacking a player -- not a planeswalker of theirs (CR 506.3) -- who has at least as much life as each other
+     creature attacking a player -- not a planeswalker of theirs, nor a battle they protect (CR 506.3) -- who has at least as much life as each other
      player still in the game (CR 800.4a). Removed from combat, it attacks nobody. */
   if (condition.attackingMostLife === true) {
-    const attack = (state.combat?.attacks ?? []).find((a) => a.attacker === source && a.planeswalker === undefined);
+    const attack = (state.combat?.attacks ?? []).find((a) => a.attacker === source && a.planeswalker === undefined && a.battle === undefined);
     if (!attack || !hasMostLife(state, attack.defender)) return false;
   }
   /* PACK TACTICS (Minion of the Mighty): "if you attacked with creatures with total power 6 or greater this combat" -- their
@@ -648,7 +653,7 @@ export function conditionProblems(condition) {
   }
   if ("notYourTurn" in condition && condition.notYourTurn !== true) problems.push("notYourTurn is true");
   if ("targetsLegal" in condition && condition.targetsLegal !== true) problems.push("targetsLegal is true: every target still legal as it resolves");
-  if ("loyaltyThisTurn" in condition && condition.loyaltyThisTurn !== true) problems.push("loyaltyThisTurn is true");
+  if ("loyaltyThisTurn" in condition && typeof condition.loyaltyThisTurn !== "boolean") problems.push("loyaltyThisTurn is true or false");
   if ("evolves" in condition && condition.evolves !== true) problems.push("evolves is true");
   if ("prowl" in condition && condition.prowl !== true) problems.push("prowl is true");
   if ("prowled" in condition && typeof condition.prowled !== "boolean") problems.push("prowled is true or false");
@@ -656,7 +661,7 @@ export function conditionProblems(condition) {
   if ("void" in condition && condition.void !== true) problems.push("void is true");
   if ("sneak" in condition && condition.sneak !== true) problems.push("sneak is true");
   if ("duringStep" in condition && condition.duringStep !== "COMBAT_DECLARE_ATTACKERS") problems.push("duringStep is \"COMBAT_DECLARE_ATTACKERS\": the step the game is in");
-  if ("monarch" in condition && condition.monarch !== "you") problems.push("monarch is \"you\": its controller is the monarch");
+  if ("monarch" in condition && !["you", "opponent"].includes(condition.monarch)) problems.push("monarch is \"you\" (its controller is the monarch) or \"opponent\" (another player is)");
   if ("descended" in condition && condition.descended !== true) problems.push("descended is true: its controller descended this turn");
   if ("combatDamagedBy" in condition && !(typeof condition.combatDamagedBy?.named === "string" && Object.keys(condition.combatDamagedBy).length === 1))
     problems.push("combatDamagedBy is {named}: the name of the creature that dealt the player the effect is about combat damage this game");

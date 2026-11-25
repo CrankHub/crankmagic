@@ -55,7 +55,7 @@ BREAKS = [
      'if (!conditionHolds(state, ability.condition, context) || !matchesSelector(chosenFor(ability, holder).affects, state, id, context)) continue;',
      'if (!matchesSelector(chosenFor(ability, holder).affects, state, id, context)) continue;'),
     ('planeswalker attack counted as player attack', 'game/engine/rules/combat.mjs',
-     'if (attack.planeswalker === undefined && !attackedPlayers.includes(attack.defender)) attackedPlayers.push(attack.defender);',
+     'if (atPlayer(attack) && !attackedPlayers.includes(attack.defender)) attackedPlayers.push(attack.defender);',
      'if (!attackedPlayers.includes(attack.defender)) attackedPlayers.push(attack.defender);'),
     ('attack history never resets', 'game/engine/rules/turn.mjs',
      'if (state.players[state.activePlayer].attackedPlayers) state.players[state.activePlayer].attackedPlayers = [];', ''),

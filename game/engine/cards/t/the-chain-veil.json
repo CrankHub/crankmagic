@@ -1,0 +1,66 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "The Chain Veil",
+    "oracleId": "fb88fb3d-6a85-4bb1-b316-7f759b45a0fa",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Artifact"
+    ],
+    "subtypes": [],
+    "manaCost": "{4}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "At the beginning of your end step, if you didn't activate a loyalty ability of a planeswalker this turn, you lose 2 life.\n{4}, {T}: For each planeswalker you control, you may activate one of its loyalty abilities once this turn as though none of its loyalty abilities have been activated this turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "At the beginning of your end step, if you didn't activate a loyalty ability of a planeswalker this turn, you lose 2 life.",
+      "trigger": {
+        "on": "end step"
+      },
+      "effects": [
+        {
+          "effect": "loseLife",
+          "amount": 2
+        }
+      ],
+      "condition": {
+        "loyaltyThisTurn": false
+      }
+    },
+    {
+      "kind": "activated",
+      "text": "{4}, {T}: For each planeswalker you control, you may activate one of its loyalty abilities once this turn as though none of its loyalty abilities have been activated this turn.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{4}"
+        },
+        {
+          "atom": "{T}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "effectUntil",
+          "rule": "loyalty-again",
+          "selector": {
+            "what": "permanent",
+            "types": [
+              "Planeswalker"
+            ],
+            "controller": "you"
+          },
+          "until": "end-of-turn"
+        }
+      ]
+    }
+  ]
+}

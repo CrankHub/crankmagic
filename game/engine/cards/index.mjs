@@ -352,6 +352,12 @@ const TRIGGERS = {
      its cost, CR 606.4). About the permanent and the player. */
   "loyalty activated": (t) => ({on: "GameEventSpellAbilityCast", loyaltyActivated: true, activator: t.activator ?? "you",
     ...(Number.isInteger(t.removedAtLeast) && t.removedAtLeast >= 1 ? {removedAtLeast: t.removedAtLeast} : {})}),
+  /* "Whenever you activate an ability, if it isn't a mana ability" (Rings of Brighthearth; CR 602.2, 605.3a): any ability put
+     on the stack by its activation, by `activator`, a loyalty ability's too (CR 606.3); "whenever an ability of equipped
+     creature is activated" (Illusionist's Bracers; `of: "equipped"`, by anyone): the creature this Equipment is attached to
+     its source. About the source, the activator and the ability itself (rules/trigger.mjs), for "copy that ability". */
+  "ability activated": (t) => ({on: "GameEventSpellAbilityCast", abilityActivated: true, activator: t.activator ?? "you",
+    ...(t.of === "equipped" ? {of: "equipped"} : {})}),
   /* "Whenever you attack" (CR 508.1): the attack as a whole, once, about the attacking player; "whenever you attack a player"
      (`each: "defender"`): once for each player attacked; "with two or more creatures" (`atLeast`); "if none of those
      creatures attacked you" (`notAttacking: "you"`); "with one or more non-Gnome creatures", "whenever one or more Goblins
@@ -683,6 +689,8 @@ const GRANTABLE = ["activated", "triggered", "keyword"];
 /* What an emblem's abilities are compiled under (CR 114.3: it has no types, no mana cost and no color) -- the abilities
    alone are kept. */
 const EMBLEM_IDENTITY = Object.freeze({name: "An emblem", oracleId: "emblem", types: ["Enchantment"]});
+/* The rule statics an emblem may have beyond a player's rule (compileGivenIn): those whose readers look in the command zone. */
+const EMBLEM_RULES = ["loyalty-at-instant-speed", "untap-during-others", "draws-in-others-draw-step"];
 function compileGrant(list, text, problems) {
   if (!Array.isArray(list) || !list.length) { problems.push(`${text}: the abilities given are a list, with at least one`); return null; }
   for (const ability of list) if (!GRANTABLE.includes(ability?.kind)) problems.push(`${text}: a ${ability?.kind ?? "nameless"} ability given -- only ${GRANTABLE.join(", ")} abilities are given yet`);
@@ -711,6 +719,11 @@ function compileGivenIn(effects, text, problems) {
          `cast-without-paying`, read from the command zone as a permanent's is (rules/statics.mjs, freeCast). */
       for (const ability of list) if (!(["triggered", "replacement"].includes(ability?.kind) || (ability?.kind === "static" && typeof ability.rule === "string" && ability.affects?.what === "player")
         || (ability?.kind === "static" && ability.rule === "cast-without-paying")
+        /* And the rules read from the command zone as a permanent's are: "you may activate loyalty abilities of planeswalkers
+           you control on any player's turn any time you could cast an instant" (Teferi, Temporal Archmage's; rules/statics.mjs,
+           ruleChanged), "untap all permanents you control during each opponent's untap step" and "you draw a card during each
+           opponent's draw step" (Teferi, Who Slows the Sunset's; playerStatics). */
+        || (ability?.kind === "static" && EMBLEM_RULES.includes(ability.rule))
         || (ability?.kind === "static" && ability.rule === undefined && Number.isInteger(ability.layer))))
         problems.push(`${text}: an emblem's ${ability?.kind ?? "nameless"} ability -- only triggered and replacement abilities, a rule changed for players and a static in a layer work from the command zone yet`);
       const {definition, problems: inner} = compileScript({schema: SCRIPT_SCHEMA, identity: EMBLEM_IDENTITY, oracleText: "", abilities: list});
@@ -2106,13 +2119,15 @@ export function compileScript(script) {
          mana of any type that land produced" -- with no target. It is not put on the stack (rules/trigger.mjs, manaTriggered). */
       const [adds] = effects ?? [];
       /* Or "an additional one mana of the chosen color" (Utopia Sprawl): the color its permanent chose as it entered
-         (`chosenColor`, rules/trigger.mjs). */
+         (`chosenColor`, rules/trigger.mjs). Or "an additional one mana of any color" (Fertile Ground; CR 106.1a): its color
+         picked by the tapping player as they tap (`anyColor`, rules/trigger.mjs manaPicks). */
       if (trigger?.on === "GameEventManaPool" && effects.length === 1 && adds?.effect === "addMana" && !(ability.targets ?? []).length && !ability.optional
-        && (MANA(adds.mana) || adds.produced === true || adds.chosenColor === true)) {
+        && (MANA(adds.mana) || adds.produced === true || adds.chosenColor === true || adds.anyColor === true)) {
         /* What a triggered mana ability adds goes straight to the pool: one that says what its mana may pay for is refused
            until it is carried there. */
         if (adds.spendOnly !== undefined || adds.cantSpend !== undefined) problems.push(`${ability.text}: a triggered mana ability whose mana may pay for only some things is not built`);
-        trigger.manaAbility = adds.produced === true ? {produced: true} : adds.chosenColor === true ? {chosenColor: true} : {mana: {...adds.mana}};
+        trigger.manaAbility = adds.produced === true ? {produced: true} : adds.chosenColor === true ? {chosenColor: true}
+          : adds.anyColor === true ? {anyColor: true} : {mana: {...adds.mana}};
       }
       /* MODES CHOSEN AS IT IS PUT ON THE STACK (CR 603.3c, 700.2b): a triggered ability whose one effect is a modal -- its
          modes and their targets are chosen then (rules/trigger.mjs), never as it resolves, whether its modes name targets or
@@ -2373,6 +2388,8 @@ export function compileScript(script) {
     toughness: identity.toughness ?? null,
     /* A planeswalker's printed loyalty (CR 306.5a): the loyalty counters it enters with (306.5b; rules/replacement.mjs). */
     ...(Number.isInteger(identity.loyalty) ? {loyalty: identity.loyalty} : {}),
+    /* A battle's printed defense (CR 310.4a): the defense counters it enters with (310.4b; rules/replacement.mjs). */
+    ...(Number.isInteger(identity.defense) ? {defense: identity.defense} : {}),
     keywords,
     abilities,
     ...(spell ? {spell} : {}),
@@ -2437,7 +2454,8 @@ export function compileScript(script) {
 /* One face's characteristics, from its compiled definition, under its own name: a double-faced card's front or back
    (CR 712.8), an adventurer card's own or its Adventure's (CR 715.2). */
 const faceOfDefinition = (d, name) => ({card: name, types: [...d.types], subtypes: [...d.subtypes], ...(d.supertypes ? {supertypes: [...d.supertypes]} : {}), manaCost: d.manaCost,
-  colors: [...d.colors], power: d.power, toughness: d.toughness, ...(Number.isInteger(d.loyalty) ? {loyalty: d.loyalty} : {}), keywords: [...d.keywords], abilities: structuredClone(d.abilities),
+  colors: [...d.colors], power: d.power, toughness: d.toughness, ...(Number.isInteger(d.loyalty) ? {loyalty: d.loyalty} : {}),
+  ...(Number.isInteger(d.defense) ? {defense: d.defense} : {}), keywords: [...d.keywords], abilities: structuredClone(d.abilities),
   ...(d.spell ? {spell: structuredClone(d.spell)} : {}), ...(d.enchant ? {enchant: structuredClone(d.enchant)} : {})});
 
 /* Edit distance, bounded: suggestions are for a misspelling, not for every card in the pool. */

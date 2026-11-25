@@ -52,7 +52,7 @@ BREAKS = [
      '      ? state.objects[attack.planeswalker]?.zone === "battlefield" && controllerOf(state, attack.planeswalker) === context.controller\n',
      '      ? false\n'),
     ('attacking you: you, the player', FILTER,
-     '      : attack.defender === context.controller))) return false;',
+     '      : attack.battle === undefined && attack.defender === context.controller))) return false;',
      '      : true))) return false;'),
     ('attacking grammar', FILTER,
      '  if (selector.attacking !== undefined && ![true, "you", "you directly"].includes(selector.attacking))\n    throw',

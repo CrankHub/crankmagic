@@ -1,0 +1,113 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Invasion of Zendikar // Awakened Skyclave",
+    "oracleId": "4b1874af-4ea5-4e22-a4d4-e718d75fe95e",
+    "types": [
+      "Battle"
+    ],
+    "subtypes": [
+      "Siege"
+    ],
+    "manaCost": "{3}{G}",
+    "colors": [
+      "G"
+    ],
+    "colorIdentity": [
+      "G"
+    ],
+    "power": null,
+    "toughness": null,
+    "defense": 3
+  },
+  "oracleText": "(As a Siege enters, choose an opponent to protect it. You and others can attack it. When it's defeated, exile it, then cast it transformed.)\nWhen this Siege enters, search your library for up to two basic land cards, put them onto the battlefield tapped, then shuffle.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "triggered",
+      "text": "When this Siege enters, search your library for up to two basic land cards, put them onto the battlefield tapped, then shuffle.",
+      "trigger": {
+        "on": "enters"
+      },
+      "effects": [
+        {
+          "effect": "chooseCard",
+          "zone": "library",
+          "selector": {
+            "types": [
+              "Land"
+            ],
+            "supertypes": [
+              "Basic"
+            ]
+          },
+          "count": 2,
+          "upTo": true,
+          "to": "battlefield",
+          "tapped": true,
+          "shuffle": true
+        }
+      ]
+    }
+  ],
+  "layout": "transform",
+  "back": {
+    "identity": {
+      "name": "Awakened Skyclave",
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Elemental"
+      ],
+      "manaCost": null,
+      "colors": [
+        "G"
+      ],
+      "power": 4,
+      "toughness": 4
+    },
+    "oracleText": "Vigilance, haste\nAs long as this creature is on the battlefield, it's a land in addition to its other types.\n{T}: Add one mana of any color.",
+    "abilities": [
+      {
+        "kind": "keyword",
+        "text": "Vigilance",
+        "keyword": "vigilance"
+      },
+      {
+        "kind": "keyword",
+        "text": "haste",
+        "keyword": "haste"
+      },
+      {
+        "kind": "static",
+        "text": "As long as this creature is on the battlefield, it's a land in addition to its other types.",
+        "layer": 4,
+        "affects": {
+          "self": true
+        },
+        "apply": {
+          "addTypes": [
+            "Land"
+          ]
+        }
+      },
+      {
+        "kind": "activated",
+        "text": "{T}: Add one mana of any color.",
+        "mana": true,
+        "cost": [
+          {
+            "atom": "{T}"
+          }
+        ],
+        "effects": [
+          {
+            "effect": "addMana",
+            "anyColor": true
+          }
+        ]
+      }
+    ]
+  }
+}

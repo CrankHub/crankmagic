@@ -48,7 +48,7 @@ const BLOCKERS_DECLARED = ["COMBAT_DECLARE_BLOCKERS", "COMBAT_FIRST_STRIKE_DAMAG
 export const SELECTOR_KEYS = Object.freeze([
   "what", "types", "subtypes", "supertypes", "nonTypes", "nonSubtypes", "zone", "controller", "who", "another", "target", "token", "manaValue", "named",
   "attachedBy", "colors", "tapped", "counters", "power", "self", "keywords", "nonSupertypes", "colorless", "attacking", "toughness", "countersAtLeast", "attackedThisTurn", "commander", "nonColors", "owner", "enteredThisTurn", "toughnessOverPower",
-  "unblocked", "singleTarget", "abilityKind", "goaded", "uniqueName", "sharesCreatureType", "multicolored", "monocolored", "sharesColor",
+  "unblocked", "singleTarget", "abilityKind", "fromSource", "goaded", "uniqueName", "sharesCreatureType", "multicolored", "monocolored", "sharesColor",
   /* "Whenever a modified creature you control deals combat damage" (Kodama of the West Tree; CR 700.15, rules/layers.mjs). */
   "modified",
   /* Bludgeon Brawl (wave 4d L3): "attached to it", the object a layer-7 amount is counted for (rules/layers.mjs, counted's
@@ -82,6 +82,9 @@ export const SELECTOR_KEYS = Object.freeze([
   "prepared",
   /* "Target attacking or blocking creature" (Gideon's Memorial): declared as a blocker in this combat (CR 509.1g). */
   "blocking",
+  /* "Blocking or blocked by a Goblin or Orc" (Sting, the Glinting Dagger; CR 509.1g, 509.1h): in a block with the creature
+     this selector's source is attached to. */
+  "blockingOrBlockedByAttached",
   /* "Creatures your opponents control without flying or reach" (Sidar Kondo of Jamuraa), "a creature without flanking"
      (CR 702.25a): none of these keywords, through the layers. */
   "nonKeywords",
@@ -205,13 +208,22 @@ const WHAT = ["permanent", "card", "player", "spell", "ability"];
    Nothing gives an ability hexproof or protection, so being a target asks nothing more (`target`). */
 /* `abilityKind`: "triggered" -- "copy target triggered ability you control" (Strionic Resonator; CR 113.3c, card load w4d
    L1). */
-const ABILITY_KEYS = ["what", "controller", "singleTarget", "target", "abilityKind"];
+/* `fromSource`: "from another legendary source that's not a commander" (The Peregrine Dynamo; CR 113.7, 113.8, 903.3) -- a
+   selector of the ability's source as it is now, wherever it is; an ability with no source object (an emblem's, the game's
+   own) is from none. */
+const ABILITY_KEYS = ["what", "controller", "singleTarget", "target", "abilityKind", "fromSource"];
 const abilityMatcher = (selector) => {
   const extra = Object.keys(selector).filter((key) => !ABILITY_KEYS.includes(key));
   if (extra.length) throw new Error(`An ability on the stack is chosen by ${ABILITY_KEYS.join(", ")}, not ${extra.join(", ")}`);
+  /* Read where it is: a legendary creature's "when this creature dies" from its graveyard (CR 113.7a). */
+  const fromSource = new Map(), sourceIn = (zone) => fromSource.get(zone) ?? fromSource.set(zone, compileSelector({...selector.fromSource, what: "card", zone})).get(zone);
   return (state, id, context = {}) => {
     const entry = state.stack.find((e) => e.stackId === id);
     if (!entry || entry.kind === "spell") return false;
+    if (selector.fromSource) {
+      const source = entry.cardId === null || entry.cardId === undefined ? null : state.objects[entry.cardId];
+      if (!source || !sourceIn(source.zone)(state, entry.cardId, context)) return false;
+    }
     if (selector.controller === "you" && entry.playerId !== context.controller) return false;
     if (selector.controller === "opponent" && entry.playerId === context.controller) return false;
     if (selector.singleTarget === true && (entry.targets ?? []).flat().filter(Boolean).length !== 1) return false;
@@ -638,6 +650,8 @@ export function compileSelector(selector) {
     if (selector.owner === "opponent" && object.owner === chooser) return false;
     /* "If you control a commander" (CR 903.3): a card designated a commander. */
     if (selector.commander === true && object.commander !== true) return false;
+    /* "That's not a commander" (The Peregrine Dynamo; CR 903.3): a card not designated one. */
+    if (selector.commander === false && object.commander === true) return false;
     /* "Target creature that was dealt damage this turn" (Mirrodin Avenged; CR 120.3): any damage, by anything, since this
        turn began -- still so once the damage is gone (regenerated, CR 701.19a), never so for damage before this object was
        (CR 400.7) or before this turn (effects/resources.mjs, damagePermanent). */
@@ -673,14 +687,23 @@ export function compileSelector(selector) {
     /* "Target creature attacking you" (Lulu, Stern Guardian; `attacking: "you directly"`): declared as an attacker of this combat
        at this selector's controller -- one attacking a planeswalker of theirs is not attacking them (CR 506.3). */
     if (selector.attacking === "you directly" && !(state.combat?.attacks ?? []).some((attack) => attack.attacker === id
-      && attack.planeswalker === undefined && attack.defender === context.controller)) return false;
+      && attack.planeswalker === undefined && attack.battle === undefined && attack.defender === context.controller)) return false;
     if (selector.attacking === "you" && !(state.combat?.attacks ?? []).some((attack) => attack.attacker === id && (attack.planeswalker !== undefined
       ? state.objects[attack.planeswalker]?.zone === "battlefield" && controllerOf(state, attack.planeswalker) === context.controller
-      : attack.defender === context.controller))) return false;
+      /* Nor a battle they protect (CR 506.3, 310.9): attacking it is not attacking them. */
+      : attack.battle === undefined && attack.defender === context.controller))) return false;
     /* "Target attacking or blocking creature" (Gideon's Memorial; CR 509.1g): declared as a blocker in this combat, and still
        one -- a blocking creature until it is removed from combat or combat ends (CR 506.4), whatever became of what it
        blocks. */
     if (selector.blocking === true && !(state.combat?.attacks ?? []).some((attack) => (attack.blockers ?? []).includes(id))) return false;
+    /* "As long as it's blocking or blocked by a Goblin or Orc" (Sting, the Glinting Dagger; CR 509.1g, 509.1h, 506.4): a
+       creature blocking the one this selector's source is attached to, or an attacker that one blocks -- in this combat's
+       blocks as they now stand, so one removed from combat no longer is. */
+    if (selector.blockingOrBlockedByAttached === true) {
+      const host = state.objects[context.source]?.attachedTo;
+      if (!(state.combat?.attacks ?? []).some((attack) => (attack.attacker === host && (attack.blockers ?? []).includes(id))
+        || (attack.attacker === id && (attack.blockers ?? []).includes(host)))) return false;
+    }
     /* "An unblocked attacking creature" (CR 509.1h): its blockers declared -- from the declare blockers step on -- and
        none blocking it. */
     if (selector.unblocked === true && !(BLOCKERS_DECLARED.includes(state.phase) && (state.combat?.attacks ?? []).some((attack) => attack.attacker === id && !attack.blocked))) return false;

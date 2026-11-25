@@ -126,7 +126,8 @@ export function pushSpell(state, objectId, {controller, targets = [], permanent 
   if (!object) throw new Error(`There is no object ${objectId} to cast`);
   const name = object.card;
   /* Cast face down with disguise (CR 702.168b; rules/actions.mjs shows the card so as it is cast): a face-down spell. */
-  const moved = moveObject(state, objectId, "stack", null, {disguised: object.disguised === true});
+  /* And cast transformed (CR 712.11a; rules/actions.mjs, withTransformed): with its back face up there. */
+  const moved = moveObject(state, objectId, "stack", null, {disguised: object.disguised === true, transformed: object.mdfc?.transforming === true && object.face === "back"});
   const entry = entryFor(state, {
     objectId: moved, cardId: moved, name, playerId: controller ?? object.controller,
     kind: "spell", abilityId, targets,

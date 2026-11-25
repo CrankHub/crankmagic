@@ -1,0 +1,1087 @@
+{
+  "schema": "CrankCardScenarios@1",
+  "card": "Invasion of Dominaria // Serra Faithkeeper",
+  "fixtures": {
+    "Bear": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Bear"
+      ],
+      "manaCost": "{1}{G}",
+      "colors": [
+        "G"
+      ],
+      "power": 2,
+      "toughness": 2
+    },
+    "Ox": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Ox"
+      ],
+      "manaCost": "{3}{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 3,
+      "toughness": 5
+    },
+    "Lancer": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Knight"
+      ],
+      "manaCost": "{1}{R}",
+      "colors": [
+        "R"
+      ],
+      "power": 3,
+      "toughness": 1,
+      "keywords": [
+        "First Strike"
+      ]
+    },
+    "Pacified": {
+      "types": [
+        "Creature"
+      ],
+      "subtypes": [
+        "Soldier"
+      ],
+      "manaCost": "{W}",
+      "colors": [
+        "W"
+      ],
+      "power": 1,
+      "toughness": 1,
+      "abilities": [
+        {
+          "id": "ca",
+          "kind": "static",
+          "rule": "cant-attack",
+          "affects": {
+            "what": "permanent",
+            "self": true
+          },
+          "text": "This creature can't attack."
+        }
+      ]
+    },
+    "Raze": {
+      "types": [
+        "Instant"
+      ],
+      "manaCost": "{R}",
+      "colors": [
+        "R"
+      ],
+      "spell": {
+        "id": "s",
+        "text": "Destroy target land.",
+        "targets": [
+          {
+            "what": "permanent",
+            "types": [
+              "Land"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "effect": "destroy",
+            "targets": {
+              "target": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Cast from untapped lands (the table's way): it enters with 5 defense counters, Maya its protector as the only opponent; Rob gains 4 and draws",
+      "pooledTaps": true,
+      "xTaps": true,
+      "phyrexianTaps": true,
+      "permittedTaps": true,
+      "abilityTaps": true,
+      "hybridTaps": true,
+      "preparedTaps": true,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Pacified"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "expect": [
+            {
+              "offers": {
+                "kind": "cast",
+                "card": "Invasion of Dominaria"
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "seat": 0,
+              "counters": {
+                "card": "Invasion of Dominaria",
+                "counter": "defense",
+                "count": 5
+              }
+            },
+            {
+              "seat": 0,
+              "life": 44
+            },
+            {
+              "seat": 0,
+              "zone": "hand",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "attack": [],
+          "offered": [
+            "Ox → Maya",
+            "Ox → Invasion of Dominaria (Maya)"
+          ]
+        }
+      ],
+      "expect": []
+    },
+    {
+      "name": "Three players: Rob chooses Trey to protect it; Rob attacks it, and Trey, not Maya, blocks with his Bear",
+      "seats": 3,
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 2,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Maya",
+                  "Trey"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Trey"
+          ]
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ox"
+          ],
+          "at": "Invasion of Dominaria (Trey)",
+          "offered": [
+            "Ox → Maya",
+            "Ox → Trey",
+            "Ox → Invasion of Dominaria (Trey)"
+          ]
+        },
+        {
+          "block": [
+            [
+              "Bear",
+              "Ox"
+            ]
+          ],
+          "blockers": [
+            "Bear"
+          ]
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 5
+          }
+        },
+        {
+          "seat": 2,
+          "zone": "graveyard",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Invasion of Dominaria"
+          ]
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 2,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Unblocked, the Ox's 3 damage removes 3 defense counters (5 to 2): short of defeat, and Maya loses no life",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ox"
+          ],
+          "at": "Invasion of Dominaria (Maya)"
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 2
+          }
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "Defeated: the Ox and the Bear remove all 5; it is exiled and cast transformed for nothing -- Serra Faithkeeper, a 4/4 flier with vigilance",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ox",
+            "Bear"
+          ],
+          "at": "Invasion of Dominaria (Maya)"
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "expect": [
+            {
+              "asks": {
+                "seat": 0,
+                "options": [
+                  "Serra Faithkeeper",
+                  "Don't cast"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "choose": [
+            "Serra Faithkeeper"
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Bear",
+            "Serra Faithkeeper"
+          ]
+        },
+        {
+          "seat": 0,
+          "keywords": {
+            "card": "Serra Faithkeeper",
+            "has": [
+              "Flying",
+              "Vigilance"
+            ]
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": []
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": []
+        },
+        {
+          "seat": 1,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Defeated, and Rob declines the cast: the card stays in exile",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ox",
+            "Bear"
+          ],
+          "at": "Invasion of Dominaria (Maya)"
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "COMBAT_DAMAGE"
+          }
+        },
+        {
+          "resolve": true
+        },
+        {
+          "choose": [
+            "Don't cast"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "exile",
+          "cards": [
+            "Invasion of Dominaria"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Bear"
+          ]
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Maya, its protector, may never attack it: her Bear is offered Rob alone",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [
+            "Bear"
+          ],
+          "offered": [
+            "Bear → Rob"
+          ]
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 5
+          }
+        },
+        {
+          "seat": 0,
+          "life": 42
+        }
+      ]
+    },
+    {
+      "name": "Any target reaches it: Lightning Bolt at the Siege removes 3 defense counters",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Mountain"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper",
+            "Lightning Bolt"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "tap": "Mountain"
+        },
+        {
+          "cast": "Lightning Bolt",
+          "targets": [
+            {
+              "card": "Invasion of Dominaria",
+              "seat": 0
+            }
+          ]
+        },
+        {
+          "resolve": true
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 2
+          }
+        },
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Lightning Bolt"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "An attack on the Siege is no attack on Maya: her Propaganda asks nothing, her Revenge of Ravens does not trigger, and Mangara draws nothing",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Bear",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Propaganda",
+            "Revenge of Ravens",
+            "Mangara, the Diplomat"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Bear",
+            "Bear"
+          ],
+          "at": "Invasion of Dominaria (Maya)"
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 1
+          }
+        },
+        {
+          "seat": 0,
+          "life": 44
+        },
+        {
+          "seat": 1,
+          "life": 40
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "count": 0
+        },
+        {
+          "stack": 0
+        }
+      ]
+    },
+    {
+      "name": "Rob attacked the Siege, not Maya: on her turn her Weathered Sentinels still may not attack him as though it had no defender",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Weathered Sentinels",
+            "Bear"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ox"
+          ],
+          "at": "Invasion of Dominaria (Maya)"
+        },
+        {
+          "to": {
+            "turn": 2,
+            "phase": "MAIN1"
+          }
+        },
+        {
+          "attack": [],
+          "offered": [
+            "Bear → Rob"
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Of the Ox at the Siege and the Bear at Maya, only the Bear is attacking her: her Arachnogenesis makes one Spider",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Plains",
+            "Wastes",
+            "Wastes",
+            "Ox",
+            "Bear"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "hand",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes"
+          ]
+        },
+        {
+          "seat": 1,
+          "zone": "hand",
+          "cards": [
+            "Arachnogenesis"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "tap": "Plains"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "tap": "Wastes"
+        },
+        {
+          "cast": "Invasion of Dominaria"
+        },
+        {
+          "resolve": true
+        },
+        {
+          "resolve": true
+        },
+        {
+          "attack": [
+            "Ox",
+            "Bear"
+          ],
+          "at": [
+            "Invasion of Dominaria (Maya)",
+            "Maya"
+          ]
+        },
+        {
+          "pass": 1
+        },
+        {
+          "tap": "Forest",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "tap": "Wastes",
+          "seat": 1
+        },
+        {
+          "cast": "Arachnogenesis",
+          "seat": 1
+        },
+        {
+          "resolve": true
+        },
+        {
+          "to": {
+            "turn": 1,
+            "phase": "MAIN2"
+          }
+        }
+      ],
+      "expect": [
+        {
+          "seat": 1,
+          "zone": "battlefield",
+          "cards": [
+            "Forest",
+            "Wastes",
+            "Wastes",
+            "Spider"
+          ]
+        },
+        {
+          "seat": 0,
+          "counters": {
+            "card": "Invasion of Dominaria",
+            "counter": "defense",
+            "count": 5
+          }
+        },
+        {
+          "seat": 1,
+          "life": 40
+        }
+      ]
+    },
+    {
+      "name": "Put onto the battlefield without entering -- no defense counters on it -- it is put into its owner's graveyard (CR 704.5v)",
+      "setup": [
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": [
+            "Invasion of Dominaria // Serra Faithkeeper"
+          ]
+        }
+      ],
+      "steps": [],
+      "expect": [
+        {
+          "seat": 0,
+          "zone": "graveyard",
+          "cards": [
+            "Invasion of Dominaria"
+          ]
+        },
+        {
+          "seat": 0,
+          "zone": "battlefield",
+          "cards": []
+        }
+      ]
+    }
+  ]
+}
