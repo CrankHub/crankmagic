@@ -135,6 +135,8 @@ const CHECKABLE = [
   ["tools/build-pilot-roles.mjs", ["--check"]],
   ["tools/build-ai-roster.mjs", ["--check"]],
   ["tools/build-veteran-skill.mjs", ["--check"]],
+  /* Which Scryfall printing draws each token the game can make (ROB-542); the check needs no network. */
+  ["tools/build-token-art.mjs", ["--check"]],
   /* The refresh runner's --check runs every check above in turn (an hour with the fetching
      ones); here its --plan proves the runner loads and its plan resolves every tool it names.
      tests/refresh.mjs holds the plan to the registry. */

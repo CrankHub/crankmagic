@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 711 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 713 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1227,6 +1227,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `room-refused-answer` — `tests/room-refused-answer.mjs`
 - `room-view-face` — `tests/room-view-face.mjs` (ROB-207, Luke's playtest of 2026-10-28: the room's view says `face: "back"` of a double-faced permanent whose back face is up, to every seat, and nothing else carries a face)
 - `room-view-appearance` — `tests/room-view-appearance.mjs` (ROB-329, Rob's playtest of 2026-10-30: the room's view says `appearance` of a permanent Oko turned into an Elk, to every seat, while the effect holds, and nothing else carries one)
+- `engine-token-art` — `tests/engine-token-art.mjs` (ROB-542, Rob's report of 2026-11-24: a token is known by what it is, not its name; the table names a Scryfall printing for every token the game can make, and the view carries it as `tokenArt` to every seat, and as `appearance.art` on Oko's Elk)
 - `room-optional-count-targets` — `tests/room-optional-count-targets.mjs` (ROB-204: the room takes an "up to one" and an "any number" target answer with one, several or none chosen, refuses past the most, and plays on)
 - `room-mdfc-land-play` — `tests/room-mdfc-land-play.mjs` (ROB-343: a person plays Fell Mire's land face in an actual room, answers pay or decline, reloads at the question, and the tape replays)
 - `room-g1-terms` — `tests/room-g1-terms.mjs`
@@ -1298,6 +1299,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `board-modal-face` — `tests/board-modal-face.mjs` (ROB-207, Luke's playtest of 2026-10-28: a double-faced land played as its back face is drawn from the back in Table, Focus and 3D; played as its front, or not double-faced, nothing changes)
 - `board-elked-why` — `tests/board-elked-why.mjs` (ROB-330, ROB-331: a permanent that lost its abilities says why it offers nothing, in its label and its menu, in Table, Focus and 3D)
 - `board-oko-elk-art` — `tests/board-oko-elk-art.mjs` (ROB-329: a permanent that looks like an Elk is drawn from the Elk token in Table, Focus and 3D, in its hover and pop-up, with its own name, the original one press away, and an ordinary card never changes)
+- `board-token-art` — `tests/board-token-art.mjs` (ROB-542: each token drawn from the printing the view names, a two-sided token's face, a token no Scryfall token is by name, in Table, Focus and 3D; SHOTS=<folder> photographs them with real pictures)
 - `board-module-fills` — `tests/board-module-fills.mjs` (ROB-206, Luke's playtest of 2026-10-28: a drawer module given more height lets History and Chat use it, step by step, and the drawer's width reaches every module at once)
 - `board-actions-one-scroll` — `tests/board-actions-one-scroll.mjs` (ROB-201, Luke's playtest of 2026-10-28: in the Actions pane the drawer is the one scroll region for every kind of question, a taller window shows more, and the answering row stays in view)
 - `board-mandatory-popup` — `tests/board-mandatory-popup.mjs` (ROB-208, Luke's playtest of 2026-10-28: what the player must resolve (a target, a search, a modal choice, a cost, a scry) pops up front and center with the Actions pane open or shut, a priority offer and the combat declarations stay in the pane, the pop-up steps aside for held-up plays and keeps its answering row in view)
