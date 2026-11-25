@@ -1,0 +1,63 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Firdoch Core",
+    "oracleId": "126c75c0-414b-4e55-8747-2b5566ce716f",
+    "types": [
+      "Kindred",
+      "Artifact"
+    ],
+    "subtypes": [
+      "Shapeshifter"
+    ],
+    "manaCost": "{3}",
+    "colors": [],
+    "colorIdentity": [],
+    "power": null,
+    "toughness": null
+  },
+  "oracleText": "Changeling (This card is every creature type.)\n{T}: Add one mana of any color.\n{4}: This artifact becomes a 4/4 artifact creature until end of turn.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "keyword",
+      "text": "Changeling (This card is every creature type.)",
+      "keyword": "changeling"
+    },
+    {
+      "kind": "activated",
+      "mana": true,
+      "text": "{T}: Add one mana of any color.",
+      "cost": [
+        {
+          "atom": "{T}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "addMana",
+          "anyColor": true
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "{4}: This artifact becomes a 4/4 artifact creature until end of turn.",
+      "cost": [
+        {
+          "atom": "mana",
+          "cost": "{4}"
+        }
+      ],
+      "effects": [
+        {
+          "effect": "animate",
+          "targets": "self",
+          "power": 4,
+          "toughness": 4,
+          "until": "end-of-turn"
+        }
+      ]
+    }
+  ]
+}

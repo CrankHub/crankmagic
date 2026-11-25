@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 713 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 714 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1271,7 +1271,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `board-control` — `tests/board-control.mjs`
 - `board-combat-display` — `tests/board-combat-display.mjs`
 - `board-direct-blocking` — `tests/board-direct-blocking.mjs`
-- `board-block-none-all` — `tests/board-block-none-all.mjs` (ROB-333: one control (No blocks at all) answers every attacker slot with no block and sends the empty set in one activation; absent with no legal blocker, keyboard, phone layout)
+- `board-block-none-all` — `tests/board-block-none-all.mjs` (ROB-333, kept by ROB-544: one button reads ⊘ No blocks with nothing assigned and ⛨ Send N otherwise; no attacker is settled one by one, an attacker left alone is not blocked; one press sends [] or exactly the assigned pairs; keyboard, phone layout)
 - `board-commander-hand` — `tests/board-commander-hand.mjs`
 - `board-attack-all` — `tests/board-attack-all.mjs` ("All at <player>" and None on Declare attackers: picks only, a swarm sent at one player in one press)
 - `board-callouts-place` — `tests/board-callouts-place.mjs` (callouts never over a question asked of you: below it, above it or out of sight, back in place once it is answered, and seen on the phone)
@@ -1649,6 +1649,7 @@ changed, then the proof (every producer's `--check`, the asset manifest, the sui
 - `engine-boxes-load-1115` - `tests/engine-boxes-load-1115.mjs`: the card load of Rob's box and upgrade cards for D1, D3, D4, D5, D6 and D8 (2026-11-15) -- all 28 cards playable and each through its scenarios, a spell's target count that grows with its kicks (Comet Storm) and refused on an ability, join forces held to its one shape (Minds Aglow), "for each player who did" (Tempt with Discovery), and the static rules goaded (Bloodthirsty Blade) and spend-as-any-color (Oath of Nissa)
 - `engine-unplayable-load-1118` - `tests/engine-unplayable-load-1118.mjs`: the card load of Rob's "Unplayable Cards 2026-11-18" workbook (ROB-531) -- the 42 cards of his boxes and designs the engine could not play, each one loaded here a definition the table plays and run through its scenarios, the ones marked for a later pull request not claimed early, and the four Star Trek cards the oracle data lacks named and not claimed
 - `engine-ninja-deck-load-1123` - `tests/engine-ninja-deck-load-1123.mjs`: the card load of Rob's Ninja deck (ROB-540, 2026-11-23) -- all 80 names of the list, read as the deck importer reads them (a flavor name its card), definitions the table plays, and the 29 the engine lacked run through their scenarios: sneak tapped for from untapped lands and given to graveyard creature cards (Ninja Teen), ninjutsu given (Satoru Umezawa) and reduced (Silver-Fur Master), squad, a permission paid with life equal to mana value (Nashi), and a dig's exiled card linked to its source (Krang & Shredder)
+- `engine-upgrade-map-load-1124` - `tests/engine-upgrade-map-load-1124.mjs`: the card load of Rob's Upgrade map (ROB-541, 2026-11-24) -- the 25 cards of its BIC, Practical and Available columns the engine lacked, each a definition the table plays and run through its scenarios: battles (Sieges: a protector, attacks on a battle, defense counters, defeated and cast transformed), blocking an additional creature (Brave the Sands), copying an activated ability (Rings of Brighthearth, Illusionist's Bracers, The Peregrine Dynamo), emblems' rules from the command zone and loyalty again (both Teferis, The Chain Veil), "an additional one mana of any color" (Fertile Ground), and "if an opponent is the monarch" (Queen Marchesa)
 
 ## Design and execution record
 

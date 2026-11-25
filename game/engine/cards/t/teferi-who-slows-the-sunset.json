@@ -1,0 +1,162 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Teferi, Who Slows the Sunset",
+    "oracleId": "98c389ed-b960-42e2-9c76-a062f77c9a78",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Teferi"
+    ],
+    "manaCost": "{2}{W}{U}",
+    "colors": [
+      "U",
+      "W"
+    ],
+    "colorIdentity": [
+      "U",
+      "W"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 4
+  },
+  "oracleText": "+1: Choose up to one target artifact, up to one target creature, and up to one target land. Untap the chosen permanents you control. Tap the chosen permanents you don't control. You gain 2 life.\n−2: Look at the top three cards of your library. Put one of them into your hand and the rest on the bottom of your library in any order.\n−7: You get an emblem with \"Untap all permanents you control during each opponent's untap step\" and \"You draw a card during each opponent's draw step.\"",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "+1: Choose up to one target artifact, up to one target creature, and up to one target land. Untap the chosen permanents you control. Tap the chosen permanents you don't control. You gain 2 life.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "untap",
+          "targets": [
+            {
+              "target": 0
+            },
+            {
+              "target": 1
+            },
+            {
+              "target": 2
+            }
+          ],
+          "only": {
+            "controller": "you"
+          }
+        },
+        {
+          "effect": "tap",
+          "targets": [
+            {
+              "target": 0
+            },
+            {
+              "target": 1
+            },
+            {
+              "target": 2
+            }
+          ],
+          "only": {
+            "controller": "opponent"
+          }
+        },
+        {
+          "effect": "gainLife",
+          "amount": 2
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "types": [
+            "Artifact"
+          ],
+          "count": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        {
+          "what": "permanent",
+          "types": [
+            "Creature"
+          ],
+          "count": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        {
+          "what": "permanent",
+          "types": [
+            "Land"
+          ],
+          "count": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−2: Look at the top three cards of your library. Put one of them into your hand and the rest on the bottom of your library in any order.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -2
+        }
+      ],
+      "effects": [
+        {
+          "effect": "dig",
+          "count": 3,
+          "take": 1,
+          "to": "hand",
+          "rest": "bottom"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−7: You get an emblem with \"Untap all permanents you control during each opponent's untap step\" and \"You draw a card during each opponent's draw step.\"",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -7
+        }
+      ],
+      "effects": [
+        {
+          "effect": "emblem",
+          "abilities": [
+            {
+              "kind": "static",
+              "text": "Untap all permanents you control during each opponent's untap step.",
+              "rule": "untap-during-others",
+              "affects": {}
+            },
+            {
+              "kind": "static",
+              "text": "You draw a card during each opponent's draw step.",
+              "rule": "draws-in-others-draw-step",
+              "affects": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ distinct list of actions, triggers, effects, actions, options, etc. that can be 
 rules"). The keyword actions and abilities are the Comprehensive Rules' own list (701, 702); the effects, triggers,
 static abilities, replacement effects and costs are every one used by the 33,821 cards Forge implements.
 
-**The most-played 80% of Commander cards:** 3,238 cards; 2,017 defined and playable today; 2,926 with every
+**The most-played 80% of Commander cards:** 3,238 cards; 2,031 defined and playable today; 2,929 with every
 mechanic built, so only their definitions are left to write.
 
 **Status:** *built* the engine does it; *partial* some forms; *named* in the engine's vocabulary, not built; *missing* not
@@ -46,11 +46,11 @@ The things that alone hold back the most of the most-played cards.
 | static | RaiseCost | — | missing | 4 | 5 |
 | effect | Discover | discover | named | 4 | 4 |
 | keyword ability | Landwalk | — | named | 4 | 4 |
-| trigger | AbilityCast | — | missing | 4 | 4 |
 | static | CantBeActivated | — | missing | 4 | 4 |
 | option | Unless a player sacrifices a permanent | — | missing | 4 | 4 |
 | option | Remembering what an effect moved | — | missing | 3 | 43 |
 | option | Present in a zone other than the battlefield ("as long as this card is in your graveyard") | — | missing | 3 | 6 |
+| option | Imprint (a card exiled with this) | — | missing | 3 | 5 |
 
 ## Keyword abilities (CR 702)
 
@@ -545,7 +545,7 @@ The things that alone hold back the most of the most-played cards.
 | SpellCastOrCopy | spell cast | built | 6 | 31 | 0 | 0 |
 | LifeLost | life lost | built | 6 | 20 | 0 | 0 |
 | BecomesTarget | becomes target | built | 5 | 116 | 0 | 0 |
-| AbilityCast | — | missing | 5 | 42 | 4 | 4 |
+| AbilityCast | — | missing | 5 | 42 | 2 | 2 |
 | Cycled | cycled | built | 4 | 77 | 0 | 0 |
 | LandPlayed | land played | named | 4 | 40 | 4 | 3 |
 | CommitCrime | crime committed | built | 4 | 21 | 0 | 0 |
@@ -895,7 +895,7 @@ The things that alone hold back the most of the most-played cards.
 | — | Life your opponents lost this turn | amount {lifeLostThisTurn: "opponents"} (effects/resources.mjs keeps each player's, rules/turn.mjs clears it) | built | 3 | 26 | 0 | 0 |
 | — | An amount the trigger carries | — | missing | 3 | 21 | 2 | 1 |
 | — | Your experience counters | amount {countersOn: "you", counter: "experience"} (script/amount.mjs); putCounter's who gives them | built | 3 | 15 | 0 | 0 |
-| — | Abilities activated this turn | — | missing | 3 | 13 | 3 | 3 |
+| — | Abilities activated this turn | — | missing | 3 | 13 | 2 | 2 |
 | — | A gift promised | condition {giftPromised} (script/condition.mjs): the spell's gift, a copy's, or the permanent's it became (rules/stack.mjs) | built | 3 | 11 | 0 | 0 |
 | — | Number | — | missing | 3 | 8 | 3 | 0 |
 | — | The Urza lands | — | missing | 3 | 3 | 0 | 0 |

@@ -60,7 +60,7 @@ BREAKS = [
     # Lulu, Stern Guardian
     ('"attacking you directly" refused', FI, '![true, "you", "you directly"].includes(selector.attacking)', '![true, "you"].includes(selector.attacking)'),
     ('"attacking you directly" counts a planeswalker attacked', FI,
-     '      && attack.planeswalker === undefined && attack.defender === context.controller)) return false;', '      )) return false;'),
+     '      && attack.planeswalker === undefined && attack.battle === undefined && attack.defender === context.controller)) return false;', '      )) return false;'),
     # Wakka, Devoted Guardian
     ('no turn recorded for a counter put on', TR, '    if (object?.zone === "battlefield") object.counterPutTurn = state.turn;\n', ''),
     ('counterPutThisTurn always holds', CO,

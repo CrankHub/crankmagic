@@ -9,9 +9,9 @@
  },
  "top": {
   "cards": 3238,
-  "defined": 2017,
+  "defined": 2031,
   "provisional": 0,
-  "everyRule": 2926
+  "everyRule": 2929
  },
  "sections": {
   "Keyword abilities (CR 702)": {
@@ -5753,8 +5753,8 @@
      "forge": "AbilityCast",
      "top": 5,
      "all": 42,
-     "blocks": 4,
-     "alone": 4
+     "blocks": 2,
+     "alone": 2
     },
     {
      "kind": "trigger",
@@ -9703,8 +9703,8 @@
      "forge": "ThisTurnActivated",
      "top": 3,
      "all": 13,
-     "blocks": 3,
-     "alone": 3
+     "blocks": 2,
+     "alone": 2
     },
     {
      "kind": "count",

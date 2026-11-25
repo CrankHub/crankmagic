@@ -231,6 +231,28 @@ ok(decks.length >= 4, `the live library has decks to seat (${decks.length})`);
     const order = readFileSync(path.join(ROOT, "draft-builder.js"), "utf8");
     ok(order.indexOf("/* FITTING THE BRACKET") < order.indexOf("/* THE UPGRADE PASS."),
       "the fit pass is written before the upgrade pass, which is what makes the money reach it");
+    ok(order.indexOf("THE BRACKET'S ALLOWANCE IS PAID FOR BEFORE THE FILL") > 0 && order.indexOf("THE BRACKET'S ALLOWANCE IS PAID FOR BEFORE THE FILL") < order.indexOf("for(const share of (budget===null") && /reserve\(count\(\)\+n\)>fillCap/.test(order),
+      "and the allowance is paid for before the fill spends the cap, the fill working to what is left (ROB-551): the 2026-11-24 prices showed the swap pass alone cannot do it");
+  }
+  /* MORE MONEY NEVER BUYS FEWER GAME CHANGERS (ROB-551, 2026-11-25). The fit used to swap its Game Changers in after the fill had spent
+     the cap, so where the fill stopped decided the result: on the 2026-11-24 prices a $225 Krenko carried 1 of 3, $235 carried 2, $250
+     carried 3 and $275 carried 2. A sweep of budgets pins the shape, not one price: the count never falls as the cap rises, a cap that
+     covers the cheapest three Game Changers (about $57; $150 doubles it) reaches all three, no budget is crossed, and a fitted
+     list is a hundred wherever a plain one is. */
+  {
+    const budgets = [60, 80, 100, 125, 150, 175, 200, 215, 225, 235, 250, 275, 300, 350, 400, 500];
+    let before = 0;
+    for (const budget of budgets) {
+      const def = {bracketCeiling: 3, budget, perCardCap: null};
+      const fit = B.build({commanders: [commander], cards: catalog, definition: {...def, fitBracket: true}});
+      const plain = B.build({commanders: [commander], cards: catalog, definition: def});
+      const size = (r) => r.slots.reduce((n, s) => n + s.quantity, 0);
+      ok(fit.gameChangers >= before, `$${budget}: ${fit.gameChangers} Game Changers, no fewer than the ${before} that a smaller cap carried`);
+      before = fit.gameChangers;
+      if (budget >= 150) eq(fit.gameChangers, 3, `$${budget} reaches all three Game Changers`);
+      ok(fit.estimatedPrice <= budget + 1e-6, `$${budget}: the list prices at $${fit.estimatedPrice.toFixed(2)}, within the cap`);
+      ok(size(fit) >= size(plain), `$${budget}: fitting costs the list no cards (${size(fit)} against ${size(plain)})`);
+    }
   }
 
   /* The seat the lobby builds from a fitted list is a legal bracket 3 deck. */

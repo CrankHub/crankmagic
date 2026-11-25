@@ -1,0 +1,113 @@
+{
+  "schema": "CrankCardScript@1",
+  "identity": {
+    "name": "Teferi, Temporal Archmage",
+    "oracleId": "07d0b06b-80cb-4518-92c9-84ea87a7e08a",
+    "supertypes": [
+      "Legendary"
+    ],
+    "types": [
+      "Planeswalker"
+    ],
+    "subtypes": [
+      "Teferi"
+    ],
+    "manaCost": "{4}{U}{U}",
+    "colors": [
+      "U"
+    ],
+    "colorIdentity": [
+      "U"
+    ],
+    "power": null,
+    "toughness": null,
+    "loyalty": 5
+  },
+  "oracleText": "+1: Look at the top two cards of your library. Put one of them into your hand and the other on the bottom of your library.\n−1: Untap up to four target permanents.\n−10: You get an emblem with \"You may activate loyalty abilities of planeswalkers you control on any player's turn any time you could cast an instant.\"\nTeferi, Temporal Archmage can be your commander.",
+  "source": "hand",
+  "abilities": [
+    {
+      "kind": "activated",
+      "text": "+1: Look at the top two cards of your library. Put one of them into your hand and the other on the bottom of your library.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": 1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "dig",
+          "count": 2,
+          "take": 1,
+          "to": "hand",
+          "rest": "bottom"
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−1: Untap up to four target permanents.",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -1
+        }
+      ],
+      "effects": [
+        {
+          "effect": "untap",
+          "targets": {
+            "target": 0
+          }
+        }
+      ],
+      "targets": [
+        {
+          "what": "permanent",
+          "count": {
+            "min": 0,
+            "max": 4
+          }
+        }
+      ]
+    },
+    {
+      "kind": "activated",
+      "text": "−10: You get an emblem with \"You may activate loyalty abilities of planeswalkers you control on any player's turn any time you could cast an instant.\"",
+      "cost": [
+        {
+          "atom": "loyalty",
+          "amount": -10
+        }
+      ],
+      "effects": [
+        {
+          "effect": "emblem",
+          "abilities": [
+            {
+              "kind": "static",
+              "text": "You may activate loyalty abilities of planeswalkers you control on any player's turn any time you could cast an instant.",
+              "rule": "loyalty-at-instant-speed",
+              "affects": {
+                "what": "permanent",
+                "types": [
+                  "Planeswalker"
+                ],
+                "controller": "you"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "text": "Teferi, Temporal Archmage can be your commander.",
+      "rule": "can-be-commander",
+      "affects": {
+        "self": true
+      }
+    }
+  ]
+}

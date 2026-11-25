@@ -68,7 +68,7 @@ BREAKS = [
     # The condition (script/condition.mjs).
     ('condition: if you are the monarch', CONDITION, '  if (condition.monarch === "you" && state.monarch !== controller) return false;\n', ''),
     ('condition: its key', CONDITION, '  /* "If you\'re the monarch" (CR 725). */\n  "monarch",\n', '\n'),
-    ('condition: monarch is "you"', CONDITION, '  if ("monarch" in condition && condition.monarch !== "you") problems.push(', '  if (false) problems.push('),
+    ('condition: monarch is "you"', CONDITION, '  if ("monarch" in condition && !["you", "opponent"].includes(condition.monarch)) problems.push(', '  if (false) problems.push('),
     # "While you're the monarch" (Tamiyo; rules/trigger.mjs, cards/index.mjs).
     ('while the monarch: read', TRIGGER, '    if (condition.monarch === "you" && state.monarch !== controller) return [];\n', ''),
     ('while the monarch: compiled', INDEX, '...(t.monarch === "you" && t.to === "you" ? {monarch: "you"} : {})', '...{}'),
