@@ -604,23 +604,29 @@ actions.deck=el=>go('decks',{deck:el.dataset.deck});actions['deck-cards']=el=>go
 /* A DECK FROM A GROUP'S CARDS, after an import: the group names its own commander -- the one Commander-legal card in
    it -- and the deck is created attached to that group. Starting from a commander is Start from (crankmagic-newdeck.js). */
 const groupRows=g=>g.entries.length?g.entries.map(r=>({cardId:r.cardId,quantity:r.quantity,printing:r.printing})):C.state.lots.filter(l=>l.groupIds.includes(g.id)).map(l=>({cardId:l.cardId,quantity:l.quantity,printing:l.printing}));
-C.groupDeck=gid=>groupDeck(gid);
-function groupDeck(groupId){
+C.groupDeck=(gid,named='')=>groupDeck(gid,named);
+/* `named` is the name the import already asked for (ROB-547): the deck takes it and this window does not ask again. */
+/* What a group must hold to start a deck; a refusal says what to do instead. Create › From a group asks it before it lets its shell go. */
+function groupStart(groupId){
   const g=C.state.groups.find(x=>x.id===groupId);
   if(!g)throw Error('Choose a collection group.');
   const rows=groupRows(g);
   if(!rows.length)throw Error(`${g.name} holds no cards yet, so there is nothing to start a deck from. Import a list into it, or start from a commander.`);
   const leaders=rows.map(r=>C.card(r.cardId)).filter(c=>c&&c.commander&&c.legalities?.commander==='legal');
   if(!leaders.length)throw Error(`${g.name} holds no Commander-legal creature, so there is nothing to lead the deck. Add one, or start from a commander instead.`);
+  return {g,rows,leaders};}
+C.groupDeckCheck=gid=>{groupStart(gid);};
+function groupDeck(groupId,named=''){
+  const {g,rows,leaders}=groupStart(groupId);
   /* THE COPIES COME TOO, IF YOU SAY SO (Rob, 2026-09-28). He loaded 85 cards he owns into a group for a Quintorius deck,
      made the deck from the group, and found them still on the Bench: the deck copied the list and moved nothing. The
      copies on the Bench filed in this group can go straight into the new deck's box; a copy already in another deck, reserved for one, or offered for trade stays where it is. */
   const bench=C.state.lots.filter(l=>l.source==='owned'&&(l.groupIds||[]).includes(g.id)&&l.location?.kind==='bench'&&!l.allocation&&l.offer==='none'),copies=bench.reduce((n,l)=>n+l.quantity,0);
-  return form(`New deck from ${g.name}`,f('Deck name','name',leaders[0].name+' deck','required maxlength="160"')+s('Commander','commanderId',leaders.map(c=>[c.id,c.name]),leaders[0].id)+note(`This makes a new draft deck whose list is the ${rows.reduce((n,r)=>n+r.quantity,0)} cards in ${g.name}, and the deck stays linked to ${g.name}.`)+(copies?`<label class="cm-checkbox cm-full"><input type="checkbox" name="move" checked> Put the ${copies} cop${copies===1?'y':'ies'} you own from ${e(g.name)} (now on the Bench) in the deck's box</label>`:''),
+  return form(named?`New deck: ${named}`:`New deck from ${g.name}`,(named?'':f('Deck name','name',leaders[0].name+' deck','required maxlength="160"'))+s('Commander','commanderId',leaders.map(c=>[c.id,c.name]),leaders[0].id)+note(named?`This makes a new draft deck whose list is the ${rows.reduce((n,r)=>n+r.quantity,0)} cards you imported.`:`This makes a new draft deck whose list is the ${rows.reduce((n,r)=>n+r.quantity,0)} cards in ${g.name}, and the deck stays linked to ${g.name}.`)+(copies?`<label class="cm-checkbox cm-full"><input type="checkbox" name="move" checked> Put the ${copies} cop${copies===1?'y':'ies'} you own from ${e(g.name)} (now on the Bench) in the deck's box</label>`:''),
     async data=>{const id='deck:'+C.uid();
       const fromPrecon=pendingPrecon&&pendingPrecon.name===g.name?pendingPrecon:null;pendingPrecon=null;
       const play=fromPrecon?.play;   /* the library keeps a precon's id, name and set alone (collection-model.js) */
-      await commit({type:'createDeck',deckId:id,name:data.name,commanders:[data.commanderId],groupId:g.id,...(fromPrecon?{precon:fromPrecon}:{}),
+      await commit({type:'createDeck',deckId:id,name:named||data.name,commanders:[data.commanderId],groupId:g.id,...(fromPrecon?{precon:fromPrecon}:{}),
         slots:rows.some(r=>r.cardId===data.commanderId)?rows:[{cardId:data.commanderId,quantity:1},...rows]});
       if(data.move&&bench.length)await commit({type:'bulk',op:'place',deckId:id,lotIds:bench.map(l=>l.id),asStandIn:true});
       if(play&&C.play?.open())go('table',{deck:id});else go('decks',{deck:id});},'Create draft');
@@ -665,6 +671,10 @@ actions['new-deck']=()=>{
       </button>
     </div><div class="cm-actions">${b('Restore a backup','restore')}</div></div>`).classList.add('cm-new-deck-dialog');
 };
+/* THE GROUPS A DECK CAN START FROM (ROB-547): they hold cards and are no deck's own. Create › Start from › From a group
+   (crankmagic-newdeck.js) lists them. */
+C.groupDeckChoices=()=>{const own=new Set((M.starterGroups?.()||[]).map(x=>x.id));/* the Bench, To Buy and To Trade never become a deck's box */
+  return C.state.groups.filter(g=>g.template!=='bench'&&!own.has(g.id)&&!C.state.decks.some(d=>d.groupId===g.id)&&groupRows(g).length);};
 /* LOAD PATH: start from one of Rob's own decks.
  *
  * Rob, 2026-09-24: "Create and Lab should be the same thing... that should be 'Load' which provides
@@ -752,10 +762,8 @@ actions['wizard-load']=()=>{
     <div class="cm-load-detail" id="cm-load-detail"></div>
     <p class="cm-load-foot cm-muted">Decks live in the browser that made them. ${b('Export these decks','export-decks',{},false,{cls:'compact'})} ${b('Import a deck file','import-decks',{},false,{cls:'compact'})}</p>
   </div>`,()=>actions['new-deck']());
-  /* Clicking the backdrop closes it. Rob asked for "click anywhere outside of the ... pane to
-     close"; a <dialog> does not do that on its own, and this is scoped to this dialog rather than
-     changed for every dialog in the app. */
-  d0.addEventListener('click',ev=>{if(ev.target===d0)actions.close();});
+  /* A click outside no longer closes it (Rob, 2026-11-24, ROB-547, over his earlier "click anywhere outside of the ... pane
+     to close"): the corner control and the buttons do. */
   loadDetail(mine[0].id);
 };
 actions['load-pick']=el=>{
@@ -816,9 +824,9 @@ actions['load-choose']=async el=>{
 /* THE OLD CREATE POP-UP IS GONE (the Decks requirements' NEW-2, 2026-10-23): Create opens Start from (crankmagic-newdeck.js),
    and its road from a collection group's cards is Define the Deck's Merge in a Group (NEW-3, CRD-3). */
 /* After a list is imported for a new deck: the deck, when the list names a commander to lead it. */
-function deckFromImport(gid){
+function deckFromImport(gid,named=''){
   const g=C.state.groups.find(x=>x.id===gid);
-  if(g&&groupRows(g).length)return groupDeck(gid);
+  if(g&&groupRows(g).length)return groupDeck(gid,named);
   C.notice('Import completed. Create a deck from the imported cards in the Cards page.');
 }
 /* The landing page's Step one (R3.8) starts a deck the two ways the wizard does: from a commander, with the name
@@ -834,9 +842,9 @@ async function deckFromLink(url){
   if(out.error)throw Error(out.advice?`${out.error} ${out.advice}`:out.error);
   const warn=(out.deck.warnings||[]).join(' ');
   if(warn)C.notice(`${out.deck.name}: ${warn}`);
-  return C.importList({name:out.deck.name||'New deck list',text:listOf(out.deck),after:deckFromImport});
+  return C.importList({name:out.deck.name||'',deck:true,text:listOf(out.deck),after:deckFromImport});
 }
-C.startDeck={commander:query=>C.build.start(String(query||'').trim()),list:(text='')=>C.importList({name:'New deck list',text,after:deckFromImport}),link:deckFromLink,
+C.startDeck={commander:query=>C.build.start(String(query||'').trim()),list:(text='')=>C.importList({name:'',deck:true,text,after:deckFromImport}),link:deckFromLink,
   /* True for a link to a deck site the app knows: Step one sends it here rather than searching for it as a name. */
   isLink:text=>!!(globalThis.MtgDeckSources&&MtgDeckSources.identify(String(text||'').trim()))};
 /* START FROM A PRECON (R3.10b): every Commander precon Wizards has published (data/precons.json, from MTGJSON by
@@ -923,7 +931,7 @@ actions['import-archidekt']=()=>{actions.close();return form('Import from Archid
 actions['wizard-import']=()=>{
   actions.close();   /* the dialog handle lives in crankmagic-app.js; close through the shared action (D1) */
   if(!C.importList)throw Error('The import module is not loaded. Reload the page.');
-  C.importList({name:'New deck list',back:()=>actions['new-deck'](),after:deckFromImport});
+  C.importList({name:'',deck:true,back:()=>actions['new-deck'](),after:deckFromImport});
 };
 /* LAB PATH: navigate to Lab for auto-build */
 actions['wizard-lab']=()=>{

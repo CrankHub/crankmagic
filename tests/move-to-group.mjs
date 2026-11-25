@@ -139,7 +139,66 @@ try {
   await page.locator("[data-action=batch-more]").click();
   const buyBar = await page.locator(".cm-row-menu button").allInnerTexts();
   ok(["Ordered…", "Bought in store", "Arrived"].every((x) => buyBar.some((y) => y.trim() === x)), `the To buy tab keeps Ordered…, Bought in store and Arrived in its More menu (${buyBar.join(" | ")})`);
+  /* DELETE A GROUP, TWO WAYS (ROB-547): from Library › Groups. Keep the cards: the owned copy stays on the Bench and the planned
+     card is Watched. Delete the cards too: the owned copy and the planned card leave the Library. */
+  const made = await page.evaluate(async () => {
+    const C = globalThis.__cm, free = C.state.lots.filter((l) => l.source === "owned" && l.location?.kind === "bench" && !l.allocation && !l.chosenFor && (l.offer || "none") === "none" && !(l.groupIds || []).length);
+    const [a, b] = [free[0], free.find((l) => l.cardId !== free[0].cardId)], out = {};
+    for (const [name, lot, other] of [["Keep pile", a, b], ["Drop pile", b, a]]) {
+      const gid = "group:" + C.uid();
+      await C.commit({type: "batch", summary: "test", commands: [{type: "createGroup", groupId: gid, name}, {type: "groupLots", groupId: gid, lotIds: [lot.id]},
+        {type: "groupEntries", groupId: gid, batchId: "batch:" + C.uid(), cards: [C.card(other.cardId)], entries: [{cardId: other.cardId, quantity: 1, printing: {}, notes: ""}]}]}, {renderView: false});
+      out[name] = {gid, lot: lot.id, planned: other.cardId};
+    }
+    return out;
+  });
+  const del = async (name, what) => {
+    await page.goto(`${base}/index.html#cards`);
+    await page.locator(".cm-subnav a", {hasText: "Groups"}).click();
+    await page.locator("#cm-dialog[open] h2", {hasText: "Groups"}).waitFor();
+    await page.locator("#cm-dialog .cm-group-row", {hasText: name}).locator("[data-action=delete-group]").click();
+    await page.locator("#cm-dialog[open] h2", {hasText: `Delete ${name}`}).waitFor();
+    if (what === "drop") await shot(page, "delete-group-1280");
+    await page.check(`#cm-dialog [name=what][value=${what}]`);
+    await page.click("#cm-dialog button[type=submit]");
+    await page.waitForFunction(() => !document.querySelector("#cm-dialog[open]"), null, {timeout: 30000});
+  };
+  const after = (x) => page.evaluate((x) => {const s = globalThis.__cm.state, l = s.lots.find((y) => y.id === x.lot);
+    return {group: s.groups.some((g) => g.id === x.gid), lot: l ? {kind: l.location?.kind, groups: l.groupIds.includes(x.gid)} : null, watched: s.lots.filter((y) => y.cardId === x.planned && y.source === "watching").length};}, x);
+  const watchedBefore = (await after(made["Keep pile"])).watched;
+  await del("Keep pile", "keep");
+  eq(await after(made["Keep pile"]), {group: false, lot: {kind: "bench", groups: false}, watched: watchedBefore + 1}, "Delete, keep the cards: the group is gone, the owned copy stays on the Bench, the planned card is Watched");
+  const dropBefore = (await after(made["Drop pile"])).watched;
+  await del("Drop pile", "drop");
+  eq(await after(made["Drop pile"]), {group: false, lot: null, watched: dropBefore}, "Delete the cards too: the group, its owned copy and its planned card leave the Library");
+  ok(await page.evaluate(() => globalThis.__cm.state.groups.some((g) => g.template === "bench")), "the Bench is still there");
+  await page.locator(".cm-subnav a", {hasText: "Groups"}).click();
+  await page.locator("#cm-dialog[open] h2", {hasText: "Groups"}).waitFor();
+  eq(await page.locator("#cm-dialog .cm-group-row", {hasText: /^(To Buy|To Trade|Bench)/}).count(), 0, "the Bench, To Buy and To Trade, the app's own groups, offer no Delete");
+  await page.locator("#cm-dialog [data-action=close]").first().click();
+  /* CREATE › FROM A GROUP REFUSES A GROUP WITH NO LEADER (ROB-547), and leaves Start from and its shell as they were; the app's
+     own groups are never offered. */
+  const noLead = await page.evaluate(async () => {
+    const C = globalThis.__cm, l = C.state.lots.find((x) => x.source === "owned" && x.location?.kind === "bench" && !x.allocation && !(x.groupIds || []).length && !C.card(x.cardId)?.commander);
+    const gid = "group:" + C.uid();
+    await C.commit({type: "batch", summary: "test", commands: [{type: "createGroup", groupId: gid, name: "No leader pile"}, {type: "groupLots", groupId: gid, lotIds: [l.id]}]}, {renderView: false});
+    return gid;
+  });
+  await page.goto(`${base}/index.html#decks`);
+  await page.locator("[data-action=new-deck]").first().waitFor({timeout: 60000});
+  await page.locator("[data-action=new-deck]").first().click();
+  await page.locator("#cm-dialog [data-action=start-from]").click();
+  await page.locator(".cm-flow-dialog").waitFor({timeout: 30000});
+  const shells = await page.evaluate(() => globalThis.__cm.state.decks.length);
+  await page.locator(".cm-flow-nav button", {hasText: "From a group"}).click();
+  const offered = await page.locator("#cm-flow-group option").allInnerTexts();
+  ok(offered.includes("No leader pile") && !offered.some((x) => /^(To Buy|To Trade|Bench)/.test(x)), `From a group offers the groups that hold cards, never the app's own (${offered.join(" | ")})`);
+  await page.selectOption("#cm-flow-group", noLead);
+  await page.locator("[data-action=flow-group-next]").click();
+  await page.locator("#cm-notice", {hasText: "nothing to lead the deck"}).waitFor({timeout: 15000});
+  ok(await page.locator(".cm-flow-dialog[open]").count() === 1 && await page.evaluate(() => globalThis.__cm.state.decks.length) === shells, "a group with no card that can lead is refused with the way out, and Start from and its shell stay as they were");
   await context.close();
+
 } finally {
   await close();
 }
