@@ -496,6 +496,7 @@ cast and resolved between two views (an opponent passed for, `passStack`) arrive
   - `counters: {kind: n}`, an open set (+1/+1, −1/−1, loyalty, lore, charge and more);
   - `types`, `power`, `toughness`, `keywords`;
   - `commander`, and sometimes `commanderKey`, `level`, `monstrous`, `prepared` or `face` (`"back"` for a double-faced permanent whose back face is up, Linear ROB-207; the front says nothing);
+  - `tokenArt` (Linear ROB-542, `docs/ui-lane/token-art-contract.md`): `{scryfallId, oracleId, face?}` on a battlefield token, the Scryfall printing that is this token (a name is not a token: 22 Spirits); drawn instead of a request by name. A look's `appearance` carries the same as `appearance.art`.
   - `appearance` (Linear ROB-329, `docs/ui-lane/view-appearance-contract.md`): `{token, colors, subtypes, power, toughness}` on a battlefield permanent an effect has made look like a token (creature types set and all abilities lost: Oko's Elk); the board draws that token's picture, the name stays the card's. Absent otherwise, and when the effect ends;
   - `why` (Linear ROB-24, Oct 21): on the viewing seat's own hand and command-zone cards, while that seat holds priority,
     for each one no option plays. It's a short sentence saying why it can't be played now: its time, its mana and the
