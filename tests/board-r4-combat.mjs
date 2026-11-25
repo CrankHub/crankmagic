@@ -85,7 +85,12 @@ try{
    eq(m.sideways,[],`${where}: nothing in the pop-up scrolls sideways`);
    ok(m.send,`${where}: Send is in view and receives the pointer`);
    /* the last row: the wheel over the list brings it up, and the pointer reaches it there */
-   const list=page.locator('.cm-required-popup .cm-combat-groups'),box=await list.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,3000);await page.waitForTimeout(150);
+   const list=page.locator('.cm-required-popup .cm-combat-groups'),box=await list.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+   /* ROB-552: wait until the list has reached its end, not a fixed 150ms; a busy machine or a redraw can delay or swallow
+      the wheel, so it is sent again (at most four times) until the list is at its end */
+   const atEnd=()=>page.waitForFunction(()=>{const l=document.querySelector('.cm-required-popup .cm-combat-groups');return !!l&&l.scrollTop+l.clientHeight>=l.scrollHeight-1;},null,{timeout:1500}).then(()=>true,()=>false);
+   let ended=false;for(let i=0;i<4&&!ended;i++){await page.mouse.wheel(0,3000);ended=await atEnd();}
+   ok(ended,`${where}: the wheel over the list brings it to its end`);
    const last=await page.locator('.cm-combat-row').last().evaluate(el=>{const b=el.querySelector('.cm-combat-open'),r=b.getBoundingClientRect(),name=el.querySelector('.cm-block-row-name'),n=name.getBoundingClientRect();
      return {hit:b.contains(document.elementFromPoint(r.x+r.width*.5,r.y+r.height*.5)),name:name.textContent,whole:name.scrollWidth<=name.clientWidth+1&&name.scrollHeight<=name.clientHeight+1,lines:Math.round(n.height/parseFloat(getComputedStyle(name).lineHeight))};});
    ok(last.hit,`${where}: the last attacker row is reached by the pointer after the list scrolls`);
