@@ -114,6 +114,33 @@ try {
     eq(fetched.length, 0, "and the list was not fetched again");
     await context.close();
   }
+  /* 3b. Named once (Rob, 2026-11-24, ROB-547's precon half): the import asks for the deck's name, prefilled with the
+     precon's, and the deck window after it asks no more. A name changed there is the deck's and its group's, and the
+     deck is still marked as made from the precon. */
+  {
+    const {context, page} = await fresh();
+    await page.goto(`${base}/index.html`);
+    await page.locator(".cm-landing [data-action=new-deck]").click();
+    await page.locator("#cm-dialog [data-action=start-precon]").click();
+    await page.locator("#cm-precon-list .cm-precon").first().waitFor({timeout: 30000});
+    const pick = data.decks.find((d) => d.commander.length === 1 && !d.notInUniverse);
+    await search(page, pick.commander[0].name);
+    await page.locator(`#cm-precon-list [data-precon="${pick.id}"]`).click();
+    await page.waitForFunction(() => document.querySelector("#cm-dialog[open] textarea[name=text]"), null, {timeout: 30000});
+    eq(await page.getByLabel("Deck name").inputValue(), pick.name, "the precon's import asks for the deck's name, prefilled with the precon's");
+    eq(await page.getByLabel("New group name").count(), 0, "and not for a group name");
+    await page.getByLabel("Deck name").fill("My precon night");
+    await page.click("#cm-dialog [type=submit]");
+    await page.locator("#cm-dialog[open] h2", {hasText: "Review import"}).waitFor({timeout: 60000});
+    await page.locator("#cm-import-commit:not([disabled])").click();
+    await page.locator("#cm-dialog[open] h2", {hasText: "New deck: My precon night"}).waitFor({timeout: 30000});
+    ok(!(await page.locator("#cm-dialog [name=name]").count()), "the deck window after the import does not ask for the name again");
+    await page.getByRole("button", {name: "Create draft", exact: true}).click();
+    await page.waitForFunction(() => location.hash.startsWith("#decks?deck="), null, {timeout: 30000});
+    const made = await page.evaluate(async () => {const r = await CrankRepository.open(); try {const st = await r.getState(), d = st.decks.find((x) => x.name === "My precon night"), g = d && st.groups.find((x) => x.id === d.groupId); return d ? {group: g && g.name, precon: d.precon && d.precon.id, extra: d.precon && Object.keys(d.precon).filter((k) => !["id", "name", "setName"].includes(k))} : null;} finally {r.close();}});
+    eq(made, {group: "My precon night", precon: pick.id, extra: []}, "the deck and its group carry the one name, and the deck is still the precon's");
+    await context.close();
+  }
   /* 1. The New deck wizard's From a precon. */
   {
     const {context, page} = await fresh();
