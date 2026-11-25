@@ -568,9 +568,6 @@ body.cm-hand-dragging,body.cm-hand-dragging *{cursor:grabbing!important;user-sel
 @media(prefers-reduced-motion:reduce){.cm-board-lands-group>summary::before{transition:none}}
 /* What an attack risks (crankmagic-board.js, attackRisk): red, ☠, a blocker could kill it; yellow, ⊘, it kills no blocker alone. */
 .cm-risk{display:inline-block;margin-right:6px;font-weight:800}.cm-risk.is-die{color:#ff8a7a}.cm-risk.is-weak{color:#f2d06b}
-#matrix-v2 .cm-board-decision .v-button.is-risk-weak{box-shadow:inset 4px 0 #e0b938}
-#matrix-v2 .cm-board-decision .v-button.is-risk-die{box-shadow:inset 4px 0 #e0533f;border-color:#e0533f99}
-#matrix-v2 .cm-board-decision .v-button.is-risk-die.is-risk-weak{box-shadow:inset 4px 0 #e0533f,inset 8px 0 #e0b938}
 #matrix-v2 .cm-board-same-count{flex:none;width:60px;padding:0 6px;border:1px solid var(--v-line-strong);border-radius:var(--v-radius);background:var(--v-raised);color:var(--v-ink);font:inherit;font-weight:700;text-align:center}
 .cm-stage-rail .cm-block-tiles{flex-wrap:wrap;overflow:visible}
 #matrix-v2 .cm-stage-module[data-module="actions"] .v-button{white-space:normal;text-align:left;line-height:1.4;min-height:40px;overflow-wrap:anywhere}
@@ -2007,6 +2004,56 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
   /* the row's state and blockers go under its name, so a narrow window never squeezes the name to letters */
   #matrix-v2 .cm-board .cm-r4-combat.is-draft .cm-combat-tile{grid-template-columns:auto minmax(0,1fr)}
   #matrix-v2 .cm-board .cm-block-row-side{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between}
+}
+/* DECLARING ATTACKERS (ROB-545; Rob, 2026-11-24: "a nested outline view of each card underneath an expand and collapse header for
+   each of the players ... a scrollable row at the bottom of available cards"). The pop-up is wide, as the blockers' is (ROB-544):
+   the outline scrolls up and down inside it, the row of creatures not yet sent scrolls sideways under it, and the answering row
+   (Confirm, None, Cancel) stays at its foot. The marks are the canvas plan's (F3): safe green, trade amber, dies red. */
+#matrix-v2 .cm-board .cm-required-popup:has(.is-attacking){width:min(880px,calc(100vw - 32px))!important}
+#matrix-v2 .cm-board #cm-decision-slot.cm-required-popup #cm-board-decision.is-attacking{display:flex;flex-direction:column;min-height:0}
+#matrix-v2 .cm-board #cm-decision-slot.cm-required-popup #cm-board-decision.is-attacking>h2{margin:0 0 8px}
+#matrix-v2 .cm-board #cm-decision-slot.cm-required-popup #cm-board-decision.is-attacking>.cm-attack-outline{display:block;flex:1 1 auto;min-height:60px;max-height:none;margin:0;padding:2px;overflow-x:hidden;overflow-y:auto}
+#matrix-v2 .cm-board .cm-risk.is-safe{color:var(--st-inbox)}
+#matrix-v2 .cm-board .cm-risk.is-trade{color:var(--color-money)}
+#matrix-v2 .cm-board .cm-risk.is-die{color:var(--color-required)}
+#matrix-v2 .cm-board .cm-risk.is-none{color:var(--color-faint)}
+#matrix-v2 .cm-board .cm-attack-group+.cm-attack-group{margin-top:6px}
+#matrix-v2 .cm-board .cm-attack-group{border:1px solid var(--color-line-strong);border-radius:var(--radius-control);background:var(--color-raised)}
+#matrix-v2 .cm-board .cm-attack-group.is-current{border-color:var(--color-aether)}
+#matrix-v2 .cm-board .cm-attack-head,#matrix-v2 .cm-board .cm-attack-subhead{display:flex;align-items:center;gap:6px;padding:4px 6px}
+#matrix-v2 .cm-board .cm-attack-fold{flex:none;width:32px;height:32px;padding:0;border:0;background:none;color:var(--color-ink);font-size:16px;cursor:pointer}
+#matrix-v2 .cm-board .cm-attack-target{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;min-height:40px;padding:4px 10px;border:1px solid var(--color-line);border-radius:var(--radius-control);background:var(--color-panel);color:var(--color-ink);font:700 calc(16px*var(--hud-scale,1))/1.25 var(--font-body);text-align:left;cursor:pointer}
+#matrix-v2 .cm-board .cm-attack-target.is-permanent{font-weight:500;font-size:calc(15px*var(--hud-scale,1))}
+#matrix-v2 .cm-board .cm-attack-target[aria-pressed=true]{outline:2px solid var(--color-aether);outline-offset:-2px;background:var(--color-accent-soft)}
+#matrix-v2 .cm-board .cm-attack-target .cm-risk{margin:0}
+#matrix-v2 .cm-board .cm-attack-name{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+#matrix-v2 .cm-board .cm-attack-count{flex:none;color:var(--color-muted);font-weight:700}
+#matrix-v2 .cm-board .cm-attack-all{flex:none;min-height:40px}
+#matrix-v2 .cm-board .cm-attack-body{padding:0 6px 6px 44px}
+#matrix-v2 .cm-board .cm-attack-sub{margin-top:4px}
+#matrix-v2 .cm-board .cm-attack-subhead{padding:2px 0}
+#matrix-v2 .cm-board .cm-attack-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px}
+#matrix-v2 .cm-board .cm-attack-list:empty{display:none}
+#matrix-v2 .cm-board .cm-attack-sent{display:flex;align-items:center;gap:6px;min-width:0}
+#matrix-v2 .cm-board .cm-attack-inspect{flex:none;width:32px;height:45px;padding:0;border:0;border-radius:3px;background:var(--color-panel);cursor:zoom-in;overflow:hidden}
+#matrix-v2 .cm-board .cm-choice-flow .cm-attack-inspect>.cm-flow-thumb{display:block;width:100%;height:100%;object-fit:cover;border-radius:0}
+#matrix-v2 .cm-board .cm-attack-back,#matrix-v2 .cm-board .cm-attack-send{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;min-height:45px;padding:4px 8px;border:1px solid var(--color-line);border-radius:var(--radius-control);background:var(--color-panel);color:var(--color-ink);font:500 calc(14px*var(--hud-scale,1))/1.25 var(--font-body);text-align:left;cursor:pointer}
+#matrix-v2 .cm-board .cm-attack-who{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+#matrix-v2 .cm-board .cm-attack-pt{flex:none;font-weight:700}
+#matrix-v2 .cm-board .cm-attack-back .cm-risk,#matrix-v2 .cm-board .cm-attack-send .cm-risk{margin:0}
+#matrix-v2 .cm-board .cm-attack-x{flex:none;color:var(--color-muted)}
+#matrix-v2 .cm-board .cm-attack-tray-wrap{flex:none;margin-top:8px;padding-top:6px;border-top:1px solid var(--color-line-strong)}
+#matrix-v2 .cm-board .cm-attack-tray-head{margin:0 0 4px;color:var(--color-muted);font:600 calc(14px*var(--hud-scale,1))/1.3 var(--font-body)}
+#matrix-v2 .cm-board .cm-attack-tray{list-style:none;display:flex;gap:6px;margin:0;padding:2px 2px 6px;overflow-x:auto;overflow-y:hidden;overscroll-behavior:contain}
+#matrix-v2 .cm-board .cm-attack-tile{display:flex;align-items:center;gap:4px;flex:0 0 200px;min-width:0}
+#matrix-v2 .cm-board .cm-attack-tile.is-unable .cm-attack-send{opacity:.5;cursor:not-allowed}
+#matrix-v2 .cm-board .cm-attack-tally{font-weight:700;margin-right:auto}
+#matrix-v2 .cm-board .cm-attack-problem{color:var(--color-required);flex:1 1 160px}
+#matrix-v2 .cm-board .is-attacking>.cm-board-decision-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:none}
+@media(max-width:600px){
+  #matrix-v2 .cm-board .cm-attack-body{padding-left:6px}
+  #matrix-v2 .cm-board .cm-attack-tile{flex-basis:160px}
+  #matrix-v2 .cm-board .cm-attack-list{grid-template-columns:minmax(0,1fr)}
 }
 /* A CANCELED QUESTION WAITING ON THE PLAYER'S WORD (ROB-205; the stabilization plan of 2026-11-19, section 2: "the collapsed box sits
    off the mats, not centered on the board"): small, at the foot of the window beside the left drawer, over the hand's edge rather
