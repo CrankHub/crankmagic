@@ -44,6 +44,7 @@ import {legalActions} from "../engine/rules/actions.mjs";
 import {runScenario} from "../engine/cards/scenario.mjs";
 import {loadCardScripts, loadCardIndex} from "./engine-cards.mjs";
 import {createCardIndex} from "../engine/cards/index.mjs";
+import {PREDEFINED_TOKENS} from "../engine/script/effects/permanents.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const BASELINE_FILE = path.join(ROOT, "docs", "engine", "interaction-census-baseline.json");
@@ -134,6 +135,53 @@ function targetUnions(text) {
 }
 
 /** Everything the Oracle text says, as ways the player can take. */
+/* THE TOKENS THE TEXT MAKES (Rob, 2026-11-24: "the artwork is correct for the type of token created ... certain card mechanics
+   related to tokens"; ROB-542). "A 2/1 white and black Inkling creature token with flying" is read as its power and toughness, its
+   colors, its subtypes, whether it is also an artifact or an enchantment, and the keywords of its "with" clause up to where the
+   sentence turns to something else. A token whose size is a letter ("X/X") is read for everything but its size. */
+const COLOR_WORDS = {white: "W", blue: "U", black: "B", red: "R", green: "G"};
+const TOKEN_KEYWORDS = ["flying", "first strike", "double strike", "deathtouch", "haste", "hexproof", "indestructible", "lifelink", "menace", "reach", "trample",
+  "vigilance", "defender", "flash", "prowess", "changeling", "infect", "toxic", "decayed", "shadow", "fear", "ward"];
+const TOKEN_PHRASE = /(\d+|X|\*)\/(\d+|X|\*) ((?:(?:white|blue|black|red|green|colorless)(?:,? and |, | )?)+)((?:[A-Z][a-z'’-]+ )+)?((?:legendary |snow |artifact |enchantment )*)creature tokens?(?: with ((?:(?! and (?:a|an|two|three|four|five|X|that many) )[^.;\n])*))?/g;
+const WITH_ENDS = /, then\b| named\b| that\b| attached\b| for each\b| where\b| if\b| unless\b| and (?:put|you|it|they|sacrifice|exile|return|draw)\b/;
+export function tokenPhrases(oracleText) {
+  const out = [];
+  for (const m of noReminder(oracleText).matchAll(TOKEN_PHRASE)) {
+    const [phrase, power, toughness, colorWords, subs, typeWords, withs] = m;
+    const clause = (withs ?? "").split(WITH_ENDS)[0];
+    out.push({
+      phrase: phrase.slice(0, 90), power: /^\d+$/.test(power) ? Number(power) : null, toughness: /^\d+$/.test(toughness) ? Number(toughness) : null,
+      colors: [...colorWords.matchAll(/white|blue|black|red|green/g)].map((c) => COLOR_WORDS[c[0]]).sort().join(""),
+      subtypes: (subs ?? "").trim().split(/\s+/).filter(Boolean).join(" "),
+      artifact: /artifact/.test(typeWords), enchantment: /enchantment/.test(typeWords),
+      keywords: TOKEN_KEYWORDS.filter((k) => new RegExp("\\b" + k + "\\b", "i").test(clause)),
+    });
+  }
+  return out;
+}
+/* How many modes the text lets a player take: "choose two" is exactly 2, "one or both" 1 to 2, "one or more" 1 to all of them,
+   "any number" 0 to all, "up to two" 0 to 2. Null where the header is none of these (a Siege's choice, "choose X"). */
+const COUNT_WORDS = {one: 1, two: 2, three: 3, four: 4, five: 5};
+export function chooseCount(oracleText) {
+  const m = /\bchoose (one or both|one or more|any number|up to (?:one|two|three|four|five)|one|two|three|four|five)\b[^•\n]*[—–-]\s*(?:\n|$)/i.exec(noReminder(oracleText));
+  if (!m) return null;
+  const said = m[1].toLowerCase();
+  if (said === "one or both") return {said, min: 1, max: 2};
+  if (said === "one or more") return {said, min: 1, max: Infinity};
+  if (said === "any number") return {said, min: 0, max: Infinity};
+  if (said.startsWith("up to ")) return {said, min: 0, max: COUNT_WORDS[said.slice(6)]};
+  return {said, min: COUNT_WORDS[said], max: COUNT_WORDS[said]};
+}
+/* The same of a definition's modal (script/schema.mjs): `choose` is the fewest (1 when unsaid, 0 for "up to"), `chooseUpTo` the
+   most. "You may choose two instead" (`chooseMore`) is a second count the header does not say, so only the fewest is compared. */
+const modalFits = (modal, want) => {
+  const modes = (modal.modes ?? []).length, cap = (n) => Math.min(n, modes);
+  const min = Number.isInteger(modal.choose) ? modal.choose : 1;
+  const max = Number.isInteger(modal.chooseUpTo) ? modal.chooseUpTo : min;
+  if (min !== want.min && !(want.min === 0 && modal.mayChooseNone === true)) return false;
+  return modal.chooseMore !== undefined || cap(max) === cap(want.max);
+};
+
 export function oracleFacets(oracleText, manaCost = "") {
   const all = lines(oracleText);
   const modalHeaders = all.filter((l) => /\bchoose (one|two|three|four|five|x|up to \w+|one or both|one or more|any number)\b[^•]*[—–-]\s*$/i.test(l)).length;
@@ -157,6 +205,7 @@ export function oracleFacets(oracleText, manaCost = "") {
     activated: activatedLines(oracleText),
     additionalCost: /\bas an additional cost to cast (this spell|it)\b/i.test(noReminder(oracleText)),
     targetUnions: targetUnions(oracleText),
+    tokens: tokenPhrases(oracleText), choose: bullets > 0 ? chooseCount(oracleText) : null,
   };
 }
 
@@ -170,7 +219,7 @@ const walk = (value, visit) => {
 
 /** What the definition kept of those ways. */
 export function definitionFacets(def) {
-  const out = {modes: 0, keywordNames: new Set(), activated: [], loyalty: 0, additionalCost: false, unions: new Set(), targetSpecs: 0};
+  const out = {modes: 0, keywordNames: new Set(), activated: [], loyalty: 0, additionalCost: false, unions: new Set(), targetSpecs: 0, tokens: [], modals: []};
   const faces = [def, ...["back", "adventure", "prepare"].map((k) => def[k]).filter((x) => x && typeof x === "object")];
   /* A choice made inside one of the modes as it resolves ("you may tap or untap target permanent", Gandalf's first
      mode) is no mode the text bullets: only a modal no other modal's modes hold is counted. */
@@ -179,7 +228,13 @@ export function definitionFacets(def) {
     walk(ability, (node) => {
       if (node.effect === "modal" && !nested.has(node)) {
         out.modes += (node.modes ?? []).length;
+        out.modals.push(node);
         walk(node.modes ?? [], (inner) => { if (inner.effect === "modal") nested.add(inner); });
+      }
+      /* A token an effect makes, or a static makes instead; a predefined one as the engine expands it (PREDEFINED_TOKENS). */
+      if (node.token && typeof node.token === "object") {
+        const made = node.token.predefined ? PREDEFINED_TOKENS[node.token.predefined] : node.token;
+        if (made && (made.name || made.subtypes)) out.tokens.push(made);
       }
       if (Array.isArray(node.anyOf)) {
         const types = new Set();
@@ -249,6 +304,36 @@ export function extractionFindings(def, tally = {}) {
       const missing = [...new Set(want)].filter((c) => !have.has(c));
       if (missing.length) add("COST_COMPONENT_DROPPED", `"${line.line.slice(0, line.line.indexOf(":"))}" has ${missing.join(", ")} in the text; the definition's cost has ${[...have].join(", ") || "nothing"}`);
     }
+  }
+
+  /* THE TOKENS (ROB-542). Each token the text makes is looked for among the tokens the definition makes: the same subtypes, size,
+     colors, artifact or enchantment type, and exactly the keywords of its "with" clause. */
+  seen("tokenPhrases", oracle.tokens.length);
+  for (const want of oracle.tokens) {
+    if (!kept.tokens.length) { add("TOKEN_DROPPED", `the text makes "${want.phrase}"; the definition makes no token`); continue; }
+    const named = kept.tokens.filter((t) => !want.subtypes || (t.subtypes ?? []).join(" ") === want.subtypes);
+    if (!named.length) { add("TOKEN_DIFFERS", `the text makes "${want.phrase}"; the definition makes ${[...new Set(kept.tokens.map((t) => (t.subtypes ?? []).join(" ") || t.name))].join(", ")}`); continue; }
+    const differs = (t) => {
+      const have = (t.keywords ?? []).map((k) => String(k).toLowerCase().replace(/ \d+$/, ""));
+      if (want.power !== null && typeof t.power === "number" && t.power !== want.power) return `power ${t.power}`;
+      if (want.toughness !== null && typeof t.toughness === "number" && t.toughness !== want.toughness) return `toughness ${t.toughness}`;
+      if ((t.colors ?? []).slice().sort().join("") !== want.colors) return `colors ${(t.colors ?? []).join("") || "none"}`;
+      if (want.artifact !== (t.types ?? []).includes("Artifact")) return want.artifact ? "no Artifact type" : "an Artifact type";
+      if (want.enchantment !== (t.types ?? []).includes("Enchantment")) return want.enchantment ? "no Enchantment type" : "an Enchantment type";
+      const missing = want.keywords.filter((k) => !have.includes(k));
+      if (missing.length) return `no ${missing.join(", ")}`;
+      const extra = have.filter((k) => TOKEN_KEYWORDS.includes(k) && !want.keywords.includes(k));
+      if (extra.length) return `${extra.join(", ")} the text does not give it`;
+      return null;
+    };
+    const why = named.map(differs);
+    if (!why.includes(null)) add("TOKEN_DIFFERS", `the text makes "${want.phrase}"; the definition's ${want.subtypes || "token"} has ${why[0]}`);
+  }
+  /* HOW MANY MODES (ROB-542): "choose two" kept as choose one plays, and plays wrong. */
+  if (oracle.choose && kept.modals.length) {
+    seen("chooseHeaders");
+    if (!kept.modals.some((m) => modalFits(m, oracle.choose)))
+      add("CHOOSE_COUNT_DIFFERS", `the text says "choose ${oracle.choose.said}"; the definition has ${kept.modals.map((m) => JSON.stringify({choose: m.choose, chooseUpTo: m.chooseUpTo, modes: (m.modes ?? []).length})).join(" ")}`);
   }
 
   for (const union of oracle.targetUnions) if (!kept.unions.has(union) && !targetCoveredBySeparateSpecs(def, union))
@@ -457,6 +542,7 @@ export const CLASS_OWNERS = {
   PAYMENT_WAY_MISSING: "ROB-326",
   TARGET_UNION_NARROWED: "ROB-323 (Winter) and ROB-300",
   MODES_DROPPED: "ROB-300", MODES_COUNT: "ROB-300", SPREE_DROPPED: "ROB-300", WAY_KEYWORD_DROPPED: "ROB-300", CYCLING_DROPPED: "ROB-317",
+  TOKEN_DROPPED: "ROB-542", TOKEN_DIFFERS: "ROB-542", CHOOSE_COUNT_DIFFERS: "ROB-542",
   ADDITIONAL_COST_DROPPED: "ROB-300", ACTIVATED_DROPPED: "ROB-330, ROB-331", LOYALTY_DROPPED: "ROB-300", COST_COMPONENT_DROPPED: "ROB-330",
 };
 
