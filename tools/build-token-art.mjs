@@ -152,7 +152,7 @@ ${lines.join("\n")}
 });
 
 /* Tokens no Scryfall token matches: drawn by name, as before. */
-export const UNMATCHED = Object.freeze(${JSON.stringify(unmatched.sort(), null, 1).replace(/\n/g, "\n")});
+export const UNMATCHED = Object.freeze(${JSON.stringify(unmatched.sort(), null, 1)});
 `);
 }
 
