@@ -2098,3 +2098,8 @@ html[data-motion=reduce] #matrix-v2 .cm-board .cm-undo-drawer{transition:none}
 #matrix-v2 .cm-board .cm-attached{position:absolute;left:calc(var(--bc)*var(--att-right)*var(--i));bottom:calc(var(--bc)*var(--att-up)*var(--i));z-index:calc(0 - var(--i));line-height:0}
 #matrix-v2 .cm-board .cm-attached>.cm-bcard{margin:0}
 #matrix-v2 .cm-board .cm-attached:is(:hover,:focus-within){z-index:8}
+/* THE MONARCH (ROB-289): a crown before the monarch's name wherever the board names a seat, in the callouts' gold; it takes no
+   room on any other seat, and a long name's ellipsis never cuts it (it comes first and does not shrink). */
+#matrix-v2 .cm-board .cm-monarch{display:inline-block;flex:0 0 auto;margin-right:.25em;color:var(--callout-value);font-variant-emoji:text;line-height:1;cursor:help;text-shadow:0 1px 2px rgb(0 0 0 / .6)}
+/* A seat's name is a grid (crankmagic.css), which would give the crown a row of its own; with the crown, it is a line. */
+#matrix-v2 .cm-board .cm-mat-name:has(>.cm-monarch){display:block}

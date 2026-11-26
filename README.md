@@ -961,7 +961,7 @@ stale, EDHREC moved — is `node tools/refresh.mjs`: the generators the registry
 order `docs/crankmagic-refresh.md` requires, then the `?v=` cascade for the files that
 changed, then the proof (every producer's `--check`, the asset manifest, the suite count,
 `runtests.sh`); `--plan` prints the steps, `--check` runs only the proofs, and the Claude skill
-`.claude/skills/crankmagic-refresh` is the judgment around it. There are 714 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
+`.claude/skills/crankmagic-refresh` is the judgment around it. There are 715 Node suites here, plus 36 CrankMagic Online suites in `game/tests/`; `runtests.sh` runs all of them:
 
 - `architecture-page` — `tests/architecture-page.mjs`
 - `asset-versions` — `tests/asset-versions.mjs`
@@ -1747,3 +1747,4 @@ The `table-tabletop` suite checks the preview geometry and its browser interacti
 - `board-spree-flow` — `tests/board-spree-flow.mjs` (a spree card stepped through the board: Getaway Glamer's casts asked as how many modes, then which, then each mode's target, one layer at a time and no mana among them; Confirm sends the room's one option, Back steps back, Cancel sends nothing (ROB-209))
 - `board-library-top` — `tests/board-library-top.mjs` (a library's revealed top card on the board: Conspicuous Snoop's Raging Goblin face up in Table, Focus and 3D, to its owner and an opponent, pressed for its cast; an unseen library face down; the held draw still draws, the card on its face (ROB-227))
 - `board-emblem` — `tests/board-emblem.mjs` (an emblem on the board: Elspeth, Sun's Champion's −7 emblem in Rob's command zone, a tile that says what it does, in Table and Focus, to Rob and to Maya (ROB-192))
+- `board-monarch` — `tests/board-monarch.mjs` (the monarch on the board: a crown (♛) on the monarch's name wherever the board names a seat, in Table, Focus and 3D at 1440x900 and 1024x700 and on the phone, named "the monarch" with its one line on hover and on a press; moved by the view and called out once, source ⤳ the new monarch; gone with no monarch, no space kept, nothing made taller (ROB-289))
