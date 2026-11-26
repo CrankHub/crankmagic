@@ -32,6 +32,7 @@
  * Only a class of 0.35 or more is kept; the rest read 0.
  */
 import {readFileSync, writeFileSync} from "node:fs";
+import {pathToFileURL} from "node:url";
 import {DEFINITIONS} from "../game/engine/cards/definitions.mjs";
 
 const ROOT = new URL("../", import.meta.url);
@@ -108,7 +109,11 @@ ${rows(b.commanders)}
 `;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+/* Run as a command: compared as paths-turned-URLs, not as "file://" + the argument. On Windows the module's URL is
+   file:///C:/... and the argument is C:\..., so the old comparison never matched, the tool did nothing (its --check
+   printed nothing and exited 0, and a refresh's pilot-roles step and its proof passed without writing or checking
+   roles-data.mjs): found by tests/pilot-roles.mjs on the 2026-11-24 refresh (ROB-548). */
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const b = build(), text = moduleText(b);
   if (b.missingSalty.length) console.log(`note: ${b.missingSalty.length} names in salty-cards.json are not engine cards yet and are unused: ${b.missingSalty.slice(0, 8).join("; ")}${b.missingSalty.length > 8 ? " ..." : ""}`);
   if (process.argv.includes("--check")) {

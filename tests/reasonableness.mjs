@@ -22,7 +22,12 @@ let checks = 0;
 const ok = (cond, msg) => { checks++; assert.ok(cond, msg); };
 const eq = (a, b, msg) => { checks++; assert.deepEqual(a, b, msg); };
 
-const TOLERANCE = {meanComposition: 6, krenkoPlayed: 0.12, minPlayed: 0.02, maxComposition: 9};
+/* AN IGNORE, NAMED (Rob, 2026-11-25: "Yes, loosen it"; ROB-548). `krenkoPlayed` was 0.12, which sat one card below where main's deck stood
+   (0.127: 10 of the 81 nonland cards are among EDHREC's 99 for Krenko). The 2026-11-24 data refresh moved the prices of cheap cards, the
+   builder swapped 10 of the 81 fillers, one of them Siege-Gang Lieutenant (an EDHREC card), and the rate read 0.111: one card under the
+   floor, with the deck still on budget ($148.05 of $150). The floor is for the break the header names, a random seed halving the rate
+   (to about 0.06, which breaks-reasonableness.py still proves fails it), so it is now 0.10: looser than before, with about a card of room. */
+const TOLERANCE = {meanComposition: 6, krenkoPlayed: 0.10, minPlayed: 0.02, maxComposition: 9};
 
 const t0 = Date.now();
 const report = await compare({protocol: QUICK});

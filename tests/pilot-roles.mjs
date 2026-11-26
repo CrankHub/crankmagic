@@ -86,4 +86,12 @@ const ROOT = new URL("../", import.meta.url);
   ok(facts("Doubling Season") === facts("Doubling Season"), "read once and kept");
 }
 
+/* The tool runs as a command on every machine: --check must say so, not stay silent. On Windows it once printed nothing and
+   exited 0 whatever the module held, because its entry-point test compared "file://" + a path with a file URL (ROB-548). */
+{
+  const {spawnSync} = await import("node:child_process");
+  const run = spawnSync(process.execPath, [new URL("../tools/build-pilot-roles.mjs", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "--check"], {encoding: "utf8"});
+  ok(run.status === 0 && /roles-data\.mjs matches its sources/.test(run.stdout), `build-pilot-roles --check runs as a command and says the module matches (exit ${run.status}: ${(run.stdout + run.stderr).trim().slice(0, 120)})`);
+}
+
 console.log(`pilot-roles: ${checks} checks passed — a few kilobytes of the corpus tell every pilot which cards double, loop, drain or are salty and how dangerous a commander is, held equal to their sources, and handed to a pilot with a card's other public facts.`);
