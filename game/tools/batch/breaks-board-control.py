@@ -10,7 +10,7 @@ BREAKS = [
      "const ghosts = z.Battlefield.cards.filter(foreignControl);",
      "const ghosts = [];"),
     ("remove controller marker", T,
-     'const controlled = where === "mat" && foreignControl(c);',
+     'const controlled = (where === "mat" || where === "attached") && foreignControl(c);',
      "const controlled = false;"),
     ("ghost becomes a game card", T,
      'data-action="board-control-inspect" data-control-card="${c.cardId}"',

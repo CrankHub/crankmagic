@@ -846,6 +846,26 @@ globalThis.CrankBoard = Object.seal({
   const battlefieldCards = () => players().flatMap(p => p.zones.Battlefield.cards);
   const controlledCards = (seat) => battlefieldCards().filter(c => c.controller === seat);
   const foreignControl = (c) => Number.isInteger(c.owner) && Number.isInteger(c.controller) && c.owner !== c.controller;
+  /* ATTACHED CARDS RIDE WITH THEIR PERMANENT (ROB-555; Rob, 2026-11-25: "move the equipment card to be offset underneath the card
+     it's attached to, offset to the top right, so that we can see the card's name above the card that is attached to. And then on
+     hover on that part of the card, you can see the full card in front"). The room's `attachments` on a battlefield permanent name
+     what is attached to it; each of those leaves its own row and is drawn behind its host, stepped up and to the right, whoever
+     controls it (an Aura on another player's creature lies on that creature, as at a table). What is attached to an attachment
+     rides in the same pile. */
+  const riders = (c, seen = new Set([c.cardId])) => (c.attachments || []).flatMap((id) => {
+    const a = seen.has(id) ? null : battlefieldCards().find((x) => x.cardId === id);
+    if (!a) return [];
+    seen.add(id);
+    return [a, ...riders(a, seen)];
+  });
+  const ridingIds = () => {const all = battlefieldCards(), here = new Set(all.map((c) => c.cardId)); return new Set(all.flatMap((c) => (c.attachments || []).filter((id) => here.has(id) && id !== c.cardId)));};
+  function withRiders(c, html) {
+    const list = riders(c);
+    if (!list.length) return html;
+    /* each step shows the rider's name line; a tall pile shares .45 of a card's width upward rather than growing the row without end */
+    const up = Math.min(.2, .45 / list.length), right = Math.min(.12, .3 / list.length);
+    return `<span class="cm-attach-group" data-attach-host="${c.cardId}" style="--att:${list.length};--att-up:${up.toFixed(3)};--att-right:${right.toFixed(3)}">${html}${list.map((a, k) => `<span class="cm-attached" data-attached="${a.cardId}" style="--i:${k + 1}">${card(a, {where: "attached", host: c})}</span>`).join("")}</span>`;
+  }
   const controlName = (c) => c.faceDown ? "Face-down card" : c.name || "Unnamed permanent";
   const controlSummary = (c) => `Controlled by ${nameOf(c.controller)} · Owned by ${nameOf(c.owner)}`;
   function controlGhost(c) {
@@ -991,11 +1011,12 @@ globalThis.CrankBoard = Object.seal({
   const targetedBy = (c) => (c.controller === view.seat && view.state.stack?.length
     ? view.state.stack.filter((s) => s.playerId !== view.seat && (s.targets || []).some((t) => t.kind === "object" && t.id === c.cardId)).map((s) => (s.faceDown || !s.name ? "a face-down spell" : s.name))
     : []);
-  function card(c, {where = "mat", action = "board-card", arrange = false} = {}) {
+  function card(c, {where = "mat", action = "board-card", arrange = false, host = null} = {}) {
     const opts = optionsFor(c.cardId), mine = view.decision && !sending, aimed = targetedBy(c);
     const bright = mine && opts.length > 0, chosen = opts.some((o) => picked.includes(o.index));
     const creature = c.name && c.types.includes("Creature") && c.power !== null, upright = UPRIGHT.has(where), fight = combatOf(c);
-    const controlled = where === "mat" && foreignControl(c);
+    const controlled = (where === "mat" || where === "attached") && foreignControl(c);
+    const worn = where === "mat" || where === "land-stack" ? riders(c) : [];
     const cls = ["cm-bcard", controlled ? "is-controlled" : "", c.name ? "" : "is-back", Number.isFinite(c.commanderTax) ? "has-tax" : "", c.tapped && !upright ? "is-tapped" : "", bright ? "is-bright" : "", chosen ? "is-picked" : "", coachShown.has(c.cardId) ? "is-coach-shown" : "", (where === "hand" || where === "fan") && mine && !bright ? "is-dim" : "", selected === c.cardId && where !== "pick" ? "is-selected" : "", aimed.length ? "is-targeted" : ""].filter(Boolean).join(" ");
     const look = c.name && c.appearance && c.appearance.token ? c.appearance.token : "";
     const marks = [look ? `<span class="cm-bcard-mark is-look" data-look="${e(look)}">≈ ${e(look)}</span>` : "", c.tapped && upright ? `<span class="cm-bcard-mark is-state">Tapped</span>` : "", ...fight.map((f) => `<span class="cm-bcard-mark is-combat">${f.mark}</span>`), c.damage ? `<span class="cm-bcard-mark">${c.damage} damage</span>` : "", ...Object.entries(c.counters || {}).map(([k, n]) => `<span class="cm-bcard-mark">${n} ${e(k)}</span>`)].join("");
@@ -1005,6 +1026,7 @@ globalThis.CrankBoard = Object.seal({
        was cast from there (the room's `commanderTax`), at its top-right as Rob asked, and said with its name. */
     const tax = Number.isFinite(c.commanderTax) ? c.commanderTax : null;
     const state = [tax !== null ? `commander tax ${tax}` : "", c.tapped ? "tapped" : "", creature ? `${c.power}/${c.toughness}` : "", ...fight.map((f) => f.said), c.damage ? `${c.damage} damage` : "", ...Object.entries(c.counters || {}).map(([k, n]) => `${n} ${k} counter${n === 1 ? "" : "s"}`),
+      host ? `attached to ${controlName(host)}` : "", worn.length ? `attached: ${worn.map(controlName).join(", ")}` : "",
       chosen ? "chosen" : "", selected === c.cardId && where !== "pick" ? "selected" : "", aimed.length ? `targeted by ${aimed.join(" and ")}` : ""].filter(Boolean);
     /* What it can do, each kind once ("Cast Zap, 4 ways"), not the card's name once per target. */
     const can = [...new Set(opts.map((o) => verbFor(o)))];
@@ -1405,23 +1427,25 @@ globalThis.CrankBoard = Object.seal({
   }
   function landGroups(cards) {const groups=new Map();for(const c of cards){const key=landKey(c);if(groups.has(key))groups.get(key).push(c);else groups.set(key,[c]);}return [...groups.values()];}
   function landStack(cards) {
-    if(cards.length===1)return card(cards[0],{arrange:true});
+    if(cards.length===1)return withRiders(cards[0],card(cards[0],{arrange:true}));
     const top=cards[0],untapped=cards.filter(c=>!c.tapped).length,ids=cards.map(c=>c.cardId).join(','),undo=cards.map(c=>undoOffer(c.cardId)).find(Boolean);
     const face=card({...top,tapped:untapped===0},{where:'land-stack',arrange:true}).replace('<button ',`<button data-land-members="${ids}" `).replace(/aria-description="/,`aria-description="${untapped?`${untapped} untapped; double click taps the next copy`:'All tapped'}. `).replace(/aria-label="[^"]*"/,`aria-label="${e(top.name)}, ${cards.length} copies, ${untapped} untapped${untapped?'':' · All tapped'}"`);
     return `<span class="cm-land-stack${untapped===0?' is-tapped':''}" data-land-stack="${ids}" data-wf="W16">${cards.some(c=>c.tapped)&&untapped?'<span class="cm-land-tilted" aria-hidden="true"></span>':''}${face}<span class="cm-land-count" aria-hidden="true">×${cards.length} · ${untapped} untapped</span>${undo?undoButton(undo):''}</span>`;
   }
-  function cardSection(cards,section,ghosts=[]) {const ordered=arrangedCards(cards,section);return `<div class="cm-board-cards" data-card-section="${section}">${section.endsWith(':lands')?landGroups(ordered).map(landStack).join(''):ordered.map(c=>card(c,{arrange:true})).join('')}${ghosts.map(controlGhost).join("")}</div>`;}
+  function cardSection(cards,section,ghosts=[]) {const ordered=arrangedCards(cards,section);return `<div class="cm-board-cards" data-card-section="${section}">${section.endsWith(':lands')?landGroups(ordered).map(landStack).join(''):ordered.map(c=>withRiders(c,card(c,{arrange:true}))).join('')}${ghosts.map(controlGhost).join("")}</div>`;}
 
   function reorderCard(section,id,targetId,after=false) {
     const cards=[...section.querySelectorAll('[data-arrange-card]')],from=cards.find(el=>el.dataset.card===id),to=cards.find(el=>el.dataset.card===targetId);
     if(!from || from===to)return;
-    const moving=from.closest('.cm-card-slot,.cm-land-stack') || from,anchor=to?.closest('.cm-card-slot,.cm-land-stack') || to;
+    const whole=el=>el && (el.closest('.cm-attach-group') || el.closest('.cm-card-slot,.cm-land-stack') || el);   /* a card moves with what is attached to it */
+    const moving=whole(from),anchor=whole(to);
     if(anchor)section.insertBefore(moving,after ? anchor.nextSibling : anchor);else section.append(moving);
     const order=[...section.querySelectorAll('[data-arrange-card]')].map(el=>el.dataset.card),key=cardOrderKey(section.dataset.cardSection);
     cardOrders.set(key,order);keep(key,JSON.stringify(order));
   }
   function mat(p, {size = "focus", head = "top", focusButton = false} = {}) {
-    const i = p.playerId, you = isYou(i), z = p.zones, field = controlledCards(i);
+    const riding = ridingIds();   /* drawn with their hosts (withRiders), on the host's controller's mat */
+    const i = p.playerId, you = isYou(i), z = p.zones, field = controlledCards(i).filter((c) => !riding.has(c.cardId));
     const ghosts = z.Battlefield.cards.filter(foreignControl);
     const lands = field.filter((c) => c.types.includes("Land"));
     const leadsBattlefield = c => c.types.includes("Creature") || c.types.includes("Planeswalker");
@@ -2356,8 +2380,12 @@ globalThis.CrankBoard = Object.seal({
       const ok = picked.length >= d.min && picked.length <= d.max;
       foot = `<span class="cm-muted">${picked.length} chosen · ${d.min === d.max ? d.min : `${d.min} to ${d.max}`}</span>${b("Confirm", "board-confirm", {}, true, {disabled: !ok || sending})}`;
     } else if (d.mode === "order") {
-      body = d.options.map((o) => opt(o, picked.includes(o.index) ? ` data-order="${picked.indexOf(o.index) + 1}"` : "")).join("");
-      foot = `<span class="cm-muted">${picked.length ? `Order: ${picked.map((i) => e(d.options[i].label)).join(" → ")}` : "Choose them in order."}</span>${b("Reset", "board-reset", {}, false, {disabled: !picked.length})}${b("Confirm", "board-confirm", {}, true, {disabled: picked.length < d.min || picked.length > d.max || sending})}`;
+      body = d.options.map((o) => opt(o, picked.includes(o.index) ? ` data-order="${picked.indexOf(o.index) + 1}" aria-description="Number ${picked.indexOf(o.index) + 1} in your order; press to take it out"` : "")).join("");
+      /* NOTHING PRINTED UNDER THE CHOICES (ROB-554; Rob, 2026-11-25: "we don't need to be printing the selections below the
+         selections. They just simply need to have a number indicator placed onto the selected row"): with many triggers the
+         order written out again under them pushed Confirm and Cancel out of the pop-up. A chosen row carries its number
+         (`data-order`); pressing it again takes it back out, and the rows after it move up one. */
+      foot = `${b("Reset", "board-reset", {}, false, {disabled: !picked.length})}${b("Confirm", "board-confirm", {}, true, {disabled: picked.length < d.min || picked.length > d.max || sending})}`;
     } else if (d.mode === "damage" || d.mode === "amount") {
       const total = amounts.reduce((n, v) => n + (Number(v) || 0), 0);
       body = d.options.map((o, i) => `<label class="cm-board-amount">${e(o.label)}${o.lethal ? ` <span class="cm-muted">lethal ${o.lethal}</span>` : ""}<input type="number" min="0" max="${o.max ?? d.total}" step="1" value="${amounts[i] ?? 0}" data-board-amount="${i}"></label>`).join("");
@@ -2372,7 +2400,7 @@ globalThis.CrankBoard = Object.seal({
        heading: it is set as one (Rob, 2026-10-01: a choice is a pop-up where the player selects). */
     const sentence = String(d.title || "").length > 48;
     const forRun = forRunNote(d);
-    return `<section class="cm-board-decision${blocking() ? " is-blocking" : ""}" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" aria-label="${e(d.title)}">${decisionPick(d,d.options.find(o=>o.index===picked[0]))}${reviewReady(d) && targeting && choiceTargets(d.options.find(o=>o.index===picked[0])).length ? targetHeading(d,d.options.find(o=>o.index===picked[0])) : blocking() ? "" : `<h2>${e(d.title)}</h2>`}${forRun}${targeting && d.mode !== "many" ? `<ol class="cm-steps"><li class="${reviewReady(d) ? '' : 'is-now'}">Pick</li><li class="${reviewReady(d) ? 'is-now' : ''}">Review</li></ol>` : ""}${reviewReady(d) && targeting ? "" : deskCard()}
+    return `<section class="cm-board-decision${blocking() ? " is-blocking" : ""}${d.mode === "order" ? " is-order" : ""}" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" aria-label="${e(d.title)}">${decisionPick(d,d.options.find(o=>o.index===picked[0]))}${reviewReady(d) && targeting && choiceTargets(d.options.find(o=>o.index===picked[0])).length ? targetHeading(d,d.options.find(o=>o.index===picked[0])) : blocking() ? "" : `<h2>${e(d.title)}</h2>`}${forRun}${targeting && d.mode !== "many" ? `<ol class="cm-steps"><li class="${reviewReady(d) ? '' : 'is-now'}">Pick</li><li class="${reviewReady(d) ? 'is-now' : ''}">Review</li></ol>` : ""}${reviewReady(d) && targeting ? "" : deskCard()}
       <div class="cm-board-options">${body}</div>${foot ? `<div class="cm-board-decision-foot">${foot}</div>` : ""}</section>`;
   }
   /* What the room asks, and what is on the stack, floated over the surface under the strip. Priority is not
@@ -3922,7 +3950,11 @@ globalThis.CrankBoard = Object.seal({
         if (d.max === 1) picked = [];
         picked.push(index);
       }
-    } else if (d.mode === "order" && !picked.includes(index)) picked.push(index);
+    } else if (d.mode === "order") {
+      /* a single option was placed for the player (decision()): it stays; any other chosen row comes out on a second press */
+      if (!picked.includes(index)) picked.push(index);
+      else if (d.options.length > 1) picked = picked.filter((i) => i !== index);
+    }
     draw();
   }
   actions["board-option"] = (el) => option(Number(el.dataset.index));
