@@ -802,7 +802,7 @@ globalThis.CrankBoard = Object.seal({
     const initial = (p.name || 'Player').trim()[0] || '?';
     return `<div class="cm-seat-header${active ? ' is-turn' : ''}${p.health.life <= 10 ? ' is-danger' : ''}" data-seat-header="${p.playerId}">
       <span class="cm-seat-portrait" aria-hidden="true"><span class="cm-seat-initial">${e(initial)}</span>${commander?.name ? `<img src="${e(pictureOf(commander.name))}" alt="" referrerpolicy="no-referrer">` : ""}</span>
-      <span class="cm-seat-identity"><strong class="cm-mat-name">${e(label)}</strong><span class="cm-seat-commander">${e(commander?.name || 'Command zone')}</span></span>
+      <span class="cm-seat-identity"><strong class="cm-mat-name">${monarchMark(p)}${e(label)}</strong><span class="cm-seat-commander">${e(commander?.name || 'Command zone')}</span></span>
       ${vitals(p, {button:interactive})}${resources?`<span class="cm-seat-resources">${p.mana.reduce((n,m)=>n+m.amount,0)} mana open · land drop ${p.landsPlayed?'used':'available'}</span>`:''}<span class="cm-seat-hand">${p.zones.Hand.count} in hand</span>
       <span class="cm-seat-state${view.state.priorityPlayerId === p.playerId ? ' has-priority' : ''}" data-state="${seatStateKey(state)}"><span class="cm-state-word">${e(state)}</span></span></div>`;
   }
@@ -1288,6 +1288,13 @@ globalThis.CrankBoard = Object.seal({
      left or right side pane"). */
   const TURN_ICON = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 4.5v7l5.5-3.5z" fill="currentColor"/></svg>`;
   const turnMark = (i) => view.state.turnPlayerId !== i ? "" : `<span class="cm-board-turn-mark" role="img" aria-label="${isYou(i) ? "Your turn" : `${e(nameOf(i))}'s turn`}" title="${isYou(i) ? "Your turn" : `${e(nameOf(i))}'s turn`}">${TURN_ICON}<b>${isYou(i) ? "Your turn" : "Turn"}</b></span>`;
+  /* THE MONARCH (ROB-289; Rob, 2026-11-24: "We also need to add an indicator for who is the monarch when the monarch tag is in
+     play"; CR 725). The view's `monarch: true` is on the monarch alone (game/engine/projection.mjs). A crown before the seat's
+     name wherever the board names a seat, so a long name's ellipsis never cuts it; with no monarch, nothing at all is drawn. Its
+     one line on hover, and a press calls it out (MONARCH_LINE). */
+  const MONARCH_LINE = "Draws a card at their end step; combat damage to them takes the crown";
+  const isMonarch = (p) => !!p && p.monarch === true;
+  const monarchMark = (p) => isMonarch(p) ? `<span class="cm-monarch" role="img" aria-label="the monarch" title="The monarch: ${MONARCH_LINE}">♛</span>` : "";
   function ribbon(active, at = stepAt(view.state.phase)) {
     return `<ol class="cm-board-ribbon" aria-label="Steps">${STEPS.map(([label], i) => `<li class="${!active ? "" : i < at ? "is-done" : i === at ? "is-now" : ""}">${e(label)}</li>`).join("")}</ol>`;
   }
@@ -1518,7 +1525,7 @@ globalThis.CrankBoard = Object.seal({
      the same 16:9 -- two across and two down, side by side for two seats, two over one for three -- the largest the room above the hand allows (CrankStage.gridGeometry),
      yours with no card of you and the others' with theirs and a Focus; nothing at the center. */
   /* A board's name, plain text above it: no container, no fill (Rob, 2026-10-28); bold in the turn's color for whose turn it is. */
-  const boardName = (p) => `<span class="cm-stage-boardname${view.state.turnPlayerId === p.playerId ? " is-turn" : ""}">${e(seatLabel(p))}</span>`;
+  const boardName = (p) => `<span class="cm-stage-boardname${view.state.turnPlayerId === p.playerId ? " is-turn" : ""}">${monarchMark(p)}${e(seatLabel(p))}</span>`;
   function gridSlots() {
     const ps = players();
     const slots = ps.map((p) => {
@@ -1551,14 +1558,14 @@ globalThis.CrankBoard = Object.seal({
   function lifeList() {
     const ps = players(), mine = ps[view.seat], rows = [mine, ...ps.filter((p) => p && p !== mine)].filter(Boolean);
     return rows.map((p) => {const now = view.state.turnPlayerId === p.playerId;
-      return `<span class="cm-stage-life${now ? " is-turn" : ""}"${now ? ` aria-current="true" title="${isYou(p.playerId) ? "Your turn" : `${e(p.name)}'s turn`}"` : ""}>${now ? `<span class="cm-stage-life-turn" aria-hidden="true">${TURN_ICON}</span>` : ""}${e(seatLabel(p))} · <b>${p.health.life}</b>${view.state.priorityPlayerId === p.playerId ? `<i class="cm-stage-life-prio" role="img" aria-label="${isYou(p.playerId) ? "You hold" : `${e(p.name)} holds`} priority" title="${isYou(p.playerId) ? "Priority is with you" : `Priority is with ${e(p.name)}`}"></i>` : `<i class="cm-stage-life-prio is-off" aria-hidden="true"></i>`}${now ? `<span class="cm-sr-only">, ${isYou(p.playerId) ? "your" : "their"} turn</span>` : ""}</span>`;}).join("");
+      return `<span class="cm-stage-life${now ? " is-turn" : ""}" data-seat="${p.playerId}"${now ? ` aria-current="true" title="${isYou(p.playerId) ? "Your turn" : `${e(p.name)}'s turn`}"` : ""}>${now ? `<span class="cm-stage-life-turn" aria-hidden="true">${TURN_ICON}</span>` : ""}${monarchMark(p)}${e(seatLabel(p))} · <b>${p.health.life}</b>${view.state.priorityPlayerId === p.playerId ? `<i class="cm-stage-life-prio" role="img" aria-label="${isYou(p.playerId) ? "You hold" : `${e(p.name)} holds`} priority" title="${isYou(p.playerId) ? "Priority is with you" : `Priority is with ${e(p.name)}`}"></i>` : `<i class="cm-stage-life-prio is-off" aria-hidden="true"></i>`}${now ? `<span class="cm-sr-only">, ${isYou(p.playerId) ? "your" : "their"} turn</span>` : ""}</span>`;}).join("");
   }
   function stageView({corner, big, others}) {
     /* Focus's others are boards, each with only its name above it (Rob, 2026-10-28); 3D's keep their seat label. A double click on one focuses it. */
     const rear = others.map((p) => mode === "focus"
       ? `<section class="cm-stage-rear cm-flat-rear" data-seat="${p.playerId}" style="--seat:${seatColor(p.playerId)}">${boardName(p)}<div class="cm-stage-mini">${mat(p, {size: "opp", head: "none"})}</div></section>`
       : `<section class="cm-stage-rear" data-seat="${p.playerId}" style="--seat:${seatColor(p.playerId)}">
-      <button type="button" class="cm-stage-seat-label" data-action="board-focus" data-seat="${p.playerId}" aria-label="View ${e(p.name)}'s board, ${p.health.life} life">${seatHeader(p,{interactive:false})}</button>
+      <button type="button" class="cm-stage-seat-label" data-action="board-focus" data-seat="${p.playerId}" aria-label="View ${e(p.name)}'s board, ${p.health.life} life${isMonarch(p) ? ", the monarch" : ""}">${seatHeader(p,{interactive:false})}</button>
       <div class="cm-stage-mini">${mat(p, {size: "opp", head: "none"})}</div></section>`).join("");
     return `${boardHeader()}
       <div class="cm-full-mine cm-stage-region" aria-label="Tabletop" data-layout="${mode === "table" ? "grid" : "stage"}">
@@ -1762,7 +1769,7 @@ globalThis.CrankBoard = Object.seal({
       recommended: () => `<p class="cm-muted">Recommendations use your AI Coach conversation and its privacy settings.</p>${b("Recommend actions", "board-recommend", {}, false, {cls:"compact"})}`,
       chat: () => chatBody(),
       actions: () => !stageRail || actionsShut || /^mulligan:/.test(view.decision?.id || "") ? "" : actionsBody(),
-      table: () => `<div class="cm-full-vitals">${players().map(p => `<div class="${view.state.turnPlayerId === p.playerId ? "is-turn" : ""}" data-seat="${p.playerId}" style="--seat:${seatColor(p.playerId)}"><span>${e(seatLabel(p))}${turnMark(p.playerId)}</span>${vitals(p, {big:true})}</div>`).join("")}</div>`,
+      table: () => `<div class="cm-full-vitals">${players().map(p => `<div class="${view.state.turnPlayerId === p.playerId ? "is-turn" : ""}" data-seat="${p.playerId}" style="--seat:${seatColor(p.playerId)}"><span>${monarchMark(p)}${e(seatLabel(p))}${turnMark(p.playerId)}</span>${vitals(p, {big:true})}</div>`).join("")}</div>`,
       inspect: () => `<div id="cm-full-pick">${pickPanel()}</div>`,
       stack: () => stack({module:true}) || `<p class="cm-muted">The stack is empty.</p>`,
       history: () => historyBand(Infinity, true) + eventCards(),
@@ -3004,6 +3011,7 @@ globalThis.CrankBoard = Object.seal({
     slash: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`,
     seal: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`,
     fade: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/></svg>`,
+    crown: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="currentColor"/></svg>`,
   };
   const LIFE_STEPS = new Set(["COMBAT_FIRST_STRIKE_DAMAGE", "COMBAT_DAMAGE"]);
   function calloutsFor(was, next) {
@@ -3016,6 +3024,10 @@ globalThis.CrankBoard = Object.seal({
       return out;
     }
     if (next.state.turnPlayerId === next.seat && was.state.turnPlayerId !== next.seat) out.push({tone: "value", glyph: "trophy", word: "YOUR TURN", line: `Turn ${next.state.turn}`});
+    /* THE MONARCH CHANGES HANDS (ROB-289): once, source ⤳ the new monarch; the first monarch by name alone. */
+    const crownOf = (s) => {const m = s.players.find(isMonarch); return m ? m.playerId : null;};
+    const crownWas = crownOf(was.state), crownNow = crownOf(next.state);
+    if (crownNow !== null && crownNow !== crownWas) out.push({tone: "value", glyph: "crown", word: "MONARCH", line: crownWas === null ? who(crownNow) : `${who(crownWas)} ⤳ ${who(crownNow)}`});
     /* attacks declared against you that were not there before */
     const mine = (s) => ((s.combat && s.combat.attacks) || []).filter((a) => a.defender === next.seat).map((a) => a.attacker);
     const before = new Set(mine(was.state)), incoming = mine(next.state).filter((id) => !before.has(id));
@@ -5110,6 +5122,14 @@ globalThis.CrankBoard = Object.seal({
   document.addEventListener("dblclick", (event) => {if (showing === "held" && event.target.closest && event.target.closest(".cm-hand-held")) actions["board-hand-back"]();});
   document.addEventListener("pointermove", (event) => {pointerAt = {x: event.clientX, y: event.clientY};}, {passive: true, capture: true});
   document.addEventListener("pointerdown", () => {if (peekId !== null) peek(null);}, {capture: true});
+  /* A press on the monarch's crown (ROB-289) says what the monarch does, as a callout, where a touch has no hover; the seat
+     button it sits in is not pressed with it. */
+  document.addEventListener("click", (event) => {
+    const crown = event.target.closest?.("#cm-board .cm-monarch");
+    if (!crown) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    callouts([{tone: "value", glyph: "crown", word: "MONARCH", line: MONARCH_LINE}]);
+  }, {capture: true});
   /* A tap on an entry shows its card, a second tap or a tap elsewhere puts it away; the keyboard's focus does the same. */
   document.addEventListener("click", (event) => {
     const entry = event.target.closest && event.target.closest(".cm-board-stack .cm-stack-entry");
