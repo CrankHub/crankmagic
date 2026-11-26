@@ -143,7 +143,7 @@ globalThis.CrankBoard = Object.seal({
   let lifeShut = false;
   try {lifeShut = localStorage.getItem("cm-board-life-shut") === "1";} catch {/* the list stays open for this page only */}
   let actionCard = null, draftRevision = null;
-  let choiceFlow = null, flowPaused = false, attackChoice = null, popupDrawers = null, flowFrom = null;
+  let choiceFlow = null, flowPaused = false, popupDrawers = null, flowFrom = null;
   const flowContext = () => ({match:view.matchId,revision:view.revision,seat:view.seat,choice:view.decision.id});
   const decisionPopup = () => !!view?.decision && view.status!=="finished" && !view.spectator && (choiceFlow !== null || actionCard !== null || !['priority','draw'].includes(view.decision.kind));
   const pathOptions = options => options.map(o => {
@@ -182,12 +182,11 @@ globalThis.CrankBoard = Object.seal({
       return `<section class="cm-board-decision cm-choice-flow is-paused" id="cm-board-decision" aria-label="${e(d.title)}"><h2>${e(d.kind==='priority' ? findCard(actionCard)?.name || d.title : d.title)}</h2>${why}<div class="cm-decide-actions">${b('Resume','board-flow-resume',{},true,{disabled:sending})}${confirm}</div></section>`;
     }
     if(!choiceFlow)choiceFlow=CrankChoiceFlow.create(pathOptions(d.options),flowContext());
-    const step=CrankChoiceFlow.step(choiceFlow),source=findCard(attackChoice ?? step.trail.find(n=>n.kind==='source')?.value ?? actionCard ?? d.sourceId),ready=step.status==='confirm';
+    const step=CrankChoiceFlow.step(choiceFlow),source=findCard(step.trail.find(n=>n.kind==='source')?.value ?? actionCard ?? d.sourceId),ready=step.status==='confirm';
     const label=node=>e(node.label).replace(/\{[^}]+\}/g,symbol=>C.mana(symbol));
     const visual=node=>{const id=['mana-source','source','card'].includes(node.kind) ? node.value : node.kind==='target' && node.value?.[0]==='object' ? node.value[1] : null;const c=findCard(id);return c?.name?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" data-fallback-name="${e(c.name)}">`:'';};
     const duplicates=new Set(step.choices.filter((c,i,all)=>all.some((x,j)=>j!==i && x.label===c.label)).map(c=>c.label));
-    const flowRisk=c=>attackChoice!==null ? attackRisk(d.options.find(o=>o.index===c.indices[0])) : null;
-    const choiceButton=(c,i)=>`<button type="button" class="v-button cm-flow-option${riskCls(flowRisk(c))}" data-action="board-flow-choice" data-flow-choice="${i}" data-indices="${c.indices.join(" ")}" data-kind="${e(c.kind)}"${['target','card','mana-source'].includes(c.kind)?` data-peek-card="${e(c.kind==='target'?c.value?.[1]:c.value)}"`:""} data-revision="${view.revision}" data-choice="${e(d.id)}" data-match="${e(view.matchId)}"${sending?' disabled':''}>${riskMark(flowRisk(c))}${visual(c)}<span>${label(c)}</span>${duplicates.has(c.label)?` <small>${e(twinMark(Array.isArray(c.value)?c.value.at(-1):c.value) || step.choices.filter(n=>n.label===c.label).indexOf(c)+1)}</small>`:''}</button>`;
+    const choiceButton=(c,i)=>`<button type="button" class="v-button cm-flow-option" data-action="board-flow-choice" data-flow-choice="${i}" data-indices="${c.indices.join(" ")}" data-kind="${e(c.kind)}"${['target','card','mana-source'].includes(c.kind)?` data-peek-card="${e(c.kind==='target'?c.value?.[1]:c.value)}"`:""} data-revision="${view.revision}" data-choice="${e(d.id)}" data-match="${e(view.matchId)}"${sending?' disabled':''}>${visual(c)}<span>${label(c)}</span>${duplicates.has(c.label)?` <small>${e(twinMark(Array.isArray(c.value)?c.value.at(-1):c.value) || step.choices.filter(n=>n.label===c.label).indexOf(c)+1)}</small>`:''}</button>`;
     const landChoice=c=>c.kind==='target' && c.value?.[0]==='object' && findCard(c.value[1])?.types?.includes('Land');
     const rest=step.choices.filter(c=>!landChoice(c)),lands=step.choices.filter(landChoice);
     const renderChoices=nodes=>nodes.map(c=>choiceButton(c,step.choices.indexOf(c))).join('');
@@ -202,16 +201,74 @@ globalThis.CrankBoard = Object.seal({
     const forRun = forRunNote(d);
     return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" data-flow-status="${step.status}" aria-label="${e(d.title)}"><h2>${e(source?.name || (d.kind==='priority' ? d.options.find(o=>o.index===step.index)?.label : d.title) || d.title)}</h2>${forRun}
       ${source?.name?`<button class="cm-flow-inspect" type="button" data-action="board-combat-inspect" data-card="${source.cardId}" aria-label="Inspect ${e(source.name)}"><img class="cm-flow-card" src="${e(pictureOf(source.name,source))}" alt="" data-fallback-name="${e(source.name)}"></button>`:''}
-      <div class="cm-board-options">${ready?`<ul class="cm-choice-review">${reviewRows.join('')}</ul>${attackChoice!==null?riskMark(attackRisk(d.options.find(o=>o.index===step.index))):''}`:choices}</div>
-      <div class="cm-decide-actions">${ready?b('Confirm','board-flow-confirm',{revision:String(view.revision),choice:d.id,match:view.matchId,index:String(step.index)},true,{disabled:sending}).replace('>Confirm</button>',`>${CHEV_PATH('M3 8l3 3 7-7')}<span>Confirm</span></button>`):''}${choiceFlow.selections.length?b('Back','board-flow-back',{},false,{disabled:sending}).replace('>Back</button>',`>${CHEV_LEFT}<span>Back</span></button>`):''}${attackChoice!==null?b("Don't attack",'board-flow-no-attack',{},false,{disabled:sending}):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
+      <div class="cm-board-options">${ready?`<ul class="cm-choice-review">${reviewRows.join('')}</ul>`:choices}</div>
+      <div class="cm-decide-actions">${ready?b('Confirm','board-flow-confirm',{revision:String(view.revision),choice:d.id,match:view.matchId,index:String(step.index)},true,{disabled:sending}).replace('>Confirm</button>',`>${CHEV_PATH('M3 8l3 3 7-7')}<span>Confirm</span></button>`):''}${choiceFlow.selections.length?b('Back','board-flow-back',{},false,{disabled:sending}).replace('>Back</button>',`>${CHEV_LEFT}<span>Back</span></button>`):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
+  }
+  /* DECLARING ATTACKERS, ONE POP-UP (ROB-545; Rob, 2026-11-24: "combine this screen and the next so that it is a nested outline
+     view of each card underneath an expand and collapse header for each of the players. Then ... either me selecting the cards on
+     the actual table or me selecting from a scrollable row at the bottom of available cards. Actually, let's do that.").
+     A header per player the creatures may attack, folding open and shut, carrying the most favorable mark any creature still
+     free (or sent there) has against that player (attackOutlook); under it the creatures sent there and the planeswalkers and
+     battles that player has, each a target of its own. At the foot, the creatures not yet sent, in a row that scrolls sideways,
+     each marked against the selected target: one press sends it there, a press on a sent one brings it back. A press on one of
+     your creatures on the table does the same. Nothing is sent to the room until Confirm. */
+  const attackKey = o => `${o.defenderId}:${o.planeswalkerId ?? o.battleId ?? ''}`;
+  let attackUi = null;
+  function attackState(d) {
+    const players=[...new Set(d.options.map(o=>o.defenderId))];
+    if(attackUi?.choice!==d.id){
+      const first=d.options.find(o=>o.planeswalkerId===undefined && o.battleId===undefined) || d.options[0];
+      attackUi={choice:d.id,target:first?attackKey(first):null,open:new Set(players.length>3?[first?.defenderId]:players)};
+    }
+    if(!d.options.some(o=>attackKey(o)===attackUi.target))attackUi.target=d.options[0]?attackKey(d.options[0]):null;
+    return attackUi;
+  }
+  const attackChosen = d => picked.map(i=>d.options.find(o=>o.index===i)).filter(Boolean);
+  const attackOptionFor = (d,cardId,key) => d.options.find(o=>o.cardId===cardId && attackKey(o)===key);
+  const attackName = id => `${combatName(findCard(id))}${twinMark(id) ? ` ${twinMark(id)}` : ''}`;
+  const attackTargetName = key => {const [p,t]=key.split(':');return t ? combatName(findCard(Number(t))) : nameOf(Number(p));};
+  /* What keeps Confirm off, in the room's own words where it gives them (rules/combat.mjs: min and max, `requires`, `capped`). */
+  function attackProblem(d) {
+    const chosen=attackChosen(d),cards=chosen.map(o=>o.cardId);
+    if(new Set(cards).size!==cards.length)return "A creature attacks only once.";
+    if(chosen.length<d.min)return `${d.min-chosen.length} more must attack.`;
+    if(chosen.length>d.max)return `At most ${d.max} can attack.`;
+    for(const r of d.requires || [])if(chosen.filter(o=>r.values.includes(o[r.by])).length<r.least)return r.why || "A creature must attack.";
+    for(const [pw,most] of Object.entries(d.capped?.most || {}))if(chosen.filter(o=>String(o.planeswalkerId)===pw).length>most)return d.capped.why?.[pw] || "Too many attack that planeswalker.";
+    return "";
   }
   function attackDecision(d) {
-    const creatures=[...new Set(d.options.map(o=>o.cardId))],defenders=[...new Set(d.options.filter(o=>o.planeswalkerId===undefined).map(o=>o.defenderId))];
-    return `<section class="cm-board-decision cm-choice-flow" id="cm-board-decision" aria-label="${e(d.title)}"><h2>${e(d.title)}</h2><div class="cm-board-options">${creatures.map(id=>{
-      const c=findCard(id),chosen=picked.map(i=>d.options.find(o=>o.index===i)).find(o=>o?.cardId===id);
-      const defender=chosen ? findCard(chosen.planeswalkerId)?.name || nameOf(chosen.defenderId) : '',risk=chosen?attackRisk(chosen):null;
-      return `<button type="button" class="v-button cm-flow-option${chosen?' is-picked':''}${riskCls(risk)}" data-action="board-flow-attacker" data-card="${id}" data-index="${chosen?.index ?? ''}" aria-pressed="${!!chosen}">${riskMark(risk)}${c?.name?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="">`:''}<span>${e(c?.name || 'Creature')}${twinMark(id)?` <small>${e(twinMark(id))}</small>`:''}${chosen?` → ${e(defender)}`:''}</span></button>`;
-    }).join('')}</div><div class="cm-decide-actions">${b('Confirm','board-confirm',{},true,{disabled:sending || picked.length<d.min || picked.length>d.max})}${defenders.map(id=>b(`All at ${nameOf(id)}`,'board-attack-all',{defender:String(id)},false,{disabled:sending})).join('')}${picked.length?b('None','board-attack-none',{},false,{disabled:sending}):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
+    const ui=attackState(d),chosen=attackChosen(d),sentCards=new Set(chosen.map(o=>o.cardId));
+    const players=[...new Set(d.options.map(o=>o.defenderId))];
+    const creatures=[...new Set(d.options.map(o=>o.cardId))];
+    /* The best mark at a target: over the options there whose creature is still free or is sent there already. */
+    const best=key=>{
+      const at=d.options.filter(o=>attackKey(o)===key && (!sentCards.has(o.cardId) || chosen.some(c=>c.index===o.index))).map(attackOutlook).filter(Boolean);
+      return at.length ? at.reduce((a,o)=>OUTLOOK_RANK[o.mark]<OUTLOOK_RANK[a.mark]?o:a) : null;
+    };
+    const thumb=(id,cls='')=>{const c=findCard(id);return `<button type="button" class="cm-attack-inspect${cls}" data-action="board-combat-inspect" data-card="${id}" data-peek-card="${id}" aria-label="Inspect ${e(attackName(id))}">${c?.name && !c.faceDown?`<img class="cm-flow-thumb" src="${e(pictureOf(c.name,c))}" alt="" loading="lazy" data-fallback-name="${e(c.name)}">`:'<i class="cm-combat-back" aria-hidden="true"></i>'}</button>`;};
+    const who=id=>{const c=findCard(id);return `${e(combatName(c))}${twinMark(id)?` <small class="cm-attack-twin">${e(twinMark(id))}</small>`:''}`;};
+    const pt=id=>{const c=findCard(id);return c?.power!=null?`<b class="cm-attack-pt">${e(c.power)}/${e(c.toughness)}</b>`:'';};
+    const sentRows=key=>chosen.filter(o=>attackKey(o)===key).map(o=>`<li class="cm-attack-sent">${thumb(o.cardId)}<button type="button" class="cm-attack-back" data-action="board-attack-back" data-card="${o.cardId}" aria-label="Bring back ${e(attackName(o.cardId))} (${e(outlookSaid(attackOutlook(o)) || "sent")})"${sending?' disabled':''}><span class="cm-attack-who">${who(o.cardId)}</span>${pt(o.cardId)}${outlookMark(attackOutlook(o))}<span class="cm-attack-x" aria-hidden="true">✕</span></button></li>`).join('');
+    const targetButton=(key,label,cls)=>{const n=chosen.filter(o=>attackKey(o)===key).length;return `<button type="button" class="cm-attack-target ${cls}" data-action="board-attack-target" data-target="${e(key)}" aria-pressed="${ui.target===key}"${sending?' disabled':''}>${outlookMark(best(key),{weak:false})}<span class="cm-attack-name">${label}</span><span class="cm-attack-count"${n?'':' hidden'}>⚔ ${n}<span class="cm-sr-only"> sent</span></span></button>`;};
+    const groups=players.map(p=>{
+      const key=`${p}:`,open=ui.open.has(p),subs=[...new Set(d.options.filter(o=>o.defenderId===p && attackKey(o)!==key).map(attackKey))];
+      const hasPlayer=d.options.some(o=>attackKey(o)===key);
+      const head=`<div class="cm-attack-head"><button type="button" class="cm-attack-fold" data-action="board-attack-fold" data-defender="${p}" aria-expanded="${open}" aria-controls="cm-attack-body-${p}" aria-label="${open?'Fold':'Open'} ${e(nameOf(p))}">${open?'▾':'▸'}</button>${hasPlayer?targetButton(key,e(nameOf(p)),'is-player'):`<span class="cm-attack-name">${e(nameOf(p))}</span>`}${hasPlayer?`<button type="button" class="v-button compact cm-attack-all" data-action="board-attack-all" data-defender="${p}" aria-label="Attack ${e(nameOf(p))} with every creature that can"${sending?' disabled':''}>⚔ All</button>`:''}</div>`;
+      const body=`${hasPlayer?`<ul class="cm-attack-list">${sentRows(key)}</ul>`:''}${subs.map(k=>{const t=Number(k.split(':')[1]);return `<div class="cm-attack-sub"><div class="cm-attack-subhead">${thumb(t,' is-target')}${targetButton(k,e(combatName(findCard(t))),'is-permanent')}</div><ul class="cm-attack-list">${sentRows(k)}</ul></div>`;}).join('')}`;
+      return `<section class="cm-attack-group${ui.target?.split(':')[0]===String(p)?' is-current':''}" data-defender="${p}" aria-label="${e(nameOf(p))}">${head}<div class="cm-attack-body" id="cm-attack-body-${p}"${open?'':' hidden'}>${body}</div></section>`;
+    }).join('');
+    const free=creatures.filter(id=>!sentCards.has(id));
+    const targetName=ui.target?attackTargetName(ui.target):'';
+    const tiles=free.map(id=>{
+      const o=ui.target?attackOptionFor(d,id,ui.target):null,c=findCard(id);
+      return `<li class="cm-attack-tile${o?'':' is-unable'}">${thumb(id)}<button type="button" class="cm-attack-send" data-action="board-attack-send" data-card="${id}" aria-label="${o?`Send ${e(attackName(id))} at ${e(targetName)}${attackOutlook(o)?` (${e(outlookSaid(attackOutlook(o)))})`:""}`:`${e(attackName(id))} can't attack ${e(targetName)}`}"${o?'':' aria-disabled="true"'}${sending?' disabled':''}><span class="cm-attack-who">${who(id)}</span>${pt(id)}${o?outlookMark(attackOutlook(o)):'<span class="cm-risk is-none" aria-hidden="true">—</span>'}</button></li>`;
+    }).join('');
+    const problem=attackProblem(d);
+    return `<section class="cm-board-decision cm-choice-flow is-attacking" id="cm-board-decision" data-choice-id="${e(d.id)}" data-match-id="${e(view.matchId)}" aria-label="${e(d.title)}"><h2>${e(d.title)}</h2>${forRunNote(d)}
+      <div class="cm-board-options cm-attack-outline" data-zone-scroll="attack-outline">${groups}</div>
+      <div class="cm-attack-tray-wrap"><p class="cm-attack-tray-head">${free.length?`<span aria-hidden="true">⤳</span> ${e(targetName)}`:'Every creature is sent'}</p>${free.length?`<ul class="cm-attack-tray" aria-label="Creatures not yet sent; a press sends one at ${e(targetName)}" data-zone-scroll="attack-tray">${tiles}</ul>`:''}</div>
+      <div class="cm-board-decision-foot"><span class="cm-attack-tally">⚔ ${chosen.length}<span class="cm-sr-only"> attacking</span></span>${problem?`<span class="cm-attack-problem" role="status">${e(problem)}</span>`:''}${b('Confirm','board-confirm',{},true,{disabled:sending || !!problem})}${chosen.length?b('None','board-attack-none',{},false,{disabled:sending}):''}${b('Cancel','board-flow-cancel',{},false,{disabled:sending})}</div></section>`;
   }
   let stackSelected = null, stackFor = null, landsOpen = null;
   let selected = null, hover = null;   /* Full screen: the card shown large in the side column (picked, and under the pointer) */
@@ -484,7 +541,7 @@ globalThis.CrankBoard = Object.seal({
     if (next.spectator === true && (next.seat === null || next.seat === undefined)) next = {...next, seat: 0};
     view = next;
     mergeHistory(next);
-    if (was?.revision !== next.revision || was?.matchId !== next.matchId || was?.seat !== next.seat) {choiceFlow=null;flowPaused=false;attackChoice=null;targetPage=0;targetReviewing=false;targetCycles.clear();cardMenu=null;firstCardClick=null;document.getElementById("cm-card-menu")?.remove();picked = []; amounts = []; draftRevision = null; actionCard = null;}
+    if (was?.revision !== next.revision || was?.matchId !== next.matchId || was?.seat !== next.seat) {choiceFlow=null;flowPaused=false;targetPage=0;targetReviewing=false;targetCycles.clear();cardMenu=null;firstCardClick=null;document.getElementById("cm-card-menu")?.remove();picked = []; amounts = []; draftRevision = null; actionCard = null;}
     if (inspection?.automatic && was?.revision !== next.revision) inspection = null;
     if (inspection && (was?.matchId !== next.matchId || was?.seat !== next.seat)) inspection = null;
     yieldReady = true;
@@ -505,7 +562,7 @@ globalThis.CrankBoard = Object.seal({
     if (focus === null) focus = view.seat;
     /* On a phone the board you are looking at is the only one on screen: when you are asked, it is yours. */
     if (phone() && view.decision && view.decision.id !== before) focus = view.seat;
-    if ((view.decision && view.decision.id) !== before) {choiceFlow=null;flowPaused=false;attackChoice=null;actionCard=null;draftRevision=null;picked = []; amounts = []; sending = false; alsoOpen = false; if(view.decision && view.decision.kind !== "priority") {actionsShut = false;}}
+    if ((view.decision && view.decision.id) !== before) {choiceFlow=null;flowPaused=false;actionCard=null;draftRevision=null;picked = []; amounts = []; sending = false; alsoOpen = false; if(view.decision && view.decision.kind !== "priority") {actionsShut = false;}}
     if (priorBlocks !== blockContext()) {blockEpoch++; blockAttacker=null;picked = []; blockSelected = null; blockResult = null; blockListOpen = false;}
     // The popup owns its source image; required choices never open an automatic side inspection.
     checkBlocks();
@@ -2178,20 +2235,41 @@ globalThis.CrankBoard = Object.seal({
      deathtouch; never an indestructible attacker), and whether it could kill any of them alone. A hint about the table, not
      a rule: the blocks are the defender's to choose, and a trick or first strike can change either answer. */
   const kw = (c, k) => (c.keywords || []).some((x) => String(x).toLowerCase() === k);
-  function attackRisk(o) {
-    if (o.defenderId === undefined || !String(view.decision?.id || "").startsWith("declare-attackers:")) return null;
-    const a = findCard(o.cardId);
-    if (!a || a.power == null || a.toughness == null) return null;
-    const left = (c) => c.toughness - (c.damage || 0);
-    const blockers = controlledCards(o.defenderId).filter((c) => c.types.includes("Creature") && !c.tapped && c.power != null
-      && (!kw(a, "flying") || kw(c, "flying") || kw(c, "reach")));
-    if (!blockers.length) return null;
-    const die = kw(a, "indestructible") ? [] : blockers.filter((c) => c.power > 0 && (kw(c, "deathtouch") || c.power >= left(a)));
-    const kills = a.power > 0 && blockers.some((c) => !kw(c, "indestructible") && (kw(a, "deathtouch") || a.power >= left(c)));
-    return die.length || !kills ? {die, weak: !kills} : null;
+  /* THE OUTCOME, IN ONE MARK (ROB-545, the approved canvas plan docs/play-overhaul/combat-canvas/F3-attacker.md, Hints): clear
+     when nothing untapped could block it, safe when no blocker could kill it, trade when one could and it would kill that one,
+     dies when one could kill it and live; and weak when it kills no blocker alone. Once the engine puts `hints` on the options
+     (ROB-362, F0b-attack-hints.md: couldBlock [{cardId, kills, dies}]) they are read instead, and the board's guess is skipped. */
+  const OUTLOOK_RANK = {clear: 0, safe: 1, trade: 2, dies: 3};
+  function attackOutlook(o) {
+    if (o?.defenderId === undefined || !String(view.decision?.id || "").startsWith("declare-attackers:")) return null;
+    let could;
+    if (o.hints) could = (o.hints.couldBlock || []).map((h) => ({c: findCard(h.cardId) || {cardId: h.cardId}, kills: !!h.kills, dies: !!h.dies}));
+    else {
+      const a = findCard(o.cardId);
+      if (!a || a.power == null || a.toughness == null) return null;
+      const left = (c) => c.toughness - (c.damage || 0);
+      could = controlledCards(o.defenderId).filter((c) => c.types.includes("Creature") && !c.tapped && c.power != null
+        && (!kw(a, "flying") || kw(c, "flying") || kw(c, "reach")))
+        .map((c) => ({c, kills: !kw(a, "indestructible") && c.power > 0 && (kw(c, "deathtouch") || c.power >= left(a)),
+          dies: a.power > 0 && !kw(c, "indestructible") && (kw(a, "deathtouch") || a.power >= left(c))}));
+    }
+    const killers = could.filter((x) => x.kills);
+    return {mark: !could.length ? "clear" : killers.some((x) => !x.dies) ? "dies" : killers.length ? "trade" : "safe",
+      die: killers.map((x) => x.c), weak: could.length > 0 && !could.some((x) => x.dies)};
   }
-  const riskCls = (r) => (r ? `${r.die.length ? " is-risk-die" : ""}${r.weak ? " is-risk-weak" : ""}` : "");
-  const riskMark = (r) => (r ? `${r.die.length ? `<span class="cm-risk is-die" title="Could die: ${e(r.die.map((c) => `${c.name} ${c.power}/${c.toughness}`).join(", "))}">☠<span class="cm-sr-only"> could die to ${e(r.die.map((c) => c.name).join(", "))};</span></span>` : ""}${r.weak ? `<span class="cm-risk is-weak" title="Kills no blocker alone">⊘<span class="cm-sr-only"> kills no blocker alone;</span></span>` : ""}` : "");
+  /* The mark's words for a reader and on hover, with the limit said every time: a hint about the table, not a rule. */
+  const OUTLOOK_WORDS = {clear: ["✓", "is-safe", "Safe: nothing untapped can block it"], safe: ["✓", "is-safe", "Safe: no blocker can kill it"],
+    trade: ["⇄", "is-trade", "Could trade with"], dies: ["☠", "is-die", "Could die"]};
+  const OUTLOOK_LIMIT = "as the table stands; a trick or first strike can change it";
+  const outlookWords = (out) => OUTLOOK_WORDS[out.mark][2] + (out.die.length ? `: ${out.die.map((c) => `${combatName(c)}${c.power != null ? ` ${c.power}/${c.toughness}` : ""}`).join(", ")}` : "");
+  /* The same words where a button's own name has to carry them (a name given by aria-label hides what is inside it). */
+  const outlookSaid = (out) => (out ? `${outlookWords(out)}${out.weak ? "; kills no blocker alone" : ""}` : "");
+  const outlookMark = (out, {weak = true} = {}) => {
+    if (!out) return "";
+    const [glyph, cls] = OUTLOOK_WORDS[out.mark], said = outlookWords(out);
+    return `<span class="cm-risk ${cls}" data-outlook="${out.mark}" title="${e(said)} (${OUTLOOK_LIMIT})"><span aria-hidden="true">${glyph}</span><span class="cm-sr-only"> ${e(said)};</span></span>${weak && out.weak
+      ? `<span class="cm-risk is-weak" data-outlook="weak" title="Kills no blocker alone (${OUTLOOK_LIMIT})"><span aria-hidden="true">⊘</span><span class="cm-sr-only"> kills no blocker alone;</span></span>` : ""}`;
+  };
   /* An option that names a card the seat can read carries it for the hover (peek). */
   const peekOf = (o) => (o.cardId !== undefined && (findCard(o.cardId)?.name || shownCard(o.cardId)) ? ` data-peek-card="${o.cardId}"` : "");
   function decision() {
@@ -2205,14 +2283,13 @@ globalThis.CrankBoard = Object.seal({
     if(d.mode==='many' && d.min===d.options.length && d.max===d.options.length && !d.exclusiveBy && !picked.length)picked=d.options.map(o=>o.index);
     if(d.mode==='order' && d.options.length===1 && d.min===1 && !picked.length)picked=[d.options[0].index];
     if(String(d.id).startsWith('declare-attackers:'))return attackDecision(d);
-    const opt = (o, extra = "", r = attackRisk(o)) => `<button type="button" class="v-button compact${picked.includes(o.index) ? " is-picked" : ""}${riskCls(r)}" data-action="board-option" data-index="${o.index}"${peekOf(o)}${sending ? " disabled" : ""}${extra}>${riskMark(r)}${e(targetChoice(d) && o.controllerId !== undefined && !o.decline ? (o.affected !== undefined ? namedFace(findCard(o.affected))?.name || "face-down creature" : o.target?.kind === "player" ? controllerName(o.controllerId) : o.label) : o.label)}<span class="cm-sr-only">${targetChoice(d) ? e(o.label) : ""}</span></button>`;
+    const opt = (o, extra = "") => `<button type="button" class="v-button compact${picked.includes(o.index) ? " is-picked" : ""}" data-action="board-option" data-index="${o.index}"${peekOf(o)}${sending ? " disabled" : ""}${extra}>${e(targetChoice(d) && o.controllerId !== undefined && !o.decline ? (o.affected !== undefined ? namedFace(findCard(o.affected))?.name || "face-down creature" : o.target?.kind === "player" ? controllerName(o.controllerId) : o.label) : o.label)}<span class="cm-sr-only">${targetChoice(d) ? e(o.label) : ""}</span></button>`;
     /* One option as ever; a stack as one button, ×N, and -- where the question takes more than one -- how many of it. */
     const stackOpt = (s) => {
       if (s.length === 1) return opt(s[0], ` aria-pressed="${picked.includes(s[0].index)}"`);
       const ids = s.map((o) => o.index), k = ids.filter((i) => picked.includes(i)).length;
       const many = d.mode === "many" && d.max > 1, room = Math.min(s.length, d.max - (picked.length - k));
-      const r = attackRisk(s[0]);
-      return `<span class="cm-board-same"><button type="button" class="v-button compact${k ? " is-picked" : ""}${riskCls(r)}" data-action="board-option-same" data-same="${ids.join(",")}" aria-pressed="${k > 0}"${peekOf(s[0])}${sending ? " disabled" : ""}>${riskMark(r)}${e(s[0].label)} <span class="cm-board-same-n">×${s.length}</span></button>${many
+      return `<span class="cm-board-same"><button type="button" class="v-button compact${k ? " is-picked" : ""}" data-action="board-option-same" data-same="${ids.join(",")}" aria-pressed="${k > 0}"${peekOf(s[0])}${sending ? " disabled" : ""}>${e(s[0].label)} <span class="cm-board-same-n">×${s.length}</span></button>${many
         ? `<input type="number" class="cm-board-same-count" min="0" max="${room}" step="1" value="${k}" data-board-same="${ids.join(",")}" aria-label="How many ${e(s[0].label)}"${sending ? " disabled" : ""}>` : ""}</span>`;
     };
     /* LANDS LAST, FOLDED (Rob, 2026-10-25: "When being given action options that target cards, if the rules allow lands
@@ -2275,16 +2352,7 @@ globalThis.CrankBoard = Object.seal({
       foot = b("OK", "board-confirm", {}, true, {disabled: sending});
     }
     else if (d.mode === "many") {
-      /* ATTACK ALL (Rob's one-person, three-AI table, Oct 21): a swarm sent at one player in one press -- "All at Maya" picks,
-         for every creature that may attack her, its option at her, keeping any other creature's pick; "None" clears them.
-         The engine offers one option per creature per player (rules/combat.mjs), so a Krenko swarm at three opponents was
-         a pick per goblin. Nothing is sent until Confirm, and the room checks the attack as ever. */
-      const atPlayers = String(d.id).startsWith("declare-attackers:")
-        ? [...new Set(d.options.filter((o) => o.defenderId !== undefined && o.planeswalkerId === undefined).map((o) => o.defenderId))] : [];
-      const allAt = atPlayers.length ? `<div class="cm-board-attack-all" role="group" aria-label="Attack with every creature that can">${atPlayers.map((id) =>
-        b(`All at ${players().find((p) => p.playerId === id)?.name ?? `Seat ${id + 1}`}`, "board-attack-all", {defender: String(id)}, false, {cls: "compact", disabled: sending})).join("")}${picked.length
-        ? b("None", "board-attack-none", {}, false, {cls: "compact", disabled: sending}) : ""}</div>` : "";
-      body = allAt + grouped(sameStacks(d));
+      body = grouped(sameStacks(d));
       const ok = picked.length >= d.min && picked.length <= d.max;
       foot = `<span class="cm-muted">${picked.length} chosen · ${d.min === d.max ? d.min : `${d.min} to ${d.max}`}</span>${b("Confirm", "board-confirm", {}, true, {disabled: !ok || sending})}`;
     } else if (d.mode === "order") {
@@ -3822,7 +3890,7 @@ globalThis.CrankBoard = Object.seal({
       disconnect(); globalThis.CrankStage?.unmount(); stopSea(); if (observer) {observer.disconnect(); observer = null;}
       document.getElementById("cm-game-on")?.remove();
       if (tools) document.getElementById("cm-dialog")?.close();
-      choiceFlow=null;flowPaused=false;attackChoice=null;popupDrawers=null;inspection = null; inspectionFrom = null; stackSelected = null; tableId = null; view = null; table = null; tools = false; confirmEnd = false; selected = null; hover = null; showing = null; held = null;
+      choiceFlow=null;flowPaused=false;popupDrawers=null;inspection = null; inspectionFrom = null; stackSelected = null; tableId = null; view = null; table = null; tools = false; confirmEnd = false; selected = null; hover = null; showing = null; held = null;
       historyOpen = false; historyFilter = ""; menuOpen = false; stepsOpen = false; panelOpen = false; skipping = null; records = null;
       coachInput=null;coachGate={key:null,available:false};coach.open = false; coach.thread = []; coach.typing = false; coach.asked += 1; peek(null); leaveFullscreen();
     },
@@ -3869,15 +3937,11 @@ globalThis.CrankBoard = Object.seal({
     if(!choiceFlow || sending || (el && (Number(el.dataset.revision)!==view.revision || el.dataset.choice!==view.decision.id || el.dataset.match!==view.matchId)))return;
     const answer=CrankChoiceFlow.answer(choiceFlow,flowContext());
     if(!answer)return;
-    if(attackChoice!==null && String(view.decision.id).startsWith('declare-attackers:')) {
-      picked=picked.filter(i=>view.decision.options.find(o=>o.index===i)?.cardId!==attackChoice).concat(answer.indices);
-      choiceFlow=null;attackChoice=null;draftRevision=view.revision;draw();return;
-    }
     send(answer);
   };
   actions['board-flow-cancel'] = () => {
     if(sending)return;
-    choiceFlow=null;attackChoice=null;picked=[];amounts=[];draftRevision=null;targetReviewing=false;if(blocking()){blockResult=null;}
+    choiceFlow=null;picked=[];amounts=[];draftRevision=null;targetReviewing=false;if(blocking()){blockResult=null;}
     /* Your own cast or activation, stopped by the room to ask its targets or payment (`cancel.way` "back-out"): Cancel ends it there
        and then, the card back where it was and priority yours again -- no Resume (ROB-205). An action not yet sent ends here, as ever. */
     if(view.decision.kind!=='priority' && view.decision.cancel?.way==='back-out'){cancelQuestion();return;}
@@ -3894,20 +3958,6 @@ globalThis.CrankBoard = Object.seal({
     socket.send(JSON.stringify({type: "cancel", choiceId: view.decision.id}));
     draw();
   }
-  actions['board-flow-no-attack'] = () => {
-    if(sending || attackChoice===null)return;
-    picked=picked.filter(i=>view.decision.options.find(o=>o.index===i)?.cardId!==attackChoice);
-    attackChoice=null;choiceFlow=null;draw();
-  };
-  actions['board-flow-attacker'] = el => {
-    const d=view?.decision,id=Number(el.dataset.card);
-    if(sending || !String(d?.id).startsWith('declare-attackers:'))return;
-    const options=d.options.filter(o=>o.cardId===id);
-    if(!options.length)return;
-    attackChoice=id;
-    choiceFlow=CrankChoiceFlow.create(options.map(o=>({index:o.index,label:o.label,path:[{key:'defender',value:[o.defenderId,o.planeswalkerId ?? null],label:findCard(o.planeswalkerId)?.name || nameOf(o.defenderId),kind:'player'}]})),flowContext());
-    draw();
-  };
   /* A stack's click takes one, or puts back what was taken from it; its number sets how many. Each is picked as a single
      option is: one question's one, and in many, the room's exclusive options and its most. */
   function setSame(ids, want) {
@@ -3956,6 +4006,13 @@ globalThis.CrankBoard = Object.seal({
     if(!view)return;
     const id=Number(el.dataset.card),origin={id,revision:Number(el.dataset.cardRevision),choice:el.dataset.cardChoice,match:el.dataset.cardMatch};
     if(origin.revision!==view.revision || origin.choice!==(view.decision?.id || '') || origin.match!==view.matchId)return;
+    if(attacking()?.options.some(o=>o.cardId===id)) {
+      if(event?.detail>=2)return;
+      /* sent at the selected target: brought back; sent elsewhere: moved here; not sent: sent here */
+      const at=attackChosen(view.decision).find(o=>o.cardId===id);
+      if(at && attackKey(at)===attackState(view.decision).target)attackBack(id);else attackSend(id);
+      return;
+    }
     if(event?.detail>=2) {
       cardDoubleHandled=true;closeCardMenu(false);
       if(!firstCardClick || Object.keys(origin).some(k=>origin[k]!==firstCardClick[k]))return;
@@ -3986,18 +4043,53 @@ globalThis.CrankBoard = Object.seal({
     if(isYou(seat) && mode==='focus')focus=view.seat;
     if(mode==='table' && !phone())setMode('focus');else draw();
   });
-  /* All at one player, and None (the attack question's own shortcuts, above): picks only, as a press on each would be. */
+  /* THE ATTACK POP-UP'S PRESSES (attackDecision, above): picks only, nothing sent until Confirm. A target is selected and stays
+     selected; a creature pressed in the row (or on the table) is sent at it, taking back any other pick of that creature, so a
+     creature goes to one target at most; a sent one pressed comes back. All at one player picks, for every creature that may
+     attack them, its option there, keeping every other creature's pick; None clears them. */
+  const attacking = () => {const d = view?.decision; return d && String(d.id).startsWith("declare-attackers:") && !sending ? d : null;};
+  actions["board-attack-target"] = (el) => {
+    const d = attacking(), key = el.dataset.target;
+    if (!d || !d.options.some((o) => attackKey(o) === key)) return;
+    const ui = attackState(d);
+    ui.target = key; ui.open.add(Number(key.split(":")[0]));
+    draw();
+  };
+  actions["board-attack-fold"] = (el) => {
+    const d = attacking(), p = Number(el.dataset.defender);
+    if (!d) return;
+    const ui = attackState(d);
+    if (ui.open.has(p)) ui.open.delete(p); else ui.open.add(p);
+    draw();
+  };
+  function attackSend(cardId) {
+    const d = attacking();
+    if (!d || !d.options.some((o) => o.cardId === cardId)) return false;
+    const ui = attackState(d), o = ui.target ? attackOptionFor(d, cardId, ui.target) : null;
+    if (!o) {const why = `${attackName(cardId)} can't attack ${ui.target ? attackTargetName(ui.target) : "that"}. Choose another target above.`; say(why); C.notice(why); return true;}
+    picked = [...picked.filter((i) => d.options.find((x) => x.index === i)?.cardId !== cardId), o.index];
+    draftRevision = view.revision;
+    draw();
+    return true;
+  }
+  function attackBack(cardId) {
+    const d = attacking();
+    if (!d) return;
+    picked = picked.filter((i) => d.options.find((x) => x.index === i)?.cardId !== cardId);
+    draw();
+  }
+  actions["board-attack-send"] = (el) => attackSend(Number(el.dataset.card));
+  actions["board-attack-back"] = (el) => attackBack(Number(el.dataset.card));
   actions["board-attack-all"] = (el) => {
-    const d = view && view.decision;
-    if (!d || d.mode !== "many" || !String(d.id).startsWith("declare-attackers:") || sending) return;
-    const at = d.options.filter((o) => o.defenderId === Number(el.dataset.defender) && o.planeswalkerId === undefined);
+    const d = attacking();
+    if (!d) return;
+    const at = d.options.filter((o) => o.defenderId === Number(el.dataset.defender) && o.planeswalkerId === undefined && o.battleId === undefined);
     const creatures = new Set(at.map((o) => o.cardId));
-    picked = [...picked.filter((i) => !creatures.has(d.options[i].cardId)), ...at.map((o) => o.index)].slice(0, d.max);
+    picked = [...picked.filter((i) => !creatures.has(d.options.find((x) => x.index === i)?.cardId)), ...at.map((o) => o.index)];
     draw();
   };
   actions["board-attack-none"] = () => {
-    const d = view && view.decision;
-    if (!d || !String(d.id).startsWith("declare-attackers:") || sending) return;
+    if (!attacking()) return;
     picked = [];
     draw();
   };
@@ -4064,6 +4156,7 @@ globalThis.CrankBoard = Object.seal({
     const d = view.decision;
     if (!d || sending) return;
     if(choiceFlow)return actions["board-flow-confirm"]();
+    if (String(d.id).startsWith("declare-attackers:") && attackProblem(d)) return;
     /* A single target goes Pick, Next, Review, Confirm. A counted target ("up to one", "any number", mode "many") has no Next
        and no Review: its Confirm is the commit, checked against its own min and max (ROB-204; the footer's count). */
     if(targetChoice(d) && d.mode!=="many" && d.kind!=="priority" && !targetReviewing && !d.options.find(o=>o.index===picked[0])?.decline)return;
