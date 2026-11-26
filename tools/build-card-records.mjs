@@ -74,7 +74,9 @@ function fetchRecords(names) {
   const out = [];
   for (let i = 0; i < names.length; i += 75) {
     const body = JSON.stringify({identifiers: names.slice(i, i + 75).map((name) => ({name: name.split(" // ")[0]}))});
-    const text = execFileSync("curl", ["-sS", "--fail", "--max-time", "60", "-H", "Content-Type: application/json", "-d", body, "https://api.scryfall.com/cards/collection"], {encoding: "utf8", maxBuffer: 64 * 1024 * 1024});
+    /* The body goes to curl on stdin, never as an argument: on Windows an argument passes through the ANSI code page, so
+       "Dáin, Lord of the Iron Hills" arrived as invalid UTF-8 and Scryfall answered 400 (ROB-548, 2026-11-24). */
+    const text = execFileSync("curl", ["-sS", "--fail", "--max-time", "60", "-H", "Content-Type: application/json", "--data-binary", "@-", "https://api.scryfall.com/cards/collection"], {encoding: "utf8", input: body, maxBuffer: 64 * 1024 * 1024});
     const data = JSON.parse(text);
     for (const card of data.data || []) out.push(fromScryfall(card));
     for (const miss of data.not_found || []) console.warn(`  Scryfall does not know ${miss.name}`);
@@ -132,7 +134,15 @@ for (const [name, f] of Object.entries(priorFacts.cards || {})) {
     image: f.normal || "", imageSmall: f.small || "", price: f.price ?? null, priceUpdated: f.price != null ? day(priorFacts.generatedAt) : "", tcgplayerUrl: f.url || ""});
   adopted += 1;
 }
-const wanted = refresh ? [...byName.keys()].concat(toAdd.filter((n) => !byName.has(n))) : toAdd;
+/* THE COMMANDERS OF NEW FROM WIZARDS ARE RECORDS TOO (ROB-548, 2026-11-24). A new release's precons name commanders the
+   graph has not met yet (the Star Trek decks' Picard, Worf, Spock and Borg Queen), and the strip's hover then had no
+   picture of its own: it fell back to a live Scryfall address that a page with no signal, or a suite with no network,
+   cannot draw, and tests/precons.mjs failed on exactly that. A refresh reads them from the committed precons-latest.json
+   (the precons step that rewrites it comes after this one, so a brand-new release is picked up by the next refresh, or
+   by --add), and adds the ones the set does not hold. */
+const latestCommanders = existsSync(path.join(ROOT, "data/precons-latest.json"))
+  ? (readData("data/precons-latest.json").decks || []).flatMap((d) => (d.commander || []).map((x) => x.name)).filter(Boolean) : [];
+const wanted = refresh ? [...byName.keys()].concat([...new Set([...toAdd, ...latestCommanders])].filter((n) => !byName.has(n))) : toAdd;
 const fetched = wanted.length ? fetchRecords(wanted) : [];
 if (refresh) console.log(`refreshed ${fetched.length} of ${wanted.length} records from Scryfall`);
 for (const r of fetched) byName.set(r.name, {...(byName.get(r.name) || {}), ...r});

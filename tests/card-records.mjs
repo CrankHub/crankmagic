@@ -68,4 +68,25 @@ for (const g of read("data/deck-guides.json").decks) named.add(g.commander);
 const strays = [...named].filter((n) => n && !byName.get(n));
 ok(strays.length === 0, `every deck and guide name resolves to a record (missing: ${strays.slice(0, 5).join(", ")})`);
 
-console.log(`card-records: ${checks} checks passed — ${records.length} records, ${projected} projected into the facts table, ${aligned} aligned with the graph (${priced} priced), ${named.size} library and guide names resolved.`);
+/* The commanders of New from Wizards have records, and so pictures: the strip's hover draws them from the record set, not from
+   a live Scryfall address (ROB-548: the Star Trek decks' commanders had none, and tests/precons.mjs could not draw the hover). */
+{
+  const latest = read("data/precons-latest.json");
+  const commanders = [...new Set(latest.decks.flatMap((d) => d.commander.map((x) => x.name)))];
+  ok(commanders.length > 0, "precons-latest.json names commanders");
+  const bare = commanders.filter((n) => !(byName.get(n) && byName.get(n).image));
+  ok(bare.length === 0, `every New from Wizards commander has a record with a picture (missing: ${bare.join(", ")})`);
+}
+
+/* The producer's Scryfall call sends its body to curl on stdin. As an argument ("-d", body) it passes through Windows' ANSI code
+   page, "Dáin, Lord of the Iron Hills" arrives as invalid UTF-8 and Scryfall answers 400, so the records step of a refresh failed
+   on Personal-HP (ROB-548, 2026-11-24; the same batch is 200 on stdin). The 2,372 names carry accented ones today. */
+{
+  const source = readFileSync(path.join(ROOT, "tools/build-card-records.mjs"), "utf8");
+  const call = source.slice(source.indexOf("function fetchRecords"), source.indexOf("MANA VALUE BELONGS IN THE RECORD"));
+  ok(/"--data-binary", "@-"/.test(call) && /input: body/.test(call), "the records call sends its body to curl on stdin (--data-binary @-)");
+  ok(!/"-d", body/.test(call), "the records call never passes the body as a command-line argument");
+  ok(records.some((r) => /[^\x00-\x7f]/.test(r.name)), "the record set does carry accented names, so the stdin rule is not idle");
+}
+
+console.log(`card-records: ${checks} checks passed —${records.length} records, ${projected} projected into the facts table, ${aligned} aligned with the graph (${priced} priced), ${named.size} library and guide names resolved.`);
