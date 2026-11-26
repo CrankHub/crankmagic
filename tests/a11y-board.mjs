@@ -1084,6 +1084,26 @@ try {
       hand(ROB, robFrame);
       await page.waitForTimeout(300);
     }
+    /* THE ATTACK POP-UP (ROB-545): a modal dialog named by its question; every mark is said in words (the glyph is not read), on
+       the header and in each creature's own name, and each creature is one press from being read large. */
+    {
+      const page = rob.page, asked = structuredClone(robFrame), mine = creatures(asked.view, 0).slice(0, 2);
+      asked.view.decision = {id: "declare-attackers:a11y", kind: "declare-attackers", mode: "many", min: 0, max: mine.length, title: "Declare attackers", exclusiveBy: "cardId",
+        options: mine.map((c, index) => ({index, label: `${c.name} → Maya`, cardId: c.cardId, defenderId: 1}))};
+      asked.view.waitingOn = asked.view.seatId;
+      hand(ROB, asked);
+      await page.locator("#cm-board-decision.is-attacking").waitFor({timeout: 5000});
+      const dialog = await page.locator("#cm-decision-slot").evaluate((d) => [d.getAttribute("role"), d.getAttribute("aria-modal"), d.getAttribute("aria-label")]);
+      ok(JSON.stringify(dialog) === JSON.stringify(["dialog", "true", "Declare attackers"]), `the attack pop-up is a modal dialog named by its question (${dialog})`);
+      const [tile] = await axOf(rob, `.cm-attack-tray [data-action=board-attack-send][data-card="${mine[0].cardId}"]`);
+      ok(tile && tile.name.startsWith("Send ") && / at Maya \((Safe|Could trade|Could die)/.test(tile.name) && !/[✓⇄☠⊘]/.test(tile.name), `a creature in the row says what a press does and its mark in words ("${tile && tile.name}")`);
+      const [head] = await axOf(rob, `[data-action=board-attack-target][data-target="1:"]`);
+      ok(head && /Maya/.test(head.name) && /(Safe|Could trade|Could die)/.test(head.name) && !/[✓⇄☠]/.test(head.name), `the header says its player and its mark in words ("${head && head.name}")`);
+      const [read] = await axOf(rob, `.cm-attack-tray [data-action=board-combat-inspect][data-card="${mine[0].cardId}"]`);
+      ok(read && read.name.startsWith("Inspect "), `each creature has its own Inspect press ("${read && read.name}")`);
+      hand(ROB, robFrame);
+      await page.waitForTimeout(300);
+    }
     /* HIDDEN: nothing of another seat's hand or library, nor any library's, in anything either page says. */
     for (const [who, other, otherEmail] of [[maya, "Rob", ROB], [rob, "Maya", MAYA]]) {
       const ownView = views(otherEmail).at(-1), mine = ownView.state.players[other === "Rob" ? 0 : 1];
