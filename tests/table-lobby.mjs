@@ -653,7 +653,7 @@ try {
     await olu.page.getByRole("button", {name: "Parse input", exact: true}).click();
     await olu.page.getByRole("heading", {name: "Review import", exact: true}).waitFor({timeout: 60000});
     await olu.page.getByRole("button", {name: /^Import \d+ reviewed rows?$/}).click();
-    await olu.page.getByRole("heading", {name: `New deck from ${preconName}`, exact: true}).waitFor({timeout: 60000});
+    await olu.page.getByRole("heading", {name: `New deck: ${preconName}`, exact: true}).waitFor({timeout: 60000});
     await olu.page.getByRole("button", {name: "Create draft", exact: true}).click();
     await olu.page.waitForFunction(() => /^#table\?deck=/.test(location.hash), null, {timeout: 30000});
     await olu.page.locator(".cm-ng-dialog").waitFor({timeout: 30000});
