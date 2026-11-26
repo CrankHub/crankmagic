@@ -624,7 +624,7 @@ function groupDeck(groupId,named=''){
   const bench=C.state.lots.filter(l=>l.source==='owned'&&(l.groupIds||[]).includes(g.id)&&l.location?.kind==='bench'&&!l.allocation&&l.offer==='none'),copies=bench.reduce((n,l)=>n+l.quantity,0);
   return form(named?`New deck: ${named}`:`New deck from ${g.name}`,(named?'':f('Deck name','name',leaders[0].name+' deck','required maxlength="160"'))+s('Commander','commanderId',leaders.map(c=>[c.id,c.name]),leaders[0].id)+note(named?`This makes a new draft deck whose list is the ${rows.reduce((n,r)=>n+r.quantity,0)} cards you imported.`:`This makes a new draft deck whose list is the ${rows.reduce((n,r)=>n+r.quantity,0)} cards in ${g.name}, and the deck stays linked to ${g.name}.`)+(copies?`<label class="cm-checkbox cm-full"><input type="checkbox" name="move" checked> Put the ${copies} cop${copies===1?'y':'ies'} you own from ${e(g.name)} (now on the Bench) in the deck's box</label>`:''),
     async data=>{const id='deck:'+C.uid();
-      const fromPrecon=pendingPrecon&&pendingPrecon.name===g.name?pendingPrecon:null;pendingPrecon=null;
+      const fromPrecon=pendingPrecon&&pendingPrecon.groupId===g.id?(({groupId,...p})=>p)(pendingPrecon):null;pendingPrecon=null;
       const play=fromPrecon?.play;   /* the library keeps a precon's id, name and set alone (collection-model.js) */
       await commit({type:'createDeck',deckId:id,name:named||data.name,commanders:[data.commanderId],groupId:g.id,...(fromPrecon?{precon:fromPrecon}:{}),
         slots:rows.some(r=>r.cardId===data.commanderId)?rows:[{cardId:data.commanderId,quantity:1},...rows]});
@@ -918,8 +918,11 @@ const startPrecon=async(el,play)=>{
   const p=(await precons()).decks.find(x=>x.id===el.dataset.precon);
   if(!p)throw Error('That precon is not in the list any more. Reload the page.');
   actions.close();
-  pendingPrecon={id:p.id,name:p.name,setName:p.setName||'',...(play?{play:true}:{})};
-  C.importList({name:p.name,text:preconText(p),after:deckFromImport});
+  /* NAMED ONCE (ROB-547's precon half). The import asks for the deck's name, prefilled with the precon's, and the deck
+     window asks no more. The precon is tied to the group the import made, not to its name, so renaming the deck there
+     keeps it a precon. */
+  const tag={id:p.id,name:p.name,setName:p.setName||'',...(play?{play:true}:{})};pendingPrecon=null;
+  C.importList({name:p.name,deck:true,text:preconText(p),after:(gid,named)=>{pendingPrecon={...tag,groupId:gid};return deckFromImport(gid,named);}});
   /* A card banned since it was printed, or one too new for the card list, is said before the review shows it. */
   if(p.notInUniverse)C.notice(`${p.name}: ${p.notInUniverse.length} of its cards ${p.notInUniverse.length===1?'is':'are'} not in the Commander card list today (${p.notInUniverse.slice(0,3).join(', ')}${p.notInUniverse.length>3?', …':''}): banned since it was printed, or too new. The review shows ${p.notInUniverse.length===1?'it':'them'}.`);
 };
